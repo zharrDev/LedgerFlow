@@ -491,7 +491,7 @@ function AccountSelect({
             }
           : {}
       }
-      className="z-[9999] bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto"
+      className="z-[9999] bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {filtered.length === 0 ? (
         <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
