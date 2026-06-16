@@ -127,18 +127,7 @@ export function JournalDetail({
         </div>
 
         <div className="overflow-x-auto">
-          <table
-            className="w-full border-collapse"
-            style={{ tableLayout: "fixed" }}
-          >
-            <colgroup>
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "30%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "17%" }} />
-            </colgroup>
+          <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-800/50">
                 {[
@@ -148,14 +137,28 @@ export function JournalDetail({
                   "Keterangan",
                   "Debit",
                   "Kredit",
-                ].map((h, i) => (
-                  <th
-                    key={h}
-                    className={`px-4 py-2.5 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider bg-gray-50/50 dark:bg-gray-800/30 ${i >= 4 ? "text-right" : "text-left"}`}
-                  >
-                    {h}
-                  </th>
-                ))}
+                ].map((h, i) => {
+                  const minW =
+                    h === "#"
+                      ? "min-w-[40px]"
+                      : h === "Kode"
+                        ? "min-w-[100px]"
+                        : h === "Nama Akun"
+                          ? "min-w-[180px]"
+                          : h === "Keterangan"
+                            ? "min-w-[200px]"
+                            : "min-w-[150px]";
+                  return (
+                    <th
+                      key={h}
+                      className={`px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50/50 dark:bg-gray-800/30 ${minW} ${
+                        i >= 4 ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -180,14 +183,14 @@ export function JournalDetail({
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                       {line.description || "—"}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
                       <span
                         className={`text-sm tabular-nums font-medium ${isDebit ? "text-primary-700 dark:text-primary-400" : "text-gray-300 dark:text-gray-600"}`}
                       >
                         {isDebit ? formatIDR(line.debit) : "—"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
                       <span
                         className={`text-sm tabular-nums font-medium ${!isDebit ? "text-emerald-700 dark:text-emerald-400" : "text-gray-300 dark:text-gray-600"}`}
                       >
@@ -202,14 +205,14 @@ export function JournalDetail({
               <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
                 <td
                   colSpan={4}
-                  className="px-4 py-2.5 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
                 >
                   Total
                 </td>
-                <td className="px-4 py-2.5 text-right text-sm font-semibold text-primary-700 dark:text-primary-400 tabular-nums">
+                <td className="px-4 py-3 text-right text-sm font-semibold text-primary-700 dark:text-primary-400 tabular-nums whitespace-nowrap">
                   {formatIDR(entry.totalDebit)}
                 </td>
-                <td className="px-4 py-2.5 text-right text-sm font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                <td className="px-4 py-3 text-right text-sm font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap">
                   {formatIDR(entry.totalCredit)}
                 </td>
               </tr>

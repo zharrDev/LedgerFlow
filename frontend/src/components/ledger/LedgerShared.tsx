@@ -93,7 +93,7 @@ export function StatCard({
           >
             {label}
           </p>
-          <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 tabular-nums">
+          <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 tabular-nums break-words sm:break-normal">
             {value}
           </p>
           {sub && (

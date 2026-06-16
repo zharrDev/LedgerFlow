@@ -146,30 +146,31 @@ export function LedgerTable({
       {/* ── Table ── */}
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table
-            className="w-full border-collapse"
-            style={{ tableLayout: "fixed" }}
-          >
-            <colgroup>
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "33%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "16%" }} />
-            </colgroup>
+          <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
-                {HEADERS.map((h, i) => (
-                  <th
-                    key={h}
-                    className={`px-4 py-3 text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
-                      i >= 3 ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {h}
-                  </th>
-                ))}
+                {HEADERS.map((h, i) => {
+                  const minW =
+                    h === "Tanggal"
+                      ? "min-w-[100px]"
+                      : h === "No. Jurnal"
+                        ? "min-w-[130px]"
+                        : h === "Keterangan"
+                          ? "min-w-[220px]"
+                          : h === "Debit" || h === "Kredit"
+                            ? "min-w-[150px]"
+                            : "min-w-[180px]";
+                  return (
+                    <th
+                      key={h}
+                      className={`px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${minW} ${
+                        i >= 3 ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -306,18 +307,18 @@ function AccountHeader({
 function OpeningRow({ balance, date }: { balance: number; date: string }) {
   return (
     <tr className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800/50">
-      <td className="px-4 py-2.5 text-xs text-gray-400 dark:text-gray-500">
+      <td className="px-4 py-2.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
         {formatDateShort(date)}
       </td>
-      <td className="px-4 py-2.5" />
+      <td className="px-4 py-2.5 whitespace-nowrap" />
       <td className="px-4 py-2.5">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 italic">
           Saldo Awal
         </span>
       </td>
-      <td className="px-4 py-2.5" />
-      <td className="px-4 py-2.5" />
-      <td className="px-4 py-2.5 text-right">
+      <td className="px-4 py-2.5 whitespace-nowrap" />
+      <td className="px-4 py-2.5 whitespace-nowrap" />
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <span className="text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
           {formatIDR(balance)}
         </span>
@@ -343,20 +344,20 @@ function LedgerRow({
 
   return (
     <tr className="hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">
-      <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+      <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap">
         {formatDateShort(line.date)}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 whitespace-nowrap">
         <span className="font-mono text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-1.5 py-0.5 rounded-md border border-primary-200 dark:border-primary-500/20">
           {line.journalNumber}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 min-w-[200px]">
         <span className="text-sm text-gray-800 dark:text-gray-200 line-clamp-1">
           {line.description}
         </span>
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3 text-right whitespace-nowrap">
         {line.debit > 0 ? (
           <span className="text-sm font-medium text-primary-700 dark:text-primary-400 tabular-nums">
             {formatIDR(line.debit)}
@@ -365,7 +366,7 @@ function LedgerRow({
           <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
         )}
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3 text-right whitespace-nowrap">
         {line.credit > 0 ? (
           <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
             {formatIDR(line.credit)}
@@ -374,7 +375,7 @@ function LedgerRow({
           <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
         )}
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3 text-right whitespace-nowrap">
         <span className={`text-sm font-medium tabular-nums ${balanceColorCls}`}>
           {formatIDR(Math.abs(line.balance))}
           {line.balance !== 0 && (
@@ -407,17 +408,17 @@ function ClosingRow({
       >
         Total / Saldo Akhir
       </td>
-      <td className="px-4 py-2.5 text-right">
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <span className="text-sm font-semibold text-primary-700 dark:text-primary-400 tabular-nums">
           {formatIDR(totalDebit)}
         </span>
       </td>
-      <td className="px-4 py-2.5 text-right">
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
           {formatIDR(totalCredit)}
         </span>
       </td>
-      <td className="px-4 py-2.5 text-right">
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
           {formatIDR(Math.abs(balance))}
           {balance !== 0 && (

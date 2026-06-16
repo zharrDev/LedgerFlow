@@ -248,7 +248,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
         <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
           Informasi Entry
         </h2>
-        <div className="grid grid-cols-[1fr_2fr] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-4">
           <div>
             <label className={labelCls}>
               Tanggal <Required />
@@ -301,30 +301,36 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
           </button>
         </div>
 
-        <div className="grid grid-cols-[5fr_4fr_2fr_2fr_auto] gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/30">
-          {["Akun", "Keterangan", "Debit (Rp)", "Kredit (Rp)", ""].map((h) => (
-            <span
-              key={h}
-              className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-            >
-              {h}
-            </span>
-          ))}
-        </div>
+        <div className="overflow-x-auto">
+          <div className="min-w-[780px]">
+            <div className="grid grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/30">
+              {["Akun", "Keterangan", "Debit (Rp)", "Kredit (Rp)", ""].map(
+                (h) => (
+                  <span
+                    key={h}
+                    className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                  >
+                    {h}
+                  </span>
+                ),
+              )}
+            </div>
 
-        <div className="divide-y divide-gray-50 dark:divide-gray-800/30">
-          {form.lines.map((line, idx) => (
-            <JournalLineRow
-              key={line.uid}
-              line={line}
-              index={idx}
-              accounts={accounts}
-              canRemove={form.lines.length > MIN_LINES}
-              onUpdate={updateLine}
-              onUpdateAccount={updateAccount}
-              onRemove={removeLine}
-            />
-          ))}
+            <div className="divide-y divide-gray-50 dark:divide-gray-800/30">
+              {form.lines.map((line, idx) => (
+                <JournalLineRow
+                  key={line.uid}
+                  line={line}
+                  index={idx}
+                  accounts={accounts}
+                  canRemove={form.lines.length > MIN_LINES}
+                  onUpdate={updateLine}
+                  onUpdateAccount={updateAccount}
+                  onRemove={removeLine}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         <BalanceFooter
@@ -518,7 +524,7 @@ function JournalLineRow({
   const hasCredit = parseFloat(line.credit) > 0;
 
   return (
-    <div className="grid grid-cols-[5fr_4fr_2fr_2fr_auto] gap-2 px-5 py-2 items-center group hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">
+    <div className="grid grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 items-center group hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-gray-400 dark:text-gray-600 w-4 shrink-0 tabular-nums font-medium">
           {index + 1}
@@ -566,7 +572,7 @@ function JournalLineRow({
           onClick={() => onRemove(line.uid)}
           disabled={!canRemove}
           title="Hapus baris"
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:pointer-events-none"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 disabled:pointer-events-none"
         >
           <IconTrash size={14} />
         </button>

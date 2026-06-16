@@ -79,30 +79,31 @@ export function JournalList({
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table
-              className="w-full border-collapse min-w-[760px]"
-              style={{ tableLayout: "fixed" }}
-            >
-              <colgroup>
-                <col style={{ width: "16%" }} />
-                <col style={{ width: "15%" }} />
-                <col style={{ width: "29%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "15%" }} />
-                <col style={{ width: "15%" }} />
-              </colgroup>
+            <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
-                  {HEADERS.map((h, i) => (
-                    <th
-                      key={h}
-                      className={`px-4 py-3 text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
-                        i >= 4 ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {HEADERS.map((h, i) => {
+                    const minW =
+                      h === "Nomor" || h === "Tanggal"
+                        ? "min-w-[120px]"
+                        : h === "Deskripsi"
+                          ? "min-w-[220px]"
+                          : h === "Status"
+                            ? "min-w-[110px]"
+                            : h === "Total Debit"
+                              ? "min-w-[160px]"
+                              : "min-w-[150px]";
+                    return (
+                      <th
+                        key={h}
+                        className={`px-4 py-3.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${minW} ${
+                          i >= 4 ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {h}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -207,10 +208,10 @@ function JournalRow({ entry, onView, onPost, onDelete }: JournalRowProps) {
           {entry.lines?.length ?? 0} baris
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 whitespace-nowrap">
         <StatusBadge status={entry.status} />
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3 text-right whitespace-nowrap">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">
           {formatIDR(entry.totalDebit)}
         </span>
