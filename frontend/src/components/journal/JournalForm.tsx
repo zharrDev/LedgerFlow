@@ -448,10 +448,10 @@ function AccountSelect({
       updatePosition();
       const handleScroll = () => setIsOpen(false);
       const handleResize = () => updatePosition();
-      window.addEventListener("scroll", handleScroll, true);
+      window.addEventListener("scroll", handleScroll);
       window.addEventListener("resize", handleResize);
       return () => {
-        window.removeEventListener("scroll", handleScroll, true);
+        window.removeEventListener("scroll", handleScroll);
         window.removeEventListener("resize", handleResize);
       };
     }
@@ -492,6 +492,7 @@ function AccountSelect({
           : {}
       }
       className="z-[9999] bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      onWheel={(e) => e.stopPropagation()}
     >
       {filtered.length === 0 ? (
         <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
