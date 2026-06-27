@@ -4,11 +4,10 @@ import { authMiddleware } from "../middleware/auth.js";
 
 const ledger = new Hono();
 
+// Semua endpoint ledger wajib login
 ledger.use("*", authMiddleware);
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** DB menyimpan 'DEBIT'/'CREDIT' (uppercase). Normalisasi ke "Debit"/"Credit". */
+// Helper: normalisasi nilai normal balance dari DB agar lebih enak dibaca di response
 function normalizeBalance(nb: string): "Debit" | "Credit" {
   return String(nb).toUpperCase() === "CREDIT" ? "Credit" : "Debit";
 }
@@ -28,6 +27,7 @@ const MONTH_NAMES_ID = [
   "Desember",
 ];
 
+// Helper: ubah year + month menjadi tanggal awal dan akhir bulan
 function monthRange(
   year: number,
   month: number,
@@ -39,13 +39,12 @@ function monthRange(
   return { start, end };
 }
 
-// ─── GET /api/ledger ──────────────────────────────────────────────────────────
-// Query: account_id (wajib), period_id (opsional) ATAU start_date + end_date
+// GET /api/ledger
+// Menampilkan buku besar per akun berdasarkan period_id atau range tanggal
 ledger.get("/", async (c) => {
   const { company_id } = c.get("user");
   const { account_id, period_id, start_date, end_date } = c.req.query();
 
-  // ── 1. Validasi param ───────────────────────────────────────────────────────
   if (!account_id) {
     return c.json({ error: "account_id wajib diisi" }, 400);
   }
@@ -56,8 +55,6 @@ ledger.get("/", async (c) => {
     );
   }
 
-  // ── 2. Ambil akun ────────────────────────────────────────────────────────────
-  // Cari berdasarkan id dulu (tanpa .single() agar tidak melempar saat 0/banyak).
   const { data: accountRows, error: accErr } = await supabase
     .from("accounts")
     .select("id, code, name, normal_balance, is_active, company_id")
@@ -76,14 +73,13 @@ ledger.get("/", async (c) => {
     );
   }
 
-  // Pastikan akun milik company yang sama (multi-tenant guard).
+  // Multi-tenant guard: akun harus milik company user login
   if (company_id && account.company_id && account.company_id !== company_id) {
     return c.json({ error: "Akun bukan milik perusahaan Anda" }, 403);
   }
 
   const normalBalance = normalizeBalance(account.normal_balance);
 
-  // ── 3. Resolusi rentang tanggal ─────────────────────────────────────────────
   let startDate = start_date as string;
   let endDate = end_date as string;
   let resolvedPeriod: {
@@ -94,6 +90,7 @@ ledger.get("/", async (c) => {
     isActive: boolean;
   } | null = null;
 
+  // Jika period_id dikirim, tentukan startDate dan endDate dari periode tersebut
   if (period_id) {
     const { data: period, error: perErr } = await supabase
       .from("periods")
@@ -124,8 +121,7 @@ ledger.get("/", async (c) => {
     );
   }
 
-  // ── 4. QUERY 1: entries posted milik company, tanggal <= endDate ─────────────
-  // Pendekatan 2-query (lebih andal daripada filter relasi embedded di Supabase).
+  // Query 1: ambil semua jurnal posted sampai endDate
   const { data: entries, error: entriesErr } = await supabase
     .from("journal_entries")
     .select("id, entry_date, entry_number, description")
@@ -141,7 +137,6 @@ ledger.get("/", async (c) => {
   const entryMap = new Map(entryList.map((e) => [e.id, e]));
   const entryIds = entryList.map((e) => e.id);
 
-  // Bila tidak ada entry posted sama sekali → tampilkan kosong (bukan error).
   let lineRows: Array<{
     id: string;
     journal_entry_id: string;
@@ -150,8 +145,8 @@ ledger.get("/", async (c) => {
     memo: string | null;
   }> = [];
 
+  // Query 2: ambil line jurnal untuk akun yang diminta
   if (entryIds.length > 0) {
-    // ── QUERY 2: lines utk akun ini yg journal_entry_id ∈ entryIds ────────────
     const { data: lines, error: linesErr } = await supabase
       .from("journal_entry_lines")
       .select("id, journal_entry_id, debit, credit, memo")
@@ -164,7 +159,7 @@ ledger.get("/", async (c) => {
     lineRows = (lines ?? []) as typeof lineRows;
   }
 
-  // ── 5. Pisahkan opening (< startDate) vs in-range ────────────────────────────
+  // Pisahkan saldo awal (< startDate) dan transaksi periode berjalan
   let openingDebit = 0;
   let openingCredit = 0;
   type Enriched = {
@@ -204,7 +199,7 @@ ledger.get("/", async (c) => {
       ? openingDebit - openingCredit
       : openingCredit - openingDebit;
 
-  // ── 6. Urutkan in-range (tanggal, lalu nomor jurnal, lalu id) ────────────────
+  // Urutkan transaksi agar running balance konsisten
   inRange.sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
     if (a.journalNumber !== b.journalNumber)
@@ -212,7 +207,7 @@ ledger.get("/", async (c) => {
     return a.id < b.id ? -1 : 1;
   });
 
-  // ── 7. Running balance + totals ─────────────────────────────────────────────
+  // Hitung running balance dan total debit/credit periode berjalan
   let running = openingBalance;
   let totalDebit = 0;
   let totalCredit = 0;
@@ -230,7 +225,6 @@ ledger.get("/", async (c) => {
       ? openingBalance + totalDebit - totalCredit
       : openingBalance + totalCredit - totalDebit;
 
-  // ── 8. Respond ──────────────────────────────────────────────────────────────
   return c.json({
     account: {
       id: account.id,

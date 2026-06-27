@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const reports = new Hono();
 
-// ─── Helpers ───────────────────────────────────────────────────────
+// Helper: membuat client Supabase khusus route laporan
 const getSupabase = () => {
   return createClient(
     process.env.SUPABASE_URL || "",
@@ -31,6 +31,7 @@ function formatPeriodName(year: number, month: number): string {
   return `${MONTH_NAMES_ID[month - 1] || month} ${year}`;
 }
 
+// Helper: mendeteksi apakah akun termasuk akun kas/bank
 function isCashAccount(code: string, name: string, type: string): boolean {
   if ((type || "").toUpperCase() !== "ASSET") return false;
   const haystack = `${code} ${name}`.toLowerCase();
@@ -39,9 +40,8 @@ function isCashAccount(code: string, name: string, type: string): boolean {
   );
 }
 
-// ════════════════════════════════════════════════════════════════════
 // INCOME STATEMENT
-// ════════════════════════════════════════════════════════════════════
+// Menghitung pendapatan, beban, dan laba bersih dari jurnal posted
 reports.get("/income-statement", async (c) => {
   const periodId = c.req.query("period_id");
   const companyId = c.req.query("company_id") || c.req.header("x-company-id");
@@ -138,9 +138,8 @@ reports.get("/income-statement", async (c) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
-// BALANCE SHEET — FIXED: Include Net Income (Laba Bersih) in Equity
-// ════════════════════════════════════════════════════════════════════
+// BALANCE SHEET
+// Menghitung aset, liabilitas, ekuitas, lalu memasukkan laba bersih ke equity
 reports.get("/balance-sheet", async (c) => {
   const periodId = c.req.query("period_id");
   const companyId = c.req.query("company_id") || c.req.header("x-company-id");
@@ -174,7 +173,6 @@ reports.get("/balance-sheet", async (c) => {
     let totalLiabilities = 0;
     let totalEquity = 0;
 
-    // ── Track Revenue & Expense untuk hitung Laba Bersih ──
     let totalRevenue = 0;
     let totalExpense = 0;
 
@@ -220,19 +218,15 @@ reports.get("/balance-sheet", async (c) => {
         equityMap[account.code].balance += balance;
         totalEquity += balance;
       } else if (accType === "REVENUE") {
-        // Revenue: normal balance CREDIT → credit - debit
         totalRevenue += credit - debit;
       } else if (accType === "EXPENSE") {
-        // Expense: normal balance DEBIT → debit - credit
         totalExpense += debit - credit;
       }
     }
 
-    // ── Hitung Laba Bersih dan tambahkan ke Ekuitas ──
     const netIncome = totalRevenue - totalExpense;
 
     if (Math.abs(netIncome) > 0.01) {
-      // Tambahkan sebagai item "Laba Bersih Periode Berjalan" di ekuitas
       equityMap["_net_income"] = {
         account_id: null,
         account_code: "",
@@ -246,7 +240,6 @@ reports.get("/balance-sheet", async (c) => {
       Object.values(m)
         .filter((a: any) => Math.abs(a.balance) > 0.01)
         .sort((a: any, b: any) => {
-          // "Laba Bersih" selalu di bawah
           if (a.account_code === "") return 1;
           if (b.account_code === "") return -1;
           return a.account_code.localeCompare(b.account_code);
@@ -269,9 +262,8 @@ reports.get("/balance-sheet", async (c) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
 // CASH FLOW (INDIRECT METHOD)
-// ════════════════════════════════════════════════════════════════════
+// Menghitung arus kas operasi, investasi, dan pendanaan
 reports.get("/cash-flow", async (c) => {
   const periodId = c.req.query("period_id");
   const companyId = c.req.query("company_id") || c.req.header("x-company-id");
@@ -343,6 +335,7 @@ reports.get("/cash-flow", async (c) => {
 
     let beginningCash = 0;
 
+    // Hitung kas awal dari periode-periode sebelum periode aktif
     if (beforePeriodIds.length > 0) {
       const { data: beforeLines } = await supabase
         .from("journal_entry_lines")
@@ -471,9 +464,8 @@ reports.get("/cash-flow", async (c) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
 // PERIODS
-// ════════════════════════════════════════════════════════════════════
+// Mengambil daftar periode milik company untuk filter laporan
 reports.get("/periods", async (c) => {
   const companyId = c.req.query("company_id") || c.req.header("x-company-id");
 

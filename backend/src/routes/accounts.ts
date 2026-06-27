@@ -4,8 +4,10 @@ import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const accounts = new Hono();
 
+// Semua endpoint accounts wajib user login
 accounts.use("*", authMiddleware);
 
+// Mapping tipe akun dari format frontend ke format enum database
 const TYPE_MAP: Record<string, string> = {
   asset: "ASSET",
   liability: "LIABILITY",
@@ -14,6 +16,7 @@ const TYPE_MAP: Record<string, string> = {
   expense: "EXPENSE",
 };
 
+// Mapping saldo normal akun berdasarkan jenis akun
 const BALANCE_MAP: Record<string, string> = {
   asset: "DEBIT",
   liability: "CREDIT",
@@ -21,7 +24,6 @@ const BALANCE_MAP: Record<string, string> = {
   revenue: "CREDIT",
   expense: "DEBIT",
 };
-
 
 accounts.get("/", async (c) => {
   const { company_id } = c.get("user");
@@ -41,10 +43,8 @@ accounts.get("/", async (c) => {
   return c.json(data);
 });
 
-// ---
-
-// # 🟢 POST ACCOUNT (FIXED)
-
+// POST ACCOUNT
+// Membuat akun baru dan otomatis menentukan normal balance dari type
 accounts.post("/", requireRole("admin", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
@@ -84,7 +84,7 @@ accounts.post("/", requireRole("admin", "owner"), async (c) => {
           hint: error.hint,
           code: error.code,
         },
-        500
+        500,
       );
     }
 
@@ -94,15 +94,13 @@ accounts.post("/", requireRole("admin", "owner"), async (c) => {
       {
         error: err instanceof Error ? err.message : "Unknown error",
       },
-      500
+      500,
     );
   }
 });
 
-// ---
-
-// # 🟡 PUT ACCOUNT (FIXED + SAFE)
-
+// PUT ACCOUNT
+// Update akun milik company yang sedang login
 accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
@@ -129,6 +127,7 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
       is_active: body.isActive,
     };
 
+    // Hapus field undefined agar tidak ikut diupdate
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined) delete updateData[key];
     });
@@ -140,7 +139,7 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
       .update(updateData)
       .eq("id", id)
       .eq("company_id", company_id)
-      .select(); // 🔥 jangan langsung single dulu
+      .select();
 
     console.log("SUPABASE RESPONSE:", { data, error });
 
@@ -178,10 +177,9 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
     );
   }
 });
-// ---
 
-// # 🔴 DELETE ACCOUNT (FIXED)
-
+// DELETE ACCOUNT
+// Soft delete: akun tidak dihapus permanen, hanya dinonaktifkan
 accounts.delete("/:id", requireRole("admin"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");

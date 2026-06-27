@@ -1,15 +1,21 @@
 import { createMiddleware } from "hono/factory";
 import { verifyToken, type JWTPayload } from "../lib/jwt.js";
 
+// Tambahkan typed variable 'user' ke context Hono agar bisa dipakai di route lain
+// Setelah authMiddleware sukses, c.get("user") akan berisi payload JWT user
+
 declare module "hono" {
   interface ContextVariableMap {
     user: JWTPayload;
   }
 }
 
+// Validasi format UUID untuk memastikan company_id di token benar
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Middleware utama autentikasi
+// Tugasnya: ambil Bearer token -> verifikasi JWT -> simpan user ke context
 export const authMiddleware = createMiddleware(async (c, next) => {
   const authHeader = c.req.header("Authorization");
 
@@ -17,10 +23,10 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const token = authHeader.slice(7);
+  const token = authHeader.slice(7); // ambil token tanpa prefix "Bearer "
 
   try {
-    const user = await verifyToken(token);
+    const user = await verifyToken(token); // verifikasi token JWT
 
     if (!user?.company_id) {
       return c.json(
@@ -38,18 +44,17 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       );
     }
 
-    c.set("user", user);
-    await next();
+    c.set("user", user); // simpan payload user ke context agar bisa dipakai endpoint berikutnya
+    await next(); // lanjut ke middleware/handler selanjutnya
   } catch (err) {
     console.error("JWT ERROR =", err);
 
-    return c.json(
-      { error: "Invalid or expired token" },
-      401,
-    );
+    return c.json({ error: "Invalid or expired token" }, 401);
   }
 });
 
+// Middleware role-based access control
+// Hanya user dengan role tertentu yang boleh mengakses endpoint
 export const requireRole = (...roles: JWTPayload["role"][]) =>
   createMiddleware(async (c, next) => {
     const user = c.get("user");

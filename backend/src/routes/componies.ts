@@ -3,14 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 
 const companies = new Hono();
 
+// Helper: membuat client Supabase untuk route companies
 const getSupabase = () => {
   return createClient(
     process.env.SUPABASE_URL || "",
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   );
 };
 
-// GET /api/companies/:id — get single company
+// GET /api/companies/:id — ambil satu company berdasarkan id
 companies.get("/:id", async (c) => {
   const id = c.req.param("id");
   const supabase = getSupabase();
@@ -28,7 +29,7 @@ companies.get("/:id", async (c) => {
   return c.json(data);
 });
 
-// GET /api/companies — list all companies (optional, admin use)
+// GET /api/companies — ambil daftar semua company
 companies.get("/", async (c) => {
   const supabase = getSupabase();
 

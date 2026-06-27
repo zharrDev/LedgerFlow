@@ -4,7 +4,7 @@ import { signToken } from "../lib/jwt.js";
 
 const auth = new Hono();
 
-// ─── Helper: ambil company name dari company_id ─────────────────────
+// Helper: ambil nama company dari company_id
 async function getCompanyName(companyId: string): Promise<string> {
   const { data } = await supabase
     .from("companies")
@@ -14,7 +14,9 @@ async function getCompanyName(companyId: string): Promise<string> {
   return data?.name || "";
 }
 
-// ─── POST /api/auth/register ────────────────────────────────────────
+// POST /api/auth/register
+// Alur: buat company -> buat auth user -> buat profil user -> kirim JWT
+
 auth.post("/register", async (c) => {
   try {
     const { email, password, name, company_name } = await c.req.json();
@@ -25,7 +27,6 @@ auth.post("/register", async (c) => {
       return c.json({ error: "All fields are required" }, 400);
     }
 
-    // STEP 1 - Create company
     const { data: company, error: companyError } = await supabase
       .from("companies")
       .insert({ name: company_name, currency: "IDR" })
@@ -39,7 +40,6 @@ auth.post("/register", async (c) => {
       );
     }
 
-    // STEP 2 - Create auth user
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
         email,
@@ -54,7 +54,6 @@ auth.post("/register", async (c) => {
       );
     }
 
-    // STEP 3 - Create user profile
     const { data: user, error: userError } = await supabase
       .from("users")
       .insert({
@@ -108,7 +107,9 @@ auth.post("/register", async (c) => {
   }
 });
 
-// ─── POST /api/auth/login ───────────────────────────────────────────
+// POST /api/auth/login
+// Login via Supabase Auth, lalu ambil profil aplikasi dan buat JWT internal
+
 auth.post("/login", async (c) => {
   const { email, password } = await c.req.json();
 
@@ -138,10 +139,8 @@ auth.post("/login", async (c) => {
     );
   }
 
-  // Ambil company name
   const companyName = await getCompanyName(user.company_id);
 
-  // Ambil avatar_url dari auth.users.user_metadata
   const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
   const avatarUrl = authUserData?.user?.user_metadata?.avatar_url || null;
 
@@ -166,8 +165,10 @@ auth.post("/login", async (c) => {
   });
 });
 
-// ─── POST /api/auth/exchange-token ──────────────────────────────────
-// FIXED: Kalau user belum register → TOLAK, jangan auto-create
+// POST /api/auth/exchange-token
+// Menukar token Supabase/OAuth menjadi JWT internal aplikasi
+// User yang belum punya profil di tabel users akan ditolak
+
 auth.post("/exchange-token", async (c) => {
   try {
     const { supabase_token } = await c.req.json();
@@ -194,19 +195,15 @@ auth.post("/exchange-token", async (c) => {
 
     console.log("EXCHANGE TOKEN - OAuth user:", { email, name });
 
-    // Cek apakah user sudah register di tabel users
     const { data: user, error: profileError } = await supabase
       .from("users")
       .select("*")
       .eq("id", authUser.id)
       .single();
 
-    // ── FIXED: User belum register → TOLAK ──
     if (profileError?.code === "PGRST116" || !user) {
       console.log("USER NOT FOUND — rejecting login, must register first");
 
-      // Hapus auth user dari Supabase agar tidak menggantung
-      // (opsional, biar user bisa register ulang dengan email yang sama)
       await supabase.auth.admin.deleteUser(authUser.id);
 
       return c.json(
@@ -222,7 +219,6 @@ auth.post("/exchange-token", async (c) => {
       return c.json({ error: profileError.message }, 500);
     }
 
-    // Ambil company name
     const companyName = await getCompanyName(user.company_id);
 
     const token = await signToken({
@@ -234,7 +230,6 @@ auth.post("/exchange-token", async (c) => {
 
     console.log("EXCHANGE TOKEN SUCCESS");
 
-    // Ambil avatar_url dari auth.users.user_metadata
     const { data: authUserData } = await supabase.auth.admin.getUserById(
       user.id,
     );

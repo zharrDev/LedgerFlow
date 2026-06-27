@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const periods = new Hono();
 
+// Helper: membuat client Supabase khusus route periods
 const getSupabase = () => {
   return createClient(
     process.env.SUPABASE_URL!,
@@ -11,14 +12,14 @@ const getSupabase = () => {
   );
 };
 
-// 1. GET ALL PERIODS — FIX: company_id sekarang optional
+// GET ALL PERIODS
+// company_id opsional: jika dikirim, hanya ambil periode milik company tersebut
 periods.get("/", async (c) => {
   const companyId = c.req.query("company_id");
   const supabase = getSupabase();
 
   let query = supabase.from("periods").select("*");
 
-  // Hanya filter kalau company_id dikirim
   if (companyId) {
     query = query.eq("company_id", companyId);
   }
@@ -31,12 +32,12 @@ periods.get("/", async (c) => {
   return c.json(data ?? []);
 });
 
-// 2. OPEN NEW PERIOD (POST)
+// OPEN NEW PERIOD (POST)
+// Membuat periode baru jika kombinasi company + year + month belum ada
 periods.post("/", async (c) => {
   const { company_id, year, month } = await c.req.json();
   const supabase = getSupabase();
 
-  // Validasi: Cek apakah periode sudah ada
   const { data: existing } = await supabase
     .from("periods")
     .select("id")
@@ -55,7 +56,8 @@ periods.post("/", async (c) => {
   return c.json(data, 201);
 });
 
-// 3. CLOSE PERIOD (PATCH)
+// CLOSE PERIOD (PATCH)
+// Menutup periode agar tidak bisa dipakai input transaksi lagi
 periods.patch("/:id/close", async (c) => {
   const id = c.req.param("id");
   const supabase = getSupabase();

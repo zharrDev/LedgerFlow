@@ -4,6 +4,7 @@ import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const journal = new Hono();
 
+// Semua endpoint journal wajib login
 journal.use("*", authMiddleware);
 
 // GET /api/journal — list entries
@@ -40,7 +41,7 @@ journal.get("/", async (c) => {
   return c.json(data);
 });
 
-// GET /api/journal/:id
+// GET /api/journal/:id — ambil detail satu jurnal
 journal.get("/:id", async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
@@ -71,7 +72,8 @@ journal.get("/:id", async (c) => {
   return c.json(data);
 });
 
-// POST /api/journal — create draft entry
+// POST /api/journal
+// Membuat jurnal baru dengan validasi periode dan double-entry
 journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   const { company_id, sub: created_by } = c.get("user");
   const body = await c.req.json();
@@ -83,7 +85,7 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
     status: requestedStatus,
   } = body;
 
-  // 1. Auto-detect period dari entry_date kalau period_id gak dikirim
+  // Auto-detect period dari entry_date jika period_id tidak dikirim
   let actualPeriodId = period_id;
 
   if (!actualPeriodId && entry_date) {
@@ -101,7 +103,7 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
     }
   }
 
-  // 2. VALIDASI: Cek apakah periode ada dan masih terbuka
+  // Validasi periode: harus ada dan belum ditutup
   const { data: period } = await supabase
     .from("periods")
     .select("status")
@@ -126,12 +128,11 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
     );
   }
 
-  // 3. Validasi lines exist
   if (!lines || lines.length < 2) {
     return c.json({ error: "Minimal 2 baris required (debit + kredit)" }, 400);
   }
 
-  // 4. Validate double-entry balance
+  // Validasi double-entry: total debit harus sama dengan total kredit
   const totalDebit = lines.reduce(
     (s: number, l: any) => s + (Number(l.debit) || 0),
     0,
@@ -150,7 +151,7 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
     );
   }
 
-  // 5. Generate entry number
+  // Generate nomor jurnal otomatis per bulan
   const now = new Date();
   const prefix = `JE-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
   const { data: last } = await supabase
@@ -169,7 +170,6 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   }
   const entry_number = `${prefix}-${String(nextNumber).padStart(4, "0")}`;
 
-  // 6. Insert entry
   const { data: entry, error: entryError } = await supabase
     .from("journal_entries")
     .insert({
@@ -186,7 +186,7 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
 
   if (entryError) return c.json({ error: entryError.message }, 500);
 
-  // 7. Map Accounts
+  // Ubah accountCode dari frontend menjadi account_id dari database
   const accountCodes = lines.map((l: any) => l.accountCode);
   const { data: accounts } = await supabase
     .from("accounts")
@@ -196,7 +196,6 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
 
   const accountMap = new Map(accounts?.map((a) => [a.code, a.id]));
 
-  // 8. Insert Lines
   const linesData = lines.map((l: any) => ({
     journal_entry_id: entry.id,
     account_id: accountMap.get(l.accountCode),
@@ -213,12 +212,12 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   return c.json(entry, 201);
 });
 
-// POST /api/journal/:id/post — ubah status draft → posted
+// POST /api/journal/:id/post
+// Mengubah jurnal draft menjadi posted jika periodenya masih open
 journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
 
-  // Check period status via join
   const { data: entry, error: fetchError } = await supabase
     .from("journal_entries")
     .select("*, periods(status)")
@@ -231,7 +230,6 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
   if (entry.status === "posted")
     return c.json({ error: "Entry sudah diposting" }, 400);
 
-  // Cek status periode
   const periodStatus = (entry.periods as any)?.status;
   if (periodStatus === "closed") {
     return c.json(
@@ -256,6 +254,7 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
 });
 
 // DELETE /api/journal/:id
+// Hapus jurnal hanya jika periodenya belum ditutup
 journal.delete("/:id", authMiddleware, async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");

@@ -3,11 +3,11 @@ import { supabase } from "../lib/supabase.js";
 
 const users = new Hono();
 
-// ─── GET /api/users/:id — get user profile ──────────────────────────
+// GET /api/users/:id
+// Ambil profil user beserta avatar dan nama company
 users.get("/:id", async (c) => {
   const id = c.req.param("id");
 
-  // 1. Get public users table data
   const { data, error } = await supabase
     .from("users")
     .select("id, name, email, role, company_id, created_at")
@@ -19,14 +19,12 @@ users.get("/:id", async (c) => {
     return c.json({ error: error.message }, 404);
   }
 
-  // 2. Get avatar_url from auth.users.user_metadata (recommended Supabase pattern)
   let avatarUrl: string | null = null;
   const { data: authUser } = await supabase.auth.admin.getUserById(id);
   if (authUser?.user?.user_metadata?.avatar_url) {
     avatarUrl = authUser.user.user_metadata.avatar_url;
   }
 
-  // 3. Ambil company name
   const { data: company } = await supabase
     .from("companies")
     .select("name")
@@ -40,12 +38,12 @@ users.get("/:id", async (c) => {
   });
 });
 
-// ─── PUT /api/users/:id — update user profile ───────────────────────
+// PUT /api/users/:id
+// Update profil publik user dan avatar metadata di Supabase Auth
 users.put("/:id", async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
 
-  // 1. Update public users table (name, etc.)
   const publicUpdates: Record<string, any> = {};
   if (body.name !== undefined) publicUpdates.name = body.name;
 
@@ -61,12 +59,10 @@ users.put("/:id", async (c) => {
     }
   }
 
-  // 2. Update avatar_url in auth.users.user_metadata
   let avatarUrl: string | null = null;
   if (body.avatar_url !== undefined) {
     avatarUrl = body.avatar_url;
 
-    // Get current user_metadata first to preserve other fields
     const { data: authUser } = await supabase.auth.admin.getUserById(id);
     const currentMetadata = authUser?.user?.user_metadata || {};
 
@@ -79,17 +75,15 @@ users.put("/:id", async (c) => {
 
     if (metaErr) {
       console.error("[Users] PUT metadata error:", metaErr);
-      // Don't fail the whole request - avatar is non-critical
+      // Avatar dianggap non-kritis, jadi request utama tetap dilanjutkan
     }
   } else {
-    // Read existing avatar from metadata if not updating
     const { data: authUser } = await supabase.auth.admin.getUserById(id);
     if (authUser?.user?.user_metadata?.avatar_url) {
       avatarUrl = authUser.user.user_metadata.avatar_url;
     }
   }
 
-  // 3. Get fresh public data
   const { data: freshData, error: freshErr } = await supabase
     .from("users")
     .select("id, name, email, role, company_id")
@@ -101,7 +95,6 @@ users.put("/:id", async (c) => {
     return c.json({ error: freshErr.message }, 500);
   }
 
-  // 4. Ambil company name
   const { data: company } = await supabase
     .from("companies")
     .select("name")

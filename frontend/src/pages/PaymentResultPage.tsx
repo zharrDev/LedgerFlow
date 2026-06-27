@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   Clock,
@@ -18,8 +18,12 @@ import {
   Home,
   FileText,
   RefreshCw,
+  Zap,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import logo from "../assets/ledgerflow.png";
+import { testComplete, isSandboxMode } from "../services/paymentService";
 
 type ResultType = "success" | "pending" | "failed";
 
@@ -69,9 +73,40 @@ interface PaymentResultPageProps {
 
 export default function PaymentResultPage({ type }: PaymentResultPageProps) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const orderId = searchParams.get("order_id");
   const config = RESULT_CONFIG[type];
   const Icon = config.icon;
+
+  // ─── Sandbox mode state ────────────────────────────────────────────
+  const [isSandbox, setIsSandbox] = useState(false);
+  const [isForceCompleting, setIsForceCompleting] = useState(false);
+  const [forceCompleteError, setForceCompleteError] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    isSandboxMode()
+      .then(setIsSandbox)
+      .catch(() => setIsSandbox(false));
+  }, []);
+
+  const handleForceComplete = async () => {
+    if (!orderId) return;
+    setIsForceCompleting(true);
+    setForceCompleteError(null);
+    try {
+      await testComplete(orderId);
+      // Success! Navigate to success page
+      navigate("/payment/success?order_id=" + orderId);
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.error || "Gagal force-complete pembayaran";
+      setForceCompleteError(msg);
+    } finally {
+      setIsForceCompleting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-gray-900 flex items-center justify-center px-4 sm:px-6 py-12">
@@ -133,6 +168,48 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
             <p className="text-sm font-mono font-medium text-gray-700 dark:text-gray-300">
               {orderId}
             </p>
+          </motion.div>
+        )}
+
+        {/* ═══ Sandbox Mode: Force Complete Button ═══ */}
+        {type === "pending" && isSandbox && orderId && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="mt-4 p-4 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-600/50 bg-amber-50/50 dark:bg-amber-900/10"
+          >
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <AlertTriangle size={16} className="text-amber-500" />
+              <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                Mode Sandbox / Test
+              </span>
+            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400/80 mb-3">
+              Pembayaran via VA/Bank Transfer di sandbox akan tetap pending.
+              Klik tombol di bawah untuk simulasi pembayaran berhasil agar bisa
+              langsung nyoba fitur Pro.
+            </p>
+            <button
+              onClick={handleForceComplete}
+              disabled={isForceCompleting}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold text-sm shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isForceCompleting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <Zap size={16} />
+                  Simulasi Bayar Berhasil
+                </>
+              )}
+            </button>
+            {forceCompleteError && (
+              <p className="mt-2 text-xs text-red-500">{forceCompleteError}</p>
+            )}
           </motion.div>
         )}
 
