@@ -193,3 +193,190 @@ BEGIN
   RETURN false;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+
+-- Enable UUID
+create extension if not exists "uuid-ossp";
+
+-- Companies
+create table companies (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  code text,
+  currency text not null default 'IDR',
+  created_at timestamptz default now()
+);
+
+-- Users
+create table users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  company_id uuid not null references companies(id) on delete cascade,
+  email text not null unique,
+  name text not null,
+  role text not null check (role in ('admin', 'akuntan', 'owner')),
+  created_at timestamptz default now()
+);
+
+-- Accounts (Chart of Accounts)
+create table accounts (
+  id uuid primary key default uuid_generate_v4(),
+  company_id uuid not null references companies(id) on delete cascade,
+  code text not null,
+  name text not null,
+  type text not null check (type in ('ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE')),
+  normal_balance text not null check (normal_balance in ('DEBIT', 'CREDIT')),
+  parent_id uuid references accounts(id),
+  is_active boolean default true,
+  unique(company_id, code)
+);
+
+select * from accounts;
+
+-- Periods
+create table periods (
+  id uuid primary key default uuid_generate_v4(),
+  company_id uuid not null references companies(id) on delete cascade,
+  year integer not null,
+  month integer not null check (month between 1 and 12),
+  status text not null default 'open' check (status in ('open', 'closed')),
+  closed_at timestamptz,
+  unique(company_id, year, month)
+);
+
+-- Journal Entries
+create table journal_entries (
+  id uuid primary key default uuid_generate_v4(),
+  company_id uuid not null references companies(id) on delete cascade,
+  period_id uuid references periods(id),
+  created_by uuid references users(id),
+  entry_number text not null,
+  entry_date date not null,
+  description text,
+  status text not null default 'draft' check (status in ('draft', 'posted')),
+  created_at timestamptz default now(),
+  unique(company_id, entry_number)
+);
+
+-- Journal Entry Lines
+create table journal_entry_lines (
+  id uuid primary key default uuid_generate_v4(),
+  journal_entry_id uuid not null references journal_entries(id) on delete cascade,
+  account_id uuid not null references accounts(id),
+  debit numeric(18,2) not null default 0,
+  credit numeric(18,2) not null default 0,
+  memo text,
+  check (debit >= 0 and credit >= 0),
+  check (debit = 0 or credit = 0)
+);
+
+GRANT ALL PRIVILEGES
+ON TABLE public.companies TO service_role;
+
+GRANT ALL PRIVILEGES
+ON TABLE public.users TO service_role;
+
+GRANT ALL PRIVILEGES
+ON TABLE public.accounts TO service_role;
+
+GRANT ALL PRIVILEGES
+ON TABLE public.periods TO service_role;
+
+GRANT ALL PRIVILEGES
+ON TABLE public.journal_entries TO service_role;
+
+GRANT ALL PRIVILEGES
+ON TABLE public.journal_entry_lines TO service_role;
+
+GRANT SELECT ON public.users TO authenticated;
+GRANT SELECT ON public.companies TO authenticated;
+GRANT SELECT ON public.accounts TO authenticated;
+GRANT SELECT ON public.periods TO authenticated;
+GRANT SELECT ON public.journal_entries TO authenticated;
+GRANT SELECT ON public.journal_entry_lines TO authenticated;
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own profile"
+ON users
+FOR SELECT
+TO authenticated
+USING (auth.uid() = id);
+
+SELECT grantee, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_name = 'accounts';
+
+select *
+from accounts
+order by code;
+
+ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow select for same company"
+ON public.accounts
+FOR SELECT
+USING (
+  company_id = (auth.jwt() ->> 'company_id')::uuid
+);
+
+CREATE POLICY "Allow insert for same company"
+ON public.accounts
+FOR INSERT
+WITH CHECK (
+  company_id = (auth.jwt() ->> 'company_id')::uuid
+);
+
+CREATE POLICY "Allow update for same company"
+ON public.accounts
+FOR UPDATE
+USING (
+  company_id = (auth.jwt() ->> 'company_id')::uuid
+)
+WITH CHECK (
+  company_id = (auth.jwt() ->> 'company_id')::uuid
+);
+
+CREATE POLICY "Allow delete for same company"
+ON public.accounts
+FOR DELETE
+USING (
+  company_id = (auth.jwt() ->> 'company_id')::uuid
+);
+
+GRANT SELECT ON TABLE public.accounts TO authenticated;
+GRANT INSERT ON TABLE public.accounts TO authenticated;
+GRANT UPDATE ON TABLE public.accounts TO authenticated;
+GRANT DELETE ON TABLE public.accounts TO authenticated;
+
+ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE accounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.accounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.companies DISABLE ROW LEVEL SECURITY;
+
+select * from accounts
+where id = '5b4d7135-7a90-4884-9a91-1a8b9559f5ae'
+and company_id = '01692504-0d3f-4212-bd61-b2351150109a';
+
+select code, name
+from accounts
+order by code;
+
+create table journal_counters (
+  company_id uuid,
+  year_month text,
+  last_number int default 0,
+  primary key (company_id, year_month)
+);
+
+ALTER TABLE periods DISABLE ROW LEVEL SECURITY;
+
+-- Jika ingin datanya bisa dibaca siapa saja yang punya anon key
+CREATE POLICY "Allow select for all" ON "public"."periods"
+AS PERMISSIVE FOR SELECT
+TO anon
+USING (true);
+
+DROP POLICY "Allow select for all" ON periods;
