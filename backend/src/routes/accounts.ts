@@ -27,20 +27,36 @@ const BALANCE_MAP: Record<string, string> = {
 
 accounts.get("/", async (c) => {
   const { company_id } = c.get("user");
+  const { search, status, type, sort, page, limit } = c.req.query();
 
-  console.log("GET COMPANY_ID:", company_id);
-
-  const { data, error } = await supabase
+  let query = supabase
     .from("accounts")
-    .select("*")
-    .eq("company_id", company_id)
-    .order("code", { ascending: true });
+    .select("*", { count: "exact" })
+    .eq("company_id", company_id);
+
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+  }
+  if (status === "active") query = query.eq("is_active", true);
+  else if (status === "inactive") query = query.eq("is_active", false);
+  if (type) query = query.eq("type", TYPE_MAP[type] || type);
+
+  const sortField = sort?.startsWith("-") ? sort.slice(1) : sort || "code";
+  const sortDir = sort?.startsWith("-") ? "desc" as const : "asc" as const;
+  query = query.order(sortField, { ascending: sortDir === "asc" });
+
+  const pageNum = Math.max(1, parseInt(page || "1"));
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "50")));
+  const offset = (pageNum - 1) * limitNum;
+  query = query.range(offset, offset + limitNum - 1);
+
+  const { data, error, count } = await query;
 
   if (error) {
     return c.json({ error: error.message }, 500);
   }
 
-  return c.json(data);
+  return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
 // POST ACCOUNT

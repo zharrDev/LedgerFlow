@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Settings,
   User,
+  Users,
   Building2,
   ChevronRight,
   CreditCard,
@@ -29,6 +30,7 @@ const navItems = [
   { label: "Neraca", href: "/balance-sheet", icon: Wallet },
   { label: "Arus Kas", href: "/cash-flow", icon: Activity },
   { label: "Periode", href: "/period-management", icon: Calendar },
+  { label: "User Management", href: "/users-management", icon: Users },
 ];
 
 const bottomItems = [

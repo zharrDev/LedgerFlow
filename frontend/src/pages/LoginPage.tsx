@@ -206,6 +206,14 @@ export default function LoginPage() {
               >
                 {loading ? "Signing in..." : "Sign In"}
               </button>
+              <div className="text-center">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                >
+                  Lupa Password?
+                </Link>
+              </div>
             </form>
             {/* Divider */}
             <div className="mt-6 flex items-center">

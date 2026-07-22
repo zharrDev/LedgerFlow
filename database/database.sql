@@ -381,3 +381,14 @@ TO anon
 USING (true);
 
 DROP POLICY "Allow select for all" ON periods;
+
+-- ─── 9. PASSWORD RESETS TABLE ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL UNIQUE,
+  used       BOOLEAN NOT NULL DEFAULT false,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);

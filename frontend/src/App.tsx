@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -25,7 +26,13 @@ import SettingsPage from "./pages/SettingsPage";
 import HelpCenterPage from "./pages/HelpCenterPage";
 import PricingPage from "./pages/PricingPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
-import { ProtectedFeature } from "./components/ProtectedFeature"; // ← BARU
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import ErrorPage from "./pages/ErrorPage";
+import { ProtectedFeature } from "./components/ProtectedFeature";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +43,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Route Guards ────────────────────────────────────────────────────
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
 
@@ -73,7 +79,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ─── Theme Initializer ───────────────────────────────────────────────
 function ThemeInitializer() {
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") || "system";
@@ -105,9 +110,19 @@ function ThemeInitializer() {
   return null;
 }
 
-// ─── AnimatedRoutes ──────────────────────────────────────────────────
 function AnimatedRoutes() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+    const onboarded = localStorage.getItem(`onboarded_${user.id}`);
+    if (!onboarded && location.pathname !== "/onboarding") {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [user, loading, location.pathname]);
 
   return (
     <Routes location={location}>
@@ -129,8 +144,25 @@ function AnimatedRoutes() {
         }
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+      />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-      {/* Protected Routes — BEBAS DIAKSES (semua plan) */}
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/dashboard"
         element={
@@ -195,8 +227,15 @@ function AnimatedRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/users-management"
+        element={
+          <ProtectedRoute>
+            <UserManagementPage />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Protected Routes — FITUR PREMIUM (butuh Pro/Enterprise) */}
       <Route
         path="/income-statement"
         element={
@@ -228,27 +267,17 @@ function AnimatedRoutes() {
         }
       />
 
-      {/* Payment Routes — bisa diakses semua user */}
       <Route path="/pricing" element={<PricingPage />} />
-      <Route
-        path="/payment/success"
-        element={<PaymentResultPage type="success" />}
-      />
-      <Route
-        path="/payment/pending"
-        element={<PaymentResultPage type="pending" />}
-      />
-      <Route
-        path="/payment/failed"
-        element={<PaymentResultPage type="failed" />}
-      />
+      <Route path="/payment/success" element={<PaymentResultPage type="success" />} />
+      <Route path="/payment/pending" element={<PaymentResultPage type="pending" />} />
+      <Route path="/payment/failed" element={<PaymentResultPage type="failed" />} />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/error/:code" element={<ErrorPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
 
-// ─── App Root ────────────────────────────────────────────────────────
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>

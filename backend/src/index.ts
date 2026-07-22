@@ -15,6 +15,8 @@ import reports from "./routes/reports.js";
 import users from "./routes/users.js";
 import payments from "./routes/payments.js";
 import companiesRoutes from "./routes/companies.js";
+import passwordResetRoutes from "./routes/password-reset.js";
+import userMgmtRoutes from "./routes/user-management.js";
 
 const app = new Hono();
 
@@ -53,7 +55,9 @@ app.route("/api/periods", periods);
 app.route("/api/reports", reports);
 app.route("/api/users", users);
 app.route("/api/companies", companiesRoutes);
-app.route("/api/payments", payments);          // ← TAMBAH INI
+app.route("/api/payments", payments);
+app.route("/api/auth", passwordResetRoutes);
+app.route("/api/users-management", userMgmtRoutes);
 
 // 404 fallback
 app.notFound((c) => c.json({ error: "Route not found" }, 404));

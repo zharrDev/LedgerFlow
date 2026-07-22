@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("lastPath");
+    Object.keys(localStorage).forEach(key => { if (key.startsWith("onboarded_")) localStorage.removeItem(key); });
 
     // Juga logout dari Supabase session
     supabase.auth.signOut();
