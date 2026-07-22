@@ -26,6 +26,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!email.trim()) { setError("Email wajib diisi."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Format email tidak valid."); return; }
+    if (!password) { setError("Password wajib diisi."); return; }
+
     setLoading(true);
     try {
       const res = await api.post("/api/auth/login", { email, password });

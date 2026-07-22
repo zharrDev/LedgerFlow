@@ -215,6 +215,7 @@ create table users (
   email text not null unique,
   name text not null,
   role text not null check (role in ('admin', 'akuntan', 'owner')),
+  avatar_url text,
   created_at timestamptz default now()
 );
 

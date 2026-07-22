@@ -1,6 +1,7 @@
 // routes/periods.ts
 import { Hono } from "hono";
 import { createClient } from "@supabase/supabase-js";
+import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const periods = new Hono();
 
@@ -34,7 +35,7 @@ periods.get("/", async (c) => {
 
 // OPEN NEW PERIOD (POST)
 // Membuat periode baru jika kombinasi company + year + month belum ada
-periods.post("/", async (c) => {
+periods.post("/", authMiddleware, requireRole("admin", "owner"), async (c) => {
   const { company_id, year, month } = await c.req.json();
   const supabase = getSupabase();
 
@@ -58,7 +59,7 @@ periods.post("/", async (c) => {
 
 // CLOSE PERIOD (PATCH)
 // Menutup periode agar tidak bisa dipakai input transaksi lagi
-periods.patch("/:id/close", async (c) => {
+periods.patch("/:id/close", authMiddleware, requireRole("admin", "owner"), async (c) => {
   const id = c.req.param("id");
   const supabase = getSupabase();
 

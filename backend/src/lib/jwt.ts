@@ -1,8 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
 
-// Debug: cek apakah JWT secret sudah terbaca dari environment
-console.log("JWT_SECRET =", process.env.JWT_SECRET);
-
 const secret = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "fallback-secret-change-in-production",
 );

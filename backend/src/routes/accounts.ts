@@ -45,7 +45,7 @@ accounts.get("/", async (c) => {
 
 // POST ACCOUNT
 // Membuat akun baru dan otomatis menentukan normal balance dari type
-accounts.post("/", requireRole("admin", "owner"), async (c) => {
+accounts.post("/", requireRole("admin", "akuntan", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
     const body = await c.req.json();

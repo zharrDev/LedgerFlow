@@ -294,7 +294,7 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
 });
 
 // DELETE /api/journal/:id
-journal.delete("/:id", authMiddleware, async (c) => {
+journal.delete("/:id", requireRole("admin", "owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
 

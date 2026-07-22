@@ -6,6 +6,7 @@
 
 ## Daftar Isi
 
+- [✅ Checklist Kepatuhan Ketentuan Projekan S1](#-checklist-kepatuhan-ketentuan-projekan-s1)
 - [Tech Stack](#tech-stack)
 - [Arsitektur Aplikasi](#arsitektur-aplikasi)
 - [Struktur Proyek](#struktur-proyek)
@@ -15,6 +16,71 @@
 - [API Endpoints](#api-endpoints)
 - [Cara Menjalankan](#cara-menjalankan)
 - [Fitur Detail](#fitur-detail)
+- [Akun Demo](#akun-demo)
+- [Dokumentasi Perancangan Sistem (Flowchart)](#dokumentasi-perancangan-sistem-flowchart)
+
+---
+
+## ✅ Checklist Kepatuhan Ketentuan Projekan S1
+
+> Legend: ✅ Sudah sesuai · ⚠️ Sebagian / perlu dicek ulang · ❌ Belum ada, wajib dikerjakan.
+> Update status ini setiap kali kamu menambal salah satu poin.
+
+### FRONTEND
+
+| # | Ketentuan | Status | Catatan / TODO |
+|---|---|---|---|
+| 1 | Responsive layout (mobile/tablet/desktop) | ⚠️ | Belum diverifikasi tiap halaman utama bebas overflow di 3 breakpoint |
+| 2 | Auth flow: Login, Register, Logout, **Forgot Password**, **Reset Password** | ❌ | Hanya Login, Register, Google OAuth. **Forgot/Reset Password belum ada halaman & route-nya** |
+| 2a | JWT disimpan di Local Storage/Cookie | ⚠️ | Perlu dipastikan & didokumentasikan cara penyimpanannya |
+| 3 | Routing: Public, Private, **Role Route**, redirect jika tanpa akses | ⚠️ | Baru ada `ProtectedRoute`/`PublicRoute`. **Role-based route & redirect "no access" belum eksplisit** |
+| 4 | Dashboard real-time (card summary, total data, statistik, aktivitas terbaru) | ✅ | `useDashboardData` + `DashboardPage` |
+| 5 | CRUD Interface lengkap (List/Detail/Tambah/Edit/Hapus) per data utama | ⚠️ | Chart of Accounts & Journal sudah ada sebagian besar, tapi **halaman Detail & Edit belum lengkap di semua modul** |
+| 6 | Search, Filter (status/kategori/tanggal), Sorting (terbaru/terlama/A-Z/Z-A), bisa dipakai bersamaan | ❌ | **Belum terlihat implementasinya di UI manapun** |
+| 7 | Pagination (prev/next/nomor halaman/jumlah data/items-per-page) | ⚠️ | `usePagination` & `TablePagination` sudah dibuat, **pastikan sudah dipasang di semua list, termasuk pilihan jumlah data per halaman** |
+| 8 | Upload file (gambar/PDF) | ❌ | **Belum ada fitur upload sama sekali** |
+| 9 | Form validation realtime (required, min/max karakter, email, no. telp, konfirmasi password) | ❌ | **Belum terdokumentasi/diimplementasikan** |
+| 10 | Notification (success/error/warning/info) via Toast | ✅ | `ToastContext` + `ToastContainer` |
+| 11 | Halaman error 401/403/404/500 + fallback API gagal | ❌ | **Belum ada halaman error khusus** |
+
+### BACKEND
+
+| # | Ketentuan | Status | Catatan / TODO |
+|---|---|---|---|
+| 1 | REST API standar (GET/POST/PUT/PATCH/DELETE) + status code sesuai | ⚠️ | Kombinasi method belum konsisten di semua modul (lihat poin 4) |
+| 2 | Register, Login, **Logout**, Refresh Token (opsional), **Forgot Password**, **Reset Password** | ❌ | **Logout, Forgot Password, Reset Password belum ada endpoint** |
+| 3 | RBAC minimal 2 role, hak akses beda | ✅ | admin/akuntan/owner via `requireRole` |
+| 4 | CRUD lengkap (C/R/U/D) di minimal 6 entitas utama, tidak boleh dummy | ⚠️ | `accounts` sudah full CRUD. **`journal` belum ada UPDATE (PUT)**, **`periods` belum ada DELETE**, `ledger` sifatnya read-only (bukan entitas CRUD) |
+| 5 | Server-side validation (required/email/unique/min/max/enum/numeric/date), error JSON | ❌ | **Belum terdokumentasi apakah sudah diterapkan di semua endpoint POST/PUT** |
+| 6 | Upload file (gambar/PDF) di backend | ❌ | **Belum ada** |
+| 7 | Global error handling 400/401/403/404/422/500, format response konsisten | ❌ | **Belum terdokumentasi** |
+| 8 | DB relationship: 6 tabel utama, 5 relasi, wajib ada 1:1, 1:M, M:1, **M:M** | ⚠️ | 1:1 (`subscriptions.user_id` unique), 1:M & M:1 sudah banyak. **Belum ada relasi Many-to-Many (butuh tabel junction)** |
+| 9 | Soft delete minimal 2 tabel | ⚠️ | Baru `accounts` (`is_active`). **Perlu 1 tabel lagi, mis. `journal_entries` pakai `deleted_at`** |
+| 10 | API Documentation (Swagger/OpenAPI/Postman Collection) | ❌ | **Belum ada sama sekali** |
+| 11 | Security: Password Hashing, JWT, CORS, Request Validation, SQL Injection Prevention, (XSS = nilai tambah) | ⚠️ | JWT ✅, CORS disebut ✅. **Password hashing belum eksplisit didokumentasikan**, request validation & SQL injection prevention perlu dipastikan |
+| 12 | Search, Filter, Sorting, Pagination di endpoint list (`?search=&status=&sort=&page=`) | ❌ | Endpoint saat ini baru filter dasar (`period_id`, `status`), **belum ada search/sort/pagination query param yang konsisten** |
+
+### DATABASE
+
+| # | Ketentuan | Status | Catatan / TODO |
+|---|---|---|---|
+| 1 | Minimal 6 tabel utama | ✅ | 9 tabel (`companies`, `users`, `accounts`, `periods`, `journal_entries`, `journal_entry_lines`, `plans`, `subscriptions`, `payments`) |
+| 2 | Minimal 5 relasi antar tabel | ✅ | Terpenuhi |
+| 3 | Primary Key & Foreign Key | ✅ | Terpenuhi |
+| 4 | Normalisasi minimal 3NF | ✅ | Struktur sudah cukup ternormalisasi |
+| 5 | Timestamp `created_at` & `updated_at` di **setiap** tabel utama | ❌ | **`accounts`, `periods`, `journal_entries`, `journal_entry_lines` belum punya `created_at`+`updated_at` lengkap** — hanya sebagian tabel (`subscriptions`, `payments`, `plans`) yang lengkap |
+| 6 | Soft delete minimal 2 tabel | ⚠️ | Sama seperti poin backend #9, baru 1 tabel (`accounts`) |
+| 7 | Seed data minimal 20 data/tabel utama | ❌ | **Belum ada seed data sama sekali** (hanya `plans` diisi 3 baris default) |
+
+### TATA CARA PENGUMPULAN
+
+| # | Ketentuan | Status | Catatan / TODO |
+|---|---|---|---|
+| 1 | Fullstack FE + BE dalam 1 repo (monorepo) | ✅ | Struktur sudah monorepo |
+| 2 | Repository GitHub public | ⚠️ | Perlu dipastikan visibility repo = Public |
+| 3 | README berisi: judul, deskripsi, fitur utama, teknologi, struktur folder, cara instalasi | ✅ | Sudah lengkap di README ini |
+| 4 | Akun demo (jika diperlukan) | ❌ | **Belum dicantumkan** — isi section [Akun Demo](#akun-demo) di bawah |
+| 5 | Dokumentasi perancangan sistem berupa Flowchart | ❌ | **Belum ada** — tambahkan di section [Dokumentasi Perancangan Sistem](#dokumentasi-perancangan-sistem-flowchart) |
 
 ---
 
@@ -115,7 +181,7 @@ LedgerFlow/
 │   │   │   ├── periods.ts              # Manajemen periode akuntansi
 │   │   │   ├── payments.ts             # Subscription & Midtrans payment flow
 │   │   │   ├── users.ts                # Profil user & avatar
-│   │   │   └── componies.ts            # Manajemen perusahaan
+│   │   │   └── companies.ts            # Manajemen perusahaan
 │   │   ├── lib/
 │   │   │   ├── supabase.ts             # Supabase admin client
 │   │   │   ├── jwt.ts                  # JWT sign & verify (jose)
@@ -131,10 +197,10 @@ LedgerFlow/
 │   │   ├── main.tsx                    # Entry point React, provider wrapping
 │   │   ├── App.tsx                     # Router, guards, layout
 │   │   ├── pages/                      # Halaman-halaman aplikasi
-│   │   │   ├── HomePages.tsx           # Landing page
+│   │   │   ├── HomePage.tsx            # Landing page
 │   │   │   ├── LoginPage.tsx           # Login (email + Google OAuth)
 │   │   │   ├── RegisterPage.tsx        # Register
-│   │   │   ├── authCallback.tsx        # Google OAuth callback handler
+│   │   │   ├── AuthCallback.tsx        # Google OAuth callback handler
 │   │   │   ├── DashboardPage.tsx       # Dashboard utama
 │   │   │   ├── ChartOfAccounts.tsx     # Chart of Accounts (CRUD)
 │   │   │   ├── JournalEntryPage.tsx    # Jurnal entries
@@ -166,7 +232,6 @@ LedgerFlow/
 │   │   │   │   ├── JournalDetail.tsx   # Detail jurnal
 │   │   │   │   ├── JournalShared.tsx   # Shared journal utilities
 │   │   │   │   ├── ConfirmDialog.tsx   # Dialog konfirmasi
-│   │   │   │   └── ConfirmDialog - Copy.tsx
 │   │   │   ├── ledger/
 │   │   │   │   ├── LedgerTable.tsx     # Tabel buku besar
 │   │   │   │   ├── LedgerFilter.tsx    # Filter buku besar
@@ -181,8 +246,7 @@ LedgerFlow/
 │   │   │   ├── HoverDropdown.tsx       # Dropdown hover
 │   │   │   ├── ToastContainer.tsx      # Container notifikasi
 │   │   │   ├── Paywall.tsx             # Paywall untuk fitur premium
-│   │   │   ├── ProtectedFeature.tsx    # Gate fitur berdasarkan subscription
-│   │   │   └── protectedRoute.tsx      # Route guard utama
+│   │   │   └── ProtectedFeature.tsx    # Gate fitur berdasarkan subscription
 │   │   ├── hooks/
 │   │   │   ├── useAccounts.ts          # Data fetching akun
 │   │   │   ├── useJournal.ts           # Data fetching jurnal
@@ -194,7 +258,7 @@ LedgerFlow/
 │   │   │   └── usePagination.ts        # Hook pagination
 │   │   ├── services/
 │   │   │   ├── accountsService.ts      # API calls akun
-│   │   │   ├── JournalService.ts       # API calls jurnal
+│   │   │   ├── journalService.ts       # API calls jurnal
 │   │   │   ├── ledgerService.ts        # API calls buku besar
 │   │   │   ├── reportsService.ts       # API calls laporan
 │   │   │   ├── periodsService.ts       # API calls periode
@@ -480,7 +544,7 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | Tabel | Fungsi |
 |---|---|
 | `companies` | Data perusahaan (multi-tenant) |
-| `users` | Profil user, relasi ke company |
+| `users` | Profil user, relasi ke company, avatar_url |
 | `accounts` | Chart of Accounts (COA) dengan hierarki parent-child |
 | `periods` | Periode akuntansi (open/closed) |
 | `journal_entries` | Header jurnal (entry_number, date, status draft/posted) |
@@ -689,4 +753,26 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Menggunakan jsPDF + jspdf-autotable
 - Format tabel dengan styling
 
+---
 
+## Akun Demo
+
+> ⚠️ **TODO:** Ketentuan pengumpulan mewajibkan akun demo (username & password) apabila diperlukan untuk menguji aplikasi. Isi tabel di bawah dengan akun uji yang sudah kamu seed di database.
+
+| Role | Email | Password | Keterangan |
+|---|---|---|---|
+| Owner | `owner@demo.com` | `ganti-ini` | Akses penuh 1 company |
+| Admin | `admin@demo.com` | `ganti-ini` | Kelola akun & role |
+| Akuntan | `akuntan@demo.com` | `ganti-ini` | Input & posting jurnal |
+
+---
+
+## Dokumentasi Perancangan Sistem (Flowchart)
+
+> ⚠️ **TODO:** Ketentuan projekan mewajibkan dokumentasi perancangan sistem berupa **Flowchart**. Tambahkan diagram alur (mis. flow autentikasi, flow input jurnal sampai posting, flow pembayaran/subscription) di sini, atau lampirkan sebagai file terpisah (`docs/flowchart.png`) dan taruh link/gambarnya di bawah ini.
+
+```
+[Belum ada flowchart — tempel gambar/diagram di sini sebelum submit]
+```
+
+---

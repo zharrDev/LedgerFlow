@@ -13,7 +13,8 @@ import ledgerRoutes from "./routes/ledger.js";
 import periods from "./routes/periods.js";
 import reports from "./routes/reports.js";
 import users from "./routes/users.js";
-import payments from "./routes/payments.js";  // ← TAMBAH INI
+import payments from "./routes/payments.js";
+import companiesRoutes from "./routes/companies.js";
 
 const app = new Hono();
 
@@ -51,7 +52,7 @@ app.route("/api/ledger", ledgerRoutes);
 app.route("/api/periods", periods);
 app.route("/api/reports", reports);
 app.route("/api/users", users);
-app.route("/api/companies", (await import("./routes/componies.js")).default);
+app.route("/api/companies", companiesRoutes);
 app.route("/api/payments", payments);          // ← TAMBAH INI
 
 // 404 fallback

@@ -21,10 +21,14 @@ auth.post("/register", async (c) => {
   try {
     const { email, password, name, company_name } = await c.req.json();
 
-    console.log("REGISTER REQUEST:", { email, name, company_name });
-
     if (!email || !password || !name || !company_name) {
       return c.json({ error: "All fields are required" }, 400);
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return c.json({ error: "Format email tidak valid." }, 400);
+    }
+    if (password.length < 8) {
+      return c.json({ error: "Password minimal 8 karakter." }, 400);
     }
 
     const { data: company, error: companyError } = await supabase
@@ -116,6 +120,9 @@ auth.post("/login", async (c) => {
   if (!email || !password) {
     return c.json({ error: "Email and password required" }, 400);
   }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return c.json({ error: "Format email tidak valid." }, 400);
+  }
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -141,9 +148,6 @@ auth.post("/login", async (c) => {
 
   const companyName = await getCompanyName(user.company_id);
 
-  const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
-  const avatarUrl = authUserData?.user?.user_metadata?.avatar_url || null;
-
   const token = await signToken({
     sub: user.id,
     email: user.email,
@@ -160,7 +164,7 @@ auth.post("/login", async (c) => {
       role: user.role,
       company_id: user.company_id,
       company_name: companyName,
-      avatar_url: avatarUrl,
+      avatar_url: user.avatar_url || null,
     },
   });
 });
@@ -230,11 +234,6 @@ auth.post("/exchange-token", async (c) => {
 
     console.log("EXCHANGE TOKEN SUCCESS");
 
-    const { data: authUserData } = await supabase.auth.admin.getUserById(
-      user.id,
-    );
-    const avatarUrl = authUserData?.user?.user_metadata?.avatar_url || null;
-
     return c.json({
       token,
       user: {
@@ -244,7 +243,7 @@ auth.post("/exchange-token", async (c) => {
         role: user.role,
         company_id: user.company_id,
         company_name: companyName,
-        avatar_url: avatarUrl,
+        avatar_url: user.avatar_url || null,
       },
     });
   } catch (err) {

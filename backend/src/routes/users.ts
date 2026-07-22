@@ -10,19 +10,13 @@ users.get("/:id", async (c) => {
 
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, email, role, company_id, created_at")
+    .select("id, name, email, role, company_id, avatar_url, created_at")
     .eq("id", id)
     .single();
 
   if (error) {
     console.error("[Users] GET error:", error);
     return c.json({ error: error.message }, 404);
-  }
-
-  let avatarUrl: string | null = null;
-  const { data: authUser } = await supabase.auth.admin.getUserById(id);
-  if (authUser?.user?.user_metadata?.avatar_url) {
-    avatarUrl = authUser.user.user_metadata.avatar_url;
   }
 
   const { data: company } = await supabase
@@ -33,7 +27,7 @@ users.get("/:id", async (c) => {
 
   return c.json({
     ...data,
-    avatar_url: avatarUrl,
+    avatar_url: data.avatar_url || null,
     company_name: company?.name || "",
   });
 });
@@ -44,49 +38,25 @@ users.put("/:id", async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
 
-  const publicUpdates: Record<string, any> = {};
-  if (body.name !== undefined) publicUpdates.name = body.name;
+  const updates: Record<string, any> = {};
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url;
 
-  if (Object.keys(publicUpdates).length > 0) {
-    const { error: pubErr } = await supabase
+  if (Object.keys(updates).length > 0) {
+    const { error: updErr } = await supabase
       .from("users")
-      .update(publicUpdates)
+      .update(updates)
       .eq("id", id);
 
-    if (pubErr) {
-      console.error("[Users] PUT public error:", pubErr);
-      return c.json({ error: pubErr.message }, 500);
-    }
-  }
-
-  let avatarUrl: string | null = null;
-  if (body.avatar_url !== undefined) {
-    avatarUrl = body.avatar_url;
-
-    const { data: authUser } = await supabase.auth.admin.getUserById(id);
-    const currentMetadata = authUser?.user?.user_metadata || {};
-
-    const { error: metaErr } = await supabase.auth.admin.updateUserById(id, {
-      user_metadata: {
-        ...currentMetadata,
-        avatar_url: body.avatar_url,
-      },
-    });
-
-    if (metaErr) {
-      console.error("[Users] PUT metadata error:", metaErr);
-      // Avatar dianggap non-kritis, jadi request utama tetap dilanjutkan
-    }
-  } else {
-    const { data: authUser } = await supabase.auth.admin.getUserById(id);
-    if (authUser?.user?.user_metadata?.avatar_url) {
-      avatarUrl = authUser.user.user_metadata.avatar_url;
+    if (updErr) {
+      console.error("[Users] PUT error:", updErr);
+      return c.json({ error: updErr.message }, 500);
     }
   }
 
   const { data: freshData, error: freshErr } = await supabase
     .from("users")
-    .select("id, name, email, role, company_id")
+    .select("id, name, email, role, company_id, avatar_url")
     .eq("id", id)
     .single();
 
@@ -103,7 +73,7 @@ users.put("/:id", async (c) => {
 
   return c.json({
     ...freshData,
-    avatar_url: avatarUrl,
+    avatar_url: freshData.avatar_url || null,
     company_name: company?.name || "",
   });
 });

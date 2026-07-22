@@ -4,7 +4,7 @@ import type {
   Toast,
   CreateJournalPayload,
 } from "../types/journal";
-import { journalService } from "../services/JournalService";
+import { journalService } from "../services/journalService";
 
 // Helper: urutkan jurnal berdasarkan nomor entry secara ascending
 function sortByEntryNumber(list: JournalEntry[]): JournalEntry[] {
