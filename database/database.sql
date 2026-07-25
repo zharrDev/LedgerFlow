@@ -392,3 +392,17 @@ CREATE TABLE IF NOT EXISTS password_resets (
   used_at    TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- ─── 10. OTP CODES TABLE ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS otp_codes (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  code       TEXT NOT NULL,
+  purpose    TEXT NOT NULL CHECK (purpose IN ('register_verification', 'forgot_password')),
+  expires_at TIMESTAMPTZ NOT NULL,
+  used       BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_otp_codes_user_purpose ON otp_codes(user_id, purpose);
+GRANT ALL PRIVILEGES ON TABLE public.otp_codes TO service_role;

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { signToken } from "../lib/jwt.js";
+import { sendWelcomeEmail, sendLoginNotification } from "../lib/email.js";
 
 const auth = new Hono();
 
@@ -84,6 +85,8 @@ auth.post("/register", async (c) => {
       company_id: user.company_id,
     });
 
+    sendWelcomeEmail(user.email, user.name).catch(console.error);
+
     return c.json(
       {
         token,
@@ -154,6 +157,8 @@ auth.post("/login", async (c) => {
     role: user.role,
     company_id: user.company_id,
   });
+
+  sendLoginNotification(user.email, user.name).catch(console.error);
 
   return c.json({
     token,
@@ -231,6 +236,8 @@ auth.post("/exchange-token", async (c) => {
       role: user.role,
       company_id: user.company_id,
     });
+
+    sendLoginNotification(user.email, user.name).catch(console.error);
 
     console.log("EXCHANGE TOKEN SUCCESS");
 

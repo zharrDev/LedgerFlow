@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
-import { sendEmail, passwordResetEmail } from "../lib/email.js";
+import { sendResetPasswordEmail } from "../lib/email.js";
 import crypto from "node:crypto";
 
 const passwordReset = new Hono();
@@ -35,11 +35,7 @@ passwordReset.post("/forgot-password", async (c) => {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
 
-    await sendEmail(
-      user.email,
-      "Reset Password - LedgerFlow",
-      passwordResetEmail(user.name, resetLink),
-    );
+    sendResetPasswordEmail(user.email, user.name, resetLink).catch(console.error);
 
     return c.json({ message: "Jika email terdaftar, link reset akan dikirim." });
   } catch (err) {
