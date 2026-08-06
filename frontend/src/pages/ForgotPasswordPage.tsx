@@ -3,19 +3,23 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import { api } from "../lib/api";
+import { validateEmail } from "../utils/validation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+
+  const emailError = validateEmail(email);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setTouched(true);
 
-    if (!email.trim()) { setError("Email wajib diisi."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Format email tidak valid."); return; }
+    if (emailError) return;
 
     setLoading(true);
     try {
@@ -68,9 +72,15 @@ export default function ForgotPasswordPage() {
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/40 outline-none transition"
+                onBlur={() => setTouched(true)}
+                className={`w-full px-4 py-3 rounded-xl border ${touched && emailError ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"} bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/40 outline-none transition`}
                 required
               />
+              {touched && emailError && (
+                <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                  {emailError}
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={loading}

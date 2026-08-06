@@ -8,15 +8,30 @@ userMgmt.use("*", authMiddleware);
 
 userMgmt.get("/", requireRole("admin", "owner"), async (c) => {
   const { company_id } = c.get("user");
+  const { search, sort, role, page, limit } = c.req.query();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("users")
-    .select("id, name, email, role, avatar_url, created_at")
-    .eq("company_id", company_id)
-    .order("created_at", { ascending: true });
+    .select("id, name, email, role, avatar_url, created_at", { count: "exact" })
+    .eq("company_id", company_id);
 
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+  }
+  if (role) query = query.eq("role", role);
+
+  const sortField = sort?.startsWith("-") ? sort.slice(1) : sort || "created_at";
+  const sortDir = sort?.startsWith("-") ? ("desc" as const) : ("asc" as const);
+  query = query.order(sortField, { ascending: sortDir === "asc" });
+
+  const pageNum = Math.max(1, parseInt(page || "1"));
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20")));
+  const offset = (pageNum - 1) * limitNum;
+  query = query.range(offset, offset + limitNum - 1);
+
+  const { data, error, count } = await query;
   if (error) return c.json({ error: error.message }, 500);
-  return c.json(data);
+  return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
 userMgmt.put("/:id/role", requireRole("admin", "owner"), async (c) => {

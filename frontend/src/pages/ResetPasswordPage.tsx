@@ -3,6 +3,10 @@ import { motion } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { api } from "../lib/api";
+import {
+  validatePassword,
+  validateConfirmPassword,
+} from "../utils/validation";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -14,17 +18,26 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [touched, setTouched] = useState<{
+    password?: boolean;
+    confirm?: boolean;
+  }>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const passwordError = validatePassword(password);
+  const confirmError = validateConfirmPassword(confirmPassword, password);
+  const fieldErrors = {
+    password: touched.password ? passwordError : "",
+    confirm: touched.confirm ? confirmError : "",
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setTouched({ password: true, confirm: true });
 
-    if (!token) { setError("Token reset tidak valid."); return; }
-    if (!password) { setError("Password wajib diisi."); return; }
-    if (password.length < 8) { setError("Password minimal 8 karakter."); return; }
-    if (password !== confirmPassword) { setError("Konfirmasi password tidak cocok."); return; }
+    if (!token || passwordError || confirmError) return;
 
     setLoading(true);
     try {
@@ -84,9 +97,15 @@ export default function ResetPasswordPage() {
                   placeholder="Password baru"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/40 outline-none transition"
+                  onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                  className={`w-full px-4 py-3 pr-10 rounded-xl border ${fieldErrors.password ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"} bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/40 outline-none transition`}
                   required
                 />
+                {fieldErrors.password && (
+                  <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                    {fieldErrors.password}
+                  </p>
+                )}
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 transition">
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -96,9 +115,15 @@ export default function ResetPasswordPage() {
                 placeholder="Konfirmasi password baru"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/40 outline-none transition"
+                onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+                className={`w-full px-4 py-3 rounded-xl border ${fieldErrors.confirm ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"} bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/40 outline-none transition`}
                 required
               />
+              {fieldErrors.confirm && (
+                <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                  {fieldErrors.confirm}
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={loading}

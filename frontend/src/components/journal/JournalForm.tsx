@@ -361,22 +361,22 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
       )}
 
       {/* Action bar */}
-      <div className="flex items-center justify-between gap-3 pt-1 pb-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 pb-2">
         <button
           type="button"
           onClick={onBack}
           disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
         >
           <IconArrowLeft size={15} />
           Kembali
         </button>
-        <div className="flex gap-2.5">
+        <div className="flex flex-wrap gap-2.5">
           {/* Simpan Draft */}
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-60"
+            className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-60"
           >
             {saving ? (
               <SpinnerIcon className="w-3.5 h-3.5" />
@@ -391,7 +391,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
             type="button"
             disabled={saving || !isBalanced || !hasAmounts}
             onClick={handleSaveAndPost}
-            className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl hover:shadow-lg hover:shadow-primary-500/25 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl hover:shadow-lg hover:shadow-primary-500/25 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {saving ? (
               <SpinnerIcon className="w-3.5 h-3.5" />

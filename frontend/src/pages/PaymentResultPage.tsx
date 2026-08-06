@@ -10,7 +10,7 @@
 //         icon animasi bounce-in, gradient glow, staggered content
 // ============================================================================
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -26,8 +26,11 @@ import {
   ShieldCheck,
   Sparkles,
   Crown,
+  Upload,
+  FileUp,
 } from "lucide-react";
 import { testComplete, isSandboxMode } from "../services/paymentService";
+import { api } from "../lib/api";
 
 // ─── Types ──────────────────────────────────────────────────────────
 type ResultType = "success" | "pending" | "failed";
@@ -148,6 +151,45 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
       setForceCompleteError(msg);
     } finally {
       setIsForceCompleting(false);
+    }
+  };
+
+  // ─── Upload bukti pembayaran ───────────────────────────────────────
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const proofInputRef = useRef<HTMLInputElement>(null);
+
+  const handleProofChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProofError(null);
+
+    if (file.size > 2 * 1024 * 1024) {
+      setProofError("Ukuran file maksimal 2MB");
+      return;
+    }
+
+    setUploadingProof(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data } = await api.post("/api/upload/proof", {
+        dataUrl: base64,
+        order_id: orderId ?? undefined,
+      });
+      setProofUrl(data?.url ?? null);
+    } catch (err: any) {
+      setProofError(
+        err.response?.data?.error || "Gagal mengupload bukti pembayaran",
+      );
+    } finally {
+      setUploadingProof(false);
     }
   };
 
@@ -343,6 +385,66 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                     <p className="mt-2 text-xs text-red-500 text-center">
                       {forceCompleteError}
                     </p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ═══ Upload Bukti Pembayaran (pending) ════════════════ */}
+            <AnimatePresence>
+              {type === "pending" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-5 p-4 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600/60 bg-gray-50/60 dark:bg-gray-800/30 text-left"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Upload size={14} className="text-gray-500 flex-shrink-0" />
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      Upload Bukti Pembayaran
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">
+                    Sudah transfer manual? Unggah bukti pembayaran agar admin
+                    bisa memverifikasi pesanan Anda lebih cepat.
+                  </p>
+                  {!proofUrl ? (
+                    <>
+                      <button
+                        onClick={() => proofInputRef.current?.click()}
+                        disabled={uploadingProof}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-darkCard text-gray-700 dark:text-gray-200 font-semibold text-sm hover:bg-gray-100 dark:hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingProof ? (
+                          <>
+                            <Loader2 size={15} className="animate-spin" />
+                            Mengupload...
+                          </>
+                        ) : (
+                          <>
+                            <FileUp size={15} />
+                            Pilih File (maks 2MB)
+                          </>
+                        )}
+                      </button>
+                      <input
+                        ref={proofInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProofChange}
+                        className="hidden"
+                      />
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
+                      <CheckCircle2 size={16} />
+                      Bukti pembayaran berhasil diupload
+                    </div>
+                  )}
+                  {proofError && (
+                    <p className="mt-2 text-xs text-red-500">{proofError}</p>
                   )}
                 </motion.div>
               )}

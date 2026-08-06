@@ -141,7 +141,7 @@ export default function VerifyOTPPage() {
             </div>
           )}
 
-          <div className="flex justify-center gap-2 sm:gap-3 mb-6">
+          <div className="grid grid-cols-6 gap-1.5 sm:gap-3 mb-6 w-full max-w-xs mx-auto">
             {digits.map((digit, index) => (
               <input
                 key={index}
@@ -153,7 +153,7 @@ export default function VerifyOTPPage() {
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
-                className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/40 outline-none transition"
+                className="w-full aspect-square text-center text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/40 outline-none transition"
               />
             ))}
           </div>

@@ -6,6 +6,8 @@ import type {
   FilterStatus,
 } from "../types/journal";
 import { useJournal } from "../hooks/useJournal";
+import { usePagination } from "../hooks/usePagination";
+import { TablePagination } from "../components/TablePagination";
 import { JournalList } from "../components/journal/JournalList";
 import { JournalForm } from "../components/journal/JournalForm";
 import { JournalDetail } from "../components/journal/JournalDetail";
@@ -143,6 +145,9 @@ export default function JournalEntryPage() {
       return matchSearch && matchStatus;
     });
   }, [entries, search, filterStatus]);
+
+  // Pagination client-side untuk list view
+  const pagination = usePagination(filtered, 5);
 
   // ── Stats ──
   const stats = useMemo(() => {
@@ -367,16 +372,31 @@ export default function JournalEntryPage() {
 
         {/* ── Main Content ── */}
         {view.mode === "list" && (
-          <JournalList
-            entries={filtered}
-            loading={loading}
-            error={error}
-            onRetry={fetchEntries}
-            onNew={() => setView({ mode: "new" })}
-            onView={handleViewEntry}
-            onPost={(entry) => openConfirm("post", entry)}
-            onDelete={(entry) => openConfirm("delete", entry)}
-          />
+          <>
+            <JournalList
+              entries={pagination.pageItems}
+              loading={loading}
+              error={error}
+              onRetry={fetchEntries}
+              onNew={() => setView({ mode: "new" })}
+              onView={handleViewEntry}
+              onPost={(entry) => openConfirm("post", entry)}
+              onDelete={(entry) => openConfirm("delete", entry)}
+            />
+            <TablePagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.totalItems}
+              startIndex={pagination.startIndex}
+              endIndex={pagination.endIndex}
+              canPrev={pagination.canPrev}
+              canNext={pagination.canNext}
+              onPrev={pagination.prev}
+              onNext={pagination.next}
+              onGoTo={pagination.goTo}
+              itemLabel="entry"
+            />
+          </>
         )}
 
         {view.mode === "new" && (

@@ -285,22 +285,22 @@ export function IncomeStatementPage() {
                           key={item.accountCode}
                           className="flex justify-between text-sm px-2 py-1.5 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5 rounded-lg transition-colors"
                         >
-                          <span className="text-gray-700 dark:text-gray-300">
+                          <span className="min-w-0 text-gray-700 dark:text-gray-300">
                             <span className="font-mono text-xs text-gray-400 mr-2">
                               {item.accountCode}
                             </span>
                             {item.accountName}
                           </span>
-                          <span className="font-medium text-gray-900 dark:text-white tabular-nums">
+                          <span className="shrink-0 font-medium text-gray-900 dark:text-white tabular-nums">
                             {formatRupiah(item.amount)}
                           </span>
                         </div>
                       ))}
                       <div className="flex justify-between text-sm px-2 py-2.5 mt-2 bg-emerald-50/70 dark:bg-emerald-500/10 font-bold border-t border-emerald-200 dark:border-emerald-500/20 rounded-lg">
-                        <span className="text-emerald-800 dark:text-emerald-300">
+                        <span className="min-w-0 text-emerald-800 dark:text-emerald-300">
                           Total Pendapatan
                         </span>
-                        <span className="text-emerald-800 dark:text-emerald-300 tabular-nums">
+                        <span className="shrink-0 text-emerald-800 dark:text-emerald-300 tabular-nums">
                           {formatRupiah(data.totalRevenue)}
                         </span>
                       </div>
@@ -324,22 +324,22 @@ export function IncomeStatementPage() {
                           key={item.accountCode}
                           className="flex justify-between text-sm px-2 py-1.5 hover:bg-rose-50/50 dark:hover:bg-rose-500/5 rounded-lg transition-colors"
                         >
-                          <span className="text-gray-700 dark:text-gray-300">
+                          <span className="min-w-0 text-gray-700 dark:text-gray-300">
                             <span className="font-mono text-xs text-gray-400 mr-2">
                               {item.accountCode}
                             </span>
                             {item.accountName}
                           </span>
-                          <span className="font-medium text-gray-900 dark:text-white tabular-nums">
+                          <span className="shrink-0 font-medium text-gray-900 dark:text-white tabular-nums">
                             {formatRupiah(item.amount)}
                           </span>
                         </div>
                       ))}
                       <div className="flex justify-between text-sm px-2 py-2.5 mt-2 bg-rose-50/70 dark:bg-rose-500/10 font-bold border-t border-rose-200 dark:border-rose-500/20 rounded-lg">
-                        <span className="text-rose-800 dark:text-rose-300">
+                        <span className="min-w-0 text-rose-800 dark:text-rose-300">
                           Total Beban
                         </span>
-                        <span className="text-rose-800 dark:text-rose-300 tabular-nums">
+                        <span className="shrink-0 text-rose-800 dark:text-rose-300 tabular-nums">
                           {formatRupiah(data.totalExpense)}
                         </span>
                       </div>

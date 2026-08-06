@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAccounts } from "../hooks/useAccounts";
+import { usePagination } from "../hooks/usePagination";
 import { AppShell } from "../components/AppShell";
 import {
   PlusCircle,
@@ -29,6 +30,7 @@ import { AccountModal } from "../components/AccountModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { AccountTable } from "../components/AccountTable";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { TablePagination } from "../components/TablePagination";
 import {
   exportChartOfAccountsPDF,
   exportChartOfAccountsCSV,
@@ -125,6 +127,8 @@ export default function ChartOfAccounts() {
           (filterStatus === "inactive" && !a.isActive),
       );
   }, [safeAccounts, search, filterType, filterStatus]);
+
+  const pagination = usePagination(filtered, 10);
 
   const stats = useMemo(
     () => ({
@@ -482,7 +486,7 @@ export default function ChartOfAccounts() {
         {/* Account Table */}
         <div className="relative z-10">
           <AccountTable
-            accounts={filtered}
+            accounts={pagination.pageItems}
             allAccountsCount={safeAccounts.length}
             loading={loading}
             error={error}
@@ -493,6 +497,19 @@ export default function ChartOfAccounts() {
             }}
             onToggleStatus={setConfirmAccount}
             toggling={toggling}
+          />
+          <TablePagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            canPrev={pagination.canPrev}
+            canNext={pagination.canNext}
+            onPrev={pagination.prev}
+            onNext={pagination.next}
+            onGoTo={pagination.goTo}
+            itemLabel="akun"
           />
         </div>
       </motion.div>

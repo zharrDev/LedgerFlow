@@ -77,4 +77,42 @@ periods.patch("/:id/close", authMiddleware, requireRole("admin", "owner"), async
   return c.json({ message: "Periode berhasil ditutup", data });
 });
 
+// DELETE PERIOD (DELETE)
+// Hanya periode yang masih open & belum punya jurnal yang bisa dihapus
+periods.delete("/:id", authMiddleware, requireRole("admin", "owner"), async (c) => {
+  const id = c.req.param("id");
+  const supabase = getSupabase();
+
+  const { data: period } = await supabase
+    .from("periods")
+    .select("id, status")
+    .eq("id", id)
+    .single();
+
+  if (!period) return c.json({ error: "Periode tidak ditemukan" }, 404);
+  if (period.status === "closed") {
+    return c.json(
+      { error: "Periode yang sudah ditutup tidak bisa dihapus." },
+      400,
+    );
+  }
+
+  const { data: journalCount } = await supabase
+    .from("journal_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("period_id", id);
+
+  const { count } = journalCount as any;
+  if (count && count > 0) {
+    return c.json(
+      { error: "Periode memiliki jurnal. Hapus jurnal terlebih dahulu." },
+      400,
+    );
+  }
+
+  const { error } = await supabase.from("periods").delete().eq("id", id);
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ success: true, message: "Periode berhasil dihapus" });
+});
+
 export default periods;

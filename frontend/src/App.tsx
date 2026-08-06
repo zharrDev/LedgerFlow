@@ -80,6 +80,34 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RoleRoute({
+  children,
+  roles,
+}: {
+  children: React.ReactNode;
+  roles: string[];
+}) {
+  const { token, user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!roles.includes(user?.role ?? "")) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function ThemeInitializer() {
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") || "system";
@@ -239,9 +267,25 @@ function AnimatedRoutes() {
       <Route
         path="/users-management"
         element={
-          <ProtectedRoute>
+          <RoleRoute roles={["owner", "admin"]}>
             <UserManagementPage />
-          </ProtectedRoute>
+          </RoleRoute>
+        }
+      />
+      <Route
+        path="/period-management"
+        element={
+          <RoleRoute roles={["owner", "admin"]}>
+            <PeriodManagement />
+          </RoleRoute>
+        }
+      />
+      <Route
+        path="/chart-of-accounts"
+        element={
+          <RoleRoute roles={["owner", "admin", "akuntan"]}>
+            <ChartOfAccounts />
+          </RoleRoute>
         }
       />
 

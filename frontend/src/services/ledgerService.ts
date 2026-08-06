@@ -70,7 +70,8 @@ export const ledgerService = {
   // Ambil daftar akun untuk dropdown/filter buku besar
   getAccounts: async (): Promise<AccountOption[]> => {
     const { data } = await api.get("/api/accounts");
-    return (data ?? []).map(mapAccount);
+    const list = Array.isArray(data) ? data : (data?.data ?? []);
+    return (list ?? []).map(mapAccount);
   },
 
   // Ambil daftar periode, kalau endpoint belum ada maka kembalikan array kosong

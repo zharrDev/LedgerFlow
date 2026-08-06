@@ -23,7 +23,8 @@ export const accountsService = {
     const { data } = await api.get(API_BASE, {
       params: { company_id: companyId },
     });
-    return Array.isArray(data) ? data : [];
+    // Backend return { data, total, page, limit } — unwrap array
+    return Array.isArray(data) ? data : (data?.data ?? []);
   },
 
   // Buat akun baru

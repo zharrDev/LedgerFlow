@@ -1,0 +1,892 @@
+{
+  "info": {
+    "name": "LedgerFlow API",
+    "description": "Dokumentasi API LedgerFlow (Projekan S1)\n\n## Setup\n1. Import file ini ke Postman.\n2. Atur environment variable:\n   - `baseUrl` = `http://localhost:3000` (development) atau `https://<backend-vercel>.vercel.app` (production)\n3. Login terlebih dahulu lewat folder **Auth → Login**, token JWT otomatis tersimpan ke variable `token` (lihat tab Tests pada request Login).\n4. Semua request bertanda *Auth* memerlukan header `Authorization: Bearer {{token}}` — sudah diset otomatis di folder collection.\n\n## Auth\nSemua endpoint selain register/login/otp/forgot-password memakai Bearer token JWT yang berisi `sub`, `email`, `role`, `company_id`.\n\n## Role\n- `owner` — akses penuh\n- `admin` — kelola akun/user/periode, tanpa ubah jurnal\n- `akuntan` — input jurnal, tanpa kelola user/periode\n\n## Format Response List (paginasi)\nSemua endpoint list mengembalikan:\n```json\n{ \"data\": [...], \"total\": 0, \"page\": 1, \"limit\": 50 }\n```\nQuery parameter: `page`, `limit`, `search`, `sort`, dst. sesuai endpoint.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nama User\",\n  \"email\": \"user@contoh.com\",\n  \"password\": \"Password123!\",\n  \"company_name\": \"PT Contoh Jaya\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.token) {",
+                  "  pm.environment.set('token', json.token);",
+                  "  pm.environment.set('userId', json.user.id || '');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@demo.com\",\n  \"password\": \"Demo123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Exchange Token (Google OAuth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/exchange-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "exchange-token"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supabase_token\": \"<token-dari-Supabase-OAuth>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Send OTP",
+          "description": "Kirim kode OTP 6 digit ke email. Purpose: `login` | `reset_password`. Cooldown 60 detik per email, berlaku 5 menit.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "send-otp"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@demo.com\",\n  \"purpose\": \"login\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-otp"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@demo.com\",\n  \"code\": \"123456\",\n  \"purpose\": \"login\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@contoh.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "reset-password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<token-dari-email>\",\n  \"email\": \"user@contoh.com\",\n  \"password\": \"PasswordBaru123!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Get All Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "companies"]
+            }
+          }
+        },
+        {
+          "name": "Get Company by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/companies/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "companies", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{companyId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "description": "Chart of Accounts. Semua endpoint memerlukan Bearer token.",
+      "item": [
+        {
+          "name": "Get All Accounts (Auth)",
+          "description": "Query params: `page`, `limit`, `search`, `sort`. Filter diambil dari company_id dalam JWT.",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts?page=1&limit=50&search=kas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" },
+                { "key": "search", "value": "kas" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Account (Auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"1101\",\n  \"name\": \"Kas Kecil\",\n  \"type\": \"asset\",\n  \"is_active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Account (Auth)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{accountId}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kas Kecil - Updated\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Account (Auth, role: admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{accountId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Journal",
+      "description": "Jurnal umum. Query list mendukung `search`, `status`, `period_id`, `sort`, `page`, `limit`. Soft delete via `deleted_at`.",
+      "item": [
+        {
+          "name": "Get All Entries (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/journal?page=1&limit=10&search=penjualan&status=posted",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "journal"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "search", "value": "penjualan" },
+                { "key": "status", "value": "posted" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Entry by ID (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/journal/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "journal", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{journalId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Entry (Auth, role: owner/akuntan)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/journal",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "journal"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period_id\": \"<uuid-periode>\",\n  \"entry_date\": \"2026-01-05\",\n  \"description\": \"Penjualan tunai\",\n  \"lines\": [\n    { \"accountCode\": \"1100\", \"debit\": 1500000, \"credit\": 0 },\n    { \"accountCode\": \"4100\", \"debit\": 0, \"credit\": 1500000 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Draft Entry (Auth, role: owner/akuntan)",
+          "description": "Hanya jurnal berstatus `draft` yang bisa diubah. Periode sudah closed akan ditolak.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/journal/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "journal", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{journalId}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entry_date\": \"2026-01-06\",\n  \"description\": \"Penjualan tunai (revisi)\",\n  \"lines\": [\n    { \"accountCode\": \"1100\", \"debit\": 2000000, \"credit\": 0 },\n    { \"accountCode\": \"4100\", \"debit\": 0, \"credit\": 2000000 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Post Entry (Auth, role: owner/akuntan)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/journal/:id/post",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "journal", ":id", "post"],
+              "variable": [
+                { "key": "id", "value": "{{journalId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Entry (Auth, soft delete)",
+          "description": "Soft delete: set `deleted_at`. Entry di periode closed tidak bisa dihapus.",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/journal/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "journal", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{journalId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Periods",
+      "item": [
+        {
+          "name": "Get All Periods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/periods?company_id={{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "periods"],
+              "query": [
+                { "key": "company_id", "value": "{{companyId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Period (Auth, role: admin/owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/periods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "periods"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{companyId}}\",\n  \"year\": 2026,\n  \"month\": 8\n}"
+            }
+          }
+        },
+        {
+          "name": "Close Period (Auth, role: admin/owner)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/periods/:id/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "periods", ":id", "close"],
+              "variable": [
+                { "key": "id", "value": "{{periodId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Period (Auth, role: admin/owner)",
+          "description": "Periode berstatus `closed` atau yang sudah memiliki jurnal tidak bisa dihapus.",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/periods/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "periods", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{periodId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ledger & Reports",
+      "item": [
+        {
+          "name": "Get Ledger (Buku Besar) (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ledger?account_id={{accountId}}&start_date=2026-01-01&end_date=2026-01-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ledger"],
+              "query": [
+                { "key": "account_id", "value": "{{accountId}}" },
+                { "key": "start_date", "value": "2026-01-01" },
+                { "key": "end_date", "value": "2026-01-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Income Statement (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/income-statement?company_id={{companyId}}&start_date=2026-01-01&end_date=2026-06-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "income-statement"],
+              "query": [
+                { "key": "company_id", "value": "{{companyId}}" },
+                { "key": "start_date", "value": "2026-01-01" },
+                { "key": "end_date", "value": "2026-06-30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Balance Sheet (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/balance-sheet?company_id={{companyId}}&start_date=2026-01-01&end_date=2026-06-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "balance-sheet"],
+              "query": [
+                { "key": "company_id", "value": "{{companyId}}" },
+                { "key": "start_date", "value": "2026-01-01" },
+                { "key": "end_date", "value": "2026-06-30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cash Flow (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/cash-flow?company_id={{companyId}}&start_date=2026-01-01&end_date=2026-06-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "cash-flow"],
+              "query": [
+                { "key": "company_id", "value": "{{companyId}}" },
+                { "key": "start_date", "value": "2026-01-01" },
+                { "key": "end_date", "value": "2026-06-30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Report Periods (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/periods?company_id={{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "periods"],
+              "query": [
+                { "key": "company_id", "value": "{{companyId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get User by ID (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{userId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User (Auth)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{userId}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nama Baru\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "description": "Kelola anggota company. Relasi M:M user↔company tersimpan di tabel `company_members`.",
+      "item": [
+        {
+          "name": "Get All Members (Auth, role: admin/owner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users-management?page=1&limit=50&search=&role=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users-management"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" },
+                { "key": "search", "value": "" },
+                { "key": "role", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Role (Auth, role: admin/owner)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users-management/:id/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users-management", ":id", "role"],
+              "variable": [
+                { "key": "id", "value": "{{userId}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"akuntan\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Member (Auth, role: admin/owner)",
+          "description": "Tidak bisa menghapus akun sendiri.",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users-management/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users-management", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{userId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload",
+      "description": "Upload file ke Supabase Storage (bucket `avatars` & `payment-proofs`, public).",
+      "item": [
+        {
+          "name": "Upload Avatar (Auth)",
+          "description": "Body: `{ \"dataUrl\": \"data:image/jpeg;base64,...\" }`. Mengembalikan `{ url }` dan menyimpan URL ke profil user.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "avatar"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataUrl\": \"data:image/jpeg;base64,<base64-encoded-image>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Upload Payment Proof (Auth)",
+          "description": "Body: `{ \"dataUrl\": \"...\", \"order_id\": \"optional\" }`. Upload ke folder `orders/{order_id}` atau `users/{userId}`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/proof",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "proof"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataUrl\": \"data:image/png;base64,<base64-encoded-image>\",\n  \"order_id\": \"LF-xxxx\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments (Midtrans)",
+      "item": [
+        {
+          "name": "Get Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "plans"]
+            }
+          }
+        },
+        {
+          "name": "Is Sandbox",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/is-sandbox",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "is-sandbox"]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "x-user-id", "value": "{{userId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Subscribe (Auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "subscribe"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"pro\",\n  \"billing_cycle\": \"monthly\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Test Complete (sandbox only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/test-complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "test-complete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"LF-xxxx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Midtrans Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "webhook"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"LF-xxxx\",\n  \"status_code\": \"200\",\n  \"transaction_status\": \"settlement\",\n  \"payment_type\": \"bank_transfer\",\n  \"fraud_status\": \"accept\",\n  \"gross_amount\": \"299000.00\",\n  \"signature_key\": \"<signature-verification>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Payment History (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "history"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription (Auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Check Feature Access (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/check-access?feature=income_statement",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "check-access"],
+              "query": [
+                { "key": "feature", "value": "income_statement" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}

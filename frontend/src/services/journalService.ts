@@ -36,7 +36,9 @@ function mapJournal(j: any): JournalEntry {
 export const journalService = {
   getAll: async (): Promise<JournalEntry[]> => {
     const { data } = await api.get("/api/journal");
-    return data.map(mapJournal);
+    // Backend return { data, total, page, limit } — unwrap array
+    const list = Array.isArray(data) ? data : (data?.data ?? []);
+    return list.map(mapJournal);
   },
 
   getById: async (id: string): Promise<JournalEntry> => {

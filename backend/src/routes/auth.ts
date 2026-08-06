@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { signToken } from "../lib/jwt.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { sendWelcomeEmail, sendLoginNotification } from "../lib/email.js";
+import { ensureUserProfile } from "../lib/ensureProfile.js";
 
 const auth = new Hono();
 
@@ -78,6 +80,13 @@ auth.post("/register", async (c) => {
       );
     }
 
+    // Relasi M:M — daftarkan user sebagai member company
+    await supabase.from("company_members").insert({
+      user_id: user.id,
+      company_id: company.id,
+      role: "owner",
+    });
+
     const token = await signToken({
       sub: user.id,
       email: user.email,
@@ -136,17 +145,32 @@ auth.post("/login", async (c) => {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
-  const { data: user, error: profileError } = await supabase
+  let { data: user, error: profileError } = await supabase
     .from("users")
     .select("*")
     .eq("id", data.user.id)
-    .single();
+    .maybeSingle();
 
-  if (profileError || !user) {
-    return c.json(
-      { error: "User profile not found. Please register first." },
-      404,
+  if (profileError) {
+    return c.json({ error: profileError.message }, 500);
+  }
+
+  if (!user) {
+    console.log(
+      "LOGIN — profile not found, auto-healing (buat profil otomatis)",
     );
+    try {
+      const provisioned = await ensureUserProfile(data.user);
+      user = provisioned.user;
+    } catch (err) {
+      console.error("AUTO-HEAL ERROR:", err);
+      return c.json(
+        {
+          error: err instanceof Error ? err.message : "Gagal membuat profil",
+        },
+        500,
+      );
+    }
   }
 
   const companyName = await getCompanyName(user.company_id);
@@ -204,28 +228,30 @@ auth.post("/exchange-token", async (c) => {
 
     console.log("EXCHANGE TOKEN - OAuth user:", { email, name });
 
-    const { data: user, error: profileError } = await supabase
+    let { data: user, error: profileError } = await supabase
       .from("users")
       .select("*")
       .eq("id", authUser.id)
-      .single();
-
-    if (profileError?.code === "PGRST116" || !user) {
-      console.log("USER NOT FOUND — rejecting login, must register first");
-
-      await supabase.auth.admin.deleteUser(authUser.id);
-
-      return c.json(
-        {
-          error: "NOT_REGISTERED",
-          message: "Akun belum terdaftar. Silakan register terlebih dahulu.",
-        },
-        403,
-      );
-    }
+      .maybeSingle();
 
     if (profileError) {
       return c.json({ error: profileError.message }, 500);
+    }
+
+    if (!user) {
+      console.log("PROFILE NOT FOUND — auto-provisioning profil (Google sign-up)");
+      try {
+        const provisioned = await ensureUserProfile(authUser);
+        user = provisioned.user;
+      } catch (err) {
+        console.error("AUTO-PROVISION ERROR:", err);
+        return c.json(
+          {
+            error: err instanceof Error ? err.message : "Gagal membuat profil",
+          },
+          500,
+        );
+      }
     }
 
     const companyName = await getCompanyName(user.company_id);
@@ -260,6 +286,16 @@ auth.post("/exchange-token", async (c) => {
       400,
     );
   }
+});
+
+// POST /api/auth/logout
+// Client-side session (JWT stateless) — endpoint ini menandai logout sukses
+// dan bisa dipakai untuk audit/monitoring sesi
+
+auth.post("/logout", authMiddleware, async (c) => {
+  const user = c.get("user");
+  console.log("LOGOUT:", { sub: user?.sub, email: user?.email });
+  return c.json({ message: "Logout berhasil." });
 });
 
 export default auth;

@@ -292,7 +292,7 @@ export function CashFlowChart({
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* ── Summary Cards ── */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <SummaryCard
           label="Total Masuk"
           value={totMasuk}

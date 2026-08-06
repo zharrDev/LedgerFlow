@@ -33,7 +33,7 @@ export default function UserManagementPage() {
   const fetchUsers = async () => {
     try {
       const res = await api.get("/api/users-management");
-      setUsers(res.data);
+      setUsers(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch (err: any) {
       setError(err.response?.data?.error || "Gagal memuat data user");
     } finally {

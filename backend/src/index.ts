@@ -18,6 +18,7 @@ import companiesRoutes from "./routes/companies.js";
 import passwordResetRoutes from "./routes/password-reset.js";
 import otpRoutes from "./routes/otp.js";
 import userMgmtRoutes from "./routes/user-management.js";
+import uploadRoutes from "./routes/upload.js";
 
 const app = new Hono();
 
@@ -60,6 +61,7 @@ app.route("/api/companies", companiesRoutes);
 app.route("/api/payments", payments);
 app.route("/api/auth", passwordResetRoutes);
 app.route("/api/users-management", userMgmtRoutes);
+app.route("/api/upload", uploadRoutes);
 
 // 404 fallback
 app.notFound((c) => c.json({ error: "Route not found" }, 404));

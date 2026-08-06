@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { pushNotification } from "../components/Header";
+import { validateName } from "../utils/validation";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -61,6 +62,7 @@ export default function ProfilePage() {
     name: user?.name || "",
     email: user?.email || "",
   });
+  const [nameTouched, setNameTouched] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -109,30 +111,38 @@ export default function ProfilePage() {
 
       const compressed = await compressImage(base64, 200, 200, 0.8);
 
-      // Simpan avatar_url ke backend (via user_metadata)
+      // Upload ke Supabase Storage via endpoint avatar, simpan URL-nya
       try {
-        await api.put(`/api/users/${user?.id}`, {
-          avatar_url: compressed,
+        const { data } = await api.post("/api/upload/avatar", {
+          dataUrl: compressed,
+        });
+        const uploadedUrl = data?.url ?? compressed;
+
+        // Update AuthContext + localStorage
+        updateUser({ avatar_url: uploadedUrl });
+
+        // Push notification
+        pushNotification({
+          type: "profile_updated",
+          title: "Foto Profil Diperbarui",
+          message: "Avatar baru Anda sudah aktif di seluruh aplikasi.",
+          link: "/profile",
+        });
+
+        setMessage({
+          type: "success",
+          text: "Foto profil berhasil diperbarui!",
         });
       } catch (err: any) {
         console.error(
           "[Profile] avatar save failed:",
           err.response?.data?.error || err.message,
         );
+        setMessage({
+          type: "error",
+          text: err.response?.data?.error || "Gagal mengupload foto profil",
+        });
       }
-
-      // Update AuthContext + localStorage
-      updateUser({ avatar_url: compressed });
-
-      // Push notification
-      pushNotification({
-        type: "profile_updated",
-        title: "Foto Profil Diperbarui",
-        message: "Avatar baru Anda sudah aktif di seluruh aplikasi.",
-        link: "/profile",
-      });
-
-      setMessage({ type: "success", text: "Foto profil berhasil diperbarui!" });
     } catch (err: any) {
       setMessage({
         type: "error",
@@ -143,9 +153,12 @@ export default function ProfilePage() {
     }
   };
 
+  const nameError = validateName(form.name);
+
   const handleSave = async () => {
-    if (!form.name.trim()) {
-      setMessage({ type: "error", text: "Nama tidak boleh kosong" });
+    if (nameError) {
+      setNameTouched(true);
+      setMessage({ type: "error", text: nameError });
       return;
     }
 
@@ -344,9 +357,13 @@ export default function ProfilePage() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
+                  onBlur={() => setNameTouched(true)}
+                  className={`w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border ${nameTouched && nameError ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"} bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition`}
                 />
               </div>
+              {nameTouched && nameError && (
+                <p className="text-xs text-red-500 mt-1">{nameError}</p>
+              )}
             </div>
 
             <div>

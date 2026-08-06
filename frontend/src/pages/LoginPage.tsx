@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import InfoPanel from "../components/InfoPanel";
 import { api } from "../lib/api";
+import { validateEmail, validatePassword } from "../utils/validation";
 import logo from "../assets/ledgerflow.png";
 
 export default function LoginPage() {
@@ -16,6 +17,9 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showUI, setShowUI] = useState(false);
+  const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>(
+    {},
+  );
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -23,13 +27,19 @@ export default function LoginPage() {
     setShowUI(true);
   }, []);
 
+  const emailError = validateEmail(email);
+  const passwordError = validatePassword(password);
+  const fieldErrors = {
+    email: touched.email ? emailError : "",
+    password: touched.password ? passwordError : "",
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setTouched({ email: true, password: true });
 
-    if (!email.trim()) { setError("Email wajib diisi."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Format email tidak valid."); return; }
-    if (!password) { setError("Password wajib diisi."); return; }
+    if (emailError || passwordError) return;
 
     setLoading(true);
     try {
@@ -131,14 +141,15 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="
-      w-full px-4 py-3 rounded-xl
-      border border-gray-200 dark:border-gray-700
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                  className={`w-full px-4 py-3 rounded-xl
+      border ${fieldErrors.email ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"}
       bg-white dark:bg-darkCard
       text-gray-900 dark:text-white
       placeholder-gray-400 dark:placeholder-gray-500
@@ -148,11 +159,14 @@ export default function LoginPage() {
       autofill:bg-white dark:autofill:bg-darkCard
       autofill:text-gray-900 dark:autofill:text-white
       focus:ring-2 focus:ring-primary-500/40 outline-none
-      transition
-    "
-                required
-                autoComplete="off"
-              />
+      transition`}
+                  required
+                  autoComplete="off"
+                />
+                {fieldErrors.email && (
+                  <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
+                )}
+              </div>
 
               <div className="relative">
                 <input
@@ -160,9 +174,9 @@ export default function LoginPage() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="
-        w-full px-4 py-3 pr-10 rounded-xl
-        border border-gray-200 dark:border-gray-700
+                  onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                  className={`w-full px-4 py-3 pr-10 rounded-xl
+        border ${fieldErrors.password ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"}
         bg-white dark:bg-darkCard
         text-gray-900 dark:text-white
         placeholder-gray-400 dark:placeholder-gray-500
@@ -172,11 +186,15 @@ export default function LoginPage() {
         autofill:bg-white dark:autofill:bg-darkCard
         autofill:text-gray-900 dark:autofill:text-white
         focus:ring-2 focus:ring-primary-500/40 outline-none
-        transition
-      "
+        transition`}
                   required
                   autoComplete="new-password"
                 />
+                {fieldErrors.password && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {fieldErrors.password}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

@@ -49,6 +49,12 @@ export default function RegisterPage() {
     if (apiError) setApiError("");
   };
 
+  const handleBlur = (name: keyof RegisterForm) => {
+    const single = { ...form, [name]: form[name] } as RegisterForm;
+    const err = validateRegisterForm(single)[name];
+    setErrors((prev) => ({ ...prev, [name]: err ?? "" }));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const validationErrors = validateRegisterForm(form);
@@ -169,6 +175,7 @@ export default function RegisterPage() {
                 placeholder="Full Name"
                 value={form.fullName}
                 onChange={handleChange}
+                onBlur={() => handleBlur("fullName")}
                 className="
       w-full px-4 py-3 rounded-xl
       border border-gray-200 dark:border-gray-700
@@ -197,6 +204,7 @@ export default function RegisterPage() {
                 placeholder="Email"
                 value={form.email}
                 onChange={handleChange}
+                onBlur={() => handleBlur("email")}
                 className="
       w-full px-4 py-3 rounded-xl
       border border-gray-200 dark:border-gray-700
@@ -227,6 +235,7 @@ export default function RegisterPage() {
                   placeholder="Password"
                   value={form.password}
                   onChange={handleChange}
+                  onBlur={() => handleBlur("password")}
                   className="
         w-full px-4 py-3 pr-10 rounded-xl
         border border-gray-200 dark:border-gray-700
@@ -288,6 +297,7 @@ export default function RegisterPage() {
                 placeholder="Company Name"
                 value={form.companyName}
                 onChange={handleChange}
+                onBlur={() => handleBlur("companyName")}
                 className="
       w-full px-4 py-3 rounded-xl
       border border-gray-200 dark:border-gray-700

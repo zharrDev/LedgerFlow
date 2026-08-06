@@ -7,10 +7,10 @@ const journal = new Hono();
 // Semua endpoint journal wajib login
 journal.use("*", authMiddleware);
 
-// GET /api/journal — list entries
+// GET /api/journal — list entries (dengan search, filter, sort, pagination)
 journal.get("/", async (c) => {
   const { company_id } = c.get("user");
-  const { period_id, status } = c.req.query();
+  const { period_id, status, search, sort, page, limit } = c.req.query();
 
   let query = supabase
     .from("journal_entries")
@@ -29,16 +29,31 @@ journal.get("/", async (c) => {
         )
       )
     `,
+      { count: "exact" },
     )
     .eq("company_id", company_id)
-    .order("entry_number", { ascending: true });
+    .is("deleted_at", null);
 
   if (period_id) query = query.eq("period_id", period_id);
   if (status) query = query.eq("status", status);
+  if (search) {
+    query = query.or(
+      `description.ilike.%${search}%,entry_number.ilike.%${search}%`,
+    );
+  }
 
-  const { data, error } = await query;
+  const sortField = sort?.startsWith("-") ? sort.slice(1) : sort || "entry_number";
+  const sortDir = sort?.startsWith("-") ? ("desc" as const) : ("asc" as const);
+  query = query.order(sortField, { ascending: sortDir === "asc" });
+
+  const pageNum = Math.max(1, parseInt(page || "1"));
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20")));
+  const offset = (pageNum - 1) * limitNum;
+  query = query.range(offset, offset + limitNum - 1);
+
+  const { data, error, count } = await query;
   if (error) return c.json({ error: error.message }, 500);
-  return c.json(data);
+  return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
 // GET /api/journal/:id — ambil detail satu jurnal
@@ -66,6 +81,7 @@ journal.get("/:id", async (c) => {
     )
     .eq("id", id)
     .eq("company_id", company_id)
+    .is("deleted_at", null)
     .single();
 
   if (error) return c.json({ error: error.message }, 404);
@@ -253,6 +269,152 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   return c.json(entry, 201);
 });
 
+// PUT /api/journal/:id — update jurnal (hanya status draft)
+journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
+  const { company_id } = c.get("user");
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const { entry_date, description, lines } = body;
+
+  const { data: existing } = await supabase
+    .from("journal_entries")
+    .select("*")
+    .eq("id", id)
+    .eq("company_id", company_id)
+    .is("deleted_at", null)
+    .single();
+
+  if (!existing) return c.json({ error: "Entry tidak ditemukan" }, 404);
+  if (existing.status === "posted") {
+    return c.json(
+      { error: "Entry yang sudah diposting tidak bisa diedit." },
+      400,
+    );
+  }
+
+  if (entry_date && new Date(entry_date).toString() === "Invalid Date") {
+    return c.json({ error: "Format entry_date tidak valid." }, 400);
+  }
+  if (description !== undefined && description.trim() === "") {
+    return c.json({ error: "description wajib diisi" }, 400);
+  }
+  if (lines && lines.length < 2) {
+    return c.json({ error: "Minimal 2 baris required (debit + kredit)" }, 400);
+  }
+
+  const { data: period } = await supabase
+    .from("periods")
+    .select("status")
+    .eq("id", existing.period_id)
+    .single();
+
+  if (period?.status === "closed") {
+    return c.json(
+      { error: "Periode sudah ditutup. Tidak bisa mengedit jurnal." },
+      400,
+    );
+  }
+
+  if (lines) {
+    const totalDebit = lines.reduce(
+      (s: number, l: any) => s + (Number(l.debit) || 0),
+      0,
+    );
+    const totalCredit = lines.reduce(
+      (s: number, l: any) => s + (Number(l.credit) || 0),
+      0,
+    );
+    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+      return c.json(
+        {
+          error: `Debit (${totalDebit.toFixed(2)}) harus sama dengan Kredit (${totalCredit.toFixed(2)})`,
+        },
+        400,
+      );
+    }
+    for (const line of lines) {
+      if (!line.accountCode) {
+        return c.json(
+          { error: "Semua baris harus memiliki accountCode" },
+          400,
+        );
+      }
+    }
+  }
+
+  // Update header
+  const headerUpdates: Record<string, any> = {};
+  if (entry_date !== undefined) headerUpdates.entry_date = entry_date;
+  if (description !== undefined) headerUpdates.description = description;
+
+  if (Object.keys(headerUpdates).length > 0) {
+    const { error: updErr } = await supabase
+      .from("journal_entries")
+      .update(headerUpdates)
+      .eq("id", id);
+    if (updErr) return c.json({ error: updErr.message }, 500);
+  }
+
+  // Update lines: map accountCode -> account_id, replace semua line lama
+  if (lines) {
+    const accountCodes = lines.map((l: any) => l.accountCode);
+    const { data: accounts } = await supabase
+      .from("accounts")
+      .select("id, code")
+      .eq("company_id", company_id)
+      .in("code", accountCodes);
+
+    const accountMap = new Map(accounts?.map((a) => [a.code, a.id]));
+    for (const code of accountCodes) {
+      if (!accountMap.has(code)) {
+        return c.json({ error: `Akun dengan kode ${code} tidak ditemukan` }, 400);
+      }
+    }
+
+    const { error: delErr } = await supabase
+      .from("journal_entry_lines")
+      .delete()
+      .eq("journal_entry_id", id);
+    if (delErr) return c.json({ error: delErr.message }, 500);
+
+    const linesData = lines.map((l: any) => ({
+      journal_entry_id: id,
+      account_id: accountMap.get(l.accountCode),
+      debit: Number(l.debit) || 0,
+      credit: Number(l.credit) || 0,
+      memo: l.memo || null,
+    }));
+
+    const { error: linesError } = await supabase
+      .from("journal_entry_lines")
+      .insert(linesData);
+    if (linesError) return c.json({ error: linesError.message }, 500);
+  }
+
+  const { data: updated } = await supabase
+    .from("journal_entries")
+    .select(
+      `
+      *,
+      journal_entry_lines (
+        journal_entry_id,
+        account_id,
+        debit,
+        credit,
+        memo,
+        accounts (
+          code,
+          name
+        )
+      )
+    `,
+    )
+    .eq("id", id)
+    .single();
+
+  return c.json(updated);
+});
+
 // POST /api/journal/:id/post
 journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
   const { company_id } = c.get("user");
@@ -263,6 +425,7 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
     .select("*, periods(status)")
     .eq("id", id)
     .eq("company_id", company_id)
+    .is("deleted_at", null)
     .single();
 
   if (fetchError || !entry)
@@ -293,7 +456,7 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
   return c.json(data);
 });
 
-// DELETE /api/journal/:id
+// DELETE /api/journal/:id — soft delete (set deleted_at, tidak hapus permanen)
 journal.delete("/:id", requireRole("admin", "owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
@@ -302,7 +465,11 @@ journal.delete("/:id", requireRole("admin", "owner"), async (c) => {
     .from("journal_entries")
     .select("*, periods(status)")
     .eq("id", id)
+    .eq("company_id", company_id)
+    .is("deleted_at", null)
     .single();
+
+  if (!entry) return c.json({ error: "Entry tidak ditemukan" }, 404);
 
   if ((entry?.periods as any)?.status === "closed") {
     return c.json(
@@ -316,7 +483,7 @@ journal.delete("/:id", requireRole("admin", "owner"), async (c) => {
 
   const { error } = await supabase
     .from("journal_entries")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
     .eq("company_id", company_id);
 
