@@ -6,7 +6,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   ChevronRight,
@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import logo from "../assets/ledgerflow.png";
+import Footer from "../components/Footer"; // ← import shared Footer component
 import fintechBgDesktop from "../assets/hero/fintech-bg.webp";
 import fintechBgMobile from "../assets/hero/fintech-bg-mobile.webp";
 

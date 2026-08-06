@@ -35,11 +35,13 @@ api.interceptors.response.use(
   (err) => {
     const url = err.config?.url || "";
     const isPaymentRoute = url.includes("/api/payments/");
+    const isAuthRoute = url.includes("/api/auth/");
 
-    if (err.response?.status === 401 && !isPaymentRoute) {
+    if (err.response?.status === 401 &&!isPaymentRoute &&!isAuthRoute) {
       localStorage.removeItem("token");
       window.location.href = "/login";
     }
     return Promise.reject(err);
   },
 );
+

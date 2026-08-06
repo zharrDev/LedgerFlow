@@ -12,7 +12,8 @@
  *
  * Idempotent: aman dijalankan berulang kali (upsert + cek email).
  */
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ override: true });
 import { supabase } from "../src/lib/supabase.js";
 
 const DEMO_PASSWORD = "Demo123!";
@@ -172,12 +173,35 @@ async function main() {
   console.log("=== SEED LEDGERFLOW DEMO DATA ===");
 
   console.log("→ Upsert company demo...");
-  const { data: company } = await supabase
+  const { data: existingCompany } = await supabase
     .from("companies")
-    .upsert(DEMO_COMPANY, { onConflict: "code" })
-    .select()
-    .single();
-  console.log("  Company:", company?.name, company?.id);
+    .select("*")
+    .eq("code", DEMO_COMPANY.code)
+    .maybeSingle();
+
+  let company = existingCompany;
+  if (!company) {
+    const { data: created, error: createErr } = await supabase
+      .from("companies")
+      .insert(DEMO_COMPANY)
+      .select()
+      .single();
+    if (createErr) {
+      console.error("  ! Gagal buat company:", createErr.message);
+      process.exit(1);
+    }
+    company = created;
+    console.log("  Company dibuat:", company?.name, company?.id);
+  } else {
+    const { error: updateErr } = await supabase
+      .from("companies")
+      .update({ name: DEMO_COMPANY.name, currency: DEMO_COMPANY.currency })
+      .eq("id", existingCompany.id);
+    if (updateErr) {
+      console.error("  ! Gagal update company:", updateErr.message);
+    }
+    console.log("  Company sudah ada:", company?.name, company?.id);
+  }
 
   // ── Users ──
   const userIds: Record<string, string> = {};
