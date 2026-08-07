@@ -15,13 +15,118 @@ export async function sendEmail(to: string, subject: string, html: string) {
     console.warn("SMTP not configured. Skipping email send to", to);
     return;
   }
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from: process.env.SMTP_FROM || `"LedgerFlow" <${process.env.SMTP_USER}>`,
     to,
     subject,
     html,
   });
-  console.log("[email] sent to", to, "| subject:", subject);
+  console.log(
+    "[email] sent to",
+    to,
+    "| subject:",
+    subject,
+    "| messageId:",
+    info.messageId,
+  );
+}
+
+export interface SmtpProbeResult {
+  configured: boolean;
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  to?: string;
+  status: "sent" | "auth_failed" | "send_error" | "not_configured";
+  messageId?: string | null;
+  accepted?: string[];
+  rejected?: string[];
+  response?: string;
+  error?: string;
+  errorCode?: string;
+  errorResponse?: string;
+}
+
+// Probe SMTP end-to-end: verifikasi koneksi/auth lalu kirim email uji.
+// Dipakai endpoint diagnostik untuk melihat hasil SMTP mentah (bukan hanya log).
+export async function probeSmtp(to: string): Promise<SmtpProbeResult> {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const secure = process.env.SMTP_SECURE === "true";
+
+  if (!user || !pass) {
+    return { configured: false, status: "not_configured", host, port, secure };
+  }
+
+  const t = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+  });
+
+  // 1) Uji koneksi + autentikasi
+  try {
+    await t.verify();
+  } catch (err: any) {
+    return {
+      configured: true,
+      host,
+      port,
+      secure,
+      user,
+      to,
+      status: "auth_failed",
+      error: err?.message || String(err),
+      errorCode: err?.code,
+      errorResponse: err?.response,
+    };
+  }
+
+  // 2) Kirim email uji
+  const html = `
+    <h3 style="color: #1f2937; margin: 0 0 8px;">Uji SMTP - LedgerFlow</h3>
+    <p style="color: #6b7280; font-size: 14px;">Jika Anda menerima email ini, berarti konfigurasi SMTP benar-benar berfungsi.</p>
+    <p style="color: #9ca3af; font-size: 12px;">${new Date().toISOString()} &middot; dikirim melalui endpoint diagnostik</p>
+  `;
+
+  try {
+    const info = await t.sendMail({
+      from: process.env.SMTP_FROM || `"LedgerFlow" <${user}>`,
+      to,
+      subject: `LedgerFlow SMTP Test - ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`,
+      html,
+    });
+    return {
+      configured: true,
+      host,
+      port,
+      secure,
+      user,
+      to,
+      status: "sent",
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
+    };
+  } catch (err: any) {
+    return {
+      configured: true,
+      host,
+      port,
+      secure,
+      user,
+      to,
+      status: "send_error",
+      error: err?.message || String(err),
+      errorCode: err?.code,
+      errorResponse: err?.response,
+    };
+  }
 }
 
 function baseTemplate(content: string) {
