@@ -6,9 +6,9 @@ const Footer = () => {
   return (
     <footer className="bg-gray-900 text-gray-300 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-10">
           {/* Brand Column */}
-          <div className="lg:col-span-1">
+          <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <LogoMark size={28} />
               <span className="text-white font-bold text-lg">LEDGER|FLOW</span>

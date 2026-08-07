@@ -47,6 +47,7 @@ export default function LoginPage() {
       login(res.data.token, res.data.user);
       navigate("/dashboard");
     } catch (err: any) {
+      console.error("LOGIN ERROR:", err?.response?.data || err?.message || err);
       setError(err.response?.data?.error || err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);

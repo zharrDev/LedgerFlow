@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
+import { authClient } from "../lib/authClient.js";
 import { signToken } from "../lib/jwt.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { sendWelcomeEmail, sendLoginNotification } from "../lib/email.js";
@@ -136,7 +137,7 @@ auth.post("/login", async (c) => {
     return c.json({ error: "Format email tidak valid." }, 400);
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await authClient.auth.signInWithPassword({
     email,
     password,
   });

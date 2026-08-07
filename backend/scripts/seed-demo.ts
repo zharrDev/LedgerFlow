@@ -12,8 +12,8 @@
  *
  * Idempotent: aman dijalankan berulang kali (upsert + cek email).
  */
-import dotenv from "dotenv";
-dotenv.config({ override: true });
+import { loadEnv } from "../src/lib/env.js";
+loadEnv();
 import { supabase } from "../src/lib/supabase.js";
 
 const DEMO_PASSWORD = "Demo123!";
