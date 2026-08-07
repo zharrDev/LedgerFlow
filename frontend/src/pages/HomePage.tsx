@@ -442,7 +442,7 @@ export default function HomePage() {
 
       {/* ═══ Hero ═══ */}
       <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
+        <div className="absolute inset-0 bg-contain bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
         <div className="absolute inset-0 bg-gradient-to-br from-primary-50/90 via-white/85 to-transparent dark:from-primary-950/80 dark:via-darkBg/85 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-300/20 rounded-full blur-3xl" />
@@ -456,8 +456,8 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-              Manage Your Financial Future <br />
+            <h2 className="text-[2rem] leading-[1.15] sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white">
+              Manage Your Financial Future <br className="hidden sm:block" />
               <span className="bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent break-words">
                 With Confidence
               </span>
@@ -527,12 +527,12 @@ export default function HomePage() {
               Bank-grade security & enterprise compliance
             </p>
           </motion.div>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid gap-5 sm:gap-8 md:grid-cols-2">
             <motion.div
               variants={fadeUp}
-              className="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-primary-500/20 p-6 hover:shadow-2xl transition"
+              className="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-primary-500/20 p-5 sm:p-6 min-w-0 hover:shadow-2xl transition"
             >
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-start gap-3 mb-4 flex-wrap">
                 <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/30 rounded-xl flex items-center justify-center text-cyan-600">
                   <Building size={24} />
                 </div>
@@ -558,9 +558,9 @@ export default function HomePage() {
             </motion.div>
             <motion.div
               variants={fadeUp}
-              className="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-primary-500/20 p-6 hover:shadow-2xl transition"
+              className="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-primary-500/20 p-5 sm:p-6 min-w-0 hover:shadow-2xl transition"
             >
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-start gap-3 mb-4 flex-wrap">
                 <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600">
                   <CreditCard size={24} />
                 </div>
@@ -710,7 +710,7 @@ export default function HomePage() {
               Powerful features built for modern finance teams
             </p>
           </motion.div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 icon: Zap,
@@ -750,10 +750,10 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.08 }}
                 whileHover={{ y: -8 }}
-                className="bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-6 border border-primary-500/20 shadow-md hover:shadow-xl transition-all"
+                className="bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all"
               >
                 <feat.icon className="w-10 h-10 text-primary-500 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   {feat.title}
                 </h3>
                 <p className="mt-2 text-gray-500 dark:text-gray-400">
