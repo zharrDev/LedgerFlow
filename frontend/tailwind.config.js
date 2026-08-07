@@ -31,6 +31,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        script: ['"Dancing Script"', '"Pacifico"', 'cursive'],
       },
       backdropBlur: {
         xs: '2px',

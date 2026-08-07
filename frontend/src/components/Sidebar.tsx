@@ -120,7 +120,7 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
     <div className="flex flex-col h-full">
       {/* ── Company Card (di atas menu) ── */}
       {user && (
-        <div className="px-3 pt-8 pb-3">
+        <div className="px-3 pt-2 pb-2">
           <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-primary-50 to-primary-50/50 dark:from-primary-900/20 dark:to-primary-900/10 border border-primary-200/50 dark:border-primary-800/30">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
               {initials}
@@ -139,18 +139,25 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
       )}
 
       {/* ── Main Navigation (indented/turunan) ── */}
-      <nav className="flex-1 px-3 pt-3 pb-2 overflow-y-auto">
-        <p className="px-3 mb-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
+      <nav className="flex-1 px-3 pt-2 pb-1 overflow-y-auto">
+        <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
           Menu
         </p>
-        <div className="space-y-0.5">
-          {navItems.map((item) => (
+        <div className="space-y-1.5">
+          {navItems
+            .filter(
+              (item) =>
+                item.href !== "/users-management" ||
+                user?.role === "owner" ||
+                user?.role === "admin",
+            )
+            .map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
               onClick={onLinkClick}
               className={({ isActive }) =>
-                `group relative flex items-center gap-3 pl-4 pr-3 py-2 text-[13px] rounded-xl transition-all duration-200 ${
+                `group relative flex items-center gap-2.5 pl-4 pr-3 py-2 text-xs rounded-xl transition-all duration-200 ${
                   isActive
                     ? "bg-gradient-to-r from-primary-500/10 to-primary-500/5 text-primary-600 dark:text-primary-400 font-medium shadow-sm"
                     : "text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-darkCard/50"
@@ -166,7 +173,7 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
                         : "h-0 bg-transparent group-hover:h-2 group-hover:bg-primary-300 dark:group-hover:bg-primary-700"
                     }`}
                   />
-                  <item.icon size={17} className="shrink-0" />
+                  <item.icon size={16} className="shrink-0" />
                   <span className="truncate">{item.label}</span>
                   {isActive && (
                     <ChevronRight
@@ -182,21 +189,21 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
       </nav>
 
       {/* ── Bottom links ── */}
-      <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-0.5">
+      <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
         {bottomItems.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
             onClick={onLinkClick}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 text-[13px] rounded-xl transition-all duration-200 ${
+              `flex items-center gap-2.5 px-3 py-2 text-xs rounded-xl transition-all duration-200 ${
                 isActive
                   ? "text-primary-600 dark:text-primary-400 bg-primary-500/10 font-medium"
                   : "text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-darkCard/50"
               }`
             }
           >
-            <item.icon size={17} className="shrink-0" />
+            <item.icon size={16} className="shrink-0" />
             <span className="truncate">{item.label}</span>
           </NavLink>
         ))}

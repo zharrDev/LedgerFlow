@@ -3,7 +3,11 @@ import { supabase } from "../lib/supabase.js";
 import { authClient } from "../lib/authClient.js";
 import { signToken } from "../lib/jwt.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { sendWelcomeEmail, sendLoginNotification } from "../lib/email.js";
+import {
+  sendWelcomeEmail,
+  sendLoginNotification,
+  sendMemberLoginNotification,
+} from "../lib/email.js";
 import { ensureUserProfile } from "../lib/ensureProfile.js";
 
 const auth = new Hono();
@@ -16,6 +20,73 @@ async function getCompanyName(companyId: string): Promise<string> {
     .eq("id", companyId)
     .single();
   return data?.name || "";
+}
+
+// Helper: terjemahkan User-Agent menjadi info perangkat yang mudah dibaca
+function parseUserAgent(ua: string): string {
+  if (!ua) return "Perangkat tidak dikenal";
+  const browser = ua.includes("Edg/")
+    ? "Microsoft Edge"
+    : ua.includes("Chrome/")
+      ? "Chrome"
+      : ua.includes("Firefox/")
+        ? "Firefox"
+        : ua.includes("Safari/")
+          ? "Safari"
+          : ua.includes("OPR/")
+            ? "Opera"
+            : "Browser";
+  const os = ua.includes("Windows")
+    ? "Windows"
+    : ua.includes("Mac OS")
+      ? "macOS"
+      : ua.includes("Android")
+        ? "Android"
+        : ua.includes("iPhone") || ua.includes("iPad")
+          ? "iOS"
+          : ua.includes("Linux")
+            ? "Linux"
+            : "OS";
+  return `${browser} · ${os}`;
+}
+
+// Helper: ambil IP client (menghormati proxy/load balancer)
+function getClientIp(c: any): string {
+  return (
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+    c.req.header("x-real-ip") ||
+    "Tidak diketahui"
+  );
+}
+
+// Helper: beri tahu owner perusahaan jika member lain login
+async function notifyCompanyOwners(
+  companyId: string,
+  actor: { id: string; name: string; email: string },
+  meta: { device: string; ip: string },
+) {
+  try {
+    const { data: owners } = await supabase
+      .from("users")
+      .select("id, name, email")
+      .eq("company_id", companyId)
+      .eq("role", "owner")
+      .neq("id", actor.id);
+
+    if (!owners?.length) return;
+
+    for (const owner of owners) {
+      sendMemberLoginNotification(
+        owner.email,
+        owner.name,
+        actor.name,
+        actor.email,
+        meta,
+      ).catch(console.error);
+    }
+  } catch (err) {
+    console.error("notifyCompanyOwners error:", err);
+  }
 }
 
 // POST /api/auth/register
@@ -95,7 +166,7 @@ auth.post("/register", async (c) => {
       company_id: user.company_id,
     });
 
-    sendWelcomeEmail(user.email, user.name).catch(console.error);
+    sendWelcomeEmail(user.email, user.name, company.name).catch(console.error);
 
     return c.json(
       {
@@ -183,7 +254,20 @@ auth.post("/login", async (c) => {
     company_id: user.company_id,
   });
 
-  sendLoginNotification(user.email, user.name).catch(console.error);
+  sendLoginNotification(user.email, user.name, {
+    companyName,
+    device: parseUserAgent(c.req.header("user-agent") || ""),
+    ip: getClientIp(c),
+  }).catch(console.error);
+
+  notifyCompanyOwners(
+    user.company_id,
+    { id: user.id, name: user.name, email: user.email },
+    {
+      device: parseUserAgent(c.req.header("user-agent") || ""),
+      ip: getClientIp(c),
+    },
+  );
 
   return c.json({
     token,
@@ -264,7 +348,20 @@ auth.post("/exchange-token", async (c) => {
       company_id: user.company_id,
     });
 
-    sendLoginNotification(user.email, user.name).catch(console.error);
+    sendLoginNotification(user.email, user.name, {
+      companyName,
+      device: parseUserAgent(c.req.header("user-agent") || ""),
+      ip: getClientIp(c),
+    }).catch(console.error);
+
+    notifyCompanyOwners(
+      user.company_id,
+      { id: user.id, name: user.name, email: user.email },
+      {
+        device: parseUserAgent(c.req.header("user-agent") || ""),
+        ip: getClientIp(c),
+      },
+    );
 
     console.log("EXCHANGE TOKEN SUCCESS");
 
