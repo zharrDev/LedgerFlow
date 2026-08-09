@@ -54,6 +54,7 @@ export async function ensureUserProfile(authUser: AuthUserLike) {
       email,
       name,
       role: "owner",
+      email_verified: true,
     })
     .select()
     .single();

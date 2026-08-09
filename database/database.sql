@@ -361,3 +361,173 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', tru
   ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('payment-proofs', 'payment-proofs', true)
   ON CONFLICT (id) DO NOTHING;
+
+-- ─── 14. CONSTRAINT: normal_balance harus konsisten dengan type ──────
+-- Mencegah data korup: mis. akun ASSET dengan normal_balance CREDIT.
+-- Backend sudah menurunkan normal_balance dari type, ini jaring pengaman
+-- di level DB (defense-in-depth). Idempoten via DROP IF EXISTS.
+--
+-- PENTING: data lama bisa saja punya normal_balance yang tidak konsisten
+-- dengan type (dari sebelum backend dikeraskan). Postgres memvalidasi SEMUA
+-- baris saat CHECK dipasang, jadi baris yang melanggar akan bikin ADD
+-- CONSTRAINT gagal. Karena itu kita rapikan datanya DULU: normal_balance
+-- selalu diturunkan dari type (ASSET/EXPENSE = DEBIT, sisanya = CREDIT).
+UPDATE accounts
+  SET normal_balance = CASE
+    WHEN type IN ('ASSET', 'EXPENSE') THEN 'DEBIT'
+    ELSE 'CREDIT'
+  END
+WHERE normal_balance <> CASE
+    WHEN type IN ('ASSET', 'EXPENSE') THEN 'DEBIT'
+    ELSE 'CREDIT'
+  END;
+
+ALTER TABLE accounts DROP CONSTRAINT IF EXISTS chk_accounts_type_normal_balance;
+ALTER TABLE accounts ADD CONSTRAINT chk_accounts_type_normal_balance CHECK (
+  (type IN ('ASSET', 'EXPENSE') AND normal_balance = 'DEBIT') OR
+  (type IN ('LIABILITY', 'EQUITY', 'REVENUE') AND normal_balance = 'CREDIT')
+);
+
+-- Index untuk mempercepat query yang sering memfilter deleted_at & period
+CREATE INDEX IF NOT EXISTS idx_journal_entries_company_status
+  ON journal_entries(company_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_journal_entry_lines_account
+  ON journal_entry_lines(account_id);
+
+-- ─── 15. RPC ATOMIK: buat & update jurnal dalam satu transaksi ───────
+-- Fungsi PL/pgSQL berjalan dalam satu transaksi: bila ada baris yang gagal,
+-- SELURUH operasi di-rollback otomatis (tidak ada header tanpa baris / tidak
+-- balance). Nomor jurnal diambil via journal_counters agar aman dari race
+-- condition saat banyak request bersamaan.
+--
+-- p_lines berbentuk JSONB array: [{ "account_id": "...", "debit": 0, "credit": 100, "memo": null }, ...]
+
+CREATE OR REPLACE FUNCTION create_journal_entry(
+  p_company_id  UUID,
+  p_period_id   UUID,
+  p_created_by  UUID,
+  p_entry_date  DATE,
+  p_description TEXT,
+  p_status      TEXT,
+  p_lines       JSONB
+) RETURNS journal_entries
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_year_month   TEXT;
+  v_next         INT;
+  v_entry_number TEXT;
+  v_entry        journal_entries;
+  v_total_debit  NUMERIC(18,2);
+  v_total_credit NUMERIC(18,2);
+  v_line         JSONB;
+BEGIN
+  IF p_lines IS NULL OR jsonb_array_length(p_lines) < 2 THEN
+    RAISE EXCEPTION 'Minimal 2 baris jurnal';
+  END IF;
+
+  -- Balance check di level DB
+  SELECT
+    COALESCE(SUM((l->>'debit')::NUMERIC), 0),
+    COALESCE(SUM((l->>'credit')::NUMERIC), 0)
+  INTO v_total_debit, v_total_credit
+  FROM jsonb_array_elements(p_lines) AS l;
+
+  IF abs(v_total_debit - v_total_credit) > 0.005 THEN
+    RAISE EXCEPTION 'Debit (%) tidak sama dengan Kredit (%)', v_total_debit, v_total_credit;
+  END IF;
+
+  -- Nomor jurnal aman dari race condition (atomic upsert + row lock)
+  v_year_month := to_char(p_entry_date, 'YYYYMM');
+  INSERT INTO journal_counters (company_id, year_month, last_number)
+    VALUES (p_company_id, v_year_month, 1)
+  ON CONFLICT (company_id, year_month)
+    DO UPDATE SET last_number = journal_counters.last_number + 1
+  RETURNING last_number INTO v_next;
+
+  v_entry_number := 'JE-' || v_year_month || '-' || lpad(v_next::TEXT, 4, '0');
+
+  INSERT INTO journal_entries
+    (company_id, period_id, created_by, entry_number, entry_date, description, status)
+  VALUES
+    (p_company_id, p_period_id, p_created_by, v_entry_number, p_entry_date, p_description,
+     CASE WHEN p_status = 'posted' THEN 'posted' ELSE 'draft' END)
+  RETURNING * INTO v_entry;
+
+  FOR v_line IN SELECT * FROM jsonb_array_elements(p_lines)
+  LOOP
+    INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, memo)
+    VALUES (
+      v_entry.id,
+      (v_line->>'account_id')::UUID,
+      COALESCE((v_line->>'debit')::NUMERIC, 0),
+      COALESCE((v_line->>'credit')::NUMERIC, 0),
+      v_line->>'memo'
+    );
+  END LOOP;
+
+  RETURN v_entry;
+END;
+$$;
+
+-- Replace seluruh baris jurnal (dipakai saat edit) secara atomik + balance check.
+CREATE OR REPLACE FUNCTION replace_journal_entry_lines(
+  p_entry_id UUID,
+  p_lines    JSONB
+) RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_total_debit  NUMERIC(18,2);
+  v_total_credit NUMERIC(18,2);
+  v_line         JSONB;
+BEGIN
+  IF p_lines IS NULL OR jsonb_array_length(p_lines) < 2 THEN
+    RAISE EXCEPTION 'Minimal 2 baris jurnal';
+  END IF;
+
+  SELECT
+    COALESCE(SUM((l->>'debit')::NUMERIC), 0),
+    COALESCE(SUM((l->>'credit')::NUMERIC), 0)
+  INTO v_total_debit, v_total_credit
+  FROM jsonb_array_elements(p_lines) AS l;
+
+  IF abs(v_total_debit - v_total_credit) > 0.005 THEN
+    RAISE EXCEPTION 'Debit (%) tidak sama dengan Kredit (%)', v_total_debit, v_total_credit;
+  END IF;
+
+  DELETE FROM journal_entry_lines WHERE journal_entry_id = p_entry_id;
+
+  FOR v_line IN SELECT * FROM jsonb_array_elements(p_lines)
+  LOOP
+    INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, memo)
+    VALUES (
+      p_entry_id,
+      (v_line->>'account_id')::UUID,
+      COALESCE((v_line->>'debit')::NUMERIC, 0),
+      COALESCE((v_line->>'credit')::NUMERIC, 0),
+      v_line->>'memo'
+    );
+  END LOOP;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION create_journal_entry(UUID, UUID, UUID, DATE, TEXT, TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION replace_journal_entry_lines(UUID, JSONB) TO service_role;
+
+-- ─── 16. VERIFIKASI EMAIL SAAT REGISTER ─────────────────────────────
+-- Menambah flag email_verified di users. Register membuat akun dengan
+-- email_verified=false; login diblokir sampai OTP diverifikasi.
+-- Idempoten via IF NOT EXISTS.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+
+-- Grandfather: semua user yang SUDAH ada dianggap terverifikasi supaya
+-- tidak terkunci saat login berikutnya (mereka daftar sebelum fitur ini ada).
+-- Aman dijalankan berkali-kali (hanya menyentuh yang masih false).
+UPDATE users SET email_verified = true WHERE email_verified = false;
+
+-- Anti brute-force OTP: hitung percobaan verify yang gagal per kode.
+-- Di-reset natural saat user minta kode baru (kode lama di-set used=true).
+ALTER TABLE otp_codes ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
+
+

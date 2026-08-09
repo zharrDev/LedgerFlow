@@ -95,25 +95,64 @@ otp.post("/verify-otp", async (c) => {
       return c.json({ error: "User tidak ditemukan." }, 404);
     }
 
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
+
+    // Ambil OTP aktif terbaru untuk (user, purpose) TANPA filter code, supaya
+    // percobaan yang salah bisa dihitung pada baris yang sama (anti brute-force).
     const { data: otpRecord } = await supabase
       .from("otp_codes")
       .select("*")
       .eq("user_id", user.id)
-      .eq("code", code)
       .eq("purpose", purpose)
       .eq("used", false)
-      .gte("expires_at", now)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (!otpRecord) {
-      return c.json({ error: "Kode OTP tidak valid atau sudah kedaluwarsa." }, 400);
+      return c.json(
+        { error: "Kode OTP tidak valid atau sudah kedaluwarsa. Minta kode baru." },
+        400,
+      );
+    }
+
+    // Lockout: 5 percobaan salah → wajib minta kode baru (send-otp mereset ini
+    // karena meng-used=true semua kode lama, lalu membuat baris baru attempts=0).
+    if ((otpRecord.attempts ?? 0) >= 5) {
+      return c.json(
+        { error: "Terlalu banyak percobaan. Minta kode baru." },
+        429,
+      );
+    }
+
+    if (new Date(otpRecord.expires_at).getTime() < nowMs) {
+      return c.json(
+        { error: "Kode OTP sudah kedaluwarsa. Minta kode baru." },
+        400,
+      );
+    }
+
+    // Kode salah → catat percobaan lalu tolak.
+    if (otpRecord.code !== code) {
+      await supabase
+        .from("otp_codes")
+        .update({ attempts: (otpRecord.attempts ?? 0) + 1 })
+        .eq("id", otpRecord.id);
+      return c.json({ error: "Kode OTP tidak valid." }, 400);
     }
 
     await supabase
       .from("otp_codes")
       .update({ used: true })
       .eq("id", otpRecord.id);
+
+    // Untuk register: tandai email terverifikasi supaya user bisa login.
+    if (purpose === "register_verification") {
+      await supabase
+        .from("users")
+        .update({ email_verified: true })
+        .eq("id", user.id);
+    }
 
     return c.json({ message: "Verifikasi berhasil.", success: true });
   } catch (err) {

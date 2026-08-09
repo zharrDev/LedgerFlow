@@ -85,6 +85,7 @@ userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
         email,
         name,
         role,
+        email_verified: true,
       })
       .select("id, name, email, role, avatar_url, created_at")
       .single();

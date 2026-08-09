@@ -5,25 +5,13 @@ export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
 });
 
-// Interceptor request: otomatis kirim token dan info user/company dari localStorage
+// Interceptor request: kirim JWT. Identitas user/company diambil backend
+// dari token (bukan dari header x-user-id/x-company-id yang bisa dipalsukan).
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  const userStr = localStorage.getItem("user");
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      if (user.id) {
-        config.headers["x-user-id"] = user.id;
-      }
-      if (user.company_id) {
-        config.headers["x-company-id"] = user.company_id;
-      }
-    } catch {}
   }
 
   return config;

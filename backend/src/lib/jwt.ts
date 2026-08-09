@@ -1,8 +1,15 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "fallback-secret-change-in-production",
-);
+// JWT_SECRET wajib ada dan cukup kuat. Tidak ada fallback: bila kosong,
+// token bisa dipalsukan siapa pun. Fail-fast saat startup.
+const rawSecret = process.env.JWT_SECRET;
+if (!rawSecret || rawSecret.length < 32) {
+  throw new Error(
+    "JWT_SECRET wajib diset dan minimal 32 karakter. Set env JWT_SECRET yang kuat.",
+  );
+}
+
+const secret = new TextEncoder().encode(rawSecret);
 
 // Struktur payload JWT yang dipakai di aplikasi
 export interface JWTPayload {

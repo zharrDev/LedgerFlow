@@ -71,14 +71,23 @@ passwordReset.post("/reset-password", async (c) => {
       return c.json({ error: "Token sudah kedaluwarsa." }, 400);
     }
 
+    // Target user WAJIB diturunkan dari token (resetRecord.user_id), bukan dari
+    // email di body. Kalau tidak, pemegang token valid bisa mereset password
+    // akun orang lain hanya dengan mengganti email di request (account takeover).
     const { data: user } = await supabase
       .from("users")
       .select("id, email")
-      .eq("email", email)
+      .eq("id", resetRecord.user_id)
       .single();
 
     if (!user) {
       return c.json({ error: "User tidak ditemukan." }, 404);
+    }
+
+    // Email di body harus cocok dengan pemilik token — kalau tidak, tolak
+    // dengan pesan generik yang sama (jangan bocorkan info akun).
+    if (user.email.toLowerCase() !== String(email).toLowerCase()) {
+      return c.json({ error: "Token tidak valid atau sudah digunakan." }, 400);
     }
 
     await supabase.auth.admin.updateUserById(user.id, { password });

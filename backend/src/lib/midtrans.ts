@@ -60,10 +60,10 @@ export function getPlanPrice(plan: PlanName, cycle: BillingCycle): number {
   return PLAN_PRICES[plan]?.[cycle] ?? 0;
 }
 
-// Debug konfigurasi Midtrans aktif
+// Debug konfigurasi Midtrans aktif — JANGAN log material key (rahasia).
 console.log(`[Midtrans] Mode: ${isProduction ? "PRODUCTION" : "SANDBOX"}`);
-console.log(`[Midtrans] Server key: ${serverKey.substring(0, 20)}...`);
-console.log(`[Midtrans] Client key: ${clientKey.substring(0, 20)}...`);
+console.log(`[Midtrans] Server key configured: ${!!serverKey}`);
+console.log(`[Midtrans] Client key configured: ${!!clientKey}`);
 console.log(
   `[Midtrans] Snap API URL: ${isProduction ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com"}`,
 );

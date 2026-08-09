@@ -1,16 +1,13 @@
 // routes/reports.ts (FIXED — Balance Sheet includes Net Income in Equity)
 import { Hono } from "hono";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const reports = new Hono();
 
-// Helper: membuat client Supabase khusus route laporan
-const getSupabase = () => {
-  return createClient(
-    process.env.SUPABASE_URL || "",
-    process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-  );
-};
+// Semua route laporan wajib login; company_id SELALU dari JWT (bukan query/header
+// yang bisa dipalsukan). Ini mencegah user melihat laporan tenant lain.
+reports.use("*", authMiddleware);
 
 const MONTH_NAMES_ID = [
   "Januari",
@@ -44,11 +41,7 @@ function isCashAccount(code: string, name: string, type: string): boolean {
 // Menghitung pendapatan, beban, dan laba bersih dari jurnal posted
 reports.get("/income-statement", async (c) => {
   const periodId = c.req.query("period_id");
-  const companyId = c.req.query("company_id") || c.req.header("x-company-id");
-
-  if (!companyId) return c.json({ error: "company_id is required" }, 400);
-
-  const supabase = getSupabase();
+  const companyId = c.get("user").company_id;
 
   try {
     let query = supabase
@@ -57,11 +50,12 @@ reports.get("/income-statement", async (c) => {
         `
         debit, credit,
         accounts!inner (code, name, type),
-        journal_entries!inner (company_id, status, period_id)
+        journal_entries!inner (company_id, status, period_id, deleted_at)
       `,
       )
       .eq("journal_entries.company_id", companyId)
-      .eq("journal_entries.status", "posted");
+      .eq("journal_entries.status", "posted")
+      .is("journal_entries.deleted_at", null);
 
     if (periodId) query = query.eq("journal_entries.period_id", periodId);
 
@@ -137,16 +131,11 @@ reports.get("/income-statement", async (c) => {
     return c.json({ error: err?.message || "Internal Server Error" }, 500);
   }
 });
-
 // BALANCE SHEET
 // Menghitung aset, liabilitas, ekuitas, lalu memasukkan laba bersih ke equity
 reports.get("/balance-sheet", async (c) => {
   const periodId = c.req.query("period_id");
-  const companyId = c.req.query("company_id") || c.req.header("x-company-id");
-
-  if (!companyId) return c.json({ error: "company_id is required" }, 400);
-
-  const supabase = getSupabase();
+  const companyId = c.get("user").company_id;
 
   try {
     let query = supabase
@@ -155,11 +144,12 @@ reports.get("/balance-sheet", async (c) => {
         `
         debit, credit,
         accounts!inner (id, code, name, type, normal_balance),
-        journal_entries!inner (company_id, status, period_id)
+        journal_entries!inner (company_id, status, period_id, deleted_at)
       `,
       )
       .eq("journal_entries.company_id", companyId)
-      .eq("journal_entries.status", "posted");
+      .eq("journal_entries.status", "posted")
+      .is("journal_entries.deleted_at", null);
 
     if (periodId) query = query.eq("journal_entries.period_id", periodId);
 
@@ -266,13 +256,9 @@ reports.get("/balance-sheet", async (c) => {
 // Menghitung arus kas operasi, investasi, dan pendanaan
 reports.get("/cash-flow", async (c) => {
   const periodId = c.req.query("period_id");
-  const companyId = c.req.query("company_id") || c.req.header("x-company-id");
+  const companyId = c.get("user").company_id;
 
   console.log("[Cash Flow] Request:", { periodId, companyId });
-
-  if (!companyId) return c.json({ error: "company_id is required" }, 400);
-
-  const supabase = getSupabase();
 
   try {
     let periodYear: number | null = null;
@@ -284,6 +270,7 @@ reports.get("/cash-flow", async (c) => {
         .from("periods")
         .select("id, year, month")
         .eq("id", periodId)
+        .eq("company_id", companyId)
         .single();
 
       if (period) {
@@ -315,11 +302,12 @@ reports.get("/cash-flow", async (c) => {
         `
         debit, credit,
         accounts!inner (id, code, name, type),
-        journal_entries!inner (company_id, status, period_id)
+        journal_entries!inner (company_id, status, period_id, deleted_at)
       `,
       )
       .eq("journal_entries.company_id", companyId)
-      .eq("journal_entries.status", "posted");
+      .eq("journal_entries.status", "posted")
+      .is("journal_entries.deleted_at", null);
 
     if (periodId)
       periodQuery = periodQuery.eq("journal_entries.period_id", periodId);
@@ -343,12 +331,13 @@ reports.get("/cash-flow", async (c) => {
           `
           debit, credit,
           accounts!inner (id, code, name, type),
-          journal_entries!inner (company_id, status, period_id)
+          journal_entries!inner (company_id, status, period_id, deleted_at)
         `,
         )
         .eq("journal_entries.company_id", companyId)
         .eq("journal_entries.status", "posted")
-        .in("journal_entries.period_id", beforePeriodIds);
+        .in("journal_entries.period_id", beforePeriodIds)
+        .is("journal_entries.deleted_at", null);
 
       for (const line of beforeLines || []) {
         const account = line.accounts as any;
@@ -467,11 +456,7 @@ reports.get("/cash-flow", async (c) => {
 // PERIODS
 // Mengambil daftar periode milik company untuk filter laporan
 reports.get("/periods", async (c) => {
-  const companyId = c.req.query("company_id") || c.req.header("x-company-id");
-
-  if (!companyId) return c.json({ error: "company_id is required" }, 400);
-
-  const supabase = getSupabase();
+  const companyId = c.get("user").company_id;
 
   const { data, error } = await supabase
     .from("periods")

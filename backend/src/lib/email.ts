@@ -109,8 +109,8 @@ export async function probeSmtp(to: string): Promise<SmtpProbeResult> {
       to,
       status: "sent",
       messageId: info.messageId,
-      accepted: info.accepted,
-      rejected: info.rejected,
+      accepted: (info.accepted ?? []).map((a) => String(a)),
+      rejected: (info.rejected ?? []).map((a) => String(a)),
       response: info.response,
     };
   } catch (err: any) {

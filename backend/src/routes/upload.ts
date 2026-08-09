@@ -16,7 +16,9 @@ upload.post("/avatar", async (c) => {
       return c.json({ error: "dataUrl wajib dikirim." }, 400);
     }
 
-    const url = await uploadBase64("avatars", user.sub, dataUrl);
+    const url = await uploadBase64("avatars", user.sub, dataUrl, {
+      upsert: true,
+    });
 
     // Simpan URL ke profil user
     await supabase.from("users").update({ avatar_url: url }).eq("id", user.sub);
@@ -37,7 +39,24 @@ upload.post("/proof", async (c) => {
       return c.json({ error: "dataUrl wajib dikirim." }, 400);
     }
 
-    const folder = order_id ? `orders/${order_id}` : `users/${user.sub}`;
+    // Kalau order_id dikirim, pastikan order itu benar milik user yang login.
+    // Ini mencegah user menaruh file di folder order milik orang lain,
+    // sekaligus mencegah path traversal lewat order_id.
+    let folder = `users/${user.sub}`;
+    if (order_id) {
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("id, user_id")
+        .eq("order_id", order_id)
+        .maybeSingle();
+
+      if (!payment || payment.user_id !== user.sub) {
+        return c.json({ error: "Order tidak ditemukan." }, 404);
+      }
+
+      folder = `orders/${order_id}`;
+    }
+
     const url = await uploadBase64("payment-proofs", folder, dataUrl);
 
     return c.json({ url });

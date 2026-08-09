@@ -36,7 +36,7 @@ app.use(
       process.env.FRONTEND_URL ?? "http://localhost:5173", 
       "https://ledger-flow-frontend-azure.vercel.app"
     ],
-    allowHeaders: ["Content-Type", "Authorization", "x-user-id", "x-company-id"],
+    allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   })
 );
@@ -69,17 +69,11 @@ app.route("/api/health", healthRoutes);
 // 404 fallback
 app.notFound((c) => c.json({ error: "Route not found" }, 404));
 
-// Error handler
+// Error handler — jangan bocorkan detail internal ke client
 app.onError((err, c) => {
   console.error("GLOBAL ERROR:", err);
 
-  return c.json(
-    {
-      error: "Internal server error",
-      message: err instanceof Error ? err.message : String(err),
-    },
-    500,
-  );
+  return c.json({ error: "Internal server error" }, 500);
 });
 
 const PORT = Number(process.env.PORT ?? 3000);

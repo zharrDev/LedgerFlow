@@ -133,13 +133,55 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
       expense: "EXPENSE",
     };
 
+    // normal_balance harus selalu diturunkan dari type (tidak boleh independen)
+    const BALANCE_MAP: Record<string, string> = {
+      ASSET: "DEBIT",
+      LIABILITY: "CREDIT",
+      EQUITY: "CREDIT",
+      REVENUE: "CREDIT",
+      EXPENSE: "DEBIT",
+    };
+
+    // Ambil akun lama untuk cek perubahan type & kepemilikan
+    const { data: existing } = await supabase
+      .from("accounts")
+      .select("id, type, company_id")
+      .eq("id", id)
+      .eq("company_id", company_id)
+      .single();
+
+    if (!existing) {
+      return c.json({ error: "Akun tidak ditemukan" }, 404);
+    }
+
+    const newType = body.type ? TYPE_MAP[body.type] : undefined;
+
+    // Kalau type berubah, pastikan akun belum dipakai di jurnal manapun.
+    // Mengubah type/normal_balance setelah ada transaksi akan merusak
+    // perhitungan saldo & laporan yang sudah terlanjur ada.
+    if (newType && newType !== existing.type) {
+      const { count } = await supabase
+        .from("journal_entry_lines")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", id);
+
+      if (count && count > 0) {
+        return c.json(
+          {
+            error:
+              "Tipe akun tidak bisa diubah karena sudah dipakai di jurnal. Buat akun baru bila perlu tipe berbeda.",
+          },
+          400,
+        );
+      }
+    }
+
     const updateData: any = {
       code: body.code,
       name: body.name,
-      type: body.type ? TYPE_MAP[body.type] : undefined,
-      normal_balance: body.normalBalance
-        ? body.normalBalance.toUpperCase()
-        : undefined,
+      type: newType,
+      // normal_balance selalu ikut type; abaikan body.normalBalance dari client
+      normal_balance: newType ? BALANCE_MAP[newType] : undefined,
       is_active: body.isActive,
     };
 

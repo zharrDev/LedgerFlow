@@ -7,6 +7,7 @@ import {
   sendWelcomeEmail,
   sendLoginNotification,
   sendMemberLoginNotification,
+  sendOTPEmail,
 } from "../lib/email.js";
 import { ensureUserProfile } from "../lib/ensureProfile.js";
 
@@ -141,6 +142,7 @@ auth.post("/register", async (c) => {
         email,
         name,
         role: "owner",
+        email_verified: false,
       })
       .select()
       .single();
@@ -159,30 +161,22 @@ auth.post("/register", async (c) => {
       role: "owner",
     });
 
-    const token = await signToken({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      company_id: user.company_id,
+    // Verifikasi email: akun dibuat dalam status belum terverifikasi.
+    // JWT DITAHAN sampai user memasukkan OTP yang benar di /verify-otp.
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+    await supabase.from("otp_codes").insert({
+      user_id: user.id,
+      code,
+      purpose: "register_verification",
+      expires_at: expiresAt,
     });
 
     sendWelcomeEmail(user.email, user.name, company.name).catch(console.error);
+    sendOTPEmail(user.email, user.name, code).catch(console.error);
 
-    return c.json(
-      {
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          company_id: user.company_id,
-          company_name: company.name,
-          avatar_url: null,
-        },
-      },
-      201,
-    );
+    return c.json({ needVerification: true, email: user.email }, 201);
   } catch (err) {
     console.error("REGISTER CRASH:", err);
     return c.json(
@@ -243,6 +237,19 @@ auth.post("/login", async (c) => {
         500,
       );
     }
+  }
+
+  // Gate verifikasi email. Pakai `=== false` supaya bila kolom belum ada
+  // (undefined, mis. migrasi belum jalan) tidak mengunci siapa pun (fail-open).
+  if (user.email_verified === false) {
+    return c.json(
+      {
+        error: "Email belum diverifikasi.",
+        needVerification: true,
+        email: user.email,
+      },
+      403,
+    );
   }
 
   const companyName = await getCompanyName(user.company_id);

@@ -68,13 +68,19 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register({
+      const result = await register({
         name: form.fullName,
         email: form.email,
         password: form.password,
         company_name: form.companyName,
       });
-      navigate("/dashboard");
+      if (result?.needVerification) {
+        navigate(
+          `/verify-otp?email=${encodeURIComponent(form.email)}&purpose=register_verification`,
+        );
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err: any) {
       setApiError(err.message || "Registration failed");
     } finally {

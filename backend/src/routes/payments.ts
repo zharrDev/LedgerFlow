@@ -15,6 +15,7 @@
 
 import { Hono } from "hono"; // Framework web ringan buat bikin API routes
 import { supabase } from "../lib/supabase.js"; // Client Supabase buat akses database
+import { authMiddleware } from "../middleware/auth.js"; // Verifikasi JWT -> c.get("user")
 import {
   snap, // Midtrans Snap API — buat bikin transaksi payment popup
   coreApi, // Midtrans Core API — buat approve/cancel transaksi langsung
@@ -77,13 +78,9 @@ payments.get("/is-sandbox", async (c) => {
 //   - Nentuin apakah user bisa akses fitur tertentu
 //   - Nampilin info subscription di halaman settings
 // ═══════════════════════════════════════════════════════════════════════
-payments.get("/subscription", async (c) => {
-  // Ambil user ID dari header (dikirim oleh middleware auth di frontend)
-  // Format: x-user-id: "uuid-user-dari-supabase-auth"
-  const userId = c.req.header("x-user-id");
-
-  // Kalau gak ada user ID, berarti user belum login → return 401 Unauthorized
-  if (!userId) return c.json({ error: "User ID required" }, 401);
+payments.get("/subscription", authMiddleware, async (c) => {
+  // User ID diambil dari JWT terverifikasi, bukan header yang bisa dipalsukan
+  const userId = c.get("user").sub;
 
   // Query ke tabel "subscriptions" + join tabel "plans" buat dapet detail plan:
   //   - eq("user_id", userId) → cuma subscription milik user ini
@@ -217,10 +214,9 @@ payments.get("/subscription", async (c) => {
 //   7. Simpan payment record ke DB (status: pending)
 //   8. Return Snap token ke frontend → frontend buka popup Snap
 // ═══════════════════════════════════════════════════════════════════════
-payments.post("/subscribe", async (c) => {
-  // Ambil user ID dari header auth
-  const userId = c.req.header("x-user-id");
-  if (!userId) return c.json({ error: "User ID required" }, 401);
+payments.post("/subscribe", authMiddleware, async (c) => {
+  // User ID dari JWT terverifikasi
+  const userId = c.get("user").sub;
 
   // Parse body request dari frontend
   // Contoh body: { "plan_name": "pro", "billing_cycle": "monthly" }
@@ -458,7 +454,7 @@ payments.post("/subscribe", async (c) => {
 //   5. Update payment status → "paid"
 //   6. Update subscription → "active" + plan sesuai yang dibeli
 // ═══════════════════════════════════════════════════════════════════════
-payments.post("/test-complete", async (c) => {
+payments.post("/test-complete", authMiddleware, async (c) => {
   // ─── GUARD: Hanya boleh jalan di sandbox ────────────────────────────
   // Cek env var: kalau MIDTRANS_IS_PRODUCTION === "true", berarti production
   // Endpoint ini BAHAYA kalau bisa diakses di production — orang bisa
@@ -469,6 +465,9 @@ payments.post("/test-complete", async (c) => {
       403,
     );
   }
+
+  // User ID dari JWT — dipakai memastikan user cuma bisa complete payment miliknya
+  const userId = c.get("user").sub;
 
   try {
     // Parse body request dari frontend
@@ -492,6 +491,13 @@ payments.post("/test-complete", async (c) => {
     // Kalau payment gak ditemukan, return 404
     if (paymentError || !payment) {
       console.error("[Test-Complete] Payment not found:", order_id);
+      return c.json({ error: "Payment not found" }, 404);
+    }
+
+    // ─── OWNERSHIP: payment harus milik user yang login ───────────────
+    // Tanpa ini, user A bisa meng-complete payment user B hanya dengan
+    // menebak/mengetahui order_id-nya.
+    if (payment.user_id !== userId) {
       return c.json({ error: "Payment not found" }, 404);
     }
 
@@ -717,14 +723,65 @@ payments.post("/webhook", async (c) => {
       // Kenapa dibedain? Biar frontend bisa tampilin pesan yang beda
       // "Pembayaran kadaluarsa" vs "Pembayaran gagal/ditolak"
       paymentStatus = transactionStatus === "expire" ? "expired" : "failed";
-    } else if (transactionStatus === "refund") {
-      // Refund = uang dikembalikan ke customer
+    } else if (
+      ["refund", "partial_refund", "chargeback", "partial_chargeback"].includes(
+        transactionStatus,
+      )
+    ) {
+      // Refund/chargeback = uang dikembalikan ke customer → cabut akses
       paymentStatus = "refunded";
     } else {
       // Status lain (pending, dll) → tetap pending
       // Ini biasanya terjadi kalau webhook pertama kali datang saat
       // user baru buka halaman pembayaran tapi belum bayar
       paymentStatus = "pending";
+    }
+
+    // ─── Idempotensi & anti out-of-order ──────────────────────────────
+    // Midtrans bisa mengirim webhook yang sama berkali-kali (retry) dan
+    // kadang tidak berurutan. Tanpa guard ini, "paid" duplikat akan
+    // meng-extend periode berulang, dan "pending" yang telat bisa menimpa
+    // status "paid".
+    const currentStatus = payment.status;
+
+    // Status tidak berubah → cukup ack, jangan proses ulang
+    if (currentStatus === paymentStatus) {
+      console.log(
+        `[Midtrans Webhook] Duplicate ${paymentStatus} for ${notification.order_id}, ignored`,
+      );
+      return c.json({ status: "ok", note: "already processed" });
+    }
+
+    // Jangan mundur dari 'paid' ke 'pending' (webhook telat / urutan terbalik)
+    if (currentStatus === "paid" && paymentStatus === "pending") {
+      console.log(
+        `[Midtrans Webhook] Stale pending for paid order ${notification.order_id}, ignored`,
+      );
+      return c.json({ status: "ok", note: "stale pending ignored" });
+    }
+
+    // ─── Rekonsiliasi nominal ─────────────────────────────────────────
+    // Pastikan jumlah yang dibayar sama dengan yang kita tagih SEBELUM
+    // mengaktifkan subscription (defense-in-depth di atas verifikasi signature).
+    const paidAmount = Number(notification.gross_amount);
+    const expectedAmount = Number(payment.amount);
+    const amountMatches =
+      Number.isFinite(paidAmount) && Math.abs(paidAmount - expectedAmount) < 1;
+
+    if (paymentStatus === "paid" && !amountMatches) {
+      console.error(
+        `[Midtrans Webhook] Amount mismatch order ${notification.order_id}: paid=${paidAmount} expected=${expectedAmount}`,
+      );
+      // Tandai bermasalah, JANGAN aktifkan subscription
+      await supabase
+        .from("payments")
+        .update({
+          status: "failed",
+          midtrans_response: notification,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", notification.order_id);
+      return c.json({ status: "ok", note: "amount mismatch" });
     }
 
     // ─── Update payment record di database ────────────────────────────
@@ -791,6 +848,31 @@ payments.post("/webhook", async (c) => {
         .from("subscriptions")
         .update({ status: "past_due", updated_at: new Date().toISOString() })
         .eq("id", payment.subscription_id); // Filter by subscription ID
+
+      // ─── Kalau REFUNDED/CHARGEBACK → cabut akses, balikin ke free ─────
+      // Uang sudah dikembalikan, jadi user tidak boleh lagi menikmati plan
+      // berbayar. Downgrade subscription ke plan free dan set canceled.
+    } else if (paymentStatus === "refunded") {
+      const { data: freePlan } = await supabase
+        .from("plans")
+        .select("id")
+        .eq("name", "free")
+        .single();
+
+      await supabase
+        .from("subscriptions")
+        .update({
+          status: "canceled",
+          plan_id: freePlan?.id ?? payment.subscriptions?.plan_id,
+          canceled_at: new Date().toISOString(),
+          cancel_reason: "refund/chargeback",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", payment.subscription_id);
+
+      console.log(
+        `[Midtrans Webhook] Subscription downgraded (refund) for order ${notification.order_id}`,
+      );
     }
 
     // Log final status
@@ -816,10 +898,9 @@ payments.post("/webhook", async (c) => {
 // Dipake frontend buat nampilin halaman "Riwayat Pembayaran"
 // Menampilkan 20 pembayaran terakhir user, diurutin dari yang terbaru
 // ═══════════════════════════════════════════════════════════════════════
-payments.get("/history", async (c) => {
-  // Ambil user ID dari header auth
-  const userId = c.req.header("x-user-id");
-  if (!userId) return c.json({ error: "User ID required" }, 401);
+payments.get("/history", authMiddleware, async (c) => {
+  // User ID dari JWT terverifikasi
+  const userId = c.get("user").sub;
 
   // Query ke tabel "payments":
   //   - eq("user_id", userId)                  → cuma payment milik user ini
@@ -849,10 +930,9 @@ payments.get("/history", async (c) => {
 //   - User gak bisa akses fitur premium lagi
 //   - Tapi data user tetap tersimpan (gak dihapus)
 // ═══════════════════════════════════════════════════════════════════════
-payments.post("/cancel", async (c) => {
-  // Ambil user ID dari header auth
-  const userId = c.req.header("x-user-id");
-  if (!userId) return c.json({ error: "User ID required" }, 401);
+payments.post("/cancel", authMiddleware, async (c) => {
+  // User ID dari JWT terverifikasi
+  const userId = c.get("user").sub;
 
   // Parse body — boleh ada reason kenapa cancel (opsional)
   // Contoh body: { "reason": "Terlalu mahal" }
@@ -904,10 +984,9 @@ payments.post("/cancel", async (c) => {
 //   → Backend cek: user free plan, fitur butuh pro → return has_access: false
 //   → Frontend tampilin Paywall "Upgrade ke Pro buat akses fitur ini"
 // ═══════════════════════════════════════════════════════════════════════
-payments.get("/check-access", async (c) => {
-  // Ambil user ID dari header auth
-  const userId = c.req.header("x-user-id");
-  if (!userId) return c.json({ error: "User ID required" }, 401);
+payments.get("/check-access", authMiddleware, async (c) => {
+  // User ID dari JWT terverifikasi
+  const userId = c.get("user").sub;
 
   // Ambil nama fitur dari query parameter
   // Contoh: /check-access?feature=export_pdf
