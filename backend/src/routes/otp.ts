@@ -53,7 +53,7 @@ otp.post("/send-otp", async (c) => {
       .eq("used", false);
 
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     await supabase.from("otp_codes").insert({
       user_id: user.id,
@@ -62,7 +62,7 @@ otp.post("/send-otp", async (c) => {
       expires_at: expiresAt,
     });
 
-    sendOTPEmail(user.email, user.name, code).catch(console.error);
+    sendOTPEmail(user.email, user.name, code, 15).catch(console.error);
 
     return c.json({ message: "Kode OTP berhasil dikirim." });
   } catch (err) {

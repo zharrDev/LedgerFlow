@@ -164,7 +164,7 @@ auth.post("/register", async (c) => {
     // Verifikasi email: akun dibuat dalam status belum terverifikasi.
     // JWT DITAHAN sampai user memasukkan OTP yang benar di /verify-otp.
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     await supabase.from("otp_codes").insert({
       user_id: user.id,
@@ -174,7 +174,7 @@ auth.post("/register", async (c) => {
     });
 
     sendWelcomeEmail(user.email, user.name, company.name).catch(console.error);
-    sendOTPEmail(user.email, user.name, code).catch(console.error);
+    sendOTPEmail(user.email, user.name, code, 15).catch(console.error);
 
     return c.json({ needVerification: true, email: user.email }, 201);
   } catch (err) {
