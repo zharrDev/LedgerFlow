@@ -1,20 +1,56 @@
 import nodemailer from "nodemailer";
+import dns from "node:dns";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === "true",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+// Beberapa host (mis. instans free Render) tidak punya rute IPv6; Node bisa
+// memilih IPv6 lebih dulu (verbatim) lalu koneksi SMTP mati dengan ENETUNREACH.
+// Pin socket ke alamat IPv4 secara eksplisit; hostname asli tetap dipakai
+// sebagai SNI (tls.servername) supaya sertifikat Gmail tetap terverifikasi.
+async function resolveSmtpHost(host: string): Promise<{ host: string; servername?: string }> {
+  try {
+    const addrs = await new Promise<string[]>((resolve, reject) => {
+      dns.resolve4(host, (err, addresses) => (err ? reject(err) : resolve(addresses)));
+    });
+    if (addrs && addrs.length > 0) {
+      return { host: addrs[0], servername: host };
+    }
+  } catch {
+    // lookup gagal -> pakai hostname apa adanya
+  }
+  return { host };
+}
+
+let transporterPromise: Promise<ReturnType<typeof nodemailer.createTransport>> | null = null;
+
+async function getTransporter() {
+  if (!transporterPromise) {
+    transporterPromise = (async () => {
+      const hostName = process.env.SMTP_HOST || "smtp.gmail.com";
+      const port = Number(process.env.SMTP_PORT) || 587;
+      const secure = process.env.SMTP_SECURE === "true";
+      const { host, servername } = await resolveSmtpHost(hostName);
+      return nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        ...(servername ? { tls: { servername } } : {}),
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    })();
+  }
+  return transporterPromise;
+}
 
 export async function sendEmail(to: string, subject: string, html: string) {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn("SMTP not configured. Skipping email send to", to);
     return;
   }
+  const transporter = await getTransporter();
   const info = await transporter.sendMail({
     from: process.env.SMTP_FROM || `"LedgerFlow" <${process.env.SMTP_USER}>`,
     to,
@@ -61,12 +97,7 @@ export async function probeSmtp(to: string): Promise<SmtpProbeResult> {
     return { configured: false, status: "not_configured", host, port, secure };
   }
 
-  const t = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  });
+  const t = await getTransporter();
 
   // 1) Uji koneksi + autentikasi
   try {
