@@ -34,13 +34,19 @@ const app = new Hono();
 app.use("*", logger());
 app.use("*", prettyJSON());
 
+// Izinkan origin dev mana pun di localhost (port bebas; vite bisa naik 5173->5174
+// saat port sebelumnya terpakai) + FRONTEND_URL terkonfigurasi + prod Vercel.
+const isAllowedOrigin = (origin: string): boolean => {
+  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
+  if (origin === "https://ledger-flow-frontend-azure.vercel.app") return true;
+  const fe = process.env.FRONTEND_URL;
+  return !!fe && origin === fe;
+};
+
 app.use(
   "*",
   cors({
-    origin: [
-      process.env.FRONTEND_URL ?? "http://localhost:5173", 
-      "https://ledger-flow-frontend-azure.vercel.app"
-    ],
+    origin: (origin) => (origin ? (isAllowedOrigin(origin) ? origin : undefined) : "*"),
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   })
