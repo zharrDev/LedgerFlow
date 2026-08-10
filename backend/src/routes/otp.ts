@@ -62,7 +62,22 @@ otp.post("/send-otp", async (c) => {
       expires_at: expiresAt,
     });
 
-    sendOTPEmail(user.email, user.name, code, 15).catch(console.error);
+    const mailSent = await sendOTPEmail(user.email, user.name, code, 15)
+      .then(() => true)
+      .catch((err) => {
+        console.error("SEND OTP EMAIL GAGAL:", err);
+        return false;
+      });
+
+    if (!mailSent) {
+      return c.json(
+        {
+          error:
+            "Kode OTP dibuat, tapi email gagal terkirim. Periksa konfigurasi SMTP atau coba lagi beberapa menit lagi.",
+        },
+        502,
+      );
+    }
 
     return c.json({ message: "Kode OTP berhasil dikirim." });
   } catch (err) {

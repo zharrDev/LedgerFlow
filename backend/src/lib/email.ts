@@ -319,8 +319,7 @@ export async function sendAccountCreatedEmail(
 }
 
 export async function sendOTPEmail(to: string, name: string, otp: string, expiresMinutes = 15) {
-  try {
-    const html = baseTemplate(`
+  const html = baseTemplate(`
       <h3 style="color: #1f2937; margin: 0 0 8px;">Kode Verifikasi</h3>
       <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Halo <strong>${name}</strong>,</p>
       <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Gunakan kode berikut untuk memverifikasi akun Anda:</p>
@@ -330,10 +329,7 @@ export async function sendOTPEmail(to: string, name: string, otp: string, expire
       <p style="color: #ef4444; font-size: 13px; font-weight: 600; line-height: 1.5;">Kode ini berlaku selama ${expiresMinutes} menit sejak email ini diterima. Jangan bagikan kode ini kepada siapa pun.</p>
       <p style="color: #6b7280; font-size: 13px; line-height: 1.5;">Cek juga folder Spam jika email ini tidak terlihat di inbox. Jika Anda tidak meminta kode ini, abaikan email ini.</p>
     `);
-    await sendEmail(to, "Kode Verifikasi - LedgerFlow", html);
-  } catch (err) {
-    console.error("sendOTPEmail error:", err);
-  }
+  await sendEmail(to, "Kode Verifikasi - LedgerFlow", html);
 }
 
 export async function sendResetPasswordEmail(to: string, name: string, resetLink: string) {

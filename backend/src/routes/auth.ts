@@ -173,10 +173,28 @@ auth.post("/register", async (c) => {
       expires_at: expiresAt,
     });
 
-    sendWelcomeEmail(user.email, user.name, company.name).catch(console.error);
-    sendOTPEmail(user.email, user.name, code, 15).catch(console.error);
+    sendWelcomeEmail(user.email, user.name, company.name).catch((err) => {
+      console.error("SEND WELCOME EMAIL GAGAL:", err);
+    });
 
-    return c.json({ needVerification: true, email: user.email }, 201);
+    const otpMailSent = await sendOTPEmail(user.email, user.name, code, 15)
+      .then(() => true)
+      .catch((err) => {
+        console.error("SEND OTP EMAIL GAGAL:", err);
+        return false;
+      });
+
+    return c.json(
+      {
+        needVerification: true,
+        email: user.email,
+        ...(!otpMailSent && {
+          emailWarning:
+            "Akun berhasil dibuat, tapi email kode verifikasi gagal terkirim. Klik kirim ulang OTP beberapa menit lagi.",
+        }),
+      },
+      201,
+    );
   } catch (err) {
     console.error("REGISTER CRASH:", err);
     return c.json(
