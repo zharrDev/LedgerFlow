@@ -1,6 +1,11 @@
 import { loadEnv } from "./lib/env.js";
 loadEnv();
 
+// Render free tier tidak punya rute IPv6 → koneksi SMTP ke smtp.gmail.com
+// memilih IPv6 dulu dan gagal (ENETUNREACH). Paksa resolusi DNS prefer IPv4.
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
