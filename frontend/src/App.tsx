@@ -28,7 +28,6 @@ import PricingPage from "./pages/PricingPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import VerifyOTPPage from "./pages/VerifyOTPPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -182,14 +181,6 @@ function AnimatedRoutes() {
         }
       />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/verify-otp"
-        element={
-          <PublicRoute>
-            <VerifyOTPPage />
-          </PublicRoute>
-        }
-      />
 
       <Route
         path="/onboarding"

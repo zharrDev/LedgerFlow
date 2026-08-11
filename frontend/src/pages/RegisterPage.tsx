@@ -74,13 +74,7 @@ export default function RegisterPage() {
         password: form.password,
         company_name: form.companyName,
       });
-      if (result?.needVerification) {
-        navigate(
-          `/verify-otp?email=${encodeURIComponent(form.email)}&purpose=register_verification`,
-        );
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     } catch (err: any) {
       setApiError(err.message || "Registration failed");
     } finally {

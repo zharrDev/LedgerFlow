@@ -47,22 +47,6 @@ export default function LoginPage() {
       login(res.data.token, res.data.user);
       navigate("/dashboard");
     } catch (err: any) {
-      // Email belum diverifikasi → kirim ulang OTP lalu arahkan ke verifikasi.
-      if (
-        err.response?.status === 403 &&
-        err.response.data?.needVerification
-      ) {
-        api
-          .post("/api/auth/send-otp", {
-            email,
-            purpose: "register_verification",
-          })
-          .catch(() => {});
-        navigate(
-          `/verify-otp?email=${encodeURIComponent(email)}&purpose=register_verification`,
-        );
-        return;
-      }
       console.error("LOGIN ERROR:", err?.response?.data || err?.message || err);
       setError(err.response?.data?.error || err.response?.data?.message || "Login failed");
     } finally {

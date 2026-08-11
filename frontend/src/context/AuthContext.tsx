@@ -23,7 +23,7 @@ type AuthContextType = {
     email: string;
     password: string;
     company_name: string;
-  }) => Promise<{ needVerification: boolean; email?: string }>;
+  }) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
 };
@@ -93,13 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     try {
       const response = await api.post("/api/auth/register", data);
-      // Alur baru: backend menahan token sampai email diverifikasi via OTP.
-      if (response.data?.needVerification) {
-        return { needVerification: true, email: response.data.email };
-      }
-      // Fallback bila backend lama masih mengembalikan token langsung.
       login(response.data.token, response.data.user);
-      return { needVerification: false };
     } catch (err: any) {
       throw new Error(err.response?.data?.error || "Registration failed");
     }
