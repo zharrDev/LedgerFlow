@@ -54,12 +54,23 @@ function parseFrom(raw: string): { from: string; fromName?: string } {
 // Transport cadangan via REST API SendCloud (HTTPS/443).
 // Dipakai bila SMTP terblokir jaringan (mis. ETIMEDOUT dari Render ke
 // smtp2.sendcloud.net). Menggunakan kredensial SendCloud yang sama.
+//
+// Catatan: API_USER berjenis "test" hanya boleh mengirim ke email yang
+// terdaftar/didaftarkan di akun SendCloud (error 40886). Karena itu daftar
+// penerima yang diizinkan lewat env SENDCLOUD_ALLOWED_RECIPIENTS (pisah koma).
 async function sendViaSendCloudAPI(to: string, subject: string, html: string) {
   const apiUser = process.env.SMTP_USER;
   const apiKey = process.env.SMTP_PASS;
   const base = process.env.SENDCLOUD_API_BASE || "https://api.aurorasendcloud.com";
   if (!apiUser || !apiKey) {
     throw new Error("SendCloud API fallback tidak bisa dipakai (SMTP_USER/SMTP_PASS kosong)");
+  }
+  const whitelist = (process.env.SENDCLOUD_ALLOWED_RECIPIENTS || "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (whitelist.length > 0 && !whitelist.includes(to.toLowerCase())) {
+    throw new Error(
+      `SendCloud API: penerima ${to} belum didaftarkan. Tambahkan ke SENDCLOUD_ALLOWED_RECIPIENTS atau upgrade API_USER ke tipe formal.`,
+    );
   }
   const parsed = parseFrom(process.env.SMTP_FROM || `LedgerFlow <${apiUser}>`);
   const body = new URLSearchParams({
