@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 
@@ -6,9 +6,12 @@ interface AppShellProps {
   children: React.ReactNode;
   title?: string;
   description?: string;
+  /** Kunci tinggi viewport — scroll hanya di dalam children (mis. halaman chat AI) */
+  fullHeight?: boolean;
+  hideTitle?: boolean;
 }
 
-export function AppShell({ children, title, description }: AppShellProps) {
+export function AppShell({ children, title, description, fullHeight, hideTitle }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -57,9 +60,15 @@ export function AppShell({ children, title, description }: AppShellProps) {
           />
         )}
 
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 lg:ml-64">
-          {(title || description) && (
-            <div className="mb-6">
+        <main
+          className={`flex-1 lg:ml-64 ${
+            fullHeight
+              ? "h-[calc(100dvh-4rem)] overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
+              : "overflow-x-hidden p-4 sm:p-6 lg:p-8"
+          }`}
+        >
+          {!hideTitle && (title || description) && (
+            <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>
               {title && (
                 <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
                   {title}
@@ -72,7 +81,11 @@ export function AppShell({ children, title, description }: AppShellProps) {
               )}
             </div>
           )}
-          {children}
+          {fullHeight ? (
+            <div className="flex-1 min-h-0 flex flex-col">{children}</div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

@@ -30,9 +30,11 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import AiCfoPage from "./pages/AiCfoPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ErrorPage from "./pages/ErrorPage";
 import { ProtectedFeature } from "./components/ProtectedFeature";
+import { AICfoFloatingButton } from "./components/AICfoFloatingButton";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +79,32 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+/** Tombol AI CFO mengambang — hanya di area aplikasi setelah login. */
+function AiCfoFabGate() {
+  const { token, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading || !token) return null;
+
+  const { pathname } = location;
+  if (pathname === "/ai-cfo") return null;
+
+  const hiddenPrefixes = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/auth/",
+    "/payment/",
+    "/pricing",
+  ];
+  if (pathname === "/" || hiddenPrefixes.some((p) => pathname.startsWith(p))) {
+    return null;
+  }
+
+  return <AICfoFloatingButton />;
 }
 
 function RoleRoute({
@@ -153,7 +181,8 @@ function AnimatedRoutes() {
   }, [user, loading, location.pathname]);
 
   return (
-    <Routes location={location}>
+    <>
+      <Routes location={location}>
       <Route path="/" element={<HomePage />} />
       <Route
         path="/login"
@@ -311,6 +340,15 @@ function AnimatedRoutes() {
         }
       />
 
+      <Route
+        path="/ai-cfo"
+        element={
+          <ProtectedRoute>
+            <AiCfoPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/payment/success" element={<PaymentResultPage type="success" />} />
       <Route path="/payment/pending" element={<PaymentResultPage type="pending" />} />
@@ -318,7 +356,9 @@ function AnimatedRoutes() {
 
       <Route path="/error/:code" element={<ErrorPage />} />
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+      <AiCfoFabGate />
+    </>
   );
 }
 

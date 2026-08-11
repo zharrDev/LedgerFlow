@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { HumanMessage } from "@langchain/core/messages";
 import { authMiddleware } from "../middleware/auth.js";
 import { createAIGraph } from "../ai/graph/graph.js";
+import { AI_GRAPH_TIMEOUT_MS } from "../ai/models/provider.js";
 
 const ai = new Hono();
 
@@ -42,7 +43,7 @@ ai.post("/chat", async (c) => {
 
     const result = await graph.invoke(
       { messages: [new HumanMessage(message.trim())] },
-      { signal: AbortSignal.timeout(60_000) },
+      { signal: AbortSignal.timeout(AI_GRAPH_TIMEOUT_MS) },
     );
 
     // Ambil jawaban AI terakhir (AIMessage paling akhir di riwayat)

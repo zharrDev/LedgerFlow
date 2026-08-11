@@ -6,7 +6,6 @@ import { useAccounts } from "../hooks/useAccounts";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { reportsService } from "../services/reportsService";
 import { AppShell } from "../components/AppShell";
-import { AICfoPanel } from "../components/AICfoPanel";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { usePagination } from "../hooks/usePagination";
 import { TablePagination } from "../components/TablePagination";
@@ -78,7 +77,6 @@ export default function DashboardPage() {
     periodId || undefined,
   );
   const [periods, setPeriods] = useState<Period[]>([]);
-  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     reportsService.getPeriods().then(setPeriods).catch(console.error);
@@ -95,10 +93,6 @@ export default function DashboardPage() {
     ],
     [periods],
   );
-
-  const selectedPeriodLabel =
-    periodOptions.find((p) => p.value === periodId)?.label ||
-    "Semua Periode (YTD)";
 
   // Data untuk chart "Monitor Arus Kas" (grouped bar + garis tren).
   // Tiap kategori dipecah jadi bagian Masuk (positif) & Keluar (negatif).
@@ -287,17 +281,6 @@ export default function DashboardPage() {
               </div>
               {/* Quick Actions — responsive grid */}
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAiOpen(true)}
-                  className="group flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2 sm:py-2 rounded-xl bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/40 hover:border-emerald-300/60 hover:bg-emerald-500/30 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:scale-105 col-span-2 sm:col-span-1"
-                >
-                  <Sparkles
-                    size="14"
-                    className="text-emerald-300 group-hover:text-emerald-200 shrink-0"
-                  />
-                  <span className="truncate">🤖 AI CFO</span>
-                </button>
                 {quickActions.map((action) => (
                   <Link
                     key={action.label}
@@ -864,13 +847,6 @@ export default function DashboardPage() {
           </motion.div>
         </div>
       </motion.div>
-
-      <AICfoPanel
-        open={aiOpen}
-        onClose={() => setAiOpen(false)}
-        summary={summary}
-        periodLabel={selectedPeriodLabel}
-      />
     </AppShell>
   );
 }

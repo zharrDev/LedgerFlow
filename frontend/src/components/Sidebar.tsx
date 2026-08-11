@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
-import React from "react";
+import React, { useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import {
   LayoutDashboard,
   BookOpen,
@@ -47,6 +48,8 @@ interface SidebarProps {
 export const Sidebar = React.memo(
   ({ mobileMenuOpen, onLinkClick }: SidebarProps) => {
     const [isDesktop, setIsDesktop] = React.useState(false);
+    const asideRef = useRef<HTMLElement>(null);
+    useScrollIsolation(asideRef);
 
     React.useEffect(() => {
       const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
@@ -58,9 +61,10 @@ export const Sidebar = React.memo(
     if (isDesktop) {
       return (
         <aside
+          ref={asideRef}
           className="fixed top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]
                    bg-white/90 dark:bg-darkBg/90 backdrop-blur-xl
-                   border-r border-primary-500/20 overflow-y-auto shadow-lg lg:shadow-none"
+                   border-r border-primary-500/20 overflow-y-auto overscroll-contain shadow-lg lg:shadow-none"
         >
           <SidebarContent onLinkClick={onLinkClick} />
         </aside>
@@ -69,12 +73,13 @@ export const Sidebar = React.memo(
 
     return (
       <motion.aside
+        ref={asideRef}
         initial={{ x: "-100%" }}
         animate={{ x: mobileMenuOpen ? 0 : "-100%" }}
         transition={{ type: "spring", damping: 25 }}
         className="fixed top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]
                  bg-white/95 dark:bg-darkBg/95 backdrop-blur-2xl shadow-2xl
-                 border-r border-primary-500/20 overflow-y-auto"
+                 border-r border-primary-500/20 overflow-y-auto overscroll-contain"
       >
         <SidebarContent onLinkClick={onLinkClick} />
       </motion.aside>
