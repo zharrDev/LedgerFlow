@@ -20,4 +20,18 @@ export function loadEnv() {
   if (result.error) {
     console.error("loadEnv: gagal baca .env:", result.error.message);
   }
+
+  // AI CFO (OpenRouter) — opsional; endpoint /api/ai/chat menolak jika key kosong.
+  // OPENROUTER_MODEL: jangan hardcode di kode; gampang diganti bila model :free dihapus.
+  // Default provider: openrouter/free (auto-router model gratis OpenRouter).
+  if (!process.env.OPENROUTER_API_KEY?.trim()) {
+    console.warn(
+      "[env] OPENROUTER_API_KEY belum diset — fitur AI CFO tidak akan berfungsi.",
+    );
+  }
+  if (!process.env.OPENROUTER_MODEL?.trim()) {
+    console.info(
+      "[env] OPENROUTER_MODEL kosong — memakai default openrouter/free.",
+    );
+  }
 }

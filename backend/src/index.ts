@@ -26,6 +26,7 @@ import passwordResetRoutes from "./routes/password-reset.js";
 import userMgmtRoutes from "./routes/user-management.js";
 import uploadRoutes from "./routes/upload.js";
 import healthRoutes from "./routes/health.js";
+import aiRoutes from "./routes/ai.js";
 
 const app = new Hono();
 
@@ -75,6 +76,7 @@ app.route("/api/auth", passwordResetRoutes);
 app.route("/api/users-management", userMgmtRoutes);
 app.route("/api/upload", uploadRoutes);
 app.route("/api/health", healthRoutes);
+app.route("/api/ai", aiRoutes);
 
 // 404 fallback
 app.notFound((c) => c.json({ error: "Route not found" }, 404));
