@@ -4,14 +4,18 @@ import { useIncomeStatement } from "../hooks/useIncomeStatement";
 import { reportsService } from "../services/reportsService";
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
-import { exportIncomeStatementPDF } from "../utils/exportPDF";
+import { ExportMenu } from "../components/ExportMenu";
+import {
+  exportIncomeStatementPDF,
+  exportIncomeStatementExcel,
+  exportIncomeStatementWord,
+} from "../utils/exportPDF";
 import {
   FileText,
   TrendingUp,
   TrendingDown,
   RefreshCw,
   Calendar,
-  Download,
 } from "lucide-react";
 import type { Period } from "../types/reports";
 
@@ -71,12 +75,14 @@ export function IncomeStatementPage() {
     reportsService.getPeriods().then(setPeriods).catch(console.error);
   }, []);
 
-  const handleExportPDF = () => {
+  const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
     if (!data) return;
     const periodLabel = periodId
       ? periods.find((p) => p.id === periodId)?.name || ""
       : "Semua Periode";
-    exportIncomeStatementPDF(data, periodLabel);
+    if (format === "excel") exportIncomeStatementExcel(data, periodLabel);
+    else if (format === "word") exportIncomeStatementWord(data, periodLabel);
+    else exportIncomeStatementPDF(data, periodLabel);
   };
 
   return (
@@ -134,17 +140,11 @@ export function IncomeStatementPage() {
               />
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={handleExportPDF}
+              <ExportMenu
                 disabled={!data || loading}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-500 hover:border-primary-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-darkCard shadow-sm"
-                title="Export PDF"
-              >
-                <Download size={16} className="flex-shrink-0" />
-                <span className="text-sm font-medium sm:hidden">
-                  Export PDF
-                </span>
-              </button>
+                formats={["pdf", "excel", "word"]}
+                onExport={handleExport}
+              />
               <button
                 onClick={refetch}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-500 hover:border-primary-500/50 transition-colors bg-white dark:bg-darkCard shadow-sm"

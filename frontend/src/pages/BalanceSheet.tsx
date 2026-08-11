@@ -6,7 +6,6 @@ import {
   Wallet,
   Calendar,
   FileText,
-  Download,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -18,7 +17,12 @@ import { BalanceSheetCard } from "../components/reports/BalanceSheetCard";
 import { BalanceSheetTable } from "../components/reports/BalanceSheetTable";
 import { BalanceSheetStatus } from "../components/reports/BalanceSheetStatus";
 import { HoverDropdown } from "../components/HoverDropdown";
-import { exportBalanceSheetPDF } from "../utils/exportPDF";
+import { ExportMenu } from "../components/ExportMenu";
+import {
+  exportBalanceSheetPDF,
+  exportBalanceSheetExcel,
+  exportBalanceSheetWord,
+} from "../utils/exportPDF";
 
 export default function BalanceSheet() {
   const { user } = useAuth();
@@ -96,13 +100,15 @@ export default function BalanceSheet() {
     return `${monthNames[period.month - 1]} ${period.year}`;
   };
 
-  const handleExportPDF = () => {
+  const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
     if (!balanceSheet) return;
     const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
     const periodLabel = selectedPeriod
       ? getPeriodLabel(selectedPeriod)
       : "Semua Periode";
-    exportBalanceSheetPDF(balanceSheet, periodLabel);
+    if (format === "excel") exportBalanceSheetExcel(balanceSheet, periodLabel);
+    else if (format === "word") exportBalanceSheetWord(balanceSheet, periodLabel);
+    else exportBalanceSheetPDF(balanceSheet, periodLabel);
   };
 
   if (isLoadingPeriods) {
@@ -195,14 +201,11 @@ export default function BalanceSheet() {
                   ]}
                 />
               </div>
-              <button
-                onClick={handleExportPDF}
+              <ExportMenu
                 disabled={!balanceSheet || isLoadingReport}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md w-full sm:w-auto"
-              >
-                <Download className="w-5 h-5 flex-shrink-0" />
-                <span>Export PDF</span>
-              </button>
+                formats={["pdf", "excel", "word"]}
+                onExport={handleExport}
+              />
             </div>
           </div>
         </motion.div>

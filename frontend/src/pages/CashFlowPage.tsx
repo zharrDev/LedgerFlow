@@ -10,14 +10,18 @@ import {
   Banknote,
   PieChart,
   Sparkles,
-  Download,
 } from "lucide-react";
 import { AppShell } from "../components/AppShell";
 import { reportsService } from "../services/reportsService";
 import { useCashFlow } from "../hooks/useCashFlow";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { ExportMenu } from "../components/ExportMenu";
 import { CashFlowChart, type CashFlowDatum } from "../components/CashFlowChart";
-import { exportCashFlowPDF } from "../utils/exportPDF";
+import {
+  exportCashFlowPDF,
+  exportCashFlowExcel,
+  exportCashFlowWord,
+} from "../utils/exportPDF";
 import type { Period, CashFlowSection } from "../types/reports";
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -361,12 +365,14 @@ export default function CashFlowPage() {
       ]
     : [];
 
-  const handleExportPDF = () => {
+  const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
     if (!data) return;
     const periodLabel = periodId
       ? periods.find((p) => p.id === periodId)?.name || ""
       : "Semua Periode";
-    exportCashFlowPDF(data, periodLabel);
+    if (format === "excel") exportCashFlowExcel(data, periodLabel);
+    else if (format === "word") exportCashFlowWord(data, periodLabel);
+    else exportCashFlowPDF(data, periodLabel);
   };
 
   return (
@@ -427,14 +433,11 @@ export default function CashFlowPage() {
                 ]}
               />
             </div>
-            <button
-              onClick={handleExportPDF}
+            <ExportMenu
               disabled={!data || loading}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md w-full sm:w-auto"
-            >
-              <Download className="w-5 h-5 flex-shrink-0" />
-              <span>Export PDF</span>
-            </button>
+              formats={["pdf", "excel", "word"]}
+              onExport={handleExport}
+            />
           </div>
         </motion.div>
 

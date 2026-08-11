@@ -1,11 +1,15 @@
 // ============================================================================
-// LEDGERFLOW - Export PDF / CSV Utility
+// LEDGERFLOW - Export PDF / CSV / Excel / Word Utility
 // ============================================================================
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  exportOfficeExcel,
+  exportOfficeWord,
+  type OfficeExportDoc,
+} from "./exportOffice";
 
-// Helper format Rupiah untuk isi laporan PDF/CSV
 const formatRupiah = (val: number): string =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -14,7 +18,6 @@ const formatRupiah = (val: number): string =>
     maximumFractionDigits: 0,
   }).format(val);
 
-// Helper tanggal hari ini untuk metadata dokumen
 const today = (): string =>
   new Date().toLocaleDateString("id-ID", {
     day: "numeric",
@@ -22,7 +25,44 @@ const today = (): string =>
     year: "numeric",
   });
 
-// Helper: membuat kerangka dasar PDF (header, judul, periode, tanggal cetak)
+const periodLabel = (periodName: string) =>
+  periodName?.trim() ? periodName : "Semua Periode (YTD)";
+
+function applyFooters(doc: jsPDF) {
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    const pageHeight = doc.internal.pageSize.height;
+    const pageWidth = doc.internal.pageSize.width;
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(148, 163, 184);
+    doc.text("Dokumen digenerate otomatis oleh LedgerFlow", 14, pageHeight - 8);
+    doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - 14, pageHeight - 8, {
+      align: "right",
+    });
+  }
+}
+
+const tableBase = {
+  styles: {
+    fontSize: 9,
+    cellPadding: 3.5,
+    lineColor: [226, 232, 240] as [number, number, number],
+    lineWidth: 0.2,
+    textColor: [30, 41, 59] as [number, number, number],
+    overflow: "linebreak" as const,
+    valign: "middle" as const,
+  },
+  alternateRowStyles: {
+    fillColor: [248, 250, 252] as [number, number, number],
+  },
+  margin: { left: 14, right: 14, bottom: 18 },
+};
+
 function createPDF(title: string, periodName: string): jsPDF {
   const doc = new jsPDF("p", "mm", "a4");
 
@@ -38,33 +78,44 @@ function createPDF(title: string, periodName: string): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.text("Financial Platform", 14, 20);
 
-  doc.setTextColor(33, 33, 33);
-  doc.setFontSize(16);
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
   doc.text(title, 14, 40);
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Periode: ${periodName || "Semua Periode (YTD)"}`, 14, 48);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Periode: ${periodLabel(periodName)}`, 14, 48);
   doc.text(`Dicetak: ${today()}`, 14, 54);
 
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.5);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.6);
   doc.line(14, 58, 196, 58);
 
   return doc;
 }
 
-// Export PDF laporan laba rugi
+function lastTableY(doc: jsPDF, fallback: number) {
+  return (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable
+    ?.finalY
+    ? (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+        .finalY + 10
+    : fallback;
+}
+
+// ─── Income Statement ────────────────────────────────────────────────
+
+type IncomeData = {
+  revenue: { accountCode: string; accountName: string; amount: number }[];
+  expense: { accountCode: string; accountName: string; amount: number }[];
+  totalRevenue: number;
+  totalExpense: number;
+  netIncome: number;
+};
+
 export function exportIncomeStatementPDF(
-  data: {
-    revenue: { accountCode: string; accountName: string; amount: number }[];
-    expense: { accountCode: string; accountName: string; amount: number }[];
-    totalRevenue: number;
-    totalExpense: number;
-    netIncome: number;
-  },
+  data: IncomeData,
   periodName: string,
 ) {
   const doc = createPDF("Laporan Laba Rugi", periodName);
@@ -97,32 +148,31 @@ export function exportIncomeStatementPDF(
             styles: {
               fontStyle: "bold",
               fillColor: [236, 253, 245],
-              halign: "right" as const,
+              halign: "right",
             },
           },
         ],
       ],
-      theme: "striped",
+      theme: "grid",
+      ...tableBase,
       headStyles: {
         fillColor: [16, 185, 129],
         textColor: 255,
         fontStyle: "bold",
+        cellPadding: 4,
       },
       columnStyles: {
-        0: { cellWidth: 30 },
-        2: { halign: "right" as const, cellWidth: 50 },
+        0: { cellWidth: 28 },
+        2: { halign: "right", cellWidth: 48 },
       },
-      styles: { fontSize: 9, cellPadding: 3 },
-      margin: { left: 14, right: 14 },
     });
   } else {
     doc.setFontSize(9);
     doc.setTextColor(150);
     doc.text("Tidak ada transaksi pendapatan", 14, startY + 6);
-    startY += 12;
   }
 
-  startY = (doc as any).lastAutoTable?.finalY + 10 || startY + 10;
+  startY = lastTableY(doc, startY + 14);
 
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -151,78 +201,148 @@ export function exportIncomeStatementPDF(
             styles: {
               fontStyle: "bold",
               fillColor: [254, 242, 242],
-              halign: "right" as const,
+              halign: "right",
             },
           },
         ],
       ],
-      theme: "striped",
+      theme: "grid",
+      ...tableBase,
       headStyles: {
         fillColor: [239, 68, 68],
         textColor: 255,
         fontStyle: "bold",
+        cellPadding: 4,
       },
       columnStyles: {
-        0: { cellWidth: 30 },
-        2: { halign: "right" as const, cellWidth: 50 },
+        0: { cellWidth: 28 },
+        2: { halign: "right", cellWidth: 48 },
       },
-      styles: { fontSize: 9, cellPadding: 3 },
-      margin: { left: 14, right: 14 },
     });
+  } else {
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("Tidak ada transaksi beban", 14, startY + 6);
   }
 
-  startY = (doc as any).lastAutoTable?.finalY + 10 || startY + 10;
+  startY = lastTableY(doc, startY + 14);
 
-  const isProfit = data.netIncome >= 0;
-  doc.setFillColor(
-    isProfit ? 236 : 254,
-    isProfit ? 253 : 242,
-    isProfit ? 245 : 242,
-  );
+  const profit = data.netIncome >= 0;
+  doc.setFillColor(profit ? 236 : 254, profit ? 253 : 242, profit ? 245 : 242);
   doc.roundedRect(14, startY, 182, 16, 3, 3, "F");
-
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(
-    isProfit ? 5 : 185,
-    isProfit ? 150 : 28,
-    isProfit ? 105 : 28,
-  );
-  doc.text(
-    isProfit ? "Laba Bersih (Net Income)" : "Rugi Bersih (Net Loss)",
-    20,
-    startY + 10,
-  );
-  doc.text(formatRupiah(data.netIncome), 190, startY + 10, { align: "right" });
+  doc.setTextColor(profit ? 5 : 185, profit ? 150 : 28, profit ? 105 : 28);
+  doc.text(profit ? "LABA BERSIH" : "RUGI BERSIH", 20, startY + 10);
+  doc.text(formatRupiah(data.netIncome), 188, startY + 10, { align: "right" });
 
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text(
-    "Dokumen ini digenerate otomatis oleh LedgerFlow",
-    14,
-    pageHeight - 10,
-  );
-  doc.text(`Halaman 1`, 190, pageHeight - 10, { align: "right" });
-
+  applyFooters(doc);
   doc.save(`LedgerFlow_LabaRugi_${periodName || "YTD"}.pdf`);
 }
 
-// Export PDF laporan neraca
+function buildIncomeOfficeDoc(
+  data: IncomeData,
+  periodName: string,
+): OfficeExportDoc {
+  return {
+    title: "Laporan Laba Rugi",
+    subtitle: "Ringkasan pendapatan, beban, dan laba/rugi bersih",
+    meta: [
+      { label: "Periode", value: periodLabel(periodName) },
+      { label: "Dicetak", value: today() },
+    ],
+    sections: [
+      {
+        title: "Pendapatan (Revenue)",
+        columns: [
+          { key: "code", label: "Kode" },
+          { key: "name", label: "Nama Akun" },
+          { key: "amount", label: "Jumlah", align: "right" },
+        ],
+        rows: data.revenue.map((r) => ({
+          code: r.accountCode,
+          name: r.accountName,
+          amount: formatRupiah(r.amount),
+        })),
+        footer: {
+          code: "",
+          name: "Total Pendapatan",
+          amount: formatRupiah(data.totalRevenue),
+        },
+      },
+      {
+        title: "Beban (Expense)",
+        columns: [
+          { key: "code", label: "Kode" },
+          { key: "name", label: "Nama Akun" },
+          { key: "amount", label: "Jumlah", align: "right" },
+        ],
+        rows: data.expense.map((r) => ({
+          code: r.accountCode,
+          name: r.accountName,
+          amount: formatRupiah(r.amount),
+        })),
+        footer: {
+          code: "",
+          name: "Total Beban",
+          amount: formatRupiah(data.totalExpense),
+        },
+      },
+      {
+        title: "Ringkasan",
+        columns: [
+          { key: "label", label: "Keterangan" },
+          { key: "amount", label: "Jumlah", align: "right" },
+        ],
+        rows: [
+          {
+            label: data.netIncome >= 0 ? "Laba Bersih" : "Rugi Bersih",
+            amount: formatRupiah(data.netIncome),
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export function exportIncomeStatementExcel(
+  data: IncomeData,
+  periodName: string,
+) {
+  exportOfficeExcel(
+    buildIncomeOfficeDoc(data, periodName),
+    `LedgerFlow_LabaRugi_${periodName || "YTD"}`,
+  );
+}
+
+export function exportIncomeStatementWord(
+  data: IncomeData,
+  periodName: string,
+) {
+  exportOfficeWord(
+    buildIncomeOfficeDoc(data, periodName),
+    `LedgerFlow_LabaRugi_${periodName || "YTD"}`,
+  );
+}
+
+// ─── Balance Sheet ───────────────────────────────────────────────────
+
+type BalanceSheetData = {
+  assets: { accountCode: string; accountName: string; balance: number }[];
+  liabilities: {
+    accountCode: string;
+    accountName: string;
+    balance: number;
+  }[];
+  equity: { accountCode: string; accountName: string; balance: number }[];
+  total_assets: number;
+  total_liabilities: number;
+  total_equity: number;
+  is_balanced: boolean;
+};
+
 export function exportBalanceSheetPDF(
-  data: {
-    assets: { accountCode: string; accountName: string; balance: number }[];
-    liabilities: {
-      accountCode: string;
-      accountName: string;
-      balance: number;
-    }[];
-    equity: { accountCode: string; accountName: string; balance: number }[];
-    total_assets: number;
-    total_liabilities: number;
-    total_equity: number;
-    is_balanced: boolean;
-  },
+  data: BalanceSheetData,
   periodName: string,
 ) {
   const doc = createPDF("Neraca (Balance Sheet)", periodName);
@@ -262,21 +382,25 @@ export function exportBalanceSheetPDF(
               styles: {
                 fontStyle: "bold",
                 fillColor: bgColor,
-                halign: "right" as const,
+                halign: "right",
               },
             },
           ],
         ],
-        theme: "striped",
-        headStyles: { fillColor: color, textColor: 255, fontStyle: "bold" },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          2: { halign: "right" as const, cellWidth: 50 },
+        theme: "grid",
+        ...tableBase,
+        headStyles: {
+          fillColor: color,
+          textColor: 255,
+          fontStyle: "bold",
+          cellPadding: 4,
         },
-        styles: { fontSize: 9, cellPadding: 3 },
-        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          2: { halign: "right", cellWidth: 48 },
+        },
       });
-      startY = (doc as any).lastAutoTable?.finalY + 10 || startY + 10;
+      startY = lastTableY(doc, startY + 10);
     } else {
       doc.setFontSize(9);
       doc.setTextColor(150);
@@ -308,12 +432,17 @@ export function exportBalanceSheetPDF(
   );
 
   const balanced = data.is_balanced;
+  const boxH = 22;
+  if (startY + boxH > 270) {
+    doc.addPage();
+    startY = 20;
+  }
   doc.setFillColor(
     balanced ? 236 : 254,
     balanced ? 253 : 242,
     balanced ? 245 : 242,
   );
-  doc.roundedRect(14, startY, 182, 14, 3, 3, "F");
+  doc.roundedRect(14, startY, 182, boxH, 3, 3, "F");
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(
@@ -322,55 +451,145 @@ export function exportBalanceSheetPDF(
     balanced ? 105 : 28,
   );
   doc.text(
-    balanced ? "✓ Neraca Seimbang (Balanced)" : "✗ Neraca Tidak Seimbang",
+    balanced ? "Neraca Seimbang (Balanced)" : "Neraca Tidak Seimbang",
     20,
-    startY + 9,
+    startY + 8,
   );
-  doc.text(
-    `Aset: ${formatRupiah(data.total_assets)} = Kewajiban + Ekuitas: ${formatRupiah(data.total_liabilities + data.total_equity)}`,
-    190,
-    startY + 9,
-    { align: "right" },
-  );
-
-  const pageHeight = doc.internal.pageSize.height;
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.setTextColor(150);
+  doc.setTextColor(71, 85, 105);
   doc.text(
-    "Dokumen ini digenerate otomatis oleh LedgerFlow",
-    14,
-    pageHeight - 10,
+    `Aset ${formatRupiah(data.total_assets)}  =  Kewajiban + Ekuitas ${formatRupiah(data.total_liabilities + data.total_equity)}`,
+    20,
+    startY + 16,
   );
 
+  applyFooters(doc);
   doc.save(`LedgerFlow_Neraca_${periodName || "YTD"}.pdf`);
 }
 
-// Export PDF chart of accounts
-export function exportChartOfAccountsPDF(
-  accounts: { code: string; name: string; type: string; isActive: boolean }[],
+function buildBalanceOfficeDoc(
+  data: BalanceSheetData,
+  periodName: string,
+): OfficeExportDoc {
+  const cols = [
+    { key: "code", label: "Kode" },
+    { key: "name", label: "Nama Akun" },
+    { key: "amount", label: "Saldo", align: "right" as const },
+  ];
+  const mapRows = (
+    items: { accountCode: string; accountName: string; balance: number }[],
+  ) =>
+    items.map((i) => ({
+      code: i.accountCode,
+      name: i.accountName,
+      amount: formatRupiah(i.balance),
+    }));
+
+  return {
+    title: "Neraca (Balance Sheet)",
+    subtitle: "Posisi aset, kewajiban, dan ekuitas",
+    meta: [
+      { label: "Periode", value: periodLabel(periodName) },
+      { label: "Dicetak", value: today() },
+      {
+        label: "Status",
+        value: data.is_balanced ? "Seimbang" : "Tidak seimbang",
+      },
+    ],
+    sections: [
+      {
+        title: "Aset",
+        columns: cols,
+        rows: mapRows(data.assets),
+        footer: {
+          code: "",
+          name: "Total Aset",
+          amount: formatRupiah(data.total_assets),
+        },
+      },
+      {
+        title: "Kewajiban",
+        columns: cols,
+        rows: mapRows(data.liabilities),
+        footer: {
+          code: "",
+          name: "Total Kewajiban",
+          amount: formatRupiah(data.total_liabilities),
+        },
+      },
+      {
+        title: "Ekuitas",
+        columns: cols,
+        rows: mapRows(data.equity),
+        footer: {
+          code: "",
+          name: "Total Ekuitas",
+          amount: formatRupiah(data.total_equity),
+        },
+      },
+    ],
+    notes: [
+      `Aset: ${formatRupiah(data.total_assets)}`,
+      `Kewajiban + Ekuitas: ${formatRupiah(data.total_liabilities + data.total_equity)}`,
+    ],
+  };
+}
+
+export function exportBalanceSheetExcel(
+  data: BalanceSheetData,
+  periodName: string,
 ) {
+  exportOfficeExcel(
+    buildBalanceOfficeDoc(data, periodName),
+    `LedgerFlow_Neraca_${periodName || "YTD"}`,
+  );
+}
+
+export function exportBalanceSheetWord(
+  data: BalanceSheetData,
+  periodName: string,
+) {
+  exportOfficeWord(
+    buildBalanceOfficeDoc(data, periodName),
+    `LedgerFlow_Neraca_${periodName || "YTD"}`,
+  );
+}
+
+// ─── Chart of Accounts ───────────────────────────────────────────────
+
+type AccountExport = {
+  code: string;
+  name: string;
+  type: string;
+  normalBalance?: string;
+  isActive: boolean;
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  ASSET: "Aset",
+  LIABILITY: "Kewajiban",
+  EQUITY: "Ekuitas",
+  REVENUE: "Pendapatan",
+  EXPENSE: "Beban",
+};
+
+export function exportChartOfAccountsPDF(accounts: AccountExport[]) {
   const doc = createPDF("Chart of Accounts", "");
   let startY = 64;
 
   const total = accounts.length;
   const active = accounts.filter((a) => a.isActive).length;
   doc.setFontSize(10);
-  doc.setTextColor(100);
+  doc.setTextColor(100, 116, 139);
   doc.text(
-    `Total: ${total} akun · Aktif: ${active} · Nonaktif: ${total - active}`,
+    `Total: ${total} akun  |  Aktif: ${active}  |  Nonaktif: ${total - active}`,
     14,
     startY,
   );
   startY += 8;
 
   const types = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"];
-  const typeLabels: Record<string, string> = {
-    ASSET: "Aset",
-    LIABILITY: "Kewajiban",
-    EQUITY: "Ekuitas",
-    REVENUE: "Pendapatan",
-    EXPENSE: "Beban",
-  };
   const typeColors: Record<string, [number, number, number]> = {
     ASSET: [6, 182, 212],
     LIABILITY: [245, 158, 11],
@@ -385,11 +604,16 @@ export function exportChartOfAccountsPDF(
 
     const color = typeColors[type] || [100, 100, 100];
 
+    if (startY > 250) {
+      doc.addPage();
+      startY = 20;
+    }
+
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...color);
     doc.text(
-      `${typeLabels[type] || type} (${typeAccounts.length})`,
+      `${TYPE_LABELS[type] || type} (${typeAccounts.length})`,
       14,
       startY,
     );
@@ -401,57 +625,32 @@ export function exportChartOfAccountsPDF(
       body: typeAccounts.map((a) => [
         a.code,
         a.name,
-        typeLabels[a.type.toUpperCase()] || a.type,
+        TYPE_LABELS[a.type.toUpperCase()] || a.type,
         a.isActive ? "Aktif" : "Nonaktif",
       ]),
-      theme: "striped",
-      headStyles: { fillColor: color, textColor: 255, fontStyle: "bold" },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 25 },
+      theme: "grid",
+      ...tableBase,
+      headStyles: {
+        fillColor: color,
+        textColor: 255,
+        fontStyle: "bold",
+        cellPadding: 4,
       },
-      styles: { fontSize: 9, cellPadding: 3 },
-      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 26 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 26, halign: "center" },
+      },
     });
 
-    startY = (doc as any).lastAutoTable?.finalY + 8 || startY + 8;
-
-    if (startY > 260) {
-      doc.addPage();
-      startY = 20;
-    }
+    startY = lastTableY(doc, startY + 8) - 2;
   }
 
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text(
-      "Dokumen ini digenerate otomatis oleh LedgerFlow",
-      14,
-      pageHeight - 10,
-    );
-    doc.text(`Halaman ${i} dari ${pageCount}`, 190, pageHeight - 10, {
-      align: "right",
-    });
-  }
-
+  applyFooters(doc);
   doc.save("LedgerFlow_ChartOfAccounts.pdf");
 }
 
-// Export CSV chart of accounts
-export function exportChartOfAccountsCSV(
-  accounts: {
-    code: string;
-    name: string;
-    type: string;
-    normalBalance?: string;
-    isActive: boolean;
-  }[],
-) {
+export function exportChartOfAccountsCSV(accounts: AccountExport[]) {
   const headers = ["Kode", "Nama Akun", "Tipe", "Normal Balance", "Status"];
   const rows = accounts.map((a) => [
     a.code,
@@ -475,7 +674,55 @@ export function exportChartOfAccountsCSV(
   URL.revokeObjectURL(url);
 }
 
-// Tipe hasil parsing CSV akun
+function buildCoAOfficeDoc(accounts: AccountExport[]): OfficeExportDoc {
+  const types = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"];
+  const cols = [
+    { key: "code", label: "Kode" },
+    { key: "name", label: "Nama Akun" },
+    { key: "type", label: "Tipe" },
+    { key: "normal", label: "Normal Balance" },
+    { key: "status", label: "Status" },
+  ];
+
+  return {
+    title: "Chart of Accounts",
+    subtitle: "Daftar akun perusahaan",
+    meta: [
+      { label: "Total akun", value: String(accounts.length) },
+      {
+        label: "Aktif",
+        value: String(accounts.filter((a) => a.isActive).length),
+      },
+      { label: "Dicetak", value: today() },
+    ],
+    sections: types
+      .map((type) => {
+        const rows = accounts.filter((a) => a.type.toUpperCase() === type);
+        if (!rows.length) return null;
+        return {
+          title: `${TYPE_LABELS[type] || type} (${rows.length})`,
+          columns: cols,
+          rows: rows.map((a) => ({
+            code: a.code,
+            name: a.name,
+            type: TYPE_LABELS[a.type.toUpperCase()] || a.type,
+            normal: a.normalBalance || "-",
+            status: a.isActive ? "Aktif" : "Nonaktif",
+          })),
+        };
+      })
+      .filter(Boolean) as OfficeExportDoc["sections"],
+  };
+}
+
+export function exportChartOfAccountsExcel(accounts: AccountExport[]) {
+  exportOfficeExcel(buildCoAOfficeDoc(accounts), "LedgerFlow_ChartOfAccounts");
+}
+
+export function exportChartOfAccountsWord(accounts: AccountExport[]) {
+  exportOfficeWord(buildCoAOfficeDoc(accounts), "LedgerFlow_ChartOfAccounts");
+}
+
 export interface ImportedAccount {
   code: string;
   name: string;
@@ -483,7 +730,6 @@ export interface ImportedAccount {
   normalBalance: string;
 }
 
-// Parse isi file CSV menjadi data akun + daftar error validasi
 export function parseAccountsCSV(csvText: string): {
   accounts: ImportedAccount[];
   errors: string[];
@@ -501,7 +747,6 @@ export function parseAccountsCSV(csvText: string): {
   const errors: string[] = [];
 
   const validTypes = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"];
-  const validBalances = ["DEBIT", "CREDIT"];
 
   for (let i = 0; i < dataLines.length; i++) {
     const line = dataLines[i];
@@ -542,7 +787,6 @@ export function parseAccountsCSV(csvText: string): {
   return { accounts, errors };
 }
 
-// Download template CSV import akun
 export function downloadImportTemplate() {
   const template = `Kode,Nama Akun,Tipe,Normal Balance
 1000,Kas,ASSET,DEBIT
@@ -565,30 +809,30 @@ export function downloadImportTemplate() {
   URL.revokeObjectURL(url);
 }
 
-// Export PDF laporan arus kas
-export function exportCashFlowPDF(
-  data: {
-    operating: {
-      description: string;
-      items: { label?: string; accountName?: string; amount: number }[];
-      subtotal: number;
-    };
-    investing: {
-      description: string;
-      items: { label?: string; accountName?: string; amount: number }[];
-      subtotal: number;
-    };
-    financing: {
-      description: string;
-      items: { label?: string; accountName?: string; amount: number }[];
-      subtotal: number;
-    };
-    netCashFlow: number;
-    beginningCash: number;
-    endingCash: number;
-  },
-  periodName: string,
-) {
+// ─── Cash Flow ───────────────────────────────────────────────────────
+
+type CashFlowData = {
+  operating: {
+    description: string;
+    items: { label?: string; accountName?: string; amount: number }[];
+    subtotal: number;
+  };
+  investing: {
+    description: string;
+    items: { label?: string; accountName?: string; amount: number }[];
+    subtotal: number;
+  };
+  financing: {
+    description: string;
+    items: { label?: string; accountName?: string; amount: number }[];
+    subtotal: number;
+  };
+  netCashFlow: number;
+  beginningCash: number;
+  endingCash: number;
+};
+
+export function exportCashFlowPDF(data: CashFlowData, periodName: string) {
   const doc = createPDF("Laporan Arus Kas", periodName);
   let startY = 64;
 
@@ -599,6 +843,11 @@ export function exportCashFlowPDF(
     subtotal: number,
     color: [number, number, number],
   ) => {
+    if (startY > 240) {
+      doc.addPage();
+      startY = 20;
+    }
+
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...color);
@@ -609,33 +858,47 @@ export function exportCashFlowPDF(
     doc.text(description, 14, startY + 5);
     startY += 9;
 
-    const bodyRows = items.map((item) => [
+    const bodyRows: (
+      | string
+      | { content: string; styles: Record<string, unknown> }
+    )[][] = items.map((item) => [
       item.label || item.accountName || "-",
       formatRupiah(item.amount),
     ]);
 
     bodyRows.push([
-      { content: `Subtotal ${title}`, styles: { fontStyle: "bold" } } as any,
+      {
+        content: `Subtotal ${title}`,
+        styles: { fontStyle: "bold", fillColor: [241, 245, 249] },
+      },
       {
         content: formatRupiah(subtotal),
-        styles: { fontStyle: "bold", halign: "right" as const },
-      } as any,
+        styles: {
+          fontStyle: "bold",
+          halign: "right",
+          fillColor: [241, 245, 249],
+        },
+      },
     ]);
 
     autoTable(doc, {
       startY,
       head: [["Keterangan", "Jumlah"]],
-      body: bodyRows,
-      theme: "striped",
-      headStyles: { fillColor: color, textColor: 255, fontStyle: "bold" },
-      columnStyles: {
-        1: { halign: "right" as const, cellWidth: 55 },
+      body: bodyRows as never,
+      theme: "grid",
+      ...tableBase,
+      headStyles: {
+        fillColor: color,
+        textColor: 255,
+        fontStyle: "bold",
+        cellPadding: 4,
       },
-      styles: { fontSize: 9, cellPadding: 3 },
-      margin: { left: 14, right: 14 },
+      columnStyles: {
+        1: { halign: "right", cellWidth: 55 },
+      },
     });
 
-    startY = (doc as any).lastAutoTable?.finalY + 8 || startY + 8;
+    startY = lastTableY(doc, startY + 8);
   };
 
   renderCashSection(
@@ -660,32 +923,96 @@ export function exportCashFlowPDF(
     [168, 85, 247],
   );
 
-  const summaryData = [
-    ["Saldo Kas Awal", formatRupiah(data.beginningCash)],
-    ["Perubahan Kas Bersih", formatRupiah(data.netCashFlow)],
-    ["Saldo Kas Akhir", formatRupiah(data.endingCash)],
-  ];
-
   autoTable(doc, {
     startY: startY + 2,
-    body: summaryData,
-    theme: "plain",
-    styles: { fontSize: 11, fontStyle: "bold", cellPadding: 4 },
-    columnStyles: {
-      1: { halign: "right" as const },
+    head: [["Ringkasan Kas", "Jumlah"]],
+    body: [
+      ["Saldo Kas Awal", formatRupiah(data.beginningCash)],
+      ["Perubahan Kas Bersih", formatRupiah(data.netCashFlow)],
+      ["Saldo Kas Akhir", formatRupiah(data.endingCash)],
+    ],
+    theme: "grid",
+    ...tableBase,
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: 255,
+      fontStyle: "bold",
+      cellPadding: 4,
     },
-    margin: { left: 14, right: 14 },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: {
+      1: { halign: "right", cellWidth: 55 },
+    },
+    bodyStyles: { fontStyle: "bold" },
   });
 
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text(
-    "Dokumen ini digenerate otomatis oleh LedgerFlow",
-    14,
-    pageHeight - 10,
-  );
-
+  applyFooters(doc);
   doc.save(`LedgerFlow_ArusKas_${periodName || "YTD"}.pdf`);
+}
+
+function buildCashOfficeDoc(
+  data: CashFlowData,
+  periodName: string,
+): OfficeExportDoc {
+  const section = (
+    title: string,
+    items: { label?: string; accountName?: string; amount: number }[],
+    subtotal: number,
+  ) => ({
+    title,
+    columns: [
+      { key: "label", label: "Keterangan" },
+      { key: "amount", label: "Jumlah", align: "right" as const },
+    ],
+    rows: items.map((i) => ({
+      label: i.label || i.accountName || "-",
+      amount: formatRupiah(i.amount),
+    })),
+    footer: {
+      label: `Subtotal ${title}`,
+      amount: formatRupiah(subtotal),
+    },
+  });
+
+  return {
+    title: "Laporan Arus Kas",
+    subtitle: "Arus kas operasi, investasi, dan pendanaan",
+    meta: [
+      { label: "Periode", value: periodLabel(periodName) },
+      { label: "Dicetak", value: today() },
+    ],
+    sections: [
+      section("Operasi", data.operating.items, data.operating.subtotal),
+      section("Investasi", data.investing.items, data.investing.subtotal),
+      section("Pendanaan", data.financing.items, data.financing.subtotal),
+      {
+        title: "Ringkasan Kas",
+        columns: [
+          { key: "label", label: "Keterangan" },
+          { key: "amount", label: "Jumlah", align: "right" },
+        ],
+        rows: [
+          { label: "Saldo Kas Awal", amount: formatRupiah(data.beginningCash) },
+          {
+            label: "Perubahan Kas Bersih",
+            amount: formatRupiah(data.netCashFlow),
+          },
+          { label: "Saldo Kas Akhir", amount: formatRupiah(data.endingCash) },
+        ],
+      },
+    ],
+  };
+}
+
+export function exportCashFlowExcel(data: CashFlowData, periodName: string) {
+  exportOfficeExcel(
+    buildCashOfficeDoc(data, periodName),
+    `LedgerFlow_ArusKas_${periodName || "YTD"}`,
+  );
+}
+
+export function exportCashFlowWord(data: CashFlowData, periodName: string) {
+  exportOfficeWord(
+    buildCashOfficeDoc(data, periodName),
+    `LedgerFlow_ArusKas_${periodName || "YTD"}`,
+  );
 }

@@ -17,11 +17,9 @@ import {
   TrendingDown,
   Filter,
   Upload,
-  Download,
   TrendingUp,
   FileDown,
   FileUp,
-  FileText,
   X,
   AlertCircle,
   Check,
@@ -34,10 +32,13 @@ import { TablePagination } from "../components/TablePagination";
 import {
   exportChartOfAccountsPDF,
   exportChartOfAccountsCSV,
+  exportChartOfAccountsExcel,
+  exportChartOfAccountsWord,
   parseAccountsCSV,
   downloadImportTemplate,
   type ImportedAccount,
 } from "../utils/exportPDF";
+import { ExportMenu } from "../components/ExportMenu";
 
 import type { AccountType } from "../types/account";
 import { ACCOUNT_TYPES } from "../types/constants";
@@ -227,12 +228,11 @@ export default function ChartOfAccounts() {
   };
 
   // ─── Export Handlers ──────────────────────────────────────────────
-  const handleExportPDF = () => {
-    exportChartOfAccountsPDF(safeAccounts);
-  };
-
-  const handleExportCSV = () => {
-    exportChartOfAccountsCSV(safeAccounts);
+  const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
+    if (format === "pdf") exportChartOfAccountsPDF(safeAccounts);
+    else if (format === "csv") exportChartOfAccountsCSV(safeAccounts);
+    else if (format === "excel") exportChartOfAccountsExcel(safeAccounts);
+    else exportChartOfAccountsWord(safeAccounts);
   };
 
   // ─── Import Handlers ──────────────────────────────────────────────
@@ -285,19 +285,7 @@ export default function ChartOfAccounts() {
     }
   };
 
-  // ─── Export Dropdown State ────────────────────────────────────────
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
-        setExportMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  // Export menu handled by <ExportMenu />
 
   return (
     <AppShell>
@@ -356,53 +344,10 @@ export default function ChartOfAccounts() {
             </button>
 
             {/* Export Dropdown */}
-            <div className="relative w-full sm:w-auto" ref={exportRef}>
-              <button
-                onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors w-full sm:w-auto"
-              >
-                <Download size="16" />
-                <span>Export</span>
-              </button>
-              <AnimatePresence>
-                {exportMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-full sm:w-48 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-200 dark:border-gray-700/50 overflow-hidden z-50"
-                  >
-                    <button
-                      onClick={() => {
-                        handleExportPDF();
-                        setExportMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
-                    >
-                      <FileText
-                        size={16}
-                        className="text-rose-500 flex-shrink-0"
-                      />
-                      <span>Export PDF</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleExportCSV();
-                        setExportMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors border-t border-gray-100 dark:border-gray-800"
-                    >
-                      <FileDown
-                        size={16}
-                        className="text-emerald-500 flex-shrink-0"
-                      />
-                      <span>Export CSV</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <ExportMenu
+              formats={["pdf", "excel", "word", "csv"]}
+              onExport={handleExport}
+            />
 
             {/* Import Button */}
             <button

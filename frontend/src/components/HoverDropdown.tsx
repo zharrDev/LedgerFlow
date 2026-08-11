@@ -1,19 +1,12 @@
-import { useState, useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
+import type { ReactNode, CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 /**
- * HoverDropdown — dropdown halus yang muncul saat kursor mendekat (hover).
- *
- * Versi ini TIDAK memakai createPortal / react-dom agar menghindari
- * kemungkinan duplikasi instance React (penyebab error
- * "Cannot read properties of null (reading 'useState')").
- *
- * Dropdown dirender inline (absolute) di dalam parent. Agar tidak terpotong
- * oleh container ber-overflow, parent dibuat `relative` dan panel diberi
- * z-index tinggi. Untuk kasus di dalam tabel/area overflow, pastikan
- * wrapper filter tidak memakai `overflow-hidden`.
+ * HoverDropdown — muncul saat hover/klik.
+ * Panel pakai posisi `fixed` (bukan absolute di flow dokumen) supaya
+ * membuka dropdown tidak memperpanjang tinggi halaman / memicu scroll jump.
  */
 
 export interface DropdownOption {
@@ -25,20 +18,24 @@ interface HoverDropdownProps {
   value: string;
   onChange: (value: string) => void;
   options: DropdownOption[];
-  /** Optional custom renderer untuk label tombol */
   labelRenderer?: (value: string) => string;
   icon?: ReactNode;
   placeholder?: string;
-  /** Lebar minimum dropdown panel */
   minWidth?: number;
-  /** Apakah tombol mengisi penuh lebar parent (mobile-friendly) */
   fullWidth?: boolean;
   disabled?: boolean;
   className?: string;
-  /** Posisi panel: buka ke bawah (default) atau ke atas */
-  placement?: "bottom" | "top";
-  /** Ratakan panel ke kanan tombol */
+  placement?: "bottom" | "top" | "auto";
   alignRight?: boolean;
+}
+
+interface PanelPos {
+  top?: number;
+  bottom?: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+  place: "bottom" | "top";
 }
 
 export function HoverDropdown({
@@ -52,18 +49,68 @@ export function HoverDropdown({
   fullWidth = false,
   disabled = false,
   className = "",
-  placement = "bottom",
+  placement = "auto",
   alignRight = false,
 }: HoverDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState<PanelPos | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const getLabel = () => {
     if (labelRenderer) return labelRenderer(value);
     const option = options.find((opt) => opt.value === value);
     return option ? option.label : placeholder;
   };
+
+  const updatePosition = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const gap = 4;
+    const viewportPad = 8;
+    const preferredWidth = Math.max(rect.width, minWidth);
+    const maxPanelH = Math.min(288, window.innerHeight - viewportPad * 2);
+
+    const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPad;
+    const spaceAbove = rect.top - gap - viewportPad;
+
+    let place: "bottom" | "top";
+    if (placement === "top") place = "top";
+    else if (placement === "bottom") place = "bottom";
+    else place = spaceBelow < 120 && spaceAbove > spaceBelow ? "top" : "bottom";
+
+    const maxHeight =
+      place === "bottom"
+        ? Math.max(96, Math.min(maxPanelH, spaceBelow))
+        : Math.max(96, Math.min(maxPanelH, spaceAbove));
+
+    let left = alignRight ? rect.right - preferredWidth : rect.left;
+    left = Math.min(
+      Math.max(viewportPad, left),
+      window.innerWidth - preferredWidth - viewportPad,
+    );
+
+    if (place === "bottom") {
+      setPanelPos({
+        top: rect.bottom + gap,
+        left,
+        width: preferredWidth,
+        maxHeight,
+        place,
+      });
+    } else {
+      setPanelPos({
+        bottom: window.innerHeight - rect.top + gap,
+        left,
+        width: preferredWidth,
+        maxHeight,
+        place,
+      });
+    }
+  }, [alignRight, minWidth, placement]);
 
   const open = () => {
     if (disabled) return;
@@ -72,7 +119,7 @@ export function HoverDropdown({
   };
 
   const scheduleClose = () => {
-    closeTimeoutRef.current = setTimeout(() => setIsOpen(false), 150);
+    closeTimeoutRef.current = setTimeout(() => setIsOpen(false), 180);
   };
 
   const handleSelect = (selectedValue: string) => {
@@ -80,27 +127,83 @@ export function HoverDropdown({
     setIsOpen(false);
   };
 
-  // Close ketika klik di luar (perangkat tanpa hover / mobile)
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setPanelPos(null);
+      return;
+    }
+    updatePosition();
+  }, [isOpen, updatePosition, options.length]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onReposition = () => updatePosition();
+    window.addEventListener("resize", onReposition);
+    // capture scroll di window + elemen scrollable agar panel ikut tombol
+    window.addEventListener("scroll", onReposition, true);
+    return () => {
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [isOpen, updatePosition]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
+      const t = e.target as Node;
       if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        containerRef.current?.contains(t) ||
+        panelRef.current?.contains(t)
       ) {
-        setIsOpen(false);
+        return;
       }
+      setIsOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Bersihkan timeout saat unmount
   useEffect(() => {
     return () => {
       if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     };
   }, []);
+
+  // Isolasi wheel: jangan biarkan scroll chain ke halaman saat hover panel
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!isOpen || !panel) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.stopPropagation();
+      const { scrollTop, scrollHeight, clientHeight } = panel;
+      const canScroll = scrollHeight > clientHeight + 1;
+      if (!canScroll) {
+        e.preventDefault();
+        return;
+      }
+      const atTop = scrollTop <= 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
+        e.preventDefault();
+      }
+    };
+
+    panel.addEventListener("wheel", onWheel, { passive: false });
+    return () => panel.removeEventListener("wheel", onWheel);
+  }, [isOpen, panelPos]);
+
+  const panelStyle: CSSProperties | undefined = panelPos
+    ? {
+        position: "fixed",
+        top: panelPos.top,
+        bottom: panelPos.bottom,
+        left: panelPos.left,
+        width: panelPos.width,
+        maxHeight: panelPos.maxHeight,
+        zIndex: 10050,
+      }
+    : undefined;
 
   return (
     <div
@@ -132,20 +235,25 @@ export function HoverDropdown({
       </button>
 
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && panelPos && (
           <motion.div
+            ref={panelRef}
             initial={{
               opacity: 0,
-              y: placement === "top" ? 8 : -8,
-              scale: 0.96,
+              y: panelPos.place === "top" ? 6 : -6,
+              scale: 0.98,
             }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: placement === "top" ? 8 : -8, scale: 0.96 }}
-            transition={{ duration: 0.15 }}
-            style={{ minWidth }}
-            className={`absolute z-[9999] max-h-72 overflow-y-auto bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-w-[calc(100vw-1rem)] sm:max-w-none ${
-              placement === "top" ? "bottom-full mb-1" : "top-full mt-1"
-            } ${alignRight ? "right-0" : "left-0"} ${fullWidth ? "w-full" : ""}`}
+            exit={{
+              opacity: 0,
+              y: panelPos.place === "top" ? 6 : -6,
+              scale: 0.98,
+            }}
+            transition={{ duration: 0.12 }}
+            style={panelStyle}
+            onMouseEnter={open}
+            onMouseLeave={scheduleClose}
+            className="overflow-y-auto overscroll-contain bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl"
           >
             {options.map((option) => (
               <button
