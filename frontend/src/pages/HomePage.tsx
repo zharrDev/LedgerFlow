@@ -129,6 +129,7 @@ const resourceItems = [
     icon: HelpCircle,
     title: "Help Center",
     desc: "FAQ & documentation",
+    href: "/help",
   },
   {
     icon: MessageSquare,
@@ -212,25 +213,37 @@ function Navbar() {
                       : "w-[280px] px-2"
                   }`}
                 >
-                  {item.items.map((sub) => (
-                    <a
-                      key={sub.title}
-                      href="#"
-                      className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors group/sub"
-                    >
-                      <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-50 dark:bg-primary-500/10 text-primary-500 group-hover/sub:bg-primary-100 dark:group-hover/sub:bg-primary-500/20 transition-colors">
-                        <sub.icon size={16} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">
-                          {sub.title}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
-                          {sub.desc}
-                        </p>
-                      </div>
-                    </a>
-                  ))}
+                  {item.items.map((sub) => {
+                    const className =
+                      "flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors group/sub";
+                    const content = (
+                      <>
+                        <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-50 dark:bg-primary-500/10 text-primary-500 group-hover/sub:bg-primary-100 dark:group-hover/sub:bg-primary-500/20 transition-colors">
+                          <sub.icon size={16} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">
+                            {sub.title}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
+                            {sub.desc}
+                          </p>
+                        </div>
+                      </>
+                    );
+                    if ("href" in sub && sub.href) {
+                      return (
+                        <Link key={sub.title} to={sub.href} className={className}>
+                          {content}
+                        </Link>
+                      );
+                    }
+                    return (
+                      <a key={sub.title} href="#" className={className}>
+                        {content}
+                      </a>
+                    );
+                  })}
                 </div>
               </AnimateDropdown>
             </div>
@@ -326,25 +339,42 @@ function Navbar() {
                       {item.name}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-50/70 dark:bg-[#111827]/70 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
-                      {item.items.map((sub) => (
-                        <a
-                          key={sub.title}
-                          href="#"
-                          className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-white dark:hover:bg-darkCard text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all group/mob shadow-sm hover:shadow"
-                        >
-                          <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-500 group-hover/mob:scale-110 transition-transform flex-shrink-0 mt-0.5">
-                            <sub.icon size={18} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold leading-snug">
-                              {sub.title}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                              {sub.desc}
-                            </p>
-                          </div>
-                        </a>
-                      ))}
+                      {item.items.map((sub) => {
+                        const className =
+                          "flex items-start gap-3 p-2.5 rounded-xl hover:bg-white dark:hover:bg-darkCard text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all group/mob shadow-sm hover:shadow";
+                        const content = (
+                          <>
+                            <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-500 group-hover/mob:scale-110 transition-transform flex-shrink-0 mt-0.5">
+                              <sub.icon size={18} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold leading-snug">
+                                {sub.title}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                                {sub.desc}
+                              </p>
+                            </div>
+                          </>
+                        );
+                        if ("href" in sub && sub.href) {
+                          return (
+                            <Link
+                              key={sub.title}
+                              to={sub.href}
+                              className={className}
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              {content}
+                            </Link>
+                          );
+                        }
+                        return (
+                          <a key={sub.title} href="#" className={className}>
+                            {content}
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

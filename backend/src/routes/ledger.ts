@@ -160,7 +160,9 @@ ledger.get("/", async (c) => {
     lineRows = (lines ?? []) as typeof lineRows;
   }
 
-  // Pisahkan saldo awal (< startDate) dan transaksi periode berjalan
+  // Pisahkan saldo awal (< startDate) dan transaksi periode berjalan.
+  // Saldo awal = agregat jurnal posted sebelum rentang; tanda relatif ke
+  // normal_balance akun (Debit: debit−credit, Credit: credit−debit).
   let openingDebit = 0;
   let openingCredit = 0;
   type Enriched = {

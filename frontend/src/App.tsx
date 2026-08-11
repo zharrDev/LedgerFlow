@@ -24,6 +24,7 @@ import AuthCallback from "./pages/AuthCallback";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import HelpCenterPage from "./pages/HelpCenterPage";
+import PublicHelpPage from "./pages/PublicHelpPage";
 import PricingPage from "./pages/PricingPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -99,6 +100,7 @@ function AiCfoFabGate() {
     "/auth/",
     "/payment/",
     "/pricing",
+    "/help",
   ];
   if (pathname === "/" || hiddenPrefixes.some((p) => pathname.startsWith(p))) {
     return null;
@@ -210,6 +212,7 @@ function AnimatedRoutes() {
         }
       />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/help" element={<PublicHelpPage />} />
 
       <Route
         path="/onboarding"

@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, FileText, TrendingUp, CheckCircle, ArrowRight, ArrowLeft, Building } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  TrendingUp,
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
+  Building,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const steps = [
@@ -31,19 +39,25 @@ const steps = [
   },
 ];
 
+function markOnboarded(userId?: string) {
+  if (userId) localStorage.setItem(`onboarded_${userId}`, "true");
+}
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
   const isLast = step === steps.length - 1;
+  const isFirst = step === 0;
+
+  const finish = () => {
+    markOnboarded(user?.id);
+    navigate("/dashboard", { replace: true });
+  };
 
   const handleNext = () => {
-    if (isLast) {
-      if (user?.id) localStorage.setItem(`onboarded_${user.id}`, "true");
-      navigate("/dashboard", { replace: true });
-    } else {
-      setStep((s) => s + 1);
-    }
+    if (isLast) finish();
+    else setStep((s) => s + 1);
   };
 
   return (
@@ -58,7 +72,9 @@ export default function OnboardingPage() {
             transition={{ duration: 0.3 }}
           >
             <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-primary-500/20 rounded-3xl shadow-2xl p-8 sm:p-10 text-center">
-              <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${steps[step].color} flex items-center justify-center shadow-lg`}>
+              <div
+                className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${steps[step].color} flex items-center justify-center shadow-lg`}
+              >
                 {(() => {
                   const Icon = steps[step].icon;
                   return <Icon size={36} className="text-white" />;
@@ -77,33 +93,50 @@ export default function OnboardingPage() {
                   <div
                     key={i}
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      i === step ? "w-8 bg-primary-500" : "w-2 bg-gray-300 dark:bg-gray-600"
+                      i === step
+                        ? "w-8 bg-primary-500"
+                        : "w-2 bg-gray-300 dark:bg-gray-600"
                     }`}
                   />
                 ))}
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-3">
                 <button
-                  onClick={() => {
-                    localStorage.setItem("onboarded", "true");
-                    navigate("/dashboard", { replace: true });
-                  }}
-                  className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                  type="button"
+                  onClick={finish}
+                  className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-2"
                 >
-                  Skip
+                  Lewati
                 </button>
 
-                <button
-                  onClick={handleNext}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
-                >
-                  {isLast ? (
-                    <>Mulai <CheckCircle size={18} /></>
-                  ) : (
-                    <>Lanjut <ArrowRight size={18} /></>
+                <div className="flex items-center gap-2">
+                  {!isFirst && (
+                    <button
+                      type="button"
+                      onClick={() => setStep((s) => s - 1)}
+                      className="inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                      <ArrowLeft size={16} />
+                      Kembali
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                  >
+                    {isLast ? (
+                      <>
+                        Mulai <CheckCircle size={18} />
+                      </>
+                    ) : (
+                      <>
+                        Lanjut <ArrowRight size={18} />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

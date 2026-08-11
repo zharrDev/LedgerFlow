@@ -79,8 +79,8 @@
 | 1 | Fullstack FE + BE dalam 1 repo (monorepo) | ✅ | Struktur sudah monorepo |
 | 2 | Repository GitHub public | ⚠️ | Perlu dipastikan visibility repo = Public |
 | 3 | README berisi: judul, deskripsi, fitur utama, teknologi, struktur folder, cara instalasi | ✅ | Sudah lengkap di README ini |
-| 4 | Akun demo (jika diperlukan) | ❌ | **Belum dicantumkan** — isi section [Akun Demo](#akun-demo) di bawah |
-| 5 | Dokumentasi perancangan sistem berupa Flowchart | ❌ | **Belum ada** — tambahkan di section [Dokumentasi Perancangan Sistem](#dokumentasi-perancangan-sistem-flowchart) |
+| 4 | Akun demo (jika diperlukan) | ✅ | Seed `npm run seed` — lihat [Akun Demo](#akun-demo) |
+| 5 | Dokumentasi perancangan sistem berupa Flowchart | ✅ | Flowchart Mermaid di [Dokumentasi Perancangan Sistem](#dokumentasi-perancangan-sistem-flowchart) |
 
 ---
 
@@ -94,6 +94,8 @@
 | **Supabase** | Database dan backend service |
 | **Midtrans** | Payment gateway |
 | **Google Auth** | OAuth 2.0 login |
+| **LangGraph.js + LangChain** | AI CFO Assistant (agent router + tools) |
+| **OpenRouter** | Provider LLM (model gratis `:free`) |
 
 ### Frontend
 
@@ -107,6 +109,7 @@
 | **TanStack React Query** | Data fetching |
 | **Axios** | HTTP client |
 | **Recharts** | Chart library |
+| **Framer Motion** | Animasi UI |
 
 
 
@@ -185,12 +188,21 @@ LedgerFlow/
 │   │   │   ├── users.ts               # Profil user
 │   │   │   ├── user-management.ts     # Kelola anggota company + role (RBAC)
 │   │   │   ├── upload.ts             # Upload avatar & bukti pembayaran ke Storage
-│   │   │   └── companies.ts           # Manajemen perusahaan
+│   │   │   ├── companies.ts           # Manajemen perusahaan
+│   │   │   ├── health.ts              # Diagnostik SMTP / jaringan (admin)
+│   │   │   └── ai.ts                  # POST /api/ai/chat — AI CFO
+│   │   ├── ai/                         # LangGraph AI CFO Assistant
+│   │   │   ├── graph/                  # StateGraph + router agent
+│   │   │   ├── agents/                 # Cashflow, Forecast, Report, Risk
+│   │   │   ├── tools/                  # Query Supabase (cashflow, transaksi, beban)
+│   │   │   ├── prompts/                # System prompts per agent
+│   │   │   └── models/provider.ts      # ChatOpenAI → OpenRouter
 │   │   ├── lib/
 │   │   │   ├── supabase.ts             # Supabase admin client
 │   │   │   ├── jwt.ts                  # JWT sign & verify (jose)
 │   │   │   ├── midtrans.ts            # Midtrans Snap, Core API, helpers
 │   │   │   ├── email.ts               # SMTP email (welcome, login, OTP, reset)
+│   │   │   ├── env.ts                 # loadEnv (.env) + warning OPENROUTER_*
 │   │   │   └── storage.ts             # Upload base64 ke Supabase Storage
 │   │   ├── middleware/
 │   │   │   └── auth.ts                # Auth middleware + RBAC middleware
@@ -203,7 +215,7 @@ LedgerFlow/
 ├── frontend/
 │   ├── src/
 │   │   ├── main.tsx                    # Entry point React, provider wrapping
-│   │   ├── App.tsx                     # Router, guards, layout
+│   │   ├── App.tsx                     # Router, guards, layout, FAB AI CFO
 │   │   ├── pages/                      # Halaman-halaman aplikasi
 │   │   │   ├── HomePage.tsx            # Landing page
 │   │   │   ├── LoginPage.tsx           # Login (email + Google OAuth)
@@ -221,7 +233,8 @@ LedgerFlow/
 │   │   │   ├── CashFlowPage.tsx        # Arus Kas
 │   │   │   ├── PeriodManagement.tsx    # Manajemen periode
 │   │   │   ├── UserManagementPage.tsx  # Kelola user & role anggota
-│   │   │   ├── OnboardingPage.tsx      # Onboarding pertama kali login
+│   │   │   ├── OnboardingPage.tsx      # Onboarding pertama kali login (bisa lewati)
+│   │   │   ├── AiCfoPage.tsx           # AI CFO Assistant (chat + riwayat hari ini)
 │   │   │   ├── PricingPage.tsx         # Halaman pricing & upgrade
 │   │   │   ├── PaymentResultPage.tsx   # Hasil pembayaran + upload bukti
 │   │   │   ├── ProfilePage.tsx         # Profil user (avatar upload)
@@ -231,6 +244,8 @@ LedgerFlow/
 │   │   │   └── NotFoundPage.tsx       # Halaman 404
 │   │   ├── components/
 │   │   │   ├── AppShell.tsx            # Layout utama (Header + Sidebar + Main)
+│   │   │   ├── AICfoFloatingButton.tsx # FAB AI CFO (pojok kanan bawah)
+│   │   │   ├── ai/                     # Komponen chat AI (bubble, welcome, history)
 │   │   │   ├── Header.tsx              # Top navigation bar
 │   │   │   ├── Sidebar.tsx             # Sidebar navigasi
 │   │   │   ├── Navbar.tsx              # Navbar responsif
@@ -503,6 +518,7 @@ Provider wrapping:
 | `/income-statement` | IncomeStatementPage | ProtectedRoute + ProtectedFeature |
 | `/balance-sheet` | BalanceSheet | ProtectedRoute + ProtectedFeature |
 | `/cash-flow` | CashFlowPage | ProtectedRoute + ProtectedFeature |
+| `/ai-cfo` | AiCfoPage | ProtectedRoute |
 | `/pricing` | PricingPage | Public |
 | `/payment/success` | PaymentResultPage | Public |
 | `/payment/pending` | PaymentResultPage | Public |
@@ -656,6 +672,11 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | GET | `/api/reports/cash-flow` | Arus Kas (Indirect Method) |
 | GET | `/api/reports/periods` | Daftar periode untuk filter |
 
+### AI CFO
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| POST | `/api/ai/chat` | Chat AI CFO (`{ message }`). Auth JWT; `company_id` dari token. Error 429/504/503 jelas |
+
 ### Periods
 | Method | Endpoint | Deskripsi |
 |---|---|---|
@@ -741,6 +762,21 @@ npm run dev:backend   # http://localhost:3000
 npm run dev:frontend  # http://localhost:5173
 ```
 
+### Environment Variables (penting)
+
+**Backend (`backend/.env`)** — tambahkan untuk AI CFO:
+```env
+OPENROUTER_API_KEY=sk-or-v1-...   # dari https://openrouter.ai/keys
+OPENROUTER_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
+```
+
+**Frontend (`frontend/.env`)** — lokal vs production:
+```env
+VITE_API_URL=http://localhost:3000
+# Production (Vercel): set VITE_API_URL ke URL Render, mis.
+# VITE_API_URL=https://ledgerflow-backend-02vs.onrender.com
+```
+
 ### Production Build
 
 ```bash
@@ -751,6 +787,7 @@ npm run build --workspace=backend   # Output: backend/dist/
 npm run build --workspace=frontend  # Output: frontend/dist/
 ```
 
+> **Catatan Render free tier:** backend bisa sleep setelah idle → browser tampil `ERR_CONNECTION_CLOSED`. Bangunkan lewat `GET /health`, lalu refresh.
 ---
 
 ## Fitur Detail
@@ -775,8 +812,8 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 ### 3. Buku Besar (Ledger)
 - Tampilkan mutasi per akun
 - Filter: periode atau range tanggal
-- Hitung saldo awal, debit/kredit periode, saldo akhir
-- Running balance per transaksi
+- **Saldo awal**: agregat semua jurnal `posted` dengan `entry_date` < awal periode/range, sesuai `normal_balance` akun (Debit: D−C, Kredit: C−D)
+- Debit/kredit periode + saldo akhir + running balance per transaksi
 - Multi-tenant: hanya data milik company yang login
 
 ### 4. Laporan Keuangan
@@ -809,6 +846,7 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Login email & password
 - Google One-Click Login (OAuth 2.0)
 - Role-based access
+- Onboarding slide (bisa **Lewati**) — flag `onboarded_<userId>` di localStorage
 
 ### 9. Dark Mode
 - Toggle light/dark/system theme
@@ -819,6 +857,16 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Laporan keuangan bisa di-export ke PDF
 - Menggunakan jsPDF + jspdf-autotable
 - Format tabel dengan styling
+
+### 11. AI CFO Assistant *(baru)*
+- Halaman `/ai-cfo` + tombol bulat mengambang (pojok kanan bawah) di semua halaman login
+- Sapaan awal + quick actions (ringkasan, arus kas, beban, risiko) — tidak auto-kirim ke LLM
+- Riwayat percakapan **hari ini** (localStorage), panel buka/tutup
+- Backend: LangGraph.js router → agent Cashflow / Forecast / Report / Risk
+- Tools Supabase: `get_cash_flow`, `get_monthly_cash_flow`, `get_transactions`, `get_top_expense_accounts`
+- Provider: OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`)
+- Error jelas untuk rate-limit (429), timeout (504), model deprecated (503)
+- Endpoint: `POST /api/ai/chat` (auth JWT, `company_id` dari token)
 
 ---
 

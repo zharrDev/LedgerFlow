@@ -289,20 +289,79 @@ export default function BalanceSheet() {
               }
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Komposisi Aset vs Liabilitas+Ekuitas */}
+            {(() => {
+              const lhs = Math.abs(balanceSheet.total_assets);
+              const rhs = Math.abs(
+                balanceSheet.total_liabilities + balanceSheet.total_equity,
+              );
+              const max = Math.max(lhs, rhs, 1);
+              const assetsPct = Math.round((lhs / max) * 100);
+              const lePct = Math.round((rhs / max) * 100);
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm p-4 sm:p-5"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                    Komposisi Neraca
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
+                        <span className="text-cyan-700 dark:text-cyan-400 font-medium">
+                          Aset
+                        </span>
+                        <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200 shrink-0">
+                          {assetsPct}%
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-500"
+                          style={{ width: `${assetsPct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
+                        <span className="text-amber-700 dark:text-amber-400 font-medium truncate">
+                          Liabilitas + Ekuitas
+                        </span>
+                        <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200 shrink-0">
+                          {lePct}%
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-purple-500 transition-all duration-500"
+                          style={{ width: `${lePct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+
+            {/* Stack vertikal di mobile; 2 kolom dari lg ke atas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <BalanceSheetTable
                 title="ASET"
                 accounts={balanceSheet.assets}
                 total={balanceSheet.total_assets}
                 colorClass="text-cyan-600 dark:text-cyan-400"
+                accentColor="from-cyan-500 to-indigo-600"
                 emptyMessage="Tidak ada data aset"
               />
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <BalanceSheetTable
                   title="LIABILITAS"
                   accounts={balanceSheet.liabilities}
                   total={balanceSheet.total_liabilities}
                   colorClass="text-amber-600 dark:text-amber-400"
+                  accentColor="from-amber-500 to-orange-600"
                   emptyMessage="Tidak ada data liabilitas"
                 />
                 <BalanceSheetTable
@@ -310,6 +369,7 @@ export default function BalanceSheet() {
                   accounts={balanceSheet.equity}
                   total={balanceSheet.total_equity}
                   colorClass="text-purple-600 dark:text-purple-400"
+                  accentColor="from-purple-500 to-violet-600"
                   emptyMessage="Tidak ada data ekuitas"
                 />
               </div>

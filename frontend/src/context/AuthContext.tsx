@@ -70,11 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    // JANGAN hapus theme! Hapus token & user saja.
+    // JANGAN hapus theme & onboarded_* — onboarding cukup sekali per user.
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("lastPath");
-    Object.keys(localStorage).forEach(key => { if (key.startsWith("onboarded_")) localStorage.removeItem(key); });
 
     // Juga logout dari Supabase session
     supabase.auth.signOut();

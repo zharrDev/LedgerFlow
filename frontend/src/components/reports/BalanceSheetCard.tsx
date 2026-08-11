@@ -47,7 +47,9 @@ export const BalanceSheetCard = ({
         </h3>
 
         {/* Amount */}
-        <p className={`text-2xl font-bold ${colorClass} tracking-tight`}>
+        <p
+          className={`text-lg sm:text-2xl font-bold ${colorClass} tracking-tight tabular-nums break-words`}
+        >
           {formatCurrency(amount)}
         </p>
       </div>

@@ -3,6 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "./ThemeSwitcher";
+import {
+  HeaderSearchResults,
+  type AccountHit,
+  type JournalHit,
+} from "./HeaderSearchResults";
+import { accountsService } from "../services/accountsService";
+import { journalService } from "../services/journalService";
 import logo from "../assets/ledgerflow.png";
 import {
   Menu,
@@ -13,7 +20,6 @@ import {
   LogOut,
   Settings,
   ChevronDown,
-  Building2,
   Command,
   CheckCircle2,
   Lock,
@@ -116,10 +122,16 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [accountHits, setAccountHits] = useState<AccountHit[]>([]);
+  const [journalHits, setJournalHits] = useState<JournalHit[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const notifCloseTimer = useRef<ReturnType<typeof setTimeout>>();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -153,15 +165,94 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
     if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
   }, [searchOpen]);
 
+  // Debounced search: navigasi lokal + akun/jurnal dari API yang sudah ada
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setAccountHits([]);
+      setJournalHits([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const [accounts, journals] = await Promise.all([
+          accountsService.getAll().catch(() => []),
+          journalService.getAll().catch(() => []),
+        ]);
+        const ql = q.toLowerCase();
+        setAccountHits(
+          accounts
+            .filter(
+              (a) =>
+                a.code?.toLowerCase().includes(ql) ||
+                a.name?.toLowerCase().includes(ql),
+            )
+            .slice(0, 5)
+            .map((a) => ({ id: a.id, code: a.code, name: a.name })),
+        );
+        setJournalHits(
+          journals
+            .filter(
+              (j) =>
+                j.number?.toLowerCase().includes(ql) ||
+                j.description?.toLowerCase().includes(ql),
+            )
+            .slice(0, 5)
+            .map((j) => ({
+              id: j.id,
+              number: j.number,
+              description: j.description,
+              date: j.date,
+            })),
+        );
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
+  // Tutup dropdown search desktop saat klik luar
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        searchWrapRef.current &&
+        !searchWrapRef.current.contains(e.target as Node)
+      ) {
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const goSearchResult = (path: string) => {
+    setSearchOpen(false);
+    setSearchFocused(false);
+    setSearchQuery("");
+    setAccountHits([]);
+    setJournalHits([]);
+    navigate(path);
+  };
+
   // Ctrl+K search shortcut
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen(true);
+        setSearchFocused(true);
       }
       if (e.key === "Escape") {
         setSearchOpen(false);
+        setSearchFocused(false);
         setSearchQuery("");
       }
     };
@@ -234,21 +325,39 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
 
         {/* ── Center: Search ── */}
         <div className="hidden md:flex items-center flex-1 max-w-md mx-6">
-          <div className="relative w-full">
+          <div className="relative w-full" ref={searchWrapRef}>
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 z-10"
             />
             <input
               type="text"
-              placeholder="Search transactions, accounts..."
+              placeholder="Cari halaman, akun, jurnal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
               className="w-full pl-10 pr-16 py-2.5 text-sm rounded-xl bg-gray-100/80 dark:bg-darkCard/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50 text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500/50 transition-all"
             />
             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 rounded-md border border-gray-300/50 dark:border-gray-600/50">
               <Command size={10} />K
             </kbd>
+            <AnimatePresence>
+              {searchFocused && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                >
+                  <HeaderSearchResults
+                    query={searchQuery}
+                    loading={searchLoading}
+                    accounts={accountHits}
+                    journals={journalHits}
+                    onNavigate={goSearchResult}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -521,50 +630,15 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
               </button>
             </div>
 
-            {/* Quick Suggestions */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
-                Pencarian Cepat
-              </p>
-              <div className="space-y-2.5">
-                {[
-                  {
-                    label: "Lihat Laporan Laba Rugi",
-                    link: "/income-statement",
-                  },
-                  {
-                    label: "Kelola Chart of Accounts",
-                    link: "/chart-of-accounts",
-                  },
-                  {
-                    label: "Buat Journal Entry Baru",
-                    link: "/journal-entries",
-                  },
-                  { label: "Cek Ringkasan Neraca", link: "/balance-sheet" },
-                  { label: "Pantau Arus Kas", link: "/cash-flow" },
-                ].map((item, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setSearchOpen(false);
-                      navigate(item.link);
-                    }}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-darkCard hover:bg-primary-50 dark:hover:bg-primary-500/10 text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all font-semibold text-sm group/sug border border-gray-100 dark:border-gray-800/80 shadow-sm"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Search
-                        size={16}
-                        className="text-gray-400 group-hover/sug:text-primary-500 flex-shrink-0"
-                      />
-                      <span>{item.label}</span>
-                    </span>
-                    <span className="text-xs text-gray-400 group-hover/sug:translate-x-1 transition-transform flex-shrink-0">
-                      →
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Results */}
+            <HeaderSearchResults
+              query={searchQuery}
+              loading={searchLoading}
+              accounts={accountHits}
+              journals={journalHits}
+              onNavigate={goSearchResult}
+              compact
+            />
           </motion.div>
         )}
       </AnimatePresence>

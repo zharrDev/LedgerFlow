@@ -1,4 +1,5 @@
 // src/components/Footer.tsx
+import { Link } from "react-router-dom";
 import logo from "../assets/ledgerflow.png";
 
 const Footer = () => {
@@ -69,9 +70,9 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2 text-[11px] sm:text-sm">
               <li>
-                <a href="#" className="hover:text-primary-400">
+                <Link to="/pricing" className="hover:text-primary-400">
                   Pricing
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-primary-400">
@@ -108,9 +109,9 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-400">
+                <Link to="/help" className="hover:text-primary-400">
                   Contact Support
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -127,9 +128,14 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-400">
+                <Link to="/help" className="hover:text-primary-400">
                   FAQ
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/help" className="hover:text-primary-400">
+                  Help Center
+                </Link>
               </li>
             </ul>
             <h4 className="font-semibold text-white mb-3 text-sm sm:text-base">
@@ -142,9 +148,9 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-400">
+                <Link to="/help" className="hover:text-primary-400">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

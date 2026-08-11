@@ -91,9 +91,19 @@ export default function ChartOfAccounts() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<any>(null);
   const [confirmAccount, setConfirmAccount] = useState<any>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("search") || "";
+  });
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  // Sinkronkan search dari query param (mis. dari Header search)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("search");
+    if (q !== null) setSearch(q);
+  }, [location.search]);
 
   // Import state
   const [importModalOpen, setImportModalOpen] = useState(false);

@@ -22,6 +22,23 @@ interface LedgerTableProps {
   onRetry: () => void;
 }
 
+/** Label sisi saldo berdasarkan normal_balance akun (bukan asumsi "positif = Debit"). */
+function balanceSideLabel(
+  normalBalance: NormalBalance,
+  balance: number,
+  withNormalHint = false,
+): string {
+  // Backend menyimpan saldo relatif ke sisi normal: positif = sisi normal.
+  const onNormalSide = balance >= 0;
+  const side = onNormalSide
+    ? normalBalance
+    : normalBalance === "Debit"
+      ? "Kredit"
+      : "Debit";
+  if (!withNormalHint) return side;
+  return onNormalSide ? `${side} (normal)` : `${side} (terbalik)`;
+}
+
 const HEADERS = [
   "Tanggal",
   "No. Jurnal",
@@ -113,8 +130,8 @@ export function LedgerTable({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
           label="Saldo Awal"
-          value={formatIDRCompact(openingBalance)}
-          sub={openingBalance >= 0 ? "Debit" : "Kredit"}
+          value={formatIDRCompact(Math.abs(openingBalance))}
+          sub={balanceSideLabel(account.normalBalance, openingBalance)}
           colorClass="text-gray-500 dark:text-gray-400"
         />
         <StatCard
@@ -129,16 +146,8 @@ export function LedgerTable({
         />
         <StatCard
           label="Saldo Akhir"
-          value={formatIDRCompact(closingBalance)}
-          sub={
-            account.normalBalance === "Debit"
-              ? closingBalance >= 0
-                ? "Debit (normal)"
-                : "Kredit (terbalik)"
-              : closingBalance >= 0
-                ? "Debit (terbalik)"
-                : "Kredit (normal)"
-          }
+          value={formatIDRCompact(Math.abs(closingBalance))}
+          sub={balanceSideLabel(account.normalBalance, closingBalance, true)}
           colorClass="text-primary-600 dark:text-primary-400"
         />
       </div>
@@ -175,7 +184,11 @@ export function LedgerTable({
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
               {/* Opening balance row */}
-              <OpeningRow balance={openingBalance} date={startDate} />
+              <OpeningRow
+                balance={openingBalance}
+                date={startDate}
+                normalBalance={account.normalBalance}
+              />
 
               {lines.length === 0 ? (
                 <tr>
@@ -304,7 +317,23 @@ function AccountHeader({
 
 // ─── OpeningRow ───────────────────────────────────────────────────────────────
 
-function OpeningRow({ balance, date }: { balance: number; date: string }) {
+function OpeningRow({
+  balance,
+  date,
+  normalBalance,
+}: {
+  balance: number;
+  date: string;
+  normalBalance: NormalBalance;
+}) {
+  // Saldo awal di kolom Debit/Kredit sesuai sisi normal akun
+  // (positif = sisi normal, negatif = sisi berlawanan).
+  const abs = Math.abs(balance);
+  const onDebitSide =
+    normalBalance === "Debit" ? balance >= 0 : balance < 0;
+  const debit = abs > 0.005 && onDebitSide ? abs : 0;
+  const credit = abs > 0.005 && !onDebitSide ? abs : 0;
+
   return (
     <tr className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800/50">
       <td className="px-4 py-2.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
@@ -316,11 +345,27 @@ function OpeningRow({ balance, date }: { balance: number; date: string }) {
           Saldo Awal
         </span>
       </td>
-      <td className="px-4 py-2.5 whitespace-nowrap" />
-      <td className="px-4 py-2.5 whitespace-nowrap" />
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+        {debit > 0 ? (
+          <span className="text-sm font-medium text-primary-700 dark:text-primary-400 tabular-nums">
+            {formatIDR(debit)}
+          </span>
+        ) : (
+          <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
+        )}
+      </td>
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+        {credit > 0 ? (
+          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
+            {formatIDR(credit)}
+          </span>
+        ) : (
+          <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
+        )}
+      </td>
       <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <span className="text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
-          {formatIDR(balance)}
+          {abs > 0.005 ? formatIDR(abs) : "—"}
         </span>
       </td>
     </tr>
@@ -336,8 +381,8 @@ function LedgerRow({
   line: LedgerLine;
   normalBalance: NormalBalance;
 }) {
-  const isNormalSide =
-    normalBalance === "Debit" ? line.balance >= 0 : line.balance <= 0;
+  // Backend: saldo positif = sesuai sisi normal akun
+  const isNormalSide = line.balance >= 0;
   const balanceColorCls = isNormalSide
     ? "text-gray-800 dark:text-gray-200"
     : "text-amber-600 dark:text-amber-400";

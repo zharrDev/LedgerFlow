@@ -147,7 +147,7 @@ export const BalanceSheetTable = ({
                       {account.account_code}
                     </span>
                   </div>
-                  <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-white ml-4">
+                  <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-white ml-3 shrink-0 text-right max-w-[45%] break-words">
                     {formatCurrency(account.balance)}
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export const BalanceSheetTable = ({
             <span className="text-sm font-bold text-gray-700 dark:text-white">
               Total {title}
             </span>
-            <span className={`text-sm font-bold ${colorClass}`}>
+            <span className={`text-sm font-bold tabular-nums break-words text-right max-w-[55%] ${colorClass}`}>
               {formatCurrency(total)}
             </span>
           </div>

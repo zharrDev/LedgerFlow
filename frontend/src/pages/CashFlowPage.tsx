@@ -152,11 +152,11 @@ function CashFlowSectionCard({
           section.items.map((item, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
+              className="flex items-start sm:items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div
-                  className={`p-1.5 rounded-lg ${item.amount >= 0 ? "bg-cyan-500/10 dark:bg-cyan-500/15" : "bg-rose-500/10 dark:bg-rose-500/15"}`}
+                  className={`p-1.5 rounded-lg shrink-0 ${item.amount >= 0 ? "bg-cyan-500/10 dark:bg-cyan-500/15" : "bg-rose-500/10 dark:bg-rose-500/15"}`}
                 >
                   {item.amount >= 0 ? (
                     <ArrowUpCircle size={14} className="text-cyan-500" />
@@ -176,7 +176,7 @@ function CashFlowSectionCard({
                 </div>
               </div>
               <span
-                className={`text-sm font-semibold tabular-nums whitespace-nowrap ml-3 ${item.amount >= 0 ? "text-cyan-600 dark:text-cyan-400" : "text-rose-600 dark:text-rose-400"}`}
+                className={`text-xs sm:text-sm font-semibold tabular-nums text-right shrink-0 max-w-[42%] break-words ${item.amount >= 0 ? "text-cyan-600 dark:text-cyan-400" : "text-rose-600 dark:text-rose-400"}`}
               >
                 {item.amount >= 0 ? "+" : ""}
                 {formatIDR(item.amount)}
@@ -465,7 +465,7 @@ export default function CashFlowPage() {
         {/* ── Data ── */}
         {data && !loading && !error && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <SummaryCard
                 label="Saldo Kas Awal"
                 value={data.beginningCash}
@@ -504,7 +504,7 @@ export default function CashFlowPage() {
 
             <motion.div
               variants={itemVariants}
-              className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm p-5"
+              className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm p-4 sm:p-5"
             >
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -519,28 +519,31 @@ export default function CashFlowPage() {
               <CashFlowChart
                 data={chartData}
                 formatValue={formatIDR}
-                height={300}
+                height={280}
               />
             </motion.div>
 
-            <CashFlowSectionCard
-              section={data.operating}
-              configKey="operating"
-              chartData={chartData}
-              formatValue={formatIDR}
-            />
-            <CashFlowSectionCard
-              section={data.investing}
-              configKey="investing"
-              chartData={chartData}
-              formatValue={formatIDR}
-            />
-            <CashFlowSectionCard
-              section={data.financing}
-              configKey="financing"
-              chartData={chartData}
-              formatValue={formatIDR}
-            />
+            {/* Spacing antar section lebih lega di mobile */}
+            <div className="space-y-5 sm:space-y-6">
+              <CashFlowSectionCard
+                section={data.operating}
+                configKey="operating"
+                chartData={chartData}
+                formatValue={formatIDR}
+              />
+              <CashFlowSectionCard
+                section={data.investing}
+                configKey="investing"
+                chartData={chartData}
+                formatValue={formatIDR}
+              />
+              <CashFlowSectionCard
+                section={data.financing}
+                configKey="financing"
+                chartData={chartData}
+                formatValue={formatIDR}
+              />
+            </div>
 
             <NetChangeCard
               value={data.netCashFlow}

@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import type {
   JournalEntry,
   CreateJournalPayload,
@@ -121,9 +122,19 @@ export default function JournalEntryPage() {
     deleteEntry,
   } = useJournal();
 
+  const location = useLocation();
   const [view, setView] = useState<ViewState>({ mode: "list" });
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("search") || "";
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("search");
+    if (q !== null) setSearch(q);
+  }, [location.search]);
 
   // Confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
