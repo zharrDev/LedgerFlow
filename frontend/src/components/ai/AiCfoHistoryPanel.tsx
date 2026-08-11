@@ -1,4 +1,4 @@
-import { MessageSquarePlus, MessageCircle, PanelLeftClose, X } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { AiCfoSession } from "../../utils/aiCfoStorage";
 import { formatSessionTime } from "../../utils/aiCfoStorage";
@@ -9,7 +9,6 @@ interface AiCfoHistoryPanelProps {
   sessions: AiCfoSession[];
   activeSessionId: string | null;
   onSelect: (sessionId: string) => void;
-  onNewChat: () => void;
   /** true = overlay drawer (mobile), false = inline sidebar (desktop) */
   overlay?: boolean;
 }
@@ -18,29 +17,19 @@ function SessionListBody({
   sessions,
   activeSessionId,
   onSelect,
-  onNewChat,
   onItemSelect,
 }: {
   sessions: AiCfoSession[];
   activeSessionId: string | null;
   onSelect: (id: string) => void;
-  onNewChat: () => void;
   onItemSelect?: () => void;
 }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex items-center justify-between gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
+      <div className="px-3 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Riwayat hari ini ({sessions.length})
         </p>
-        <button
-          type="button"
-          onClick={onNewChat}
-          title="Percakapan baru"
-          className="p-1.5 rounded-lg text-primary-500 hover:bg-primary-500/10 transition-colors"
-        >
-          <MessageSquarePlus size={16} />
-        </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 [scrollbar-width:thin]">
@@ -97,7 +86,6 @@ export function AiCfoHistoryPanel({
   sessions,
   activeSessionId,
   onSelect,
-  onNewChat,
   overlay = false,
 }: AiCfoHistoryPanelProps) {
   if (overlay) {
@@ -137,7 +125,6 @@ export function AiCfoHistoryPanel({
                   sessions={sessions}
                   activeSessionId={activeSessionId}
                   onSelect={onSelect}
-                  onNewChat={onNewChat}
                   onItemSelect={onClose}
                 />
               </div>
@@ -155,23 +142,11 @@ export function AiCfoHistoryPanel({
       transition={{ duration: 0.22, ease: "easeInOut" }}
       className="hidden md:flex flex-col shrink-0 overflow-hidden border-r border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40"
     >
-      <div className="flex w-64 flex-col flex-1 min-h-0 h-full">
-        <div className="flex items-center justify-end px-2 pt-2 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-200/80 dark:hover:bg-gray-800 transition-colors"
-            title="Sembunyikan riwayat"
-            aria-label="Sembunyikan riwayat"
-          >
-            <PanelLeftClose size={16} />
-          </button>
-        </div>
+      <div className="flex w-64 flex-col flex-1 min-h-0 h-full pt-2">
         <SessionListBody
           sessions={sessions}
           activeSessionId={activeSessionId}
           onSelect={onSelect}
-          onNewChat={onNewChat}
         />
       </div>
     </motion.aside>

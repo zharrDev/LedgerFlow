@@ -261,7 +261,6 @@ export default function AiCfoPage() {
             sessions={sessions}
             activeSessionId={activeSessionId}
             onSelect={selectSession}
-            onNewChat={startNewChat}
           />
 
           {/* Mobile: drawer overlay */}
@@ -272,7 +271,6 @@ export default function AiCfoPage() {
               sessions={sessions}
               activeSessionId={activeSessionId}
               onSelect={selectSession}
-              onNewChat={startNewChat}
               overlay
             />
           </div>
