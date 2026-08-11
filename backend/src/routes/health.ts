@@ -21,11 +21,13 @@ health.get("/net-test", authMiddleware, requireRole("admin", "owner"), async (c)
   if (!url) return c.json({ ok: false, error: "param url wajib" }, 400);
   if (!/^https?:\/\//.test(url)) return c.json({ ok: false, error: "url harus http(s)" }, 400);
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      signal: AbortSignal.timeout(15000),
-    });
+    const opts: RequestInit = { redirect: "follow", signal: AbortSignal.timeout(15000) };
+    if (c.req.query("method") === "POST") {
+      opts.method = "POST";
+      opts.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+      opts.body = c.req.query("body") || "";
+    }
+    const res = await fetch(url, opts);
     const text = await res.text();
     return c.json({
       ok: true,
