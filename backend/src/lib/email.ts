@@ -45,26 +45,86 @@ async function getTransporter() {
   return transporterPromise;
 }
 
+function parseFrom(raw: string): { from: string; fromName?: string } {
+  const m = raw.match(/^\s*"?(.+?)"?\s*<([^>]+)>\s*$/);
+  if (m) return { from: m[2].trim(), fromName: m[1].trim() };
+  return { from: raw.trim() };
+}
+
+// Transport cadangan via REST API SendCloud (HTTPS/443).
+// Dipakai bila SMTP terblokir jaringan (mis. ETIMEDOUT dari Render ke
+// smtp2.sendcloud.net). Menggunakan kredensial SendCloud yang sama.
+async function sendViaSendCloudAPI(to: string, subject: string, html: string) {
+  const apiUser = process.env.SMTP_USER;
+  const apiKey = process.env.SMTP_PASS;
+  const base = process.env.SENDCLOUD_API_BASE || "https://api.aurorasendcloud.com";
+  if (!apiUser || !apiKey) {
+    throw new Error("SendCloud API fallback tidak bisa dipakai (SMTP_USER/SMTP_PASS kosong)");
+  }
+  const parsed = parseFrom(process.env.SMTP_FROM || `LedgerFlow <${apiUser}>`);
+  const body = new URLSearchParams({
+    apiUser,
+    apiKey,
+    from: parsed.from,
+    subject,
+    to,
+    html,
+    ...(parsed.fromName ? { fromName: parsed.fromName } : {}),
+  });
+  const res = await fetch(`${base}/api/mail/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+    signal: AbortSignal.timeout(20000),
+  });
+  const text = await res.text();
+  let json: any = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(`SendCloud API HTTP ${res.status}: ${text.slice(0, 300)}`);
+  }
+  if (json?.result !== true) {
+    throw new Error(`SendCloud API ditolak: ${text.slice(0, 300)}`);
+  }
+  const emailId = json?.info?.emailIdList?.[0] ?? json?.info?.emailId ?? "?";
+  console.log("[email] SendCloud API terkirim ke", to, "| emailId:", emailId);
+  return emailId as string;
+}
+
 export async function sendEmail(to: string, subject: string, html: string) {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn("SMTP not configured. Skipping email send to", to);
     return;
   }
-  const transporter = await getTransporter();
-  const info = await transporter.sendMail({
-    from: process.env.SMTP_FROM || `"LedgerFlow" <${process.env.SMTP_USER}>`,
-    to,
-    subject,
-    html,
-  });
-  console.log(
-    "[email] sent to",
-    to,
-    "| subject:",
-    subject,
-    "| messageId:",
-    info.messageId,
-  );
+  try {
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || `"LedgerFlow" <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log(
+      "[email] sent to",
+      to,
+      "| subject:",
+      subject,
+      "| messageId:",
+      info.messageId,
+    );
+  } catch (smtpErr: any) {
+    // SMTP gagal (umumnya blokir jaringan di hosting) -> coba jalur API.
+    try {
+      await sendViaSendCloudAPI(to, subject, html);
+    } catch (apiErr: any) {
+      console.error(
+        "[email] SMTP gagal:", smtpErr?.message,
+        "| SendCloud API juga gagal:", apiErr?.message,
+      );
+      throw smtpErr;
+    }
+  }
 }
 
 export interface SmtpProbeResult {
