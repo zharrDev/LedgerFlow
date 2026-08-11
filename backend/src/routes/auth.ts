@@ -7,7 +7,6 @@ import {
   sendWelcomeEmail,
   sendLoginNotification,
   sendMemberLoginNotification,
-  sendOTPEmail,
 } from "../lib/email.js";
 import { ensureUserProfile } from "../lib/ensureProfile.js";
 
@@ -142,7 +141,7 @@ auth.post("/register", async (c) => {
         email,
         name,
         role: "owner",
-        email_verified: false,
+        email_verified: true,
       })
       .select()
       .single();
@@ -161,37 +160,34 @@ auth.post("/register", async (c) => {
       role: "owner",
     });
 
-    // Verifikasi email: akun dibuat dalam status belum terverifikasi.
-    // JWT DITAHAN sampai user memasukkan OTP yang benar di /verify-otp.
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
-    await supabase.from("otp_codes").insert({
-      user_id: user.id,
-      code,
-      purpose: "register_verification",
-      expires_at: expiresAt,
-    });
-
+    // Tanpa OTP: akun langsung verified. Welcome email dikirim best-effort
+    // (gagal tidak menghalangi registrasi; dari prod akan jalan setelah
+    // domain pengirim diaktifkan).
     sendWelcomeEmail(user.email, user.name, company.name).catch((err) => {
       console.error("SEND WELCOME EMAIL GAGAL:", err);
     });
 
-    const otpMailSent = await sendOTPEmail(user.email, user.name, code, 15)
-      .then(() => true)
-      .catch((err) => {
-        console.error("SEND OTP EMAIL GAGAL:", err);
-        return false;
-      });
+    const companyName = await getCompanyName(user.company_id);
+
+    const token = await signToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      company_id: user.company_id,
+    });
 
     return c.json(
       {
-        needVerification: true,
-        email: user.email,
-        ...(!otpMailSent && {
-          emailWarning:
-            "Akun berhasil dibuat, tapi email kode verifikasi gagal terkirim. Klik kirim ulang OTP beberapa menit lagi.",
-        }),
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          company_id: user.company_id,
+          company_name: companyName,
+          avatar_url: user.avatar_url || null,
+        },
       },
       201,
     );
@@ -263,7 +259,6 @@ auth.post("/login", async (c) => {
     return c.json(
       {
         error: "Email belum diverifikasi.",
-        needVerification: true,
         email: user.email,
       },
       403,

@@ -22,7 +22,7 @@ import users from "./routes/users.js";
 import payments from "./routes/payments.js";
 import companiesRoutes from "./routes/companies.js";
 import passwordResetRoutes from "./routes/password-reset.js";
-import otpRoutes from "./routes/otp.js";
+
 import userMgmtRoutes from "./routes/user-management.js";
 import uploadRoutes from "./routes/upload.js";
 import healthRoutes from "./routes/health.js";
@@ -63,7 +63,6 @@ app.get("/health", (c) => c.json({ status: "ok", app: "LedgerFlow API" }));
 
 // Routes
 app.route("/api/auth", authRoutes);
-app.route("/api/auth", otpRoutes);
 app.route("/api/accounts", accountRoutes);
 app.route("/api/journal", journalRoutes);
 app.route("/api/ledger", ledgerRoutes);
