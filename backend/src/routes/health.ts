@@ -9,7 +9,7 @@ const health = new Hono();
 // Bisa pakai ?to=email@example.com untuk menargetkan alamat lain.
 health.get("/smtp-test", authMiddleware, requireRole("admin", "owner"), async (c) => {
   const user = c.get("user");
-  const to = c.req.query("to") || user.email;
+  const to = c.req.query("to") || user.email || "";
   const result = await probeSmtp(to);
   return c.json({ to, ...result });
 });

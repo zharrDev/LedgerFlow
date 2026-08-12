@@ -13,6 +13,7 @@ import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 
 import authRoutes from "./routes/auth.js";
+import waAuthRoutes from "./routes/wa-auth.js";
 import accountRoutes from "./routes/accounts.js";
 import journalRoutes from "./routes/journal.js";
 import ledgerRoutes from "./routes/ledger.js";
@@ -64,6 +65,7 @@ app.get("/health", (c) => c.json({ status: "ok", app: "LedgerFlow API" }));
 
 // Routes
 app.route("/api/auth", authRoutes);
+app.route("/api/wa", waAuthRoutes);
 app.route("/api/accounts", accountRoutes);
 app.route("/api/journal", journalRoutes);
 app.route("/api/ledger", ledgerRoutes);

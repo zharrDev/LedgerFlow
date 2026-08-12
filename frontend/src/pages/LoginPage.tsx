@@ -2,56 +2,77 @@ import { useState, FormEvent, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import InfoPanel from "../components/InfoPanel";
-import { api } from "../lib/api";
-import { validateEmail, validatePassword } from "../utils/validation";
 import logo from "../assets/ledgerflow.png";
 
+const PHONE_RE = /^(\+62|62|0)8\d{7,12}$/;
+const RESEND_SECONDS = 60;
+
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showUI, setShowUI] = useState(false);
-  const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>(
-    {},
-  );
-  const { login, loginWithGoogle } = useAuth();
+  const [countdown, setCountdown] = useState(0);
+  const { requestWaOtp, verifyWaOtp, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     setShowUI(true);
   }, []);
 
-  const emailError = validateEmail(email);
-  const passwordError = validatePassword(password);
-  const fieldErrors = {
-    email: touched.email ? emailError : "",
-    password: touched.password ? passwordError : "",
-  };
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => setCountdown((s) => s - 1), 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSendCode = async (e?: FormEvent) => {
+    if (e) e.preventDefault();
     setError("");
-    setTouched({ email: true, password: true });
-
-    if (emailError || passwordError) return;
-
+    if (!PHONE_RE.test(phone.trim())) {
+      setError("Nomor WhatsApp tidak valid. Contoh: 081234567890");
+      return;
+    }
     setLoading(true);
     try {
-      const res = await api.post("/api/auth/login", { email, password });
-      login(res.data.token, res.data.user);
-      navigate("/dashboard");
+      await requestWaOtp({ phone: phone.trim(), mode: "login" });
+      setStep("otp");
+      setCountdown(RESEND_SECONDS);
     } catch (err: any) {
-      console.error("LOGIN ERROR:", err?.response?.data || err?.message || err);
-      setError(err.response?.data?.error || err.response?.data?.message || "Login failed");
+      setError(err.message || "Gagal mengirim kode OTP.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerify = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!/^\d{6}$/.test(code.trim())) {
+      setError("Masukkan kode OTP 6 digit.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await verifyWaOtp({ phone: phone.trim(), code: code.trim(), mode: "login" });
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Kode OTP salah atau kedaluwarsa.");
+      setCode("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (countdown > 0) return;
+    await handleSendCode();
   };
 
   const handleGoogleLogin = async () => {
@@ -132,7 +153,9 @@ export default function LoginPage() {
               ))}
             </motion.h1>
             <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Sign in to your account
+              {step === "phone"
+                ? "Masuk dengan nomor WhatsApp"
+                : `Masukkan kode yang dikirim ke ${phone}`}
             </p>
 
             {error && (
@@ -141,16 +164,17 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                  className={`w-full px-4 py-3 rounded-xl
-      border ${fieldErrors.email ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"}
+            {step === "phone" ? (
+              <form onSubmit={handleSendCode} className="mt-6 space-y-4">
+                <div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="No. WhatsApp (08xxxxxxxxxx)"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl
+      border border-gray-200 dark:border-gray-700
       bg-white dark:bg-darkCard
       text-gray-900 dark:text-white
       placeholder-gray-400 dark:placeholder-gray-500
@@ -161,59 +185,15 @@ export default function LoginPage() {
       autofill:text-gray-900 dark:autofill:text-white
       focus:ring-2 focus:ring-primary-500/40 outline-none
       transition`}
-                  required
-                  autoComplete="off"
-                />
-                {fieldErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
-                )}
-              </div>
+                    required
+                    autoComplete="off"
+                  />
+                </div>
 
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                  className={`w-full px-4 py-3 pr-10 rounded-xl
-        border ${fieldErrors.password ? "border-red-400 dark:border-red-500" : "border-gray-200 dark:border-gray-700"}
-        bg-white dark:bg-darkCard
-        text-gray-900 dark:text-white
-        placeholder-gray-400 dark:placeholder-gray-500
-        caret-primary-500 dark:caret-primary-400
-        selection:bg-primary-500/30 selection:text-gray-900
-        dark:selection:bg-primary-500/40 dark:selection:text-white
-        autofill:bg-white dark:autofill:bg-darkCard
-        autofill:text-gray-900 dark:autofill:text-white
-        focus:ring-2 focus:ring-primary-500/40 outline-none
-        transition`}
-                  required
-                  autoComplete="new-password"
-                />
-                {fieldErrors.password && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {fieldErrors.password}
-                  </p>
-                )}
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  disabled={loading}
                   className="
-        absolute right-3 top-1/2 -translate-y-1/2
-        text-gray-500 hover:text-gray-700
-        dark:text-gray-400 dark:hover:text-gray-200
-        transition
-      "
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="
       w-full py-3
       bg-gradient-to-r from-primary-600 to-primary-500
       text-white font-semibold rounded-xl
@@ -222,18 +202,84 @@ export default function LoginPage() {
       transition-all
       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
     "
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </button>
-              <div className="text-center">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
                 >
-                  Lupa Password?
-                </Link>
-              </div>
-            </form>
+                  {loading ? "Mengirim kode..." : "Kirim Kode via WhatsApp"}
+                </button>
+                <div className="text-center">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                  >
+                    Lupa Password (akun email)?
+                  </Link>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerify} className="mt-6 space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Kode OTP 6 digit"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    className={`w-full px-4 py-3 rounded-xl text-center text-xl tracking-[0.5em] font-semibold
+      border border-gray-200 dark:border-gray-700
+      bg-white dark:bg-darkCard
+      text-gray-900 dark:text-white
+      placeholder-gray-400 dark:placeholder-gray-500
+      caret-primary-500 dark:caret-primary-400
+      selection:bg-primary-500/30 selection:text-gray-900
+      dark:selection:bg-primary-500/40 dark:selection:text-white
+      autofill:bg-white dark:autofill:bg-darkCard
+      autofill:text-gray-900 dark:autofill:text-white
+      focus:ring-2 focus:ring-primary-500/40 outline-none
+      transition`}
+                    required
+                    autoComplete="one-time-code"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
+      w-full py-3
+      bg-gradient-to-r from-primary-600 to-primary-500
+      text-white font-semibold rounded-xl
+      shadow-md hover:shadow-lg
+      hover:scale-[1.02] active:scale-[0.98]
+      transition-all
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+    "
+                >
+                  {loading ? "Memverifikasi..." : "Masuk"}
+                </button>
+
+                <div className="flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("phone");
+                      setCode("");
+                      setCountdown(0);
+                    }}
+                    className="text-gray-500 dark:text-gray-400 hover:text-primary-600 transition"
+                  >
+                    Ganti nomor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={countdown > 0}
+                    className="text-primary-600 dark:text-primary-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    {countdown > 0 ? `Kirim ulang (${countdown}s)` : "Kirim ulang kode"}
+                  </button>
+                </div>
+              </form>
+            )}
             {/* Divider */}
             <div className="mt-6 flex items-center">
               <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>

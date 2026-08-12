@@ -14,7 +14,8 @@ const secret = new TextEncoder().encode(rawSecret);
 // Struktur payload JWT yang dipakai di aplikasi
 export interface JWTPayload {
   sub: string; // user id
-  email: string;
+  // Opsional: user WhatsApp tidak punya email.
+  email?: string;
   role: "admin" | "akuntan" | "owner";
   company_id: string;
 }

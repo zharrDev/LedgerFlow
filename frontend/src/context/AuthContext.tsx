@@ -6,10 +6,19 @@ type User = {
   id?: string;
   name?: string;
   email?: string;
+  phone?: string;
   role?: string;
   company_id?: string;
   company_name?: string;
   avatar_url?: string | null;
+};
+
+type WaPayload = {
+  phone: string;
+  mode: "register" | "login";
+  name?: string;
+  company_name?: string;
+  code?: string;
 };
 
 type AuthContextType = {
@@ -25,6 +34,8 @@ type AuthContextType = {
     company_name: string;
   }) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  requestWaOtp: (payload: WaPayload) => Promise<void>;
+  verifyWaOtp: (payload: WaPayload) => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
 };
 
@@ -111,6 +122,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // WhatsApp OTP: kirim kode ke nomor user
+  const requestWaOtp = async (payload: WaPayload) => {
+    const url =
+      payload.mode === "register" ? "/api/wa/register/start" : "/api/wa/login/start";
+    const body =
+      payload.mode === "register"
+        ? { phone: payload.phone, name: payload.name, company_name: payload.company_name }
+        : { phone: payload.phone };
+    try {
+      await api.post(url, body);
+    } catch (err: any) {
+      const detail =
+        err.response?.data?.error || err.response?.data?.message || "Gagal mengirim kode OTP.";
+      throw new Error(detail);
+    }
+  };
+
+  // WhatsApp OTP: verifikasi kode, lalu login (register ikut membuat akun)
+  const verifyWaOtp = async (payload: WaPayload) => {
+    const url =
+      payload.mode === "register" ? "/api/wa/register/verify" : "/api/wa/login/verify";
+    const body =
+      payload.mode === "register"
+        ? {
+            phone: payload.phone,
+            code: payload.code,
+            name: payload.name,
+            company_name: payload.company_name,
+          }
+        : { phone: payload.phone, code: payload.code };
+    try {
+      const response = await api.post(url, body);
+      login(response.data.token, response.data.user);
+    } catch (err: any) {
+      const detail =
+        err.response?.data?.error || err.response?.data?.message || "Kode OTP salah atau kedaluwarsa.";
+      throw new Error(detail);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -121,6 +172,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         register,
         loginWithGoogle,
+        requestWaOtp,
+        verifyWaOtp,
         updateUser,
       }}
     >

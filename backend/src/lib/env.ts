@@ -34,4 +34,9 @@ export function loadEnv() {
       "[env] OPENROUTER_MODEL kosong — memakai default nvidia/nemotron-3-nano-30b-a3b:free.",
     );
   }
+  if (!process.env.FONNTE_TOKEN?.trim()) {
+    console.warn(
+      "[env] FONNTE_TOKEN belum diset — fitur auth WhatsApp OTP tidak berfungsi.",
+    );
+  }
 }
