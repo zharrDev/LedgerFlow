@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -13,6 +14,10 @@ import {
   Calendar,
   CheckCircle2,
   Loader2,
+  Settings,
+  HelpCircle,
+  LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { pushNotification } from "../components/Header";
 import { validateName } from "../utils/validation";
@@ -49,7 +54,8 @@ const letterVariants = {
 };
 
 export default function ProfilePage() {
-  const { user, login, token, updateUser } = useAuth();
+  const { user, login, token, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -437,6 +443,45 @@ export default function ProfilePage() {
                 Juni 2026
               </span>
             </div>
+          </div>
+        </motion.div>
+
+        {/* Akses cepat akun (mobile: dari tab Profile) */}
+        <motion.div
+          variants={itemVariants}
+          className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden"
+        >
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-6 pt-6 pb-2">
+            Akun & Bantuan
+          </h3>
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            <Link
+              to="/settings"
+              className="flex items-center gap-3 px-6 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+            >
+              <Settings size={18} className="text-gray-400 shrink-0" />
+              <span className="flex-1 font-medium">Settings</span>
+              <ChevronRight size={16} className="text-gray-400" />
+            </Link>
+            <Link
+              to="/help-center"
+              className="flex items-center gap-3 px-6 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+            >
+              <HelpCircle size={18} className="text-gray-400 shrink-0" />
+              <span className="flex-1 font-medium">Help & Support</span>
+              <ChevronRight size={16} className="text-gray-400" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              className="w-full flex items-center gap-3 px-6 py-3.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+            >
+              <LogOut size={18} className="shrink-0" />
+              <span className="flex-1 font-medium text-left">Logout</span>
+            </button>
           </div>
         </motion.div>
       </motion.div>

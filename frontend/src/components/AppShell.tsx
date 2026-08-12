@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -63,8 +64,8 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
         <main
           className={`flex-1 lg:ml-64 ${
             fullHeight
-              ? "h-[calc(100dvh-4rem)] overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
-              : "overflow-x-hidden p-4 sm:p-6 lg:p-8"
+              ? "h-[calc(100dvh-4rem)] overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-6"
+              : "overflow-x-hidden p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8"
           }`}
         >
           {!hideTitle && (title || description) && (
@@ -88,6 +89,8 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
           )}
         </main>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
