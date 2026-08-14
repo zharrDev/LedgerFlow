@@ -46,11 +46,11 @@ export const BalanceSheetTable = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="rounded-2xl overflow-hidden bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow duration-300"
+      className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:shadow-xl transition-shadow duration-300"
     >
-      {/* Header dengan gradient modern */}
+      {/* Header dengan gradient modern + glass edge */}
       <div
-        className={`px-5 sm:px-6 py-4 bg-gradient-to-r ${accentColor} text-white flex items-center justify-between`}
+        className={`px-5 sm:px-6 py-4 bg-gradient-to-r ${accentColor} text-white flex items-center justify-between ring-1 ring-inset ring-white/20 backdrop-blur-sm`}
       >
         <h3 className="text-lg font-bold tracking-tight">{title}</h3>
         <FileText size={16} className="opacity-60" />
@@ -59,7 +59,7 @@ export const BalanceSheetTable = ({
       {/* Tampilan Desktop (table) */}
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-slate-800/50">
+          <thead className="bg-gray-50/70 dark:bg-white/[0.04]">
             <tr>
               <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                 Kode
@@ -104,7 +104,7 @@ export const BalanceSheetTable = ({
               ))
             )}
           </tbody>
-          <tfoot className="bg-gray-50 dark:bg-slate-800/30 border-t border-gray-200 dark:border-slate-700">
+          <tfoot className="bg-gray-50/70 dark:bg-white/[0.04] border-t border-white/20 dark:border-white/10">
             <tr>
               <td
                 colSpan={2}
@@ -136,7 +136,7 @@ export const BalanceSheetTable = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-gray-50 dark:bg-slate-800/40 rounded-xl p-4 border border-gray-200 dark:border-slate-700/50"
+                className="bg-white/60 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/40 dark:border-white/10"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
@@ -168,7 +168,7 @@ export const BalanceSheetTable = ({
 
         {/* Total di Mobile */}
         {accounts.length > 0 && (
-          <div className="flex justify-between items-center bg-gradient-to-r from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-800/60 rounded-xl p-4 mt-3 border border-gray-200 dark:border-slate-700/50">
+          <div className="flex justify-between items-center bg-white/60 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 mt-3 border border-white/40 dark:border-white/10">
             <span className="text-sm font-bold text-gray-700 dark:text-white">
               Total {title}
             </span>
@@ -181,7 +181,7 @@ export const BalanceSheetTable = ({
 
       {/* Pagination (desktop & mobile) */}
       {accounts.length > 0 && totalPages > 1 && (
-        <div className="px-4 sm:px-6 py-3 border-t border-gray-200 dark:border-slate-700/50 bg-white dark:bg-slate-900">
+        <div className="px-4 sm:px-6 py-3 border-t border-white/20 dark:border-white/10 bg-white/40 dark:bg-darkCard/30">
           <TablePagination
             page={page}
             totalPages={totalPages}

@@ -117,10 +117,10 @@ function CashFlowSectionCard({
   return (
     <motion.div
       variants={itemVariants}
-      className={`rounded-2xl bg-white dark:bg-darkCard border shadow-sm overflow-hidden ring-1 ${cfg.ringColor}`}
+      className={`rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg overflow-hidden ring-1 ${cfg.ringColor}`}
     >
       <div
-        className={`relative flex items-center gap-3 px-5 py-4 bg-gradient-to-r ${cfg.gradient} overflow-hidden`}
+        className={`relative flex items-center gap-3 px-5 py-4 bg-gradient-to-r ${cfg.gradient} ring-1 ring-inset ring-white/20 backdrop-blur-sm overflow-hidden`}
       >
         <div
           className="absolute inset-0 opacity-20"
@@ -231,7 +231,7 @@ function SummaryCard({
       variants={itemVariants}
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
-      className="relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm p-5 overflow-hidden group"
+      className="relative rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-5 overflow-hidden group"
     >
       <div
         className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-500 blur-2xl"
@@ -507,7 +507,7 @@ export default function CashFlowPage() {
 
             <motion.div
               variants={itemVariants}
-              className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm p-4 sm:p-5"
+              className="rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg p-4 sm:p-5"
             >
               <div className="flex items-center justify-between mb-2">
                 <div>

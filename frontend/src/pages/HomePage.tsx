@@ -11,9 +11,6 @@ import { useAuth } from "../context/AuthContext";
 import {
   ChevronRight,
   Shield,
-  Zap,
-  BarChart3,
-  CheckCircle,
   ArrowRight,
   Sparkles,
   PlayCircle,
@@ -144,41 +141,36 @@ const resourceItems = [
 ];
 
 // ─── Fitur Utama (card setelah video demo) ─────────────────────────────
-const featureCards: Array<{
-  icon: typeof Zap;
-  title: string;
-  desc: string;
-  image?: string;
-}> = [
+const featureCards: Array<{ title: string; desc: string; image: string }> = [
   {
-    icon: Zap,
     title: "Automated Reconciliation",
     desc: "Match transactions automatically with bank feeds",
+    image: "/automatic_reconsiliation.png",
   },
   {
-    icon: BarChart3,
     title: "Real-time Analytics",
     desc: "Live dashboard with key financial metrics",
+    image: "/real_time_analitycs.png",
   },
   {
-    icon: Shield,
     title: "Audit Trail",
     desc: "Complete history of every change and access",
+    image: "/audit_trail.png",
   },
   {
-    icon: CheckCircle,
     title: "Smart Budgeting",
     desc: "AI-powered budget forecasting and alerts",
+    image: "/smart_budgeting.png",
   },
   {
-    icon: Building,
     title: "Multi-entity Support",
     desc: "Manage multiple companies from one account",
+    image: "/multy_entity_support.png",
   },
   {
-    icon: Globe,
     title: "Multi-currency",
     desc: "Handle transactions in 150+ currencies",
+    image: "/multi_currency.png",
   },
 ];
 
@@ -779,26 +771,32 @@ export default function HomePage() {
               Powerful features built for modern finance teams
             </p>
           </motion.div>
-          <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
             {featureCards.map((feat, idx) => (
               <motion.div
                 key={feat.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{
+                  opacity: 0,
+                  scale: 0.8,
+                  clipPath: "inset(40% 40% 40% 40%)",
+                }}
+                whileInView={{
+                  opacity: 1,
+                  scale: 1,
+                  clipPath: "inset(0% 0% 0% 0%)",
+                }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.08 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: idx * 0.08 }}
                 whileHover={{ y: -8 }}
                 className="bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all"
               >
-                {feat.image && (
-                  <img
-                    src={feat.image}
-                    alt={feat.title}
-                    loading="lazy"
-                    className="w-full aspect-[16/10] object-cover rounded-xl mb-4"
-                  />
-                )}
-                {!feat.image && <feat.icon className="w-10 h-10 text-primary-500 mb-4" />}
+                <img
+                  src={feat.image}
+                  alt={feat.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-auto rounded-xl mb-4"
+                />
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   {feat.title}
                 </h3>

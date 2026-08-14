@@ -20,10 +20,10 @@ export const BalanceSheetStatus = ({
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className={`rounded-2xl p-6 border-2 ${
+      className={`rounded-2xl p-6 border-2 backdrop-blur-lg ${
         isBalanced
-          ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
-          : "bg-rose-50 dark:bg-rose-900/20 border-rose-500"
+          ? "bg-emerald-500/10 dark:bg-emerald-500/10 border-emerald-500"
+          : "bg-rose-500/10 dark:bg-rose-500/10 border-rose-500"
       }`}
     >
       <div className="flex items-start gap-4">

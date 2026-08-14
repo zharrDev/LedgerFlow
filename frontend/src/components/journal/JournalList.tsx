@@ -10,8 +10,6 @@ import {
   formatDate,
 } from "./JournalShared";
 import { AlertCircle, BookOpen } from "lucide-react";
-import { usePagination } from "../../hooks/usePagination";
-import { TablePagination } from "../TablePagination";
 
 interface JournalListProps {
   entries: JournalEntry[];
@@ -43,19 +41,6 @@ export function JournalList({
   onPost,
   onDelete,
 }: JournalListProps) {
-  const {
-    page,
-    setPage,
-    totalPages,
-    pageItems,
-    totalItems,
-    startIndex,
-    endIndex,
-    canPrev,
-    canNext,
-    next,
-    prev,
-  } = usePagination(entries, 5);
 
   return (
     <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
@@ -127,7 +112,7 @@ export function JournalList({
                     </td>
                   </tr>
                 ) : (
-                  pageItems.map((entry) => (
+                  entries.map((entry) => (
                     <JournalRow
                       key={entry.id}
                       entry={entry}
@@ -140,35 +125,6 @@ export function JournalList({
               </tbody>
             </table>
           </div>
-
-          <TablePagination
-            page={page}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            canPrev={canPrev}
-            canNext={canNext}
-            onPrev={prev}
-            onNext={next}
-            onGoTo={setPage}
-            itemLabel="entry"
-            summary={
-              <>
-                {startIndex}–{endIndex} dari {totalItems} entry ·{" "}
-                {entries.filter((e) => e.status === "posted").length} posted ·{" "}
-                {entries.filter((e) => e.status === "draft").length} draft ·{" "}
-                Total Debit:{" "}
-                <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
-                  {formatIDR(
-                    entries
-                      .filter((e) => e.status === "posted")
-                      .reduce((s, e) => s + e.totalDebit, 0),
-                  )}
-                </span>
-              </>
-            }
-          />
         </>
       )}
     </div>

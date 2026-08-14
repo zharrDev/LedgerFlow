@@ -9,12 +9,9 @@ import {
   IconDeactivate,
   IconActivate,
 } from "./AccountShared";
-import { usePagination } from "../hooks/usePagination";
-import { TablePagination } from "./TablePagination";
 
 interface AccountTableProps {
   accounts: Account[];
-  allAccountsCount: number;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -25,7 +22,6 @@ interface AccountTableProps {
 
 export function AccountTable({
   accounts,
-  allAccountsCount,
   loading,
   error,
   onRetry,
@@ -33,19 +29,6 @@ export function AccountTable({
   onToggleStatus,
   toggling,
 }: AccountTableProps) {
-  const {
-    page,
-    setPage,
-    totalPages,
-    pageItems,
-    totalItems,
-    startIndex,
-    endIndex,
-    canPrev,
-    canNext,
-    next,
-    prev,
-  } = usePagination(accounts, 5);
 
   if (loading) {
     return (
@@ -122,7 +105,7 @@ export function AccountTable({
                 </td>
               </tr>
             ) : (
-              pageItems.map((account, idx) => (
+              accounts.map((account, idx) => (
                 <motion.tr
                   key={account.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -179,26 +162,6 @@ export function AccountTable({
           </tbody>
         </table>
       </div>
-      <TablePagination
-        page={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        startIndex={startIndex}
-        endIndex={endIndex}
-        canPrev={canPrev}
-        canNext={canNext}
-        onPrev={prev}
-        onNext={next}
-        onGoTo={setPage}
-        itemLabel="akun"
-        summary={
-          <>
-            {startIndex}–{endIndex} dari {totalItems} (total {allAccountsCount}){" "}
-            · {accounts.filter((a) => a.isActive).length} aktif ·{" "}
-            {accounts.filter((a) => !a.isActive).length} nonaktif
-          </>
-        }
-      />
     </div>
   );
 }

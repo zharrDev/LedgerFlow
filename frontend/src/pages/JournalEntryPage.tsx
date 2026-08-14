@@ -406,6 +406,22 @@ export default function JournalEntryPage() {
               onNext={pagination.next}
               onGoTo={pagination.goTo}
               itemLabel="entry"
+              summary={
+                <>
+                  {pagination.startIndex}–{pagination.endIndex} dari{" "}
+                  {pagination.totalItems} entry · {stats.posted} posted ·{" "}
+                  {stats.draft} draft · Total Debit:{" "}
+                  <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+                    {stats.totalPostedDebit === 0
+                      ? "Rp 0"
+                      : new Intl.NumberFormat("id-ID", {
+                          style: "currency",
+                          currency: "IDR",
+                          minimumFractionDigits: 0,
+                        }).format(stats.totalPostedDebit)}
+                  </span>
+                </>
+              }
             />
           </>
         )}

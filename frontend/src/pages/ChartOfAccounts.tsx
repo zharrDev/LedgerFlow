@@ -442,7 +442,6 @@ export default function ChartOfAccounts() {
         <div className="relative z-10">
           <AccountTable
             accounts={pagination.pageItems}
-            allAccountsCount={safeAccounts.length}
             loading={loading}
             error={error}
             onRetry={fetchAccounts}
@@ -465,6 +464,13 @@ export default function ChartOfAccounts() {
             onNext={pagination.next}
             onGoTo={pagination.goTo}
             itemLabel="akun"
+            summary={
+              <>
+                {pagination.startIndex}–{pagination.endIndex} dari{" "}
+                {pagination.totalItems} (total {stats.total}) · {stats.active}{" "}
+                aktif · {stats.total - stats.active} nonaktif
+              </>
+            }
           />
         </div>
       </motion.div>
