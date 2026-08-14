@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import InfoPanel from "../components/InfoPanel";
 import logo from "../assets/ledgerflow.png";
 
-const PHONE_RE = /^(\+62|62|0)8\d{7,12}$/;
+const PHONE_RE = /^(\+62|62|0)8\d{8,11}$/;
 const RESEND_SECONDS = 60;
 
 export default function LoginPage() {

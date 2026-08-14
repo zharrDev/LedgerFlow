@@ -14,7 +14,7 @@
 //   - OTP kedaluwarsa 5 menit; sekali dipakai langsung dinonaktifkan.
 //   - Gagal kirim via Fonnte = throw (tidak ada row OTP yang tertinggal).
 import { Hono } from "hono";
-import { randomInt } from "node:crypto";
+import { randomInt, createHash, timingSafeEqual } from "node:crypto";
 import { supabase } from "../lib/supabase.js";
 import { signToken } from "../lib/jwt.js";
 import {
@@ -30,6 +30,23 @@ const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
+// Rate-limit kasar per-IP (in-memory; cukup untuk pencegahan spam per instance).
+const IP_WINDOW_MS = 10 * 60 * 1000;
+const IP_START_MAX = 10; // kirim OTP
+const IP_VERIFY_MAX = 30; // percobaan verifikasi
+const ipHits = new Map<string, number[]>();
+
+function checkIpRateLimit(ip: string, max: number): boolean {
+  const now = Date.now();
+  const hits = (ipHits.get(ip) ?? []).filter((t) => now - t < IP_WINDOW_MS);
+  if (hits.length >= max) {
+    ipHits.set(ip, hits);
+    return false;
+  }
+  ipHits.set(ip, [...hits, now]);
+  return true;
+}
+
 function fmtError(err: any): string {
   return err?.message
     ? `${err.message}${err?.details ? ` (details: ${err.details})` : ""}${err?.hint ? ` (hint: ${err.hint})` : ""}`
@@ -40,6 +57,19 @@ function generateOtpCode(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }
 
+// Kode OTP TIDAK disimpan sebagai teks di database — hanya hash SHA-256.
+// Perbandingan saat verifikasi memakai timingSafeEqual (anti timing attack).
+function hashOtpCode(code: string): string {
+  return createHash("sha256").update(code).digest("hex");
+}
+
+function safeEqualHex(a: string, b: string): boolean {
+  const ba = Buffer.from(a, "hex");
+  const bb = Buffer.from(b, "hex");
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
 // Kirim OTP lalu simpan row-nya. Urutan ini penting: bila Fonnte gagal
 // (throw), tidak ada row OTP yang tertinggal (anti-silent-fail).
 async function issueOtp(phone: string, purpose: "register" | "login") {
@@ -48,7 +78,7 @@ async function issueOtp(phone: string, purpose: "register" | "login") {
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
   const { error } = await supabase.from("wa_otp_codes").insert({
     phone,
-    code,
+    code: hashOtpCode(code),
     purpose,
     expires_at: expiresAt.toISOString(),
   });
@@ -103,7 +133,7 @@ async function verifyOtp(
   const row = rows?.[0];
   if (!row) return { ok: false, status: "expired" };
   if (row.attempt_count >= MAX_ATTEMPTS) return { ok: false, status: "locked" };
-  if (row.code !== code) {
+  if (!safeEqualHex(hashOtpCode(code), row.code)) {
     const next = row.attempt_count + 1;
     await supabase.from("wa_otp_codes").update({ attempt_count: next }).eq("id", row.id);
     return { ok: false, status: "wrong", remaining: Math.max(MAX_ATTEMPTS - next, 0) };
@@ -165,6 +195,37 @@ async function createUserProfile(
   return data;
 }
 
+// Kompensasi bila provisi akun register gagal di tengah jalan:
+// hapus mundur mulai dari yang paling terakhir dibuat (best-effort),
+// supaya tidak ada company / auth user / profil yatim yang tertinggal.
+async function rollbackProvision(opts: {
+  companyId?: string;
+  authUserId?: string;
+  userId?: string;
+}) {
+  if (opts.userId) {
+    try {
+      await supabase.from("users").delete().eq("id", opts.userId);
+    } catch (e) {
+      console.error("[rollback] gagal hapus profil user:", e);
+    }
+  }
+  if (opts.authUserId) {
+    try {
+      await supabase.auth.admin.deleteUser(opts.authUserId);
+    } catch (e) {
+      console.error("[rollback] gagal hapus auth user:", e);
+    }
+  }
+  if (opts.companyId) {
+    try {
+      await supabase.from("companies").delete().eq("id", opts.companyId);
+    } catch (e) {
+      console.error("[rollback] gagal hapus company:", e);
+    }
+  }
+}
+
 // --- helpers request ---
 
 function parseUserAgent(ua: string): string {
@@ -221,6 +282,13 @@ waAuth.post("/register/start", async (c) => {
       return c.json({ error: "Nama dan nama perusahaan wajib diisi." }, 400);
     }
 
+    if (!checkIpRateLimit(getClientIp(c), IP_START_MAX)) {
+      return c.json(
+        { error: "Terlalu banyak permintaan. Coba lagi beberapa menit lagi." },
+        429,
+      );
+    }
+
     const { data: existing } = await supabase
       .from("users")
       .select("id")
@@ -268,6 +336,24 @@ waAuth.post("/register/verify", async (c) => {
       return c.json({ error: "Nama dan nama perusahaan wajib diisi." }, 400);
     }
 
+    if (!checkIpRateLimit(getClientIp(c), IP_VERIFY_MAX)) {
+      return c.json(
+        { error: "Terlalu banyak permintaan. Coba lagi beberapa menit lagi." },
+        429,
+      );
+    }
+
+    // Anti-loncatan: nomor harus belum terdaftar. Dicek SEBELUM verifikasi
+    // OTP supaya kode yang sudah valid tidak terbuang untuk nomor terdaftar.
+    const { data: existing } = await supabase
+      .from("users")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (existing) {
+      return c.json({ error: "Nomor WhatsApp sudah terdaftar." }, 409);
+    }
+
     const result = await verifyOtp(phone, "register", String(code));
     if (!result.ok) {
       if (result.status === "locked") {
@@ -292,49 +378,58 @@ waAuth.post("/register/verify", async (c) => {
       );
     }
 
-    // Anti-loncatan: nomor harus belum terdaftar (jika direct-call tanpa start).
-    const { data: existing } = await supabase
-      .from("users")
-      .select("id")
-      .eq("phone", phone)
-      .maybeSingle();
-    if (existing) {
-      return c.json({ error: "Nomor WhatsApp sudah terdaftar." }, 409);
-    }
-
+    // Provisi akun dengan rollback: bila salah satu langkah gagal, semua
+    // yang sudah dibuat dihancurkan kembali (tidak ada data yatim).
     const company = await createCompany(String(company_name).trim());
-    const authUser = await createPhoneAuthUser(phone);
-    const user = await createUserProfile(authUser.id, company.id, phone, String(name).trim());
-    await supabase.from("company_members").insert({
-      user_id: user.id,
-      company_id: company.id,
-      role: "owner",
-    });
+    let authUserId: string | undefined;
+    let userId: string | undefined;
+    try {
+      const authUser = await createPhoneAuthUser(phone);
+      authUserId = authUser.id;
+      const user = await createUserProfile(
+        authUser.id,
+        company.id,
+        phone,
+        String(name).trim(),
+      );
+      userId = user.id;
+      const { error: memberErr } = await supabase
+        .from("company_members")
+        .insert({
+          user_id: user.id,
+          company_id: company.id,
+          role: "owner",
+        });
+      if (memberErr) throw new Error(`insert_member: ${fmtError(memberErr)}`);
 
-    const companyName = await getCompanyName(user.company_id);
-    const token = await signToken({
-      sub: user.id,
-      email: user.email ?? undefined,
-      role: user.role,
-      company_id: user.company_id,
-    });
+      const companyName = await getCompanyName(user.company_id);
+      const token = await signToken({
+        sub: user.id,
+        email: user.email ?? undefined,
+        role: user.role,
+        company_id: user.company_id,
+      });
 
-    return c.json(
-      {
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          phone: user.phone,
-          email: user.email,
-          role: user.role,
-          company_id: user.company_id,
-          company_name: companyName,
-          avatar_url: user.avatar_url || null,
+      return c.json(
+        {
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            role: user.role,
+            company_id: user.company_id,
+            company_name: companyName,
+            avatar_url: user.avatar_url || null,
+          },
         },
-      },
-      201,
-    );
+        201,
+      );
+    } catch (err: any) {
+      await rollbackProvision({ companyId: company.id, authUserId, userId });
+      throw err;
+    }
   } catch (err: any) {
     console.error("WA REGISTER VERIFY ERROR:", err);
     return c.json({ error: err?.message ?? "Gagal membuat akun." }, 500);
@@ -395,6 +490,27 @@ waAuth.post("/login/verify", async (c) => {
       return c.json({ error: "Format kode OTP tidak valid." }, 400);
     }
 
+    if (!checkIpRateLimit(getClientIp(c), IP_VERIFY_MAX)) {
+      return c.json(
+        { error: "Terlalu banyak permintaan. Coba lagi beberapa menit lagi." },
+        429,
+      );
+    }
+
+    // Cari user DULU sebelum consume OTP: untuk nomor tanpa akun, kode
+    // yang valid tidak boleh terbuang sia-sia (di-mark used).
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (userError) {
+      return c.json({ error: userError.message }, 500);
+    }
+    if (!user) {
+      return c.json({ error: "Akun tidak ditemukan." }, 404);
+    }
+
     const result = await verifyOtp(phone, "login", String(code));
     if (!result.ok) {
       if (result.status === "locked") {
@@ -417,18 +533,6 @@ waAuth.post("/login/verify", async (c) => {
         { error: "Kode OTP tidak ditemukan atau sudah kedaluwarsa. Minta kode baru." },
         400,
       );
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("phone", phone)
-      .maybeSingle();
-    if (userError) {
-      return c.json({ error: userError.message }, 500);
-    }
-    if (!user) {
-      return c.json({ error: "Akun tidak ditemukan." }, 404);
     }
 
     const companyName = await getCompanyName(user.company_id);

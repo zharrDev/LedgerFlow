@@ -7,12 +7,13 @@ export class FonnteError extends Error {}
 
 // Normalisasi nomor HP Indonesia ke bentuk E.164 tanpa tanda "+":
 //   "08123456789" | "+628123456789" | "628123456789" -> "628123456789"
+// Hanya mengizinkan nomor seluler 8-11 digit setelah kode negara (62).
 // Nomor tidak valid / bukan format ID -> throw FonnteError.
 export function normalizePhoneNumber(input: string): string {
   const raw = (input ?? "").replace(/[\s\-().]/g, "").trim();
   let num = raw.startsWith("+") ? raw.slice(1) : raw;
   if (num.startsWith("0")) num = `62${num.slice(1)}`;
-  if (!/^62\d{8,13}$/.test(num)) {
+  if (!/^62\d{8,11}$/.test(num)) {
     throw new FonnteError(
       "Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx atau +628xxxxxxxxxx.",
     );
@@ -20,7 +21,7 @@ export function normalizePhoneNumber(input: string): string {
   return num;
 }
 
-async function sendFonnte(params: URLSearchParams, timeoutMs = 15000): Promise<any> {
+async function sendFonnte(params: FormData, timeoutMs = 15000): Promise<any> {
   const token = process.env.FONNTE_TOKEN;
   if (!token?.trim()) {
     throw new FonnteError(
@@ -34,7 +35,6 @@ async function sendFonnte(params: URLSearchParams, timeoutMs = 15000): Promise<a
       method: "POST",
       headers: {
         Authorization: token.trim(), // Fonnte tidak butuh prefix "Bearer"
-        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params,
       signal: AbortSignal.timeout(timeoutMs),
@@ -58,6 +58,19 @@ async function sendFonnte(params: URLSearchParams, timeoutMs = 15000): Promise<a
   return json;
 }
 
+function buildPayload(target: string, message: string): FormData {
+  const fd = new FormData();
+  fd.append("target", target);
+  fd.append("message", message);
+  fd.append("countryCode", "62");
+  // Tanpa connectOnly, Fonnte mengantrekan pesan ke device yang sedang
+  // offline (dikirim belakangan) — tidak bisa dianggap "terkirim". Dengan
+  // connectOnly, pesan ke device offline langsung ditolak (status false),
+  // sehingga kegagalan terdeteksi saat itu juga (OTP tidak tertinggal).
+  fd.append("connectOnly", "1");
+  return fd;
+}
+
 const appBase = process.env.APP_NAME || "LedgerFlow";
 
 export async function sendWhatsAppOTP(phone: string, code: string): Promise<void> {
@@ -66,12 +79,7 @@ export async function sendWhatsAppOTP(phone: string, code: string): Promise<void
     "",
     "Kode berlaku 5 menit. Jangan bagikan kode ini ke siapa pun, termasuk yang mengaku dari kami.",
   ].join("\n");
-  const params = new URLSearchParams({
-    target: phone,
-    message,
-    countryCode: "62",
-  });
-  const json = await sendFonnte(params);
+  const json = await sendFonnte(buildPayload(phone, message));
   console.log("[whatsapp] OTP terkirim ke", phone, "| id:", json?.id ?? "?");
 }
 
@@ -88,11 +96,6 @@ export async function sendWhatsAppLoginAlert(
     "",
     "Bukan Anda? Segera hubungi dukungan dan lindungi akun Anda.",
   ].join("\n");
-  const params = new URLSearchParams({
-    target: phone,
-    message,
-    countryCode: "62",
-  });
-  const json = await sendFonnte(params);
+  const json = await sendFonnte(buildPayload(phone, message));
   console.log("[whatsapp] alert login terkirim ke", phone, "| id:", json?.id ?? "?");
 }
