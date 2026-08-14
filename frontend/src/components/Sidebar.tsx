@@ -51,7 +51,7 @@ export const Sidebar = React.memo(
         initial={{ x: "-100%" }}
         animate={{ x: mobileMenuOpen ? 0 : "-100%" }}
         transition={{ type: "spring", damping: 25 }}
-        className="fixed top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]
+        className="fixed top-16 left-0 z-50 w-64 h-[calc(100vh-4rem)]
                  bg-white/95 dark:bg-darkBg/95 backdrop-blur-2xl shadow-2xl
                  border-r border-primary-500/20 overflow-y-auto overscroll-contain"
       >
