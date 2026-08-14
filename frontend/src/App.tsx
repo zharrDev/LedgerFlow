@@ -34,6 +34,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import AiCfoPage from "./pages/AiCfoPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ErrorPage from "./pages/ErrorPage";
+import { TermsPage } from "./pages/TermsPage";
 import { ProtectedFeature } from "./components/ProtectedFeature";
 import { AICfoFloatingButton } from "./components/AICfoFloatingButton";
 
@@ -213,6 +214,7 @@ function AnimatedRoutes() {
       />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/help" element={<PublicHelpPage />} />
+      <Route path="/terms" element={<TermsPage />} />
 
       <Route
         path="/onboarding"
