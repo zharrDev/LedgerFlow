@@ -70,10 +70,11 @@ const SidebarContent = ({
   mode: SidebarMode;
   onLinkClick?: () => void;
 }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [companyName, setCompanyName] = React.useState(
     user?.company_name || "",
   );
+  const companyFetchedRef = React.useRef(false);
   const initials = (user?.name || "U").charAt(0).toUpperCase();
   const role = user?.role;
 
@@ -86,31 +87,19 @@ const SidebarContent = ({
     mode === "desktop" ? getDesktopSidebarAccountItems(role) : [];
 
   React.useEffect(() => {
-    if (user?.company_name) {
-      setCompanyName(user.company_name);
-      return;
-    }
-    if (user?.company_id && !user?.company_name) {
-      api
-        .get("/api/companies/" + user.company_id)
-        .then(({ data }) => {
-          if (data?.name) {
-            setCompanyName(data.name);
-            const savedUser = localStorage.getItem("user");
-            if (savedUser) {
-              try {
-                const parsed = JSON.parse(savedUser);
-                parsed.company_name = data.name;
-                localStorage.setItem("user", JSON.stringify(parsed));
-              } catch {
-                /* ignore */
-              }
-            }
-          }
-        })
-        .catch(() => {});
-    }
-  }, [user?.company_id, user?.company_name]);
+    if (!user?.company_id || user?.company_name) return;
+    if (companyFetchedRef.current) return;
+    companyFetchedRef.current = true;
+    api
+      .get("/api/companies/" + user.company_id)
+      .then(({ data }) => {
+        if (data?.name) {
+          setCompanyName(data.name);
+          updateUser({ company_name: data.name });
+        }
+      })
+      .catch(() => {});
+  }, [user?.company_id, user?.company_name, updateUser]);
 
   const navLinkClass = (isActive: boolean, compact?: boolean) =>
     `group relative flex items-center gap-2.5 ${

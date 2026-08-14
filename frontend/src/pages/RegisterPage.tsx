@@ -1,4 +1,4 @@
-import { useState, FormEvent, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -290,12 +290,12 @@ export default function RegisterPage() {
                   />
                   <span>
                     I agree to the{" "}
-                    <a
-                      href="/terms"
+                    <Link
+                      to="/terms"
                       className="text-primary-600 dark:text-primary-400 hover:underline"
                     >
                       Terms &amp; Conditions
-                    </a>
+                    </Link>
                   </span>
                 </label>
 

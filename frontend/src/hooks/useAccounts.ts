@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Account, AccountFormData } from "../types/account";
 import { accountsService } from "../services/accountsService";
 import { useToast } from "../context/ToastContext";
+import { getSessionToken } from "../lib/session";
 import { pushNotification } from "../components/Header";
 
 // Helper: urutkan akun berdasarkan kode akun
@@ -56,7 +57,7 @@ export function useAccounts() {
   const [toggling, setToggling] = useState(false);
 
   const fetchAccounts = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    const token = getSessionToken();
     if (!token) {
       setAccounts([]);
       setLoading(false);
@@ -148,9 +149,8 @@ export function useAccounts() {
           code: account.code,
           name: account.name,
           type: account.type,
-          normal_balance:
-            account.normalBalance === "Debit" ? "DEBIT" : "CREDIT",
-          is_active: newStatus,
+          normalBalance: account.normalBalance,
+          isActive: newStatus,
         });
 
         const title = newStatus

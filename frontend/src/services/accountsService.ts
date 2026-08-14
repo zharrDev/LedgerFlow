@@ -1,18 +1,16 @@
 import type { Account, AccountFormData } from "../types/account";
 import { api } from "../lib/api";
+import { getSessionUser } from "../lib/session";
 
 const API_BASE = "/api/accounts"; // endpoint dasar untuk semua request akun
 
-// Helper: ambil company_id user dari localStorage
+// Helper: ambil company_id user dari sesi
 const getCompanyId = () => {
-  const userStr = localStorage.getItem("user");
-  if (!userStr) return "";
-  try {
-    const userObj = JSON.parse(userStr);
-    return userObj.company_id || "";
-  } catch {
-    return "";
-  }
+  const user = getSessionUser<{
+    company_id?: string;
+    company?: { id?: string };
+  }>();
+  return user?.company_id || user?.company?.id || "";
 };
 
 // Service akun: bertugas menjembatani frontend dengan endpoint accounts di backend

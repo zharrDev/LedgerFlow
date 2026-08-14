@@ -1,6 +1,7 @@
 // src/hooks/useDashboardData.ts
 import { useState, useEffect } from "react";
 import { reportsService } from "../services/reportsService";
+import { getSessionUser } from "../lib/session";
 
 // Ringkasan data dashboard dari beberapa laporan keuangan
 export interface DashboardSummary {
@@ -31,14 +32,11 @@ export function useDashboardData(periodId?: string) {
       setLoading(true);
       setError(null);
       try {
-        const userStr = localStorage.getItem("user");
-        let companyId = "";
-        if (userStr) {
-          try {
-            const userObj = JSON.parse(userStr);
-            companyId = userObj.company_id || userObj.company?.id || "";
-          } catch {}
-        }
+        const user = getSessionUser<{
+          company_id?: string;
+          company?: { id?: string };
+        }>();
+        const companyId = user?.company_id || user?.company?.id || "";
 
         const [income, balance, cashFlow] = await Promise.all([
           reportsService.getIncomeStatement(periodId).catch(() => null),

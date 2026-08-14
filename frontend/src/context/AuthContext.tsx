@@ -1,6 +1,13 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { supabase } from "../lib/supabaseClient";
+import {
+  getSessionToken,
+  setSessionToken,
+  getSessionUser,
+  setSessionUser,
+  clearSession,
+} from "../lib/session";
 
 type User = {
   id?: string;
@@ -42,48 +49,31 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-
-    if (savedToken) setToken(savedToken);
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("user");
-      }
-    }
-
-    setLoading(false);
-  }, []);
+  const [token, setToken] = useState<string | null>(() => getSessionToken());
+  const [user, setUser] = useState<User | null>(() => getSessionUser<User>());
+  const [loading] = useState(false);
 
   const login = (newToken: string, newUser: User) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
+    setSessionToken(newToken);
+    setSessionUser(newUser);
 
     setToken(newToken);
     setUser(newUser);
   };
 
-  // Update user data (avatar, name, etc.) and sync to localStorage
-  const updateUser = (updates: Partial<User>) => {
+  // Update user data (avatar, name, etc.) and sync to session storage
+  const updateUser = useCallback((updates: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...updates };
-      localStorage.setItem("user", JSON.stringify(updated));
+      setSessionUser(updated);
       return updated;
     });
-  };
+  }, []);
 
   const logout = () => {
     // JANGAN hapus theme & onboarded_* — onboarding cukup sekali per user.
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearSession();
     localStorage.removeItem("lastPath");
 
     // Juga logout dari Supabase session

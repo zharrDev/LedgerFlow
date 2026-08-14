@@ -1,5 +1,6 @@
 // src/services/reportsService.ts
 import { api } from "../lib/api";
+import { getSessionUser } from "../lib/session";
 import type {
   IncomeStatementResponse,
   BalanceSheetResponse,
@@ -7,16 +8,13 @@ import type {
   Period,
 } from "../types/reports";
 
-// Helper: ambil company_id user dari localStorage
+// Helper: ambil company_id user dari sesi
 const getCompanyId = () => {
-  const userStr = localStorage.getItem("user");
-  if (!userStr) return "";
-  try {
-    const userObj = JSON.parse(userStr);
-    return userObj.company_id || userObj.company?.id || "";
-  } catch {
-    return "";
-  }
+  const user = getSessionUser<{
+    company_id?: string;
+    company?: { id?: string };
+  }>();
+  return user?.company_id || user?.company?.id || "";
 };
 
 // Ambil laporan laba rugi
@@ -67,12 +65,7 @@ export const getCashFlow = async (
 
 // Ambil daftar periode untuk filter laporan
 export const getPeriods = async (): Promise<Period[]> => {
-  const userStr = localStorage.getItem("user");
-  let companyId = "";
-  if (userStr) {
-    const userObj = JSON.parse(userStr);
-    companyId = userObj.company_id || userObj.company?.id || "";
-  }
+  const companyId = getCompanyId();
 
   const { data } = await api.get("/api/reports/periods", {
     params: { company_id: companyId },

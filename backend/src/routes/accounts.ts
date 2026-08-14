@@ -182,7 +182,7 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
       type: newType,
       // normal_balance selalu ikut type; abaikan body.normalBalance dari client
       normal_balance: newType ? BALANCE_MAP[newType] : undefined,
-      is_active: body.isActive,
+      is_active: body.is_active,
     };
 
     // Hapus field undefined agar tidak ikut diupdate
