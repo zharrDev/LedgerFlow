@@ -93,39 +93,78 @@
           }
         },
         {
-          "name": "Send OTP",
-          "description": "Kirim kode OTP 6 digit ke email. Purpose: `login` | `reset_password`. Cooldown 60 detik per email, berlaku 5 menit.",
+          "name": "WA Register Start",
+          "description": "Mulai register via WhatsApp OTP: buat company + user, kode OTP 6 digit dikirim ke WA. Cooldown 60 detik.",
           "request": {
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "raw": "{{baseUrl}}/api/wa/register/start",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "send-otp"]
+              "path": ["api", "wa", "register", "start"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"owner@demo.com\",\n  \"purpose\": \"login\"\n}"
+              "raw": "{\n  \"name\": \"Nama User\",\n  \"company_name\": \"PT Contoh Jaya\",\n  \"phone\": \"08123456789\"\n}"
             }
           }
         },
         {
-          "name": "Verify OTP",
+          "name": "WA Register Verify",
+          "description": "Verifikasi kode OTP register. Berhasil → JWT + user dikembalikan.",
           "request": {
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "raw": "{{baseUrl}}/api/wa/register/verify",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "verify-otp"]
+              "path": ["api", "wa", "register", "verify"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"owner@demo.com\",\n  \"code\": \"123456\",\n  \"purpose\": \"login\"\n}"
+              "raw": "{\n  \"name\": \"Nama User\",\n  \"company_name\": \"PT Contoh Jaya\",\n  \"phone\": \"08123456789\",\n  \"code\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "WA Login Start",
+          "description": "Kirim OTP 6 digit ke nomor yang sudah terdaftar. Cooldown 60 detik.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wa/login/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wa", "login", "start"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"08123456789\"\n}"
+            }
+          }
+        },
+        {
+          "name": "WA Login Verify",
+          "description": "Verifikasi kode OTP login. Berhasil → JWT dikembalikan.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wa/login/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wa", "login", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"08123456789\",\n  \"code\": \"123456\"\n}"
             }
           }
         },

@@ -1,6 +1,6 @@
 # LedgerFlow
 
-**LedgerFlow** adalah aplikasi akuntansi dan pembukuan berbasis web modern yang dirancang untuk membantu usaha mengelola keuangan secara digital. Aplikasi ini mendukung pencatatan jurnal, buku besar, laporan keuangan (Laba Rugi, Neraca, Arus Kas), chart of accounts, manajemen periode, multi-perusahaan, serta sistem subscription dan pembayaran terintegrasi.
+**LedgerFlow** adalah aplikasi akuntansi dan pembukuan berbasis web modern yang dirancang untuk membantu usaha mengelola keuangan secara digital. Aplikasi ini mendukung pencatatan jurnal, buku besar, laporan keuangan (Laba Rugi, Neraca, Arus Kas), chart of accounts, manajemen periode, multi-perusahaan, autentikasi via **WhatsApp OTP** (Fonnte), AI CFO Assistant, serta sistem subscription dan pembayaran terintegrasi.
 
 ---
 
@@ -30,7 +30,7 @@
 
 | # | Ketentuan | Status | Catatan / TODO |
 |---|---|---|---|
-| 1 | Responsive layout (mobile/tablet/desktop) | ⚠️ | Belum diverifikasi tiap halaman utama bebas overflow di 3 breakpoint |
+| 1 | Responsive layout (mobile/tablet/desktop) | ⚠️ | Bottom Navigation mobile (tab + bottom sheet) & drawer terpasang; belum diverifikasi tiap halaman utama bebas overflow di 3 breakpoint |
 | 2 | Auth flow: Login, Register, Logout, **Forgot Password**, **Reset Password** | ✅ | Semua halaman ada: Login, Register, ForgotPassword, ResetPassword, Logout via menu user |
 | 2a | JWT disimpan di Local Storage/Cookie | ✅ | Token & user disimpan di `localStorage` via `AuthContext` |
 | 3 | Routing: Public, Private, **Role Route**, redirect jika tanpa akses | ✅ | `PublicRoute`, `ProtectedRoute`, `RoleRoute` (owner/admin/akuntan) — redirect ke `/dashboard` bila role tidak berhak |
@@ -48,7 +48,7 @@
 | # | Ketentuan | Status | Catatan / TODO |
 |---|---|---|---|
 | 1 | REST API standar (GET/POST/PUT/PATCH/DELETE) + status code sesuai | ✅ | Konsisten: 400/401/403/404/409/422/500 sesuai kasus |
-| 2 | Register, Login, **Logout**, Refresh Token (opsional), **Forgot Password**, **Reset Password** | ✅ | `/logout` (audit), `/forgot-password`, `/reset-password`, plus OTP (`/send-otp`, `/verify-otp`) |
+| 2 | Register, Login, **Logout**, Refresh Token (opsional), **Forgot Password**, **Reset Password** | ✅ | `/logout` (audit), `/forgot-password`, `/reset-password`, plus WhatsApp OTP (`/api/wa/{register,login}/{start,verify}`) |
 | 3 | RBAC minimal 2 role, hak akses beda | ✅ | 3 role: owner/admin/akuntan via `requireRole` |
 | 4 | CRUD lengkap (C/R/U/D) di minimal 6 entitas utama, tidak boleh dummy | ✅ | Full CRUD: `accounts`, `journal` (incl. PUT & soft-delete), `periods` (incl. DELETE), `users`, `users-management`, `subscriptions` |
 | 5 | Server-side validation (required/email/unique/min/max/enum/numeric/date), error JSON | ✅ | Validasi manual + error handler global JSON di semua route POST/PUT |
@@ -64,7 +64,7 @@
 
 | # | Ketentuan | Status | Catatan / TODO |
 |---|---|---|---|
-| 1 | Minimal 6 tabel utama | ✅ | 11 tabel (`companies`, `users`, `accounts`, `periods`, `journal_entries`, `journal_entry_lines`, `plans`, `subscriptions`, `payments`, `otp_codes`, `company_members`) |
+| 1 | Minimal 6 tabel utama | ✅ | 11 tabel (`companies`, `users`, `accounts`, `periods`, `journal_entries`, `journal_entry_lines`, `plans`, `subscriptions`, `payments`, `wa_otp_codes`, `company_members`) |
 | 2 | Minimal 5 relasi antar tabel | ✅ | Terpenuhi (1:1, 1:M, M:1, M:M) |
 | 3 | Primary Key & Foreign Key | ✅ | Terpenuhi |
 | 4 | Normalisasi minimal 3NF | ✅ | Struktur sudah cukup ternormalisasi |
@@ -92,6 +92,7 @@
 |---|---|
 | **Hono** | Framework web TypeScript ringan untuk API REST |
 | **Supabase** | Database dan backend service |
+| **Fonnte** | WhatsApp Gateway untuk OTP autentikasi (WA) |
 | **Midtrans** | Payment gateway |
 | **Google Auth** | OAuth 2.0 login |
 | **LangGraph.js + LangChain** | AI CFO Assistant (agent router + tools) |
@@ -177,7 +178,7 @@ LedgerFlow/
 │   │   ├── index.ts                    # Entry point, route mounting, middleware global
 │   │   ├── routes/
 │   │   │   ├── auth.ts                 # Register, login, logout, exchange-token, Google OAuth
-│   │   │   ├── otp.ts                  # Kirim & verifikasi OTP (login / reset password)
+│   │   │   ├── wa-auth.ts              # Autentikasi WhatsApp OTP: register & login (start/verify)
 │   │   │   ├── password-reset.ts       # Forgot & reset password via email link
 │   │   │   ├── accounts.ts             # CRUD Chart of Accounts
 │   │   │   ├── journal.ts              # CRUD Journal Entries + posting (soft delete, search, pagination)
@@ -201,8 +202,11 @@ LedgerFlow/
 │   │   │   ├── supabase.ts             # Supabase admin client
 │   │   │   ├── jwt.ts                  # JWT sign & verify (jose)
 │   │   │   ├── midtrans.ts            # Midtrans Snap, Core API, helpers
-│   │   │   ├── email.ts               # SMTP email (welcome, login, OTP, reset)
-│   │   │   ├── env.ts                 # loadEnv (.env) + warning OPENROUTER_*
+│   │   │   ├── email.ts               # SMTP email (welcome, login, reset)
+│   │   │   ├── whatsapp.ts            # Kirim OTP WA via Fonnte (normalisasi nomor + kode)
+│   │   │   ├── authClient.ts          # Supabase anon client (signIn dengan password)
+│   │   │   ├── ensureProfile.ts       # Konsistensi profil user + company_members
+│   │   │   ├── env.ts                 # loadEnv (.env) + warning OPENROUTER_*/FONNTE_*
 │   │   │   └── storage.ts             # Upload base64 ke Supabase Storage
 │   │   ├── middleware/
 │   │   │   └── auth.ts                # Auth middleware + RBAC middleware
@@ -218,11 +222,10 @@ LedgerFlow/
 │   │   ├── App.tsx                     # Router, guards, layout, FAB AI CFO
 │   │   ├── pages/                      # Halaman-halaman aplikasi
 │   │   │   ├── HomePage.tsx            # Landing page
-│   │   │   ├── LoginPage.tsx           # Login (email + Google OAuth)
-│   │   │   ├── RegisterPage.tsx        # Register
+│   │   │   ├── LoginPage.tsx           # Login (email/password, Google OAuth, WhatsApp OTP)
+│   │   │   ├── RegisterPage.tsx        # Register (email + verifikasi WhatsApp OTP)
 │   │   │   ├── ForgotPasswordPage.tsx  # Lupa password
 │   │   │   ├── ResetPasswordPage.tsx   # Reset password
-│   │   │   ├── VerifyOTPPage.tsx       # Verifikasi OTP 6 digit
 │   │   │   ├── AuthCallback.tsx        # Google OAuth callback handler
 │   │   │   ├── DashboardPage.tsx       # Dashboard utama
 │   │   │   ├── ChartOfAccounts.tsx     # Chart of Accounts (CRUD + pagination)
@@ -237,17 +240,26 @@ LedgerFlow/
 │   │   │   ├── AiCfoPage.tsx           # AI CFO Assistant (chat + riwayat hari ini)
 │   │   │   ├── PricingPage.tsx         # Halaman pricing & upgrade
 │   │   │   ├── PaymentResultPage.tsx   # Hasil pembayaran + upload bukti
-│   │   │   ├── ProfilePage.tsx         # Profil user (avatar upload)
+│   │   │   ├── ProfilePage.tsx         # Profil user (avatar upload) + aksi akun (Settings/Help/Logout)
 │   │   │   ├── SettingsPage.tsx        # Settings
 │   │   │   ├── HelpCenterPage.tsx      # Pusat bantuan
+│   │   │   ├── PublicHelpPage.tsx      # Bantuan publik (tanpa login)
 │   │   │   ├── ErrorPage.tsx          # Halaman error (401/403/404/500)
 │   │   │   └── NotFoundPage.tsx       # Halaman 404
+│   │   ├── data/                       # Single source of truth konfigurasi
+│   │   │   ├── navigation.ts           # NAV_ITEMS, BOTTOM_NAV_IDS, flatten/get* (Sidebar, Drawer, BottomNav, QuickNav)
+│   │   │   ├── quickNav.ts             # Re-export filterQuickNav (pencarian Header)
+│   │   │   └── helpCenterContent.ts    # Konten halaman bantuan
 │   │   ├── components/
-│   │   │   ├── AppShell.tsx            # Layout utama (Header + Sidebar + Main)
-│   │   │   ├── AICfoFloatingButton.tsx # FAB AI CFO (pojok kanan bawah)
+│   │   │   ├── AppShell.tsx            # Layout utama (Header + Sidebar + Main + AppNav)
+│   │   │   ├── AppNav.tsx              # Gerbang Bottom Navigation (hanya halaman utama aplikasi)
+│   │   │   ├── BottomNav.tsx           # Bottom navigation mobile (tab + bottom sheet)
+│   │   │   ├── BottomNavSheet.tsx      # Bottom sheet kategori (Accounts/Reports)
+│   │   │   ├── AICfoFloatingButton.tsx # FAB AI CFO (pojok kanan bawah, naik di mobile)
 │   │   │   ├── ai/                     # Komponen chat AI (bubble, welcome, history)
-│   │   │   ├── Header.tsx              # Top navigation bar
-│   │   │   ├── Sidebar.tsx             # Sidebar navigasi
+│   │   │   ├── Header.tsx              # Top navigation bar (search/quick nav)
+│   │   │   ├── HeaderSearchResults.tsx # Hasil pencarian quick navigation
+│   │   │   ├── Sidebar.tsx             # Sidebar navigasi (desktop + drawer mobile)
 │   │   │   ├── Navbar.tsx              # Navbar responsif
 │   │   │   ├── Footer.tsx              # Footer
 │   │   │   ├── PageTransition.tsx      # Animasi transisi halaman
@@ -256,6 +268,7 @@ LedgerFlow/
 │   │   │   ├── AccountModal.tsx        # Modal tambah/edit akun
 │   │   │   ├── AccountTable.tsx        # Tabel chart of accounts
 │   │   │   ├── AccountShared.tsx       # Shared account utilities
+│   │   │   ├── ExportMenu.tsx          # Menu export laporan (PDF/dll)
 │   │   │   ├── journal/
 │   │   │   │   ├── JournalForm.tsx     # Form input jurnal
 │   │   │   │   ├── JournalList.tsx     # Daftar jurnal
@@ -322,7 +335,9 @@ LedgerFlow/
 │   ├── tsconfig.app.json
 │   └── tsconfig.node.json
 ├── database/
-│   └── database.sql                    # Full database schema & migrations
+│   ├── database.sql                    # Full database schema & migrations (base)
+│   ├── migration-wa-auth.sql           # Fungsi/tabel autentikasi WA (wa_otp_codes, users.phone)
+│   └── migration-journal-rpc-and-email-verify.sql  # RPC jurnal & verifikasi email
 ├── postman/
 │   └── ledgerflow.postman_collection.json  # Postman collection (API docs)
 ├── GOOGLE_OAUTH_SETUP.md               # Dokumentasi setup Google OAuth
@@ -347,7 +362,7 @@ File utama yang menginisialisasi aplikasi Hono dan melakukan:
 2. **Route mounting** — Semua route di-mount di path `/api/*`
 3. **Health check** — `GET /health` untuk monitoring
 
-### Authentication System (`backend/src/routes/auth.ts`)
+### Authentication System (`backend/src/routes/auth.ts` + `wa-auth.ts`)
 
 Sistem autentikasi mendukung tiga metode:
 
@@ -355,6 +370,19 @@ Sistem autentikasi mendukung tiga metode:
 2. **Login (`POST /api/auth/login`)** — Verifikasi kredensial dan generate token
 3. **Exchange Token (`POST /api/auth/exchange-token`)** — Konversi token OAuth ke token aplikasi
 4. **Logout (`POST /api/auth/logout`)** — Logout & audit log (JWT stateless, ini hanya pencatatan)
+5. **WhatsApp OTP (`POST /api/wa/*`)** — Register & login tanpa password via kode OTP WhatsApp (lihat [WhatsApp OTP](#whatsapp-otp) di bawah)
+
+### WhatsApp OTP (`backend/src/routes/wa-auth.ts` + `lib/whatsapp.ts`)
+
+Autentikasi alternatif berbasis OTP WhatsApp (gateway **Fonnte**) untuk register & login:
+
+- **`POST /register/start`** — Terima `{ name, email, password (opsional), phone }`, buat company + user + relasi `company_members`, lalu kirim OTP 6 digit ke WhatsApp
+- **`POST /register/verify`** — Verifikasi kode → tandai `phone_verified`, generate JWT, sambungkan Otp ke akun
+- **`POST /login/start`** — Terima `{ phone }`, kirim OTP untuk user yang sudah terdaftar
+- **`POST /login/verify`** — Verifikasi kode dan login (token dikeluarkan)
+- Cooldown 60 detik pengiriman, masa berlaku OTP 5 menit, max 5 percobaan → terkunci
+- Kode OTP **tidak pernah dikirim balik** ke client — hanya lewat WhatsApp
+- Normalisasi nomor ke format internasional (`62...`), status device Fonnte ikut dicek
 
 ### JWT System (`backend/src/lib/jwt.ts`)
 
@@ -504,7 +532,6 @@ Provider wrapping:
 | `/auth/callback` | AuthCallback | - |
 | `/forgot-password` | ForgotPasswordPage | PublicRoute |
 | `/reset-password` | ResetPasswordPage | - |
-| `/verify-otp` | VerifyOTPPage | PublicRoute |
 | `/onboarding` | OnboardingPage | ProtectedRoute |
 | `/dashboard` | DashboardPage | ProtectedRoute |
 | `/chart-of-accounts` | ChartOfAccounts | RoleRoute (owner/admin/akuntan) |
@@ -546,8 +573,12 @@ Wrapper untuk halaman premium:
 
 Layout utama aplikasi setelah login:
 - **Header** — Top bar dengan menu toggle, breadcrumb, user menu
-- **Sidebar** — Navigasi utama, response (mobile overlay)
+- **Sidebar** — Navigasi utama (desktop), di mobile berubah jadi drawer yang hanya berisi menu **non-bottom-nav** (Periode, User Management, Settings, Help)
+- **Bottom Navigation (mobile)** — Tab bawah: Dashboard, Journal, Accounts, Reports, Profile; kategori ber-child (Accounts/Reports) membuka **bottom sheet**; hanya tampil di halaman utama lewat gate `AppNav`
 - **Background** — Gradient + decorative orbs dengan animasi
+- **AI CFO FAB** — Tombol mengambang yang ikut terangkat di atas bottom nav pada layar mobile
+
+Konfigurasi navigasi (Sidebar, Drawer, BottomNav, pencarian) **satu sumber** di `frontend/src/data/navigation.ts` (`NAV_ITEMS`, `BOTTOM_NAV_IDS`, `flattenNavItems()`, dll).
 
 ### Hooks Architecture
 
@@ -604,7 +635,7 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | `plans` | Definisi plan pricing (Free/Pro/Enterprise) |
 | `subscriptions` | Subscription user dengan status dan trial period |
 | `payments` | Riwayat pembayaran dengan integrasi Midtrans |
-| `otp_codes` | Kode OTP untuk verifikasi login / reset password |
+| `wa_otp_codes` | Kode OTP WhatsApp 6 digit (cooldown 60s, berlaku 5 menit, max 5 percobaan) |
 | `company_members` | Junction M:M: relasi users ↔ companies (dengan role) |
 
 ### Enums
@@ -622,6 +653,7 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 3. **Soft delete** — `journal_entries.deleted_at` + `accounts.is_active`
 4. **Supabase Storage buckets** — `avatars` & `payment-proofs` (public) dibuat lewat SQL
 5. **Seed data** — `npm run seed` (backend): 3 user, 26 akun, 12 periode, 54 jurnal
+6. **Migration WA auth** — `migration-wa-auth.sql`: tabel `wa_otp_codes`, kolom `users.phone` + `phone_verified` (menggantikan `otp_codes` lama)
 
 ---
 
@@ -636,10 +668,16 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | POST | `/api/auth/login` | Login dengan email & password |
 | POST | `/api/auth/logout` | Logout (audit log) |
 | POST | `/api/auth/exchange-token` | Exchange Supabase/OAuth token ke JWT internal |
-| POST | `/api/auth/send-otp` | Kirim kode OTP 6 digit (cooldown 60s, berlaku 5 menit) |
-| POST | `/api/auth/verify-otp` | Verifikasi kode OTP |
 | POST | `/api/auth/forgot-password` | Kirim link reset password ke email |
 | POST | `/api/auth/reset-password` | Set password baru dengan token |
+
+### WhatsApp OTP
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| POST | `/api/wa/register/start` | Mulai register via WA (buat company+user, kirim OTP ke WhatsApp) |
+| POST | `/api/wa/register/verify` | Verifikasi OTP register → JWT |
+| POST | `/api/wa/login/start` | Kirim OTP login ke nomor terdaftar (cooldown 60s) |
+| POST | `/api/wa/login/verify` | Verifikasi OTP login → JWT |
 
 ### Accounts
 | Method | Endpoint | Deskripsi |
@@ -745,7 +783,8 @@ npm install
 ### Database Setup
 
 1. Jalankan script `database/database.sql` pada **Supabase SQL Editor** (membuat tabel, trigger, storage buckets, function SECURITY DEFINER).
-2. Seed data demo (opsional, bisa dijalankan berulang kali — idempotent):
+2. Jika fitur WhatsApp OTP dipakai, jalankan juga `database/migration-wa-auth.sql` pada SQL Editor yang sama (tabel `wa_otp_codes`, kolom `users.phone` + `phone_verified`).
+3. Seed data demo (opsional, bisa dijalankan berulang kali — idempotent):
    ```bash
    cd backend
    npm run seed
@@ -764,10 +803,11 @@ npm run dev:frontend  # http://localhost:5173
 
 ### Environment Variables (penting)
 
-**Backend (`backend/.env`)** — tambahkan untuk AI CFO:
+**Backend (`backend/.env`)** — tambahkan untuk AI CFO & WhatsApp OTP:
 ```env
-OPENROUTER_API_KEY=sk-or-v1-...   # dari https://openrouter.ai/keys
+OPENROUTER_API_KEY=sk-or-v1-...        # dari https://openrouter.ai/keys
 OPENROUTER_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
+FONNTE_TOKEN=<token Fonnte>            # dari https://fonnte.com — WA gateway (wajib untuk WA OTP)
 ```
 
 **Frontend (`frontend/.env`)** — lokal vs production:
@@ -842,9 +882,10 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Feature access control berdasarkan plan
 
 ### 8. Autentikasi
-- Register dengan email & password
-- Login email & password
+- Register dengan email & password, atau **WhatsApp OTP** (tanpa password)
+- Login email & password, atau **WhatsApp OTP** (2-step: kirim kode → verifikasi)
 - Google One-Click Login (OAuth 2.0)
+- OTP WA: cooldown 60 detik, berlaku 5 menit, max 5 percobaan per kode, kode hanya dikirim via WhatsApp
 - Role-based access
 - Onboarding slide (bisa **Lewati**) — flag `onboarded_<userId>` di localStorage
 
@@ -858,8 +899,16 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Menggunakan jsPDF + jspdf-autotable
 - Format tabel dengan styling
 
-### 11. AI CFO Assistant *(baru)*
-- Halaman `/ai-cfo` + tombol bulat mengambang (pojok kanan bawah) di semua halaman login
+### 11. Navigasi Mobile (Bottom Navigation)
+- Tab bawah di layar mobile: **Dashboard, Journal, Accounts, Reports, Profile**
+- Kategori ber-submenu (Accounts/Reports) membuka **bottom sheet** (Chart of Accounts, Buku Besar, Laba Rugi, Neraca, Arus Kas)
+- Drawer hamburger hanya berisi menu yang tidak ada di tab bawah (Periode, User Management, Settings, Help)
+- Navigasi desktop tetap di sidebar, tidak berubah
+- Satu sumber konfigurasi di `frontend/src/data/navigation.ts` — menu baru cukup ditambah di satu tempat
+- Gate visibility (`AppNav`) — tab bawah otomatis tidak tampil di halaman login/register/pricing/pembayaran/AI CFO
+
+### 12. AI CFO Assistant
+- Halaman `/ai-cfo` + tombol bulat mengambang (pojok kanan bawah) di area aplikasi setelah login (terangkat di atas bottom nav pada mobile)
 - Sapaan awal + quick actions (ringkasan, arus kas, beban, risiko) — tidak auto-kirim ke LLM
 - Riwayat percakapan **hari ini** (localStorage), panel buka/tutup
 - Backend: LangGraph.js router → agent Cashflow / Forecast / Report / Risk
@@ -947,6 +996,35 @@ flowchart TD
     J --> A
     F --> K[Update payment + subscription active]
     K --> L[Fitur premium aktif]
+```
+
+### 4. Flow Autentikasi WhatsApp OTP (Register & Login)
+
+```mermaid
+flowchart TD
+    A[Pilih Login / Register] --> B{Metode?}
+    B -- Email --> C[Login / register email & password]
+    B -- WhatsApp --> D{Register atau Login?}
+    D -- Register --> E[Masukkan nama, email, no. WA]
+    E --> F[POST /api/wa/register/start]
+    F --> G[Backend: buat company + user + kirim OTP via Fonnte]
+    G --> H[User terima kode OTP di WhatsApp]
+    D -- Login --> I[Masukkan no. WA terdaftar]
+    I --> J[POST /api/wa/login/start]
+    J --> H
+    H --> K{Cooldown 60s?}
+    K -- Ya --> L[Tolak: tunggu sebentar]
+    L --> H
+    K -- Tidak --> M[Input 6 digit kode]
+    M --> N[POST /api/wa/{register|login}/verify]
+    N --> O{dan percobaan < 5?}
+    O -- Tidak --> P[Tolak: kode terkunci — hubungi support]
+    P --> A
+    O -- Ya --> Q{Salah?}
+    Q -- Ya --> R[Kurangi sisa percobaan]
+    R --> M
+    Q -- Tidak --> S[Kode dipakai sekali saja + JWT]
+    S --> T[Masuk ke dashboard]
 ```
 
 ---
