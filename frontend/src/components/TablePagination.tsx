@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
 
-interface TablePaginationProps {
+export interface TablePaginationProps {
   page: number;
   totalPages: number;
   totalItems: number;
@@ -12,7 +13,7 @@ interface TablePaginationProps {
   onNext: () => void;
   onGoTo: (page: number) => void;
   /** Konten kiri opsional (mis. ringkasan jumlah / total) */
-  summary?: React.ReactNode;
+  summary?: ReactNode;
   /** Kata untuk satuan item, mis. "akun", "entry", "transaksi" */
   itemLabel?: string;
 }
@@ -42,7 +43,7 @@ export function TablePagination({
   for (let i = start; i <= end; i++) pages.push(i);
 
   return (
-    <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 rounded-b-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <span className="text-xs text-gray-500 dark:text-gray-400 order-2 sm:order-1">
         {summary ?? (
           <>

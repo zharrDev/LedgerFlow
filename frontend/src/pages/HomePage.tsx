@@ -54,6 +54,15 @@ try {
   dashboardDemo = "";
 }
 
+// Deteksi perangkat sentuh (tanpa hover): touch device tampil state penuh
+function useIsTouch() {
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    setIsTouch(window.matchMedia("(hover: none)").matches);
+  }, []);
+  return isTouch;
+}
+
 // ─── Dropdown Data ──────────────────────────────────────────────────
 const solutionItems = [
   {
@@ -496,6 +505,7 @@ export default function HomePage() {
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const opacityHero = useTransform(scrollY, [0, 300], [1, 0]);
+  const isTouch = useIsTouch();
 
   return (
     <div className="min-h-screen bg-white dark:bg-darkBg overflow-x-hidden">
@@ -771,38 +781,61 @@ export default function HomePage() {
               Powerful features built for modern finance teams
             </p>
           </motion.div>
-          <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
+          <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {featureCards.map((feat, idx) => (
               <motion.div
                 key={feat.title}
-                initial={{
-                  opacity: 0,
-                  scale: 0.8,
-                  clipPath: "inset(40% 40% 40% 40%)",
-                }}
-                whileInView={{
-                  opacity: 1,
-                  scale: 1,
-                  clipPath: "inset(0% 0% 0% 0%)",
-                }}
+                initial={{ opacity: 0, scale: 0.85 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, ease: "easeOut", delay: idx * 0.08 }}
-                whileHover={{ y: -8 }}
-                className="bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all"
+                className="min-w-0"
               >
-                <img
-                  src={feat.image}
-                  alt={feat.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-auto rounded-xl mb-4"
-                />
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  {feat.title}
-                </h3>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">
-                  {feat.desc}
-                </p>
+                <motion.div
+                  variants={{ rest: {}, hover: {} }}
+                  initial="rest"
+                  animate={isTouch ? "hover" : "rest"}
+                  whileHover={isTouch ? undefined : "hover"}
+                  className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-lg bg-gray-200 dark:bg-gray-800"
+                >
+                  <motion.img
+                    src={feat.image}
+                    alt={feat.title}
+                    loading="lazy"
+                    decoding="async"
+                    variants={{
+                      rest: { scale: 0.88 },
+                      hover: { scale: 1 },
+                    }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+
+                  <motion.div
+                    variants={{
+                      rest: { opacity: 0.85 },
+                      hover: { opacity: 1 },
+                    }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"
+                  />
+
+                  <motion.div
+                    variants={{
+                      rest: { opacity: 0.85, y: 8 },
+                      hover: { opacity: 1, y: 0 },
+                    }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="absolute inset-x-0 bottom-0 p-5 sm:p-6"
+                  >
+                    <h3 className="text-lg sm:text-xl font-bold text-white">
+                      {feat.title}
+                    </h3>
+                    <p className="mt-1.5 text-sm text-white/80">
+                      {feat.desc}
+                    </p>
+                  </motion.div>
+                </motion.div>
               </motion.div>
             ))}
           </div>

@@ -9,6 +9,7 @@ import {
   IconDeactivate,
   IconActivate,
 } from "./AccountShared";
+import { TablePagination, type TablePaginationProps } from "./TablePagination";
 
 interface AccountTableProps {
   accounts: Account[];
@@ -18,6 +19,7 @@ interface AccountTableProps {
   onEdit: (account: Account) => void;
   onToggleStatus: (account: Account) => void;
   toggling?: boolean;
+  pagination?: TablePaginationProps;
 }
 
 export function AccountTable({

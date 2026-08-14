@@ -3,7 +3,7 @@ import logo from "../assets/ledgerflow.png";
 
 export default function BrandedLoader() {
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-white dark:bg-darkBg">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/40 dark:from-darkBg dark:via-darkBg dark:to-primary-950/20">
       <motion.img
         src={logo}
         alt="LedgerFlow"
