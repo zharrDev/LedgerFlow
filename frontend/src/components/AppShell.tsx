@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { BottomNav } from "./BottomNav";
+import { AppNav } from "./AppNav";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -90,7 +90,7 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
         </main>
       </div>
 
-      <BottomNav />
+      <AppNav />
     </div>
   );
 }
