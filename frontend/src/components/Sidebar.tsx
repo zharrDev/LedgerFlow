@@ -38,7 +38,7 @@ export const Sidebar = React.memo(
           ref={asideRef}
           className="fixed top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]
                    bg-white/90 dark:bg-darkBg/90 backdrop-blur-xl
-                   border-r border-primary-500/20 overflow-y-auto overscroll-contain shadow-lg lg:shadow-none"
+                   border-r border-primary-500/20 overflow-y-auto overscroll-contain scrollbar-thin shadow-lg lg:shadow-none"
         >
           <SidebarContent mode="desktop" onLinkClick={onLinkClick} />
         </aside>
@@ -53,7 +53,7 @@ export const Sidebar = React.memo(
         transition={{ type: "spring", damping: 25 }}
         className="fixed top-16 left-0 z-50 w-64 h-[calc(100vh-4rem)]
                  bg-white/95 dark:bg-darkBg/95 backdrop-blur-2xl shadow-2xl
-                 border-r border-primary-500/20 overflow-y-auto overscroll-contain"
+                 border-r border-primary-500/20 overflow-y-auto overscroll-contain scrollbar-thin"
       >
         <SidebarContent mode="mobile-drawer" onLinkClick={onLinkClick} />
       </motion.aside>
@@ -131,7 +131,7 @@ const SidebarContent = ({
         </div>
       )}
 
-      <nav className="flex-1 px-3 pt-2 pb-1 overflow-y-auto">
+      <nav className="flex-1 px-3 pt-2 pb-1 overflow-y-auto scrollbar-thin">
         <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
           {mode === "mobile-drawer" ? "Lainnya" : "Menu"}
         </p>

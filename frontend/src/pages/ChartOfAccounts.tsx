@@ -532,7 +532,7 @@ export default function ChartOfAccounts() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-4 space-y-4">
                 {/* Errors */}
                 {importErrors.length > 0 && (
                   <div className="rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 p-4">

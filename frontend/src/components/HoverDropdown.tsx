@@ -253,7 +253,7 @@ export function HoverDropdown({
             style={panelStyle}
             onMouseEnter={open}
             onMouseLeave={scheduleClose}
-            className="overflow-y-auto overscroll-contain bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl"
+            className="overflow-y-auto overscroll-contain bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl scrollbar-thin"
           >
             {options.map((option) => (
               <button

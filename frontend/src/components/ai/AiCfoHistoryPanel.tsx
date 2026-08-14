@@ -32,7 +32,7 @@ function SessionListBody({
         </p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 [scrollbar-width:thin]">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 scrollbar-thin">
         {sessions.length === 0 ? (
           <p className="text-xs text-gray-400 dark:text-gray-500 px-2 py-6 text-center leading-relaxed">
             Belum ada percakapan hari ini

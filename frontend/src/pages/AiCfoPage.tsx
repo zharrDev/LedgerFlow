@@ -307,7 +307,7 @@ export default function AiCfoPage() {
             <div
               ref={scrollRef}
               onScroll={handleScroll}
-              className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth px-3 sm:px-4 py-4 space-y-4 [scrollbar-width:thin] [scrollbar-color:rgb(156_163_175/0.45)_transparent]"
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth px-3 sm:px-4 py-4 space-y-4 scrollbar-thin"
             >
               {showWelcome && (
                 <AiCfoWelcome

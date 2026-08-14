@@ -50,8 +50,8 @@ export function HeaderSearchResults({
     <div
       className={
         compact
-          ? "flex-1 p-4 sm:p-6 overflow-y-auto"
-          : "absolute left-0 right-0 top-full mt-2 max-h-[min(28rem,70vh)] overflow-y-auto rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-2xl z-50"
+          ? "flex-1 p-4 sm:p-6 overflow-y-auto scrollbar-thin"
+          : "absolute left-0 right-0 top-full mt-2 max-h-[min(28rem,70vh)] overflow-y-auto scrollbar-thin rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-2xl z-50"
       }
     >
       {loading && (

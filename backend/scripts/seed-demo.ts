@@ -15,6 +15,7 @@
 import { loadEnv } from "../src/lib/env.js";
 loadEnv();
 import { supabase } from "../src/lib/supabase.js";
+import { normalizePhoneNumber } from "../src/lib/whatsapp.js";
 
 const DEMO_PASSWORD = "Demo123!";
 
@@ -22,6 +23,16 @@ const DEMO_COMPANY = {
   name: "PT Demo Nusantara",
   code: "PT-DEMO-001",
   currency: "IDR",
+};
+
+// Nomor WhatsApp demo bisa di-override via env (format 08xx / +62xx / 62xx):
+//   DEMO_OWNER_PHONE, DEMO_ADMIN_PHONE, DEMO_AKUNTAN_PHONE
+// Default di bawah hanyalah placeholder — OTP WA hanya akan sampai ke nomor
+// ASLI yang bisa menerima pesan (butuh FONNTE_TOKEN aktif).
+const DEMO_PHONES: Record<string, string> = {
+  "owner@demo.com": process.env.DEMO_OWNER_PHONE || "081234567890",
+  "admin@demo.com": process.env.DEMO_ADMIN_PHONE || "081298765430",
+  "akuntan@demo.com": process.env.DEMO_AKUNTAN_PHONE || "081245678901",
 };
 
 const DEMO_USERS = [
@@ -206,6 +217,7 @@ async function main() {
   // ── Users ──
   const userIds: Record<string, string> = {};
   for (const du of DEMO_USERS) {
+    const phone = normalizePhoneNumber(DEMO_PHONES[du.email] || "");
     const { data: existing } = await supabase
       .from("users")
       .select("id")
@@ -213,7 +225,15 @@ async function main() {
       .single();
 
     if (existing) {
-      console.log(`  User sudah ada: ${du.email}`);
+      const { error: phoneErr } = await supabase
+        .from("users")
+        .update({ phone })
+        .eq("id", existing.id);
+      if (phoneErr) {
+        console.error(`  ! Gagal update phone ${du.email}: ${phoneErr.message}`);
+      } else {
+        console.log(`  User sudah ada: ${du.email} (phone ${phone})`);
+      }
       userIds[du.email] = existing.id;
       continue;
     }
@@ -239,6 +259,8 @@ async function main() {
         email: du.email,
         name: du.name,
         role: du.role,
+        phone,
+        phone_verified: false,
       })
       .select()
       .single();
@@ -247,7 +269,7 @@ async function main() {
       continue;
     }
     userIds[du.email] = user.id;
-    console.log(`  Profil user dibuat: ${du.name} (${du.role})`);
+    console.log(`  Profil user dibuat: ${du.name} (${du.role}, phone ${phone})`);
   }
 
   // ── Company members (M:M) ──

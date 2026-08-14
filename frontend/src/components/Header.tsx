@@ -426,7 +426,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                   </div>
 
                   {/* List */}
-                  <div className="max-h-[260px] overflow-y-auto">
+                  <div className="max-h-[260px] overflow-y-auto scrollbar-thin">
                     {notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
                         <Bell

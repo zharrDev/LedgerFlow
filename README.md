@@ -808,6 +808,11 @@ npm run dev:frontend  # http://localhost:5173
 OPENROUTER_API_KEY=sk-or-v1-...        # dari https://openrouter.ai/keys
 OPENROUTER_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
 FONNTE_TOKEN=<token Fonnte>            # dari https://fonnte.com — WA gateway (wajib untuk WA OTP)
+
+# Opsional — nomor WA untuk akun demo (lihat bagian Akun Demo):
+DEMO_OWNER_PHONE=08xxxxxxxxxx
+DEMO_ADMIN_PHONE=08xxxxxxxxxx
+DEMO_AKUNTAN_PHONE=08xxxxxxxxxx
 ```
 
 **Frontend (`frontend/.env`)** — lokal vs production:
@@ -921,15 +926,53 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 
 ## Akun Demo
 
-Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 3 user, 26 akun, dan 54 jurnal (6 bulan pertama tahun berjalan).
+Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang kali). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 3 user, 26 akun, 12 periode, dan 54 jurnal (6 bulan pertama tahun berjalan).
 
-| Role | Email | Password | Keterangan |
+| Role | Email | Password | No. WhatsApp (default) |
 |---|---|---|---|
-| Owner | `owner@demo.com` | `Demo123!` | Akses penuh 1 company |
-| Admin | `admin@demo.com` | `Demo123!` | Kelola akun & role |
-| Akuntan | `akuntan@demo.com` | `Demo123!` | Input & posting jurnal |
+| Owner | `owner@demo.com` | `Demo123!` | `081234567890` |
+| Admin | `admin@demo.com` | `Demo123!` | `081298765430` |
+| Akuntan | `akuntan@demo.com` | `Demo123!` | `081245678901` |
 
 > Semua akun demo berada di company yang sama (`PT-DEMO-001`), sehingga admin/owner bisa melihat ketiganya lewat halaman **User Management** dan langsung mencoba fitur ubah role.
+
+### Cara Login
+
+Ada **dua metode** di halaman login:
+
+1. **Email & Password** — pilih tab *Email*, masukkan email + password dari tabel di atas.
+2. **WhatsApp OTP** — pilih tab *WhatsApp*, masukkan nomor WA sesuai tabel. Kode 6 digit dikirim ke WhatsApp (butuh `FONNTE_TOKEN` aktif di backend). ⚠️ **Penting:** OTP hanya sampai ke nomor **asli** yang bisa menerima pesan — nomor default di atas hanyalah placeholder. Untuk memakai nomor sendiri, set env lalu jalankan ulang seed:
+
+```env
+# backend/.env
+DEMO_OWNER_PHONE=08xxxxxxxxxx
+DEMO_ADMIN_PHONE=08xxxxxxxxxx
+DEMO_AKUNTAN_PHONE=08xxxxxxxxxx
+```
+
+```bash
+cd backend && npm run seed
+```
+
+### Perbedaan Role (biar bisa dicoba-coba)
+
+Ketiganya berada di halaman yang sama (dashboard, COA, jurnal, buku besar, laporan) — bedanya terletak pada **tindakan** yang boleh dilakukan:
+
+| Aksi | Owner | Admin | Akuntan |
+|---|---|---|---|
+| Input & posting jurnal | ✅ | ❌ | ✅ |
+| Edit hapus draft jurnal | ✅ | ✅ | ✅ |
+| Buat / edit akun (COA) | ✅ | ✅ | ✅ |
+| Hapus (nonaktifkan) akun | ❌ | ✅ | ❌ |
+| Buka / tutup / hapus periode | ✅ | ✅ | ❌ |
+| Kelola anggota & ubah role | ✅ | ✅ | ❌ |
+| Laporan, buku besar, dashboard | ✅ | ✅ | ✅ |
+
+- **Owner** (`owner@demo.com`) — akses penuh: jurnal, akun, periode, dan manajemen anggota.
+- **Admin** (`admin@demo.com`) — fokus manajemen: bisa **hapus akun** dan kelola periode/anggota, tapi **tidak bisa input jurnal**.
+- **Akuntan** (`akuntan@demo.com`) — fokus pencatatan: input & posting jurnal, kelola akun; **tidak bisa** hapus akun, kelola periode, atau kelola anggota.
+
+Coba alur ini: login sebagai **Admin** → halaman **User Management** → ubah role **Akuntan** menjadi **Admin**, lalu logout & login sebagai **Owner** untuk melihat hasilnya.
 
 ---
 

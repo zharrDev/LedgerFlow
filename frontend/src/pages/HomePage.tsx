@@ -331,7 +331,7 @@ function Navbar() {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="lg:hidden border-t border-gray-200 dark:border-gray-700/80 bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl overflow-hidden rounded-b-2xl shadow-2xl"
           >
-            <div className="px-6 py-6 space-y-6 max-h-[82vh] overflow-y-auto">
+            <div className="px-6 py-6 space-y-6 max-h-[82vh] overflow-y-auto scrollbar-thin">
               <div className="space-y-6">
                 {menuItems.map((item) => (
                   <div key={item.key} className="space-y-2.5">
