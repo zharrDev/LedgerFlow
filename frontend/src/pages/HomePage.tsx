@@ -143,6 +143,45 @@ const resourceItems = [
   },
 ];
 
+// ─── Fitur Utama (card setelah video demo) ─────────────────────────────
+const featureCards: Array<{
+  icon: typeof Zap;
+  title: string;
+  desc: string;
+  image?: string;
+}> = [
+  {
+    icon: Zap,
+    title: "Automated Reconciliation",
+    desc: "Match transactions automatically with bank feeds",
+  },
+  {
+    icon: BarChart3,
+    title: "Real-time Analytics",
+    desc: "Live dashboard with key financial metrics",
+  },
+  {
+    icon: Shield,
+    title: "Audit Trail",
+    desc: "Complete history of every change and access",
+  },
+  {
+    icon: CheckCircle,
+    title: "Smart Budgeting",
+    desc: "AI-powered budget forecasting and alerts",
+  },
+  {
+    icon: Building,
+    title: "Multi-entity Support",
+    desc: "Manage multiple companies from one account",
+  },
+  {
+    icon: Globe,
+    title: "Multi-currency",
+    desc: "Handle transactions in 150+ currencies",
+  },
+];
+
 // ─── Navbar ──────────────────────────────────────────────────────────
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -741,38 +780,7 @@ export default function HomePage() {
             </p>
           </motion.div>
           <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: Zap,
-                title: "Automated Reconciliation",
-                desc: "Match transactions automatically with bank feeds",
-              },
-              {
-                icon: BarChart3,
-                title: "Real-time Analytics",
-                desc: "Live dashboard with key financial metrics",
-              },
-              {
-                icon: Shield,
-                title: "Audit Trail",
-                desc: "Complete history of every change and access",
-              },
-              {
-                icon: CheckCircle,
-                title: "Smart Budgeting",
-                desc: "AI-powered budget forecasting and alerts",
-              },
-              {
-                icon: Building,
-                title: "Multi-entity Support",
-                desc: "Manage multiple companies from one account",
-              },
-              {
-                icon: Globe,
-                title: "Multi-currency",
-                desc: "Handle transactions in 150+ currencies",
-              },
-            ].map((feat, idx) => (
+            {featureCards.map((feat, idx) => (
               <motion.div
                 key={feat.title}
                 initial={{ opacity: 0, y: 30 }}
@@ -782,7 +790,15 @@ export default function HomePage() {
                 whileHover={{ y: -8 }}
                 className="bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all"
               >
-                <feat.icon className="w-10 h-10 text-primary-500 mb-4" />
+                {feat.image && (
+                  <img
+                    src={feat.image}
+                    alt={feat.title}
+                    loading="lazy"
+                    className="w-full aspect-[16/10] object-cover rounded-xl mb-4"
+                  />
+                )}
+                {!feat.image && <feat.icon className="w-10 h-10 text-primary-500 mb-4" />}
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   {feat.title}
                 </h3>
