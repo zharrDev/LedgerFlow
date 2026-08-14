@@ -11,8 +11,7 @@ import { useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import ChartOfAccounts from "./pages/ChartOfAccounts";
 import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
+import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import JournalEntryPage from "./pages/JournalEntryPage";
 import BukuBesarPage from "./pages/BukuBesarPage";
@@ -37,6 +36,7 @@ import ErrorPage from "./pages/ErrorPage";
 import { TermsPage } from "./pages/TermsPage";
 import { ProtectedFeature } from "./components/ProtectedFeature";
 import { AICfoFloatingButton } from "./components/AICfoFloatingButton";
+import BrandedLoader from "./components/BrandedLoader";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,11 +51,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
+    return <BrandedLoader />;
   }
 
   if (!token) {
@@ -69,11 +65,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
+    return <BrandedLoader />;
   }
 
   if (token) {
@@ -120,11 +112,7 @@ function RoleRoute({
   const { token, user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
+    return <BrandedLoader />;
   }
 
   if (!token) {
@@ -191,7 +179,7 @@ function AnimatedRoutes() {
         path="/login"
         element={
           <PublicRoute>
-            <LoginPage />
+            <AuthPage initialMode="login" />
           </PublicRoute>
         }
       />
@@ -199,7 +187,7 @@ function AnimatedRoutes() {
         path="/register"
         element={
           <PublicRoute>
-            <RegisterPage />
+            <AuthPage initialMode="register" />
           </PublicRoute>
         }
       />
