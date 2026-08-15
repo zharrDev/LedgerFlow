@@ -150,36 +150,56 @@ const resourceItems = [
 ];
 
 // ─── Fitur Utama (card setelah video demo) ─────────────────────────────
-const featureCards: Array<{ title: string; desc: string; image: string }> = [
+type FeatureOrientation = "portrait" | "landscape";
+
+interface FeatureCard {
+  title: string;
+  desc: string;
+  image: string;
+  orientation: FeatureOrientation;
+  /** Sisi teks overlay utk kartu landscape: "left" | "right" (diabaikan utk portrait) */
+  side?: "left" | "right";
+}
+
+const featureCards: FeatureCard[] = [
   {
     title: "Automated Reconciliation",
     desc: "Match transactions automatically with bank feeds",
     image: "/automatic_reconsiliation.png",
+    orientation: "portrait",
   },
   {
     title: "Real-time Analytics",
     desc: "Live dashboard with key financial metrics",
     image: "/real_time_analitycs.png",
+    orientation: "landscape",
+    side: "left",
   },
   {
     title: "Audit Trail",
     desc: "Complete history of every change and access",
     image: "/audit_trail.png",
+    orientation: "portrait",
   },
   {
     title: "Smart Budgeting",
     desc: "AI-powered budget forecasting and alerts",
     image: "/smart_budgeting.png",
+    orientation: "landscape",
+    side: "right",
   },
   {
     title: "Multi-entity Support",
     desc: "Manage multiple companies from one account",
     image: "/multy_entity_support.png",
+    orientation: "landscape",
+    side: "left",
   },
   {
     title: "Multi-currency",
     desc: "Handle transactions in 150+ currencies",
     image: "/multi_currency.png",
+    orientation: "portrait",
   },
 ];
 
@@ -781,63 +801,81 @@ export default function HomePage() {
               Powerful features built for modern finance teams
             </p>
           </motion.div>
-          <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {featureCards.map((feat, idx) => (
-              <motion.div
-                key={feat.title}
-                initial={{ opacity: 0, scale: 0.85 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, ease: "easeOut", delay: idx * 0.08 }}
-                className="min-w-0"
-              >
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 sm:gap-8">
+            {featureCards.map((feat, idx) => {
+              const isLandscape = feat.orientation === "landscape";
+              const side = isLandscape ? (feat.side ?? "left") : null;
+              return (
                 <motion.div
-                  variants={{ rest: {}, hover: {} }}
-                  initial="rest"
-                  animate={isTouch ? "hover" : "rest"}
-                  whileHover={isTouch ? undefined : "hover"}
-                  className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-lg bg-gray-200 dark:bg-gray-800"
+                  key={feat.title}
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, ease: "easeOut", delay: idx * 0.08 }}
+                  className="min-w-0 break-inside-avoid mb-6 sm:mb-8"
                 >
-                  <motion.img
-                    src={feat.image}
-                    alt={feat.title}
-                    loading="lazy"
-                    decoding="async"
-                    variants={{
-                      rest: { scale: 0.88 },
-                      hover: { scale: 1 },
-                    }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-
                   <motion.div
-                    variants={{
-                      rest: { opacity: 0.85 },
-                      hover: { opacity: 1 },
-                    }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"
-                  />
-
-                  <motion.div
-                    variants={{
-                      rest: { opacity: 0.85, y: 8 },
-                      hover: { opacity: 1, y: 0 },
-                    }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="absolute inset-x-0 bottom-0 p-5 sm:p-6"
+                    variants={{ rest: {}, hover: {} }}
+                    initial="rest"
+                    animate={isTouch ? "hover" : "rest"}
+                    whileHover={isTouch ? undefined : "hover"}
+                    className={`relative rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-lg bg-gray-200 dark:bg-gray-800 ${
+                      isLandscape ? "aspect-[3/2]" : "aspect-[2/3]"
+                    }`}
                   >
-                    <h3 className="text-lg sm:text-xl font-bold text-white">
-                      {feat.title}
-                    </h3>
-                    <p className="mt-1.5 text-sm text-white/80">
-                      {feat.desc}
-                    </p>
+                    <motion.img
+                      src={feat.image}
+                      alt={feat.title}
+                      loading="lazy"
+                      decoding="async"
+                      variants={{
+                        rest: { scale: 0.88 },
+                        hover: { scale: 1 },
+                      }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+
+                    <motion.div
+                      variants={{
+                        rest: { opacity: 1 },
+                        hover: { opacity: 0.6 },
+                      }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      className={`absolute inset-0 ${
+                        !isLandscape
+                          ? "bg-gradient-to-t from-black/85 via-black/30 to-transparent"
+                          : side === "right"
+                            ? "bg-gradient-to-l from-black/90 via-black/40 to-transparent"
+                            : "bg-gradient-to-r from-black/90 via-black/40 to-transparent"
+                      }`}
+                    />
+
+                    <motion.div
+                      variants={{
+                        rest: { opacity: 0.65, y: 8 },
+                        hover: { opacity: 1, y: 0 },
+                      }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      className={`absolute p-5 sm:p-6 ${
+                        !isLandscape
+                          ? "inset-x-0 bottom-0"
+                          : side === "right"
+                            ? "top-0 bottom-0 right-0 w-[58%] flex flex-col justify-center"
+                            : "top-0 bottom-0 left-0 w-[58%] flex flex-col justify-center"
+                      }`}
+                    >
+                      <h3 className="text-lg sm:text-xl font-bold text-white">
+                        {feat.title}
+                      </h3>
+                      <p className="mt-1.5 text-sm text-white/80">
+                        {feat.desc}
+                      </p>
+                    </motion.div>
                   </motion.div>
                 </motion.div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
