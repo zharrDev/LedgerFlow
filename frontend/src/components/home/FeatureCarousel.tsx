@@ -51,7 +51,6 @@ export default function FeatureCarousel() {
   // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih konten)
   const [n, setN] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
-  const [hovering, setHovering] = useState(false);
 
   const index = ((n % TOTAL) + TOTAL) % TOTAL;
   const slide = SLIDES[index];
@@ -63,11 +62,11 @@ export default function FeatureCarousel() {
   const goTo = (i: number) => setN((v) => v - (v % TOTAL) + i);
 
   useEffect(() => {
-    if (!autoplay || hovering) return;
+    if (!autoplay) return;
     const id = window.setInterval(next, AUTO_ADVANCE_MS);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoplay, hovering]);
+  }, [autoplay]);
 
   return (
     <section className="py-20 px-0 sm:px-4 overflow-hidden">
@@ -79,11 +78,7 @@ export default function FeatureCarousel() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative mx-auto w-[96%] max-w-[1700px]"
       >
-        <div
-          onMouseEnter={() => setHovering(true)}
-          onMouseLeave={() => setHovering(false)}
-          className="relative mx-auto w-[74%] sm:w-[82%] lg:w-[84%] h-[300px] sm:h-[430px] lg:h-[600px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl"
-        >
+        <div className="relative mx-auto w-[74%] sm:w-[82%] lg:w-[84%] h-[300px] sm:h-[430px] lg:h-[600px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl">
           <AnimatePresence initial={false}>
             <motion.div
               key={n}
@@ -103,23 +98,7 @@ export default function FeatureCarousel() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Badge pill kecil kiri-atas */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`badge-${n}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.35 }}
-              className="absolute top-4 left-4 sm:top-7 sm:left-10 bg-white rounded-full px-4 py-1.5 sm:px-5 sm:py-2 shadow-md"
-            >
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
-                LedgerFlow Features
-              </span>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Judul pill besar — bawah kiri, aman di dalam lengkung kapsul */}
+          {/* Judul pill besar — tengah bawah, aman di dalam lengkung kapsul */}
           <AnimatePresence mode="wait">
             <motion.div
               key={`title-${n}`}
@@ -127,10 +106,10 @@ export default function FeatureCarousel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="absolute bottom-8 left-4 right-4 sm:bottom-10 sm:left-[16%] sm:right-[12%] lg:left-[20%] lg:right-[12%] flex justify-center sm:justify-start"
+              className="absolute inset-x-0 bottom-8 sm:bottom-12 flex justify-center px-5 sm:px-12"
             >
-              <div className="max-w-[92%] sm:max-w-[88%] bg-white rounded-full px-4 py-2.5 sm:px-8 sm:py-4 shadow-xl">
-                <h3 className="text-lg sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center sm:text-left leading-tight truncate">
+              <div className="max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2.5 sm:px-8 sm:py-4 shadow-xl">
+                <h3 className="text-lg sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center leading-tight truncate">
                   {slide.title}
                 </h3>
               </div>
@@ -158,38 +137,43 @@ export default function FeatureCarousel() {
           </div>
         </div>
 
-        {/* Sliver prev/next — lingkaran terpotong di tepi kiri/kanan, sebagian keluar layar */}
+        {/* Sliver prev/next — bentuk pill setengah: ujung membulat terlihat,
+            sisanya terpotong keluar layar (kesan ngeslide bergulir) */}
         <button
           type="button"
           onClick={prev}
           aria-label="Slide sebelumnya (intip)"
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[52%] w-20 h-20 sm:w-24 sm:h-24 lg:w-48 lg:h-48 rounded-full overflow-hidden shadow-xl z-10 border-4 border-white/70 dark:border-white/20 hover:border-primary-400 transition-colors cursor-pointer"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden shadow-xl cursor-pointer group"
         >
-          <motion.img
-            key={`peek-prev-${n}`}
-            src={SLIDES[prevIdx].image}
-            alt={SLIDES[prevIdx].title}
-            initial={{ opacity: 0.6, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="w-full h-full object-cover"
-          />
+          <div className="absolute inset-0 rounded-full border-2 border-white/80 dark:border-white/30 transition-colors group-hover:border-primary-400">
+            <motion.img
+              key={`peek-prev-${n}`}
+              src={SLIDES[prevIdx].image}
+              alt={SLIDES[prevIdx].title}
+              initial={{ opacity: 0.7, scale: 1.08 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="w-full h-full object-cover rounded-full"
+            />
+          </div>
         </button>
         <button
           type="button"
           onClick={next}
           aria-label="Slide berikutnya (intip)"
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[52%] w-20 h-20 sm:w-24 sm:h-24 lg:w-48 lg:h-48 rounded-full overflow-hidden shadow-xl z-10 border-4 border-white/70 dark:border-white/20 hover:border-primary-400 transition-colors cursor-pointer"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden shadow-xl cursor-pointer group"
         >
-          <motion.img
-            key={`peek-next-${n}`}
-            src={SLIDES[nextIdx].image}
-            alt={SLIDES[nextIdx].title}
-            initial={{ opacity: 0.6, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="w-full h-full object-cover"
-          />
+          <div className="absolute inset-0 rounded-full border-2 border-white/80 dark:border-white/30 transition-colors group-hover:border-primary-400">
+            <motion.img
+              key={`peek-next-${n}`}
+              src={SLIDES[nextIdx].image}
+              alt={SLIDES[nextIdx].title}
+              initial={{ opacity: 0.7, scale: 1.08 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="w-full h-full object-cover rounded-full"
+            />
+          </div>
         </button>
       </motion.div>
 
