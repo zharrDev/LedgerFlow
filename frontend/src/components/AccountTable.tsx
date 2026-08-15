@@ -30,6 +30,7 @@ export function AccountTable({
   onEdit,
   onToggleStatus,
   toggling,
+  pagination,
 }: AccountTableProps) {
 
   if (loading) {
@@ -164,6 +165,9 @@ export function AccountTable({
           </tbody>
         </table>
       </div>
+      {pagination && (
+        <TablePagination {...pagination} />
+      )}
     </div>
   );
 }

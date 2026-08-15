@@ -8,7 +8,6 @@ import type {
 } from "../types/journal";
 import { useJournal } from "../hooks/useJournal";
 import { usePagination } from "../hooks/usePagination";
-import { TablePagination } from "../components/TablePagination";
 import { JournalList } from "../components/journal/JournalList";
 import { JournalForm } from "../components/journal/JournalForm";
 import { JournalDetail } from "../components/journal/JournalDetail";
@@ -393,35 +392,35 @@ export default function JournalEntryPage() {
               onView={handleViewEntry}
               onPost={(entry) => openConfirm("post", entry)}
               onDelete={(entry) => openConfirm("delete", entry)}
-            />
-            <TablePagination
-              page={pagination.page}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.totalItems}
-              startIndex={pagination.startIndex}
-              endIndex={pagination.endIndex}
-              canPrev={pagination.canPrev}
-              canNext={pagination.canNext}
-              onPrev={pagination.prev}
-              onNext={pagination.next}
-              onGoTo={pagination.goTo}
-              itemLabel="entry"
-              summary={
-                <>
-                  {pagination.startIndex}–{pagination.endIndex} dari{" "}
-                  {pagination.totalItems} entry · {stats.posted} posted ·{" "}
-                  {stats.draft} draft · Total Debit:{" "}
-                  <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
-                    {stats.totalPostedDebit === 0
-                      ? "Rp 0"
-                      : new Intl.NumberFormat("id-ID", {
-                          style: "currency",
-                          currency: "IDR",
-                          minimumFractionDigits: 0,
-                        }).format(stats.totalPostedDebit)}
-                  </span>
-                </>
-              }
+              pagination={{
+                page: pagination.page,
+                totalPages: pagination.totalPages,
+                totalItems: pagination.totalItems,
+                startIndex: pagination.startIndex,
+                endIndex: pagination.endIndex,
+                canPrev: pagination.canPrev,
+                canNext: pagination.canNext,
+                onPrev: pagination.prev,
+                onNext: pagination.next,
+                onGoTo: pagination.goTo,
+                itemLabel: "entry",
+                summary: (
+                  <>
+                    {pagination.startIndex}–{pagination.endIndex} dari{" "}
+                    {pagination.totalItems} entry · {stats.posted} posted ·{" "}
+                    {stats.draft} draft · Total Debit:{" "}
+                    <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+                      {stats.totalPostedDebit === 0
+                        ? "Rp 0"
+                        : new Intl.NumberFormat("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                            minimumFractionDigits: 0,
+                          }).format(stats.totalPostedDebit)}
+                    </span>
+                  </>
+                ),
+              }}
             />
           </>
         )}

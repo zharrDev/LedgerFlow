@@ -33,7 +33,7 @@ body {
 /* ───────── Scrollbar kustom (tipis, ala AI CFO) ───────── */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(156 163 175 / 0.45) #f1f5f9;
+  scrollbar-color: rgb(148 163 184 / 0.55) #e2e8f0;
 }
 
 *::-webkit-scrollbar {
@@ -42,11 +42,11 @@ body {
 }
 
 *::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgb(156 163 175 / 0.45);
+  background: rgb(148 163 184 / 0.55);
   border-radius: 8px;
 }
 
@@ -77,7 +77,7 @@ body {
 /* Panel kecil (dropdown, notifikasi, chat): scrollbar 6px */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgb(156 163 175 / 0.45) #f1f5f9;
+  scrollbar-color: rgb(148 163 184 / 0.55) #e2e8f0;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -86,7 +86,7 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 .dark .scrollbar-thin {

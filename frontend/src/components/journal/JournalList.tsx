@@ -10,6 +10,7 @@ import {
   formatDate,
 } from "./JournalShared";
 import { AlertCircle, BookOpen } from "lucide-react";
+import { TablePagination, type TablePaginationProps } from "../TablePagination";
 
 interface JournalListProps {
   entries: JournalEntry[];
@@ -20,6 +21,7 @@ interface JournalListProps {
   onView: (entry: JournalEntry) => void;
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
+  pagination?: TablePaginationProps;
 }
 
 const HEADERS = [
@@ -40,6 +42,7 @@ export function JournalList({
   onView,
   onPost,
   onDelete,
+  pagination,
 }: JournalListProps) {
 
   return (
@@ -125,6 +128,9 @@ export function JournalList({
               </tbody>
             </table>
           </div>
+          {pagination && (
+            <TablePagination {...pagination} />
+          )}
         </>
       )}
     </div>

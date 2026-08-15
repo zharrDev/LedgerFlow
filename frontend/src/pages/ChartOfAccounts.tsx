@@ -28,7 +28,6 @@ import { AccountModal } from "../components/AccountModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { AccountTable } from "../components/AccountTable";
 import { HoverDropdown } from "../components/HoverDropdown";
-import { TablePagination } from "../components/TablePagination";
 import {
   exportChartOfAccountsPDF,
   exportChartOfAccountsCSV,
@@ -451,26 +450,26 @@ export default function ChartOfAccounts() {
             }}
             onToggleStatus={setConfirmAccount}
             toggling={toggling}
-          />
-          <TablePagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.totalItems}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            canPrev={pagination.canPrev}
-            canNext={pagination.canNext}
-            onPrev={pagination.prev}
-            onNext={pagination.next}
-            onGoTo={pagination.goTo}
-            itemLabel="akun"
-            summary={
-              <>
-                {pagination.startIndex}–{pagination.endIndex} dari{" "}
-                {pagination.totalItems} (total {stats.total}) · {stats.active}{" "}
-                aktif · {stats.total - stats.active} nonaktif
-              </>
-            }
+            pagination={{
+              page: pagination.page,
+              totalPages: pagination.totalPages,
+              totalItems: pagination.totalItems,
+              startIndex: pagination.startIndex,
+              endIndex: pagination.endIndex,
+              canPrev: pagination.canPrev,
+              canNext: pagination.canNext,
+              onPrev: pagination.prev,
+              onNext: pagination.next,
+              onGoTo: pagination.goTo,
+              itemLabel: "akun",
+              summary: (
+                <>
+                  {pagination.startIndex}–{pagination.endIndex} dari{" "}
+                  {pagination.totalItems} (total {stats.total}) · {stats.active}{" "}
+                  aktif · {stats.total - stats.active} nonaktif
+                </>
+              ),
+            }}
           />
         </div>
       </motion.div>
