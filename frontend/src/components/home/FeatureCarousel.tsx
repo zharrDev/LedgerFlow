@@ -98,8 +98,8 @@ export default function FeatureCarousel() {
           onMouseLeave={() => setPaused(false)}
           className="relative mx-auto max-w-5xl"
         >
-          {/* Track gulir — tanpa boks, prev/next sliver dengan jarak */}
-          <div className="relative mx-auto w-[92%] sm:w-[88%] lg:w-[86%] h-[300px] sm:h-[400px] lg:h-[480px] overflow-hidden">
+          {/* Track gulir — diamper ruang samping, sliver tidak mentok pinggir */}
+          <div className="relative mx-auto w-[84%] sm:w-[80%] lg:w-[76%] h-[300px] sm:h-[400px] lg:h-[480px] overflow-hidden">
             {renderKeys.map((k) => {
               const pos = String(k - n) as keyof typeof SLOT;
               const slot = SLOT[pos];
@@ -121,7 +121,7 @@ export default function FeatureCarousel() {
                     stiffness: 130,
                     damping: 22,
                   }}
-                  style={{ width: "76%" }}
+                  style={{ width: "80%" }}
                   className={`absolute left-1/2 top-1/2 h-full rounded-[2rem] sm:rounded-[2.5rem] lg:rounded-[3rem] overflow-hidden ${
                     isCenter ? "shadow-2xl" : "shadow-lg"
                   }`}
@@ -138,7 +138,7 @@ export default function FeatureCarousel() {
             })}
 
             {/* Pill judul — di dalam image aktif (bawah-tengah, kecil) */}
-            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[76%] h-full z-10">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-full z-10">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={`title-${n}`}
