@@ -107,7 +107,7 @@ export default function FeatureCarousel() {
               className="absolute inset-x-0 bottom-8 sm:bottom-12 flex justify-center px-5 sm:px-12"
             >
               <div className="group relative max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-xl overflow-hidden">
-                <div className="absolute inset-0 scale-x-0 origin-center bg-gradient-to-r from-primary-200/40 via-primary-400/50 to-primary-200/40 transition-transform duration-500 ease-in-out group-hover:scale-x-100" />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] aspect-square rounded-full bg-primary-400 scale-0 transition-transform duration-500 ease-out group-hover:scale-100" />
                 <h3 className="relative z-10 text-base sm:text-2xl lg:text-3xl font-poppins font-medium text-gray-900 text-center leading-tight truncate">
                   {slide.title}
                 </h3>
