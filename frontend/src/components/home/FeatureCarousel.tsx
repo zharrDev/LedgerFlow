@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureSlide {
   title: string;
@@ -45,12 +45,12 @@ const AUTO_ADVANCE_MS = 4000;
 const TOTAL = SLIDES.length;
 
 // ─── ✅ Fix C4 done: ala Mastercard — kapsul stadium raksasa flat (tanpa
-//      3D/rotateY), prev/next sliver lingkaran di tepi layar, badge + judul
-//      pill putih di dalam kapsul, panah kanan-atas, dot+pill & play/pause ───
+//      3D/rotateY), prev/next sliver pill setengah di tepi layar, judul
+//      pill putih non-bold center-bawah, panah kanan-atas, dot+pill,
+//      autoplay terus-menerus, pergantian slide membesar (scale kecil→penuh) ───
 export default function FeatureCarousel() {
-  // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih konten)
+  // Counter tak-terbatas: arah selalu maju, autoplay terus-menerus (tanpa pause)
   const [n, setN] = useState(0);
-  const [autoplay, setAutoplay] = useState(true);
 
   const index = ((n % TOTAL) + TOTAL) % TOTAL;
   const slide = SLIDES[index];
@@ -62,11 +62,10 @@ export default function FeatureCarousel() {
   const goTo = (i: number) => setN((v) => v - (v % TOTAL) + i);
 
   useEffect(() => {
-    if (!autoplay) return;
     const id = window.setInterval(next, AUTO_ADVANCE_MS);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoplay]);
+  }, []);
 
   return (
     <section className="py-20 px-0 sm:px-4 overflow-hidden">
@@ -82,10 +81,10 @@ export default function FeatureCarousel() {
           <AnimatePresence initial={false}>
             <motion.div
               key={n}
-              initial={{ opacity: 0, scale: 0.97 }}
+              initial={{ opacity: 0, scale: 0.55 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+              exit={{ opacity: 0, scale: 0.7 }}
+              transition={{ type: "spring", stiffness: 120, damping: 20 }}
               className="absolute inset-0"
             >
               <img
@@ -109,7 +108,7 @@ export default function FeatureCarousel() {
               className="absolute inset-x-0 bottom-8 sm:bottom-12 flex justify-center px-5 sm:px-12"
             >
               <div className="max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2.5 sm:px-8 sm:py-4 shadow-xl">
-                <h3 className="text-lg sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center leading-tight truncate">
+                <h3 className="text-lg sm:text-3xl lg:text-4xl font-medium text-gray-900 text-center leading-tight truncate">
                   {slide.title}
                 </h3>
               </div>
@@ -177,7 +176,7 @@ export default function FeatureCarousel() {
         </button>
       </motion.div>
 
-      {/* Indikator + play/pause */}
+      {/* Indikator dot + pill — autoplay terus, tanpa tombol play/pause */}
       <div className="mt-8 flex items-center justify-center gap-2.5 sm:gap-3">
         {SLIDES.map((s, i) => (
           <button
@@ -192,14 +191,6 @@ export default function FeatureCarousel() {
             }`}
           />
         ))}
-        <button
-          type="button"
-          onClick={() => setAutoplay((v) => !v)}
-          aria-label={autoplay ? "Jeda putar otomatis" : "Putar otomatis"}
-          className="ml-1 flex items-center justify-center w-9 h-9 rounded-full bg-primary-500 text-white shadow-md hover:bg-primary-600 hover:scale-105 active:scale-95 transition-all"
-        >
-          {autoplay ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-        </button>
       </div>
     </section>
   );
