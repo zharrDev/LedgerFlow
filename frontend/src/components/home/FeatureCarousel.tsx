@@ -77,12 +77,12 @@ export default function FeatureCarousel() {
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative mx-auto w-[94%] lg:w-[96%] max-w-[1700px]"
+        className="relative mx-auto w-[96%] max-w-[1700px]"
       >
         <div
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
-          className="relative h-[300px] sm:h-[430px] lg:h-[600px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl"
+          className="relative mx-auto w-[74%] sm:w-[82%] lg:w-[84%] h-[300px] sm:h-[430px] lg:h-[600px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl"
         >
           <AnimatePresence initial={false}>
             <motion.div
@@ -119,7 +119,7 @@ export default function FeatureCarousel() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Judul pill besar — bawah, offset (tidak persis tengah) */}
+          {/* Judul pill besar — bawah kiri, aman di dalam lengkung kapsul */}
           <AnimatePresence mode="wait">
             <motion.div
               key={`title-${n}`}
@@ -127,10 +127,10 @@ export default function FeatureCarousel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="absolute bottom-4 left-4 sm:bottom-10 sm:left-10 right-4 sm:right-auto flex justify-center sm:justify-start"
+              className="absolute bottom-8 left-4 right-4 sm:bottom-10 sm:left-[16%] sm:right-[12%] lg:left-[20%] lg:right-[12%] flex justify-center sm:justify-start"
             >
-              <div className="max-w-[90%] sm:max-w-[62%] bg-white rounded-full px-5 py-2.5 sm:px-9 sm:py-4 shadow-xl">
-                <h3 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center sm:text-left leading-tight truncate">
+              <div className="max-w-[92%] sm:max-w-[88%] bg-white rounded-full px-4 py-2.5 sm:px-8 sm:py-4 shadow-xl">
+                <h3 className="text-lg sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center sm:text-left leading-tight truncate">
                   {slide.title}
                 </h3>
               </div>
@@ -163,7 +163,7 @@ export default function FeatureCarousel() {
           type="button"
           onClick={prev}
           aria-label="Slide sebelumnya (intip)"
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[42%] w-36 h-36 sm:w-48 sm:h-48 rounded-full overflow-hidden shadow-xl z-10 border-4 border-white/70 dark:border-white/20 hover:border-primary-400 transition-colors cursor-pointer"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[52%] w-20 h-20 sm:w-24 sm:h-24 lg:w-48 lg:h-48 rounded-full overflow-hidden shadow-xl z-10 border-4 border-white/70 dark:border-white/20 hover:border-primary-400 transition-colors cursor-pointer"
         >
           <motion.img
             key={`peek-prev-${n}`}
@@ -179,7 +179,7 @@ export default function FeatureCarousel() {
           type="button"
           onClick={next}
           aria-label="Slide berikutnya (intip)"
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[42%] w-36 h-36 sm:w-48 sm:h-48 rounded-full overflow-hidden shadow-xl z-10 border-4 border-white/70 dark:border-white/20 hover:border-primary-400 transition-colors cursor-pointer"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[52%] w-20 h-20 sm:w-24 sm:h-24 lg:w-48 lg:h-48 rounded-full overflow-hidden shadow-xl z-10 border-4 border-white/70 dark:border-white/20 hover:border-primary-400 transition-colors cursor-pointer"
         >
           <motion.img
             key={`peek-next-${n}`}
