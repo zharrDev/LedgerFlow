@@ -44,17 +44,18 @@ const AUTO_ADVANCE_MS = 3000;
 const TOTAL = SLIDES.length;
 
 // Posisi slot relatif thd slide aktif (x dalam % lebar slide).
-// Bergulir otomatis: masuk sliver kanan → membesar tengah → sliver kiri → keluar.
+// Prev/next tampil TERPISAH dengan jarak dari image aktif (bukan menutup):
+// masuk dari kanan → berhenti gap di sisi → membesar ke tengah → gap kiri → keluar.
 const SLOT = {
-  "-2": { x: -185, scale: 0.9, opacity: 0, z: 1 },
-  "-1": { x: -94, scale: 0.88, opacity: 0.9, z: 2 },
+  "-2": { x: -165, scale: 0.9, opacity: 0, z: 1 },
+  "-1": { x: -56, scale: 0.9, opacity: 1, z: 2 },
   "0": { x: 0, scale: 1, opacity: 1, z: 3 },
-  "1": { x: 94, scale: 0.88, opacity: 0.9, z: 2 },
-  "2": { x: 185, scale: 0.9, opacity: 0, z: 1 },
+  "1": { x: 56, scale: 0.9, opacity: 1, z: 2 },
+  "2": { x: 165, scale: 0.9, opacity: 0, z: 1 },
 } as const;
 
-// ─── ✅ Fix C2 done: gulir otomatis bergulir — prev/next sliver tipis,
-//      sudut agak oval, indikator angka, judul pill di dalam image ───
+// ─── ✅ Fix C3 done: gulir otomatis, prev/next sliver BERJARAK dari image
+//      aktif, judul pill di dalam image, indikator bulatan (bukan angka) ───
 export default function FeatureCarousel() {
   // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih konten)
   const [n, setN] = useState(0);
@@ -97,7 +98,7 @@ export default function FeatureCarousel() {
           onMouseLeave={() => setPaused(false)}
           className="relative mx-auto max-w-5xl"
         >
-          {/* Track gulir — tanpa boks, sliver prev/next terpotong rapi */}
+          {/* Track gulir — tanpa boks, prev/next sliver dengan jarak */}
           <div className="relative mx-auto w-[92%] sm:w-[88%] lg:w-[86%] h-[300px] sm:h-[400px] lg:h-[480px] overflow-hidden">
             {renderKeys.map((k) => {
               const pos = String(k - n) as keyof typeof SLOT;
@@ -120,7 +121,7 @@ export default function FeatureCarousel() {
                     stiffness: 130,
                     damping: 22,
                   }}
-                  style={{ width: "86%" }}
+                  style={{ width: "76%" }}
                   className={`absolute left-1/2 top-1/2 h-full rounded-[2rem] sm:rounded-[2.5rem] lg:rounded-[3rem] overflow-hidden ${
                     isCenter ? "shadow-2xl" : "shadow-lg"
                   }`}
@@ -137,7 +138,7 @@ export default function FeatureCarousel() {
             })}
 
             {/* Pill judul — di dalam image aktif (bawah-tengah, kecil) */}
-            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[86%] h-full z-10">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[76%] h-full z-10">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={`title-${n}`}
@@ -160,7 +161,7 @@ export default function FeatureCarousel() {
             </div>
           </div>
 
-          {/* Indikator angka 1-6 — aktif cyan */}
+          {/* Indikator — bulatan (aktif cyan lebih panjang) */}
           <div className="mt-5 sm:mt-6 flex items-center justify-center gap-2">
             {SLIDES.map((s, i) => (
               <button
@@ -168,14 +169,12 @@ export default function FeatureCarousel() {
                 type="button"
                 onClick={() => setN(i)}
                 aria-label={`Lompat ke slide ${i + 1}`}
-                className={`w-7 h-7 rounded-full text-xs font-semibold transition-all duration-300 ${
+                className={`h-2.5 rounded-full transition-all duration-300 ${
                   i === index
-                    ? "bg-primary-500 text-white shadow scale-110"
-                    : "bg-white dark:bg-darkCard text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:border-primary-400 hover:text-primary-600"
+                    ? "w-8 bg-primary-400 shadow"
+                    : "w-2.5 bg-gray-300 dark:bg-white/40 hover:bg-primary-400/70"
                 }`}
-              >
-                {i + 1}
-              </button>
+              />
             ))}
           </div>
         </motion.div>
