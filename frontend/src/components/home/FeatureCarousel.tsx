@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureSlide {
@@ -41,44 +41,30 @@ const SLIDES: FeatureSlide[] = [
   },
 ];
 
-const AUTO_ADVANCE_MS = 5000;
-const SLIDE_W_PCT = 0.7; // desktop/tablet: slide aktif 70% lebar container
-const SLIDE_W_PCT_MOBILE = 0.86; // mobile: hampir full, peek tipis
-const GAP_PX = 24;
-const GAP_PX_MOBILE = 16;
+const AUTO_ADVANCE_MS = 3000;
+const TOTAL = SLIDES.length;
+
+// ─── ✅ Fix B4 done: oval membesar + crossfade overlap + loop searah (counter tak-terbatas) ───
 
 export default function FeatureCarousel() {
-  const [index, setIndex] = useState(0);
+  // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih slide)
+  const [n, setN] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [containerW, setContainerW] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isMobile = containerW > 0 && containerW < 640;
-  const slideW = containerW * (isMobile ? SLIDE_W_PCT_MOBILE : SLIDE_W_PCT);
-  const gap = isMobile ? GAP_PX_MOBILE : GAP_PX;
-  const centerOffset = (containerW - slideW) / 2;
-  const trackX = centerOffset - index * (slideW + gap);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const update = () => setContainerW(el.clientWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const index = ((n % TOTAL) + TOTAL) % TOTAL;
+  const slide = SLIDES[index];
 
-  const goTo = (next: number) =>
-    setIndex((next % SLIDES.length + SLIDES.length) % SLIDES.length);
-  const next = () => goTo(index + 1);
-  const prev = () => goTo(index - 1);
+  const next = () => setN((v) => v + 1);
+  const prev = () => setN((v) => v - 1);
+  const goTo = (i: number) =>
+    setN((v) => (v - (v % TOTAL)) + i);
 
   useEffect(() => {
     if (paused) return;
     const id = window.setInterval(next, AUTO_ADVANCE_MS);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, paused]);
+  }, [paused]);
 
   return (
     <section className="py-20 px-6">
@@ -104,101 +90,60 @@ export default function FeatureCarousel() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          ref={containerRef}
-          className="relative h-[380px] sm:h-[480px] lg:h-[560px] overflow-hidden rounded-[2.5rem] sm:rounded-[3.5rem] lg:rounded-[8rem] bg-gray-200 dark:bg-gray-800 shadow-2xl"
+          className="relative w-[92%] sm:w-[82%] lg:w-[75%] max-w-5xl mx-auto aspect-video overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800 shadow-2xl"
         >
-          {/* Track slide — translateX smooth */}
-          <motion.div
-            className="h-full flex items-center"
-            style={{ gap, width: "max-content" }}
-            animate={{ x: containerW > 0 ? trackX : 0 }}
-            transition={{ duration: 0.55, ease: "easeOut" }}
-          >
-            {SLIDES.map((s, i) => {
-              const isActive = i === index;
-              const isAdjacent = Math.abs(i - index) === 1;
-              return (
-                <motion.button
-                  key={s.title}
-                  type="button"
-                  onClick={() => goTo(i)}
-                  aria-label={`Tampilkan ${s.title}`}
-                  animate={{
-                    opacity: isActive ? 1 : isAdjacent ? 0.45 : 0.2,
-                    scale: isActive ? 1 : 0.9,
-                  }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  style={{ width: slideW > 0 ? slideW : "70%" }}
-                  className={`relative shrink-0 h-full overflow-hidden rounded-[2rem] sm:rounded-[3rem] bg-gray-300 dark:bg-gray-700 shadow-lg ${
-                    isActive ? "cursor-default" : "cursor-pointer"
-                  }`}
-                >
-                  <img
-                    src={s.image}
-                    alt={s.title}
-                    loading={i === 0 ? "eager" : "lazy"}
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+          {/* Slide — crossfade overlap (tanpa mode="wait") */}
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={n}
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              className="absolute inset-0"
+            >
+              <img
+                src={slide.image}
+                alt={slide.title}
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-                  {/* Gradient halus di bawah (hanya slide aktif) */}
-                  <motion.div
-                    animate={{ opacity: isActive ? 1 : 0 }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
-                  />
+              {/* Badge pill kecil (kiri atas) */}
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.12 }}
+                className="absolute top-4 left-4 sm:top-7 sm:left-8 bg-white rounded-full px-4 py-1.5 sm:px-5 sm:py-2 shadow-lg"
+              >
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
+                  LedgerFlow Features
+                </span>
+              </motion.div>
 
-                  {/* Badge pill kecil (kiri atas, slide aktif) */}
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      opacity: isActive ? 1 : 0,
-                      y: isActive ? 0 : -8,
-                    }}
-                    transition={{
-                      duration: 0.35,
-                      ease: "easeOut",
-                      delay: isActive ? 0.12 : 0,
-                    }}
-                    className="absolute top-4 left-4 sm:top-6 sm:left-6 bg-white rounded-full px-3.5 py-1.5 sm:px-4 shadow-lg"
-                  >
-                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
-                      LedgerFlow Features
-                    </span>
-                  </motion.div>
-
-                  {/* Pill judul (bawah tengah, slide aktif) */}
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      opacity: isActive ? 1 : 0,
-                      y: isActive ? 0 : 16,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: "easeOut",
-                      delay: isActive ? 0.22 : 0,
-                    }}
-                    className="absolute inset-x-0 bottom-4 sm:bottom-7 flex justify-center px-4 sm:px-8"
-                  >
-                    <div className="bg-white rounded-full px-5 py-3 sm:px-9 sm:py-4 shadow-xl max-w-full">
-                      <h3 className="text-base sm:text-2xl lg:text-3xl font-extrabold text-gray-900 text-center leading-tight truncate">
-                        {s.title}
-                      </h3>
-                      {isActive && (
-                        <p className="mt-0.5 text-[10px] sm:text-sm text-gray-600 text-center truncate">
-                          {s.desc}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                </motion.button>
-              );
-            })}
-          </motion.div>
+              {/* Pill judul (bawah tengah) */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut", delay: 0.22 }}
+                className="absolute inset-x-0 bottom-4 sm:bottom-8 flex justify-center px-5 sm:px-10"
+              >
+                <div className="bg-white rounded-full px-5 py-2.5 sm:px-9 sm:py-4 shadow-xl max-w-full">
+                  <h3 className="text-sm sm:text-2xl lg:text-3xl font-extrabold text-gray-900 text-center leading-tight truncate">
+                    {slide.title}
+                  </h3>
+                  <p className="mt-0.5 hidden sm:block text-xs sm:text-sm text-gray-600 text-center truncate">
+                    {slide.desc}
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
 
           {/* Tombol navigasi (kanan atas) */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex gap-2">
+          <div className="absolute top-4 right-4 sm:top-7 sm:right-8 flex gap-2">
             <button
               type="button"
               onClick={prev}
@@ -218,7 +163,7 @@ export default function FeatureCarousel() {
           </div>
 
           {/* Indikator titik */}
-          <div className="absolute inset-x-0 bottom-3 sm:bottom-4 flex justify-center gap-2">
+          <div className="absolute inset-x-0 bottom-2.5 sm:bottom-4 flex justify-center gap-2">
             {SLIDES.map((s, i) => (
               <button
                 key={s.title}

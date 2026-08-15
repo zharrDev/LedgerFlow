@@ -15,6 +15,8 @@ interface BalanceSheetTableProps {
 /**
  * Blok section neraca — dipakai di dalam SATU panel glass besar (parent).
  * Header seragam (tint primary), divider tipis antar baris, hover row.
+ * ─── ✅ Fix A2 done: 1 root <div> (bukan fragment) agar grid 2 kolom
+ * tidak me-flatten header/table/total jadi item grid terpisah.
  */
 export const BalanceSheetTable = ({
   title,
@@ -39,7 +41,7 @@ export const BalanceSheetTable = ({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <>
+    <div className="min-w-0">
       <div className="flex items-center gap-2 px-5 sm:px-6 py-3.5 bg-primary-500/10 dark:bg-primary-500/15 border-b border-white/10 dark:border-white/5">
         <FileText size={14} className="text-primary-600 dark:text-primary-300" />
         <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
@@ -176,6 +178,6 @@ export const BalanceSheetTable = ({
           itemLabel="akun"
         />
       )}
-    </>
+    </div>
   );
 };

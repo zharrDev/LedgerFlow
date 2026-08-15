@@ -88,6 +88,7 @@ const SECTION_CONFIG = {
 } as const;
 
 // ─── Section Block (dalam SATU panel) ───────────────────────────────
+// ─── ✅ Fix A3 done: wrapper div panel → divide-y bersih antar slice ───
 function CashFlowSectionBlock({
   section,
   configKey,
@@ -486,24 +487,26 @@ export default function CashFlowPage() {
               {/* Satu panel: Operasi → Investasi → Pendanaan → Net Change */}
               <motion.div
                 variants={itemVariants}
-                className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg divide-y divide-white/10 dark:divide-white/5"
+                className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg"
               >
-                <CashFlowSectionBlock
-                  section={data.operating}
-                  configKey="operating"
-                />
-                <CashFlowSectionBlock
-                  section={data.investing}
-                  configKey="investing"
-                />
-                <CashFlowSectionBlock
-                  section={data.financing}
-                  configKey="financing"
-                />
-                <NetChangeFooter
-                  value={data.netCashFlow}
-                  periodName={data.periodName}
-                />
+                <div className="divide-y divide-white/10 dark:divide-white/5">
+                  <CashFlowSectionBlock
+                    section={data.operating}
+                    configKey="operating"
+                  />
+                  <CashFlowSectionBlock
+                    section={data.investing}
+                    configKey="investing"
+                  />
+                  <CashFlowSectionBlock
+                    section={data.financing}
+                    configKey="financing"
+                  />
+                  <NetChangeFooter
+                    value={data.netCashFlow}
+                    periodName={data.periodName}
+                  />
+                </div>
               </motion.div>
             </>
           )}
