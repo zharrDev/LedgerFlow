@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureSlide {
   title: string;
@@ -44,26 +43,33 @@ const SLIDES: FeatureSlide[] = [
 const AUTO_ADVANCE_MS = 3000;
 const TOTAL = SLIDES.length;
 
-// ─── ✅ Fix C1 done: ala Mastercard Messi — 1 image besar 1 tampilan,
-//      transisi membesar halus (scale 0.97→1), teks di luar gambar,
-//      tombol Previous/Next pill putih + indikator angka, loop searah ───
+// Posisi slot relatif thd slide aktif (x dalam % lebar slide).
+// Bergulir otomatis: masuk sliver kanan → membesar tengah → sliver kiri → keluar.
+const SLOT = {
+  "-2": { x: -185, scale: 0.9, opacity: 0, z: 1 },
+  "-1": { x: -94, scale: 0.88, opacity: 0.9, z: 2 },
+  "0": { x: 0, scale: 1, opacity: 1, z: 3 },
+  "1": { x: 94, scale: 0.88, opacity: 0.9, z: 2 },
+  "2": { x: 185, scale: 0.9, opacity: 0, z: 1 },
+} as const;
+
+// ─── ✅ Fix C2 done: gulir otomatis bergulir — prev/next sliver tipis,
+//      sudut agak oval, indikator angka, judul pill di dalam image ───
 export default function FeatureCarousel() {
   // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih konten)
   const [n, setN] = useState(0);
   const [paused, setPaused] = useState(false);
 
   const index = ((n % TOTAL) + TOTAL) % TOTAL;
-  const slide = SLIDES[index];
-
-  const next = () => setN((v) => v + 1);
-  const prev = () => setN((v) => v - 1);
 
   useEffect(() => {
     if (paused) return;
-    const id = window.setInterval(next, AUTO_ADVANCE_MS);
+    const id = window.setInterval(() => setN((v) => v + 1), AUTO_ADVANCE_MS);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paused]);
+
+  // 5 slide di sekitar aktif; pos = k - n menentukan slot
+  const renderKeys = [n - 2, n - 1, n, n + 1, n + 2];
 
   return (
     <section className="py-20 px-6 overflow-hidden">
@@ -91,90 +97,86 @@ export default function FeatureCarousel() {
           onMouseLeave={() => setPaused(false)}
           className="relative mx-auto max-w-5xl"
         >
-          {/* Kartu gambar besar — 1 slide per tampilan */}
-          <div className="relative mx-auto max-w-4xl aspect-video rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-gray-200 dark:bg-gray-800 shadow-2xl">
-            <AnimatePresence initial={false}>
-              <motion.div
-                key={n}
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1 }}
-                transition={{ duration: 0.55, ease: "easeOut" }}
-                className="absolute inset-0"
-              >
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Teks di luar gambar (ala Mastercard: label → judul → deskripsi) */}
-          <div className="mt-6 sm:mt-8 text-center px-2">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`text-${n}`}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-              >
-                <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-400">
-                  LedgerFlow Features
-                </p>
-                <h3 className="mt-2 text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                  {slide.title}
-                </h3>
-                <p className="mt-2 text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-                  {slide.desc}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Kontrol: tombol Previous/Next pill + indikator angka */}
-          <div className="mt-6 sm:mt-7 flex items-center justify-center gap-4 sm:gap-6 flex-wrap">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Slide sebelumnya"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white dark:bg-darkCard border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-800 dark:text-white shadow-sm hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 hover:scale-105 active:scale-95 transition-all"
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </button>
-
-            <div className="flex items-center gap-2">
-              {SLIDES.map((s, i) => (
-                <button
-                  key={s.title}
-                  type="button"
-                  onClick={() => setN(i)}
-                  aria-label={`Lompat ke slide ${i + 1}`}
-                  className={`w-7 h-7 rounded-full text-xs font-semibold transition-all duration-300 ${
-                    i === index
-                      ? "bg-primary-500 text-white shadow scale-110"
-                      : "bg-white dark:bg-darkCard text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:border-primary-400 hover:text-primary-600"
+          {/* Track gulir — tanpa boks, sliver prev/next terpotong rapi */}
+          <div className="relative mx-auto w-[92%] sm:w-[88%] lg:w-[86%] h-[300px] sm:h-[400px] lg:h-[480px] overflow-hidden">
+            {renderKeys.map((k) => {
+              const pos = String(k - n) as keyof typeof SLOT;
+              const slot = SLOT[pos];
+              const s = SLIDES[((k % TOTAL) + TOTAL) % TOTAL];
+              const isCenter = slot.z === 3;
+              return (
+                <motion.div
+                  key={k}
+                  initial={false}
+                  animate={{
+                    x: `${slot.x}%`,
+                    y: "-50%",
+                    scale: slot.scale,
+                    opacity: slot.opacity,
+                    zIndex: slot.z,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 130,
+                    damping: 22,
+                  }}
+                  style={{ width: "86%" }}
+                  className={`absolute left-1/2 top-1/2 h-full rounded-[2rem] sm:rounded-[2.5rem] lg:rounded-[3rem] overflow-hidden ${
+                    isCenter ? "shadow-2xl" : "shadow-lg"
                   }`}
                 >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
+                  <img
+                    src={s.image}
+                    alt={s.title}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
+                </motion.div>
+              );
+            })}
 
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Slide berikutnya"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white dark:bg-darkCard border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-800 dark:text-white shadow-sm hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 hover:scale-105 active:scale-95 transition-all"
-            >
-              Next
-              <ChevronRight size={16} />
-            </button>
+            {/* Pill judul — di dalam image aktif (bawah-tengah, kecil) */}
+            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[86%] h-full z-10">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`title-${n}`}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 14 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className="absolute inset-x-0 bottom-3 sm:bottom-5 flex justify-center px-4 sm:px-8"
+                >
+                  <div className="max-w-[85%] bg-white/95 rounded-full px-4 py-1.5 sm:px-6 sm:py-2.5 shadow-lg">
+                    <h3 className="text-[11px] sm:text-sm lg:text-base font-extrabold text-gray-900 text-center leading-tight truncate">
+                      {SLIDES[index].title}
+                    </h3>
+                    <p className="hidden sm:block text-xs text-gray-600 text-center truncate">
+                      {SLIDES[index].desc}
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Indikator angka 1-6 — aktif cyan */}
+          <div className="mt-5 sm:mt-6 flex items-center justify-center gap-2">
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.title}
+                type="button"
+                onClick={() => setN(i)}
+                aria-label={`Lompat ke slide ${i + 1}`}
+                className={`w-7 h-7 rounded-full text-xs font-semibold transition-all duration-300 ${
+                  i === index
+                    ? "bg-primary-500 text-white shadow scale-110"
+                    : "bg-white dark:bg-darkCard text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:border-primary-400 hover:text-primary-600"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
           </div>
         </motion.div>
       </div>
