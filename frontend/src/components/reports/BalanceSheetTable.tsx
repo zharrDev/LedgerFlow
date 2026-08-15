@@ -1,26 +1,25 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { formatCurrency } from "../../utils/currency";
 import type { BalanceSheetAccount } from "../../types/reports";
 import { usePagination } from "../../hooks/usePagination";
 import { TablePagination } from "../TablePagination";
-import { ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
 interface BalanceSheetTableProps {
   title: string;
   accounts: BalanceSheetAccount[];
   total: number;
-  colorClass: string; // contoh: "text-emerald-600 dark:text-emerald-400"
-  accentColor?: string; // opsional untuk bg header, contoh: "from-emerald-500 to-teal-500"
   emptyMessage?: string;
 }
 
+/**
+ * Blok section neraca — dipakai di dalam SATU panel glass besar (parent).
+ * Header seragam (tint primary), divider tipis antar baris, hover row.
+ */
 export const BalanceSheetTable = ({
   title,
   accounts,
   total,
-  colorClass,
-  accentColor = "from-indigo-500 to-violet-600",
   emptyMessage = "Tidak ada data",
 }: BalanceSheetTableProps) => {
   const {
@@ -38,41 +37,33 @@ export const BalanceSheetTable = ({
   } = usePagination(accounts, 5);
 
   const [expanded, setExpanded] = useState(false);
-  // Filter untuk tampilan mobile: hanya tampilkan 3 data pertama secara default, lalu expand
-  const displayItems = pageItems; // sudah dipaginasi
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:shadow-xl transition-shadow duration-300"
-    >
-      {/* Header dengan gradient modern + glass edge */}
-      <div
-        className={`px-5 sm:px-6 py-4 bg-gradient-to-r ${accentColor} text-white flex items-center justify-between ring-1 ring-inset ring-white/20 backdrop-blur-sm`}
-      >
-        <h3 className="text-lg font-bold tracking-tight">{title}</h3>
-        <FileText size={16} className="opacity-60" />
+    <>
+      <div className="flex items-center gap-2 px-5 sm:px-6 py-3.5 bg-primary-500/10 dark:bg-primary-500/15 border-b border-white/10 dark:border-white/5">
+        <FileText size={14} className="text-primary-600 dark:text-primary-300" />
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
+          {title}
+        </h3>
       </div>
 
       {/* Tampilan Desktop (table) */}
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50/70 dark:bg-white/[0.04]">
-            <tr>
-              <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+          <thead>
+            <tr className="bg-gray-50/70 dark:bg-white/[0.03] border-b border-white/10 dark:border-white/5">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                 Kode
               </th>
-              <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                 Nama Akun
               </th>
-              <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                 Saldo
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+          <tbody>
             {accounts.length === 0 ? (
               <tr>
                 <td
@@ -83,38 +74,33 @@ export const BalanceSheetTable = ({
                 </td>
               </tr>
             ) : (
-              displayItems.map((account, idx) => (
-                <motion.tr
+              pageItems.map((account) => (
+                <tr
                   key={account.account_id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: idx * 0.03 }}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                  className="border-b border-white/5 hover:bg-white/5 dark:hover:bg-white/5 transition-colors"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-700 dark:text-slate-200">
+                  <td className="px-6 py-3.5 whitespace-nowrap text-sm font-mono font-medium text-gray-700 dark:text-slate-200">
                     {account.account_code}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-800 dark:text-slate-300">
+                  <td className="px-6 py-3.5 text-sm text-gray-800 dark:text-slate-300">
                     {account.account_name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold tabular-nums text-gray-900 dark:text-white">
+                  <td className="px-6 py-3.5 whitespace-nowrap text-sm text-right font-semibold tabular-nums text-gray-900 dark:text-white">
                     {formatCurrency(account.balance)}
                   </td>
-                </motion.tr>
+                </tr>
               ))
             )}
           </tbody>
-          <tfoot className="bg-gray-50/70 dark:bg-white/[0.04] border-t border-white/20 dark:border-white/10">
-            <tr>
+          <tfoot>
+            <tr className="bg-gray-50/70 dark:bg-white/[0.03]">
               <td
                 colSpan={2}
-                className="px-6 py-4 text-sm font-bold text-gray-800 dark:text-white"
+                className="px-6 py-3.5 text-sm font-bold text-gray-800 dark:text-white"
               >
                 Total {title}
               </td>
-              <td
-                className={`px-6 py-4 text-sm font-bold text-right ${colorClass}`}
-              >
+              <td className="px-6 py-3.5 text-sm font-bold text-right tabular-nums text-gray-900 dark:text-white">
                 {formatCurrency(total)}
               </td>
             </tr>
@@ -125,18 +111,15 @@ export const BalanceSheetTable = ({
       {/* Tampilan Mobile (card list) */}
       <div className="sm:hidden p-4 space-y-3">
         {accounts.length === 0 ? (
-          <div className="py-10 text-center text-gray-400 text-sm">
+          <div className="py-8 text-center text-gray-400 text-sm">
             {emptyMessage}
           </div>
         ) : (
           <>
-            {displayItems.map((account, idx) => (
-              <motion.div
+            {pageItems.map((account) => (
+              <div
                 key={account.account_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-white/60 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/40 dark:border-white/10"
+                className="bg-white/50 dark:bg-white/5 rounded-xl p-4 border border-white/10 dark:border-white/10"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
@@ -151,14 +134,13 @@ export const BalanceSheetTable = ({
                     {formatCurrency(account.balance)}
                   </span>
                 </div>
-              </motion.div>
+              </div>
             ))}
 
-            {/* Tombol Expand jika data melebihi batas tertentu (opsional) */}
             {accounts.length > 5 && (
               <button
                 onClick={() => setExpanded(!expanded)}
-                className="w-full py-2 text-center text-xs text-gray-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+                className="w-full py-2 text-center text-xs text-gray-500 dark:text-slate-400 hover:text-primary-500 transition-colors"
               >
                 {expanded ? "Tampilkan lebih sedikit" : "Tampilkan semua"}
               </button>
@@ -166,37 +148,34 @@ export const BalanceSheetTable = ({
           </>
         )}
 
-        {/* Total di Mobile */}
         {accounts.length > 0 && (
-          <div className="flex justify-between items-center bg-white/60 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 mt-3 border border-white/40 dark:border-white/10">
+          <div className="flex justify-between items-center bg-white/50 dark:bg-white/5 rounded-xl p-4 mt-3 border border-white/10 dark:border-white/10">
             <span className="text-sm font-bold text-gray-700 dark:text-white">
               Total {title}
             </span>
-            <span className={`text-sm font-bold tabular-nums break-words text-right max-w-[55%] ${colorClass}`}>
+            <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-white break-words text-right max-w-[55%]">
               {formatCurrency(total)}
             </span>
           </div>
         )}
       </div>
 
-      {/* Pagination (desktop & mobile) */}
+      {/* Pagination */}
       {accounts.length > 0 && totalPages > 1 && (
-        <div className="px-4 sm:px-6 py-3 border-t border-white/20 dark:border-white/10 bg-white/40 dark:bg-darkCard/30">
-          <TablePagination
-            page={page}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            canPrev={canPrev}
-            canNext={canNext}
-            onPrev={prev}
-            onNext={next}
-            onGoTo={setPage}
-            itemLabel="akun"
-          />
-        </div>
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          canPrev={canPrev}
+          canNext={canNext}
+          onPrev={prev}
+          onNext={next}
+          onGoTo={setPage}
+          itemLabel="akun"
+        />
       )}
-    </motion.div>
+    </>
   );
 };

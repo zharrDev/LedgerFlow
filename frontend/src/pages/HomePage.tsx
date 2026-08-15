@@ -506,7 +506,7 @@ export default function HomePage() {
   const opacityHero = useTransform(scrollY, [0, 300], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-darkBg overflow-x-hidden">
+    <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
       <Navbar />
 
       {/* ═══ Hero ═══ */}

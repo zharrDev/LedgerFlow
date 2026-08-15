@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import BrandedLoader from "../components/BrandedLoader";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -95,12 +96,5 @@ export default function AuthCallback() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-darkBg p-4">
-      <div className="text-center space-y-4 max-w-md mx-auto w-full">
-        <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-500 text-sm">Menyelesaikan login...</p>
-      </div>
-    </div>
-  );
+  return <BrandedLoader />;
 }

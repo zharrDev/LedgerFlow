@@ -16,6 +16,7 @@ import type { BalanceSheetResponse, Period } from "../types/reports";
 import { BalanceSheetCard } from "../components/reports/BalanceSheetCard";
 import { BalanceSheetTable } from "../components/reports/BalanceSheetTable";
 import { BalanceSheetStatus } from "../components/reports/BalanceSheetStatus";
+import AuroraBackground from "../components/reports/AuroraBackground";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ExportMenu } from "../components/ExportMenu";
 import {
@@ -128,7 +129,9 @@ export default function BalanceSheet() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+        <AuroraBackground />
+        <div className="relative z-10 space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -262,24 +265,18 @@ export default function BalanceSheet() {
                 title="Total Aset"
                 amount={balanceSheet.total_assets}
                 icon={TrendingUp}
-                colorClass="text-cyan-600 dark:text-cyan-400"
-                bgColorClass="bg-cyan-100 dark:bg-cyan-900"
                 index={0}
               />
               <BalanceSheetCard
                 title="Total Liabilitas"
                 amount={balanceSheet.total_liabilities}
                 icon={TrendingDown}
-                colorClass="text-amber-600 dark:text-amber-400"
-                bgColorClass="bg-amber-100 dark:bg-amber-900"
                 index={1}
               />
               <BalanceSheetCard
                 title="Total Ekuitas"
                 amount={balanceSheet.total_equity}
                 icon={Wallet}
-                colorClass="text-purple-600 dark:text-purple-400"
-                bgColorClass="bg-purple-100 dark:bg-purple-900"
                 index={2}
               />
             </div>
@@ -313,7 +310,7 @@ export default function BalanceSheet() {
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
-                        <span className="text-cyan-700 dark:text-cyan-400 font-medium">
+                        <span className="text-gray-700 dark:text-gray-200 font-medium">
                           Aset
                         </span>
                         <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200 shrink-0">
@@ -322,14 +319,14 @@ export default function BalanceSheet() {
                       </div>
                       <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-500"
+                          className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500"
                           style={{ width: `${assetsPct}%` }}
                         />
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
-                        <span className="text-amber-700 dark:text-amber-400 font-medium truncate">
+                        <span className="text-gray-700 dark:text-gray-200 font-medium truncate">
                           Liabilitas + Ekuitas
                         </span>
                         <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200 shrink-0">
@@ -338,7 +335,7 @@ export default function BalanceSheet() {
                       </div>
                       <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-purple-500 transition-all duration-500"
+                          className="h-full rounded-full bg-primary-500/30 transition-all duration-500"
                           style={{ width: `${lePct}%` }}
                         />
                       </div>
@@ -348,37 +345,38 @@ export default function BalanceSheet() {
               );
             })()}
 
-            {/* Stack vertikal di mobile; 2 kolom dari lg ke atas */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <BalanceSheetTable
-                title="ASET"
-                accounts={balanceSheet.assets}
-                total={balanceSheet.total_assets}
-                colorClass="text-cyan-600 dark:text-cyan-400"
-                accentColor="from-cyan-500 to-indigo-600"
-                emptyMessage="Tidak ada data aset"
-              />
-              <div className="space-y-4 sm:space-y-6">
+            {/* SATU panel glass besar: ASET | LIABILITAS + EKUITAS */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x lg:divide-y-0 divide-y divide-white/10 dark:divide-white/5">
                 <BalanceSheetTable
-                  title="LIABILITAS"
-                  accounts={balanceSheet.liabilities}
-                  total={balanceSheet.total_liabilities}
-                  colorClass="text-amber-600 dark:text-amber-400"
-                  accentColor="from-amber-500 to-orange-600"
-                  emptyMessage="Tidak ada data liabilitas"
+                  title="ASET"
+                  accounts={balanceSheet.assets}
+                  total={balanceSheet.total_assets}
+                  emptyMessage="Tidak ada data aset"
                 />
-                <BalanceSheetTable
-                  title="EKUITAS"
-                  accounts={balanceSheet.equity}
-                  total={balanceSheet.total_equity}
-                  colorClass="text-purple-600 dark:text-purple-400"
-                  accentColor="from-purple-500 to-violet-600"
-                  emptyMessage="Tidak ada data ekuitas"
-                />
+                <div className="grid grid-cols-1 divide-y divide-white/10 dark:divide-white/5">
+                  <BalanceSheetTable
+                    title="LIABILITAS"
+                    accounts={balanceSheet.liabilities}
+                    total={balanceSheet.total_liabilities}
+                    emptyMessage="Tidak ada data liabilitas"
+                  />
+                  <BalanceSheetTable
+                    title="EKUITAS"
+                    accounts={balanceSheet.equity}
+                    total={balanceSheet.total_equity}
+                    emptyMessage="Tidak ada data ekuitas"
+                  />
+                </div>
               </div>
-            </div>
+            </motion.div>
           </>
         )}
+        </div>
       </div>
     </AppShell>
   );

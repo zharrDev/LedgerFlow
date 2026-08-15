@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureSlide {
@@ -42,11 +42,31 @@ const SLIDES: FeatureSlide[] = [
 ];
 
 const AUTO_ADVANCE_MS = 5000;
+const SLIDE_W_PCT = 0.7; // desktop/tablet: slide aktif 70% lebar container
+const SLIDE_W_PCT_MOBILE = 0.86; // mobile: hampir full, peek tipis
+const GAP_PX = 24;
+const GAP_PX_MOBILE = 16;
 
 export default function FeatureCarousel() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const slide = SLIDES[index];
+  const [containerW, setContainerW] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isMobile = containerW > 0 && containerW < 640;
+  const slideW = containerW * (isMobile ? SLIDE_W_PCT_MOBILE : SLIDE_W_PCT);
+  const gap = isMobile ? GAP_PX_MOBILE : GAP_PX;
+  const centerOffset = (containerW - slideW) / 2;
+  const trackX = centerOffset - index * (slideW + gap);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setContainerW(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const goTo = (next: number) =>
     setIndex((next % SLIDES.length + SLIDES.length) % SLIDES.length);
@@ -84,43 +104,106 @@ export default function FeatureCarousel() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="relative h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-[2.5rem] sm:rounded-[3.5rem] lg:rounded-[8rem] bg-gray-200 dark:bg-gray-800 shadow-2xl"
+          ref={containerRef}
+          className="relative h-[380px] sm:h-[480px] lg:h-[560px] overflow-hidden rounded-[2.5rem] sm:rounded-[3.5rem] lg:rounded-[8rem] bg-gray-200 dark:bg-gray-800 shadow-2xl"
         >
-          <AnimatePresence initial={false}>
-            <motion.img
-              key={index}
-              src={slide.image}
-              alt={slide.title}
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding="async"
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.55, ease: "easeOut" }}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </AnimatePresence>
-
-          {/* Badge pill (kiri atas) */}
+          {/* Track slide — translateX smooth */}
           <motion.div
-            key={`badge-${index}`}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: "easeOut", delay: 0.12 }}
-            className="absolute top-5 left-5 sm:top-7 sm:left-8 bg-white rounded-full px-4 py-1.5 sm:px-5 sm:py-2 shadow-lg"
+            className="h-full flex items-center"
+            style={{ gap, width: "max-content" }}
+            animate={{ x: containerW > 0 ? trackX : 0 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
           >
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.15em] text-gray-900">
-              LedgerFlow Features
-            </span>
+            {SLIDES.map((s, i) => {
+              const isActive = i === index;
+              const isAdjacent = Math.abs(i - index) === 1;
+              return (
+                <motion.button
+                  key={s.title}
+                  type="button"
+                  onClick={() => goTo(i)}
+                  aria-label={`Tampilkan ${s.title}`}
+                  animate={{
+                    opacity: isActive ? 1 : isAdjacent ? 0.45 : 0.2,
+                    scale: isActive ? 1 : 0.9,
+                  }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  style={{ width: slideW > 0 ? slideW : "70%" }}
+                  className={`relative shrink-0 h-full overflow-hidden rounded-[2rem] sm:rounded-[3rem] bg-gray-300 dark:bg-gray-700 shadow-lg ${
+                    isActive ? "cursor-default" : "cursor-pointer"
+                  }`}
+                >
+                  <img
+                    src={s.image}
+                    alt={s.title}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+
+                  {/* Gradient halus di bawah (hanya slide aktif) */}
+                  <motion.div
+                    animate={{ opacity: isActive ? 1 : 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
+                  />
+
+                  {/* Badge pill kecil (kiri atas, slide aktif) */}
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      opacity: isActive ? 1 : 0,
+                      y: isActive ? 0 : -8,
+                    }}
+                    transition={{
+                      duration: 0.35,
+                      ease: "easeOut",
+                      delay: isActive ? 0.12 : 0,
+                    }}
+                    className="absolute top-4 left-4 sm:top-6 sm:left-6 bg-white rounded-full px-3.5 py-1.5 sm:px-4 shadow-lg"
+                  >
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
+                      LedgerFlow Features
+                    </span>
+                  </motion.div>
+
+                  {/* Pill judul (bawah tengah, slide aktif) */}
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      opacity: isActive ? 1 : 0,
+                      y: isActive ? 0 : 16,
+                    }}
+                    transition={{
+                      duration: 0.4,
+                      ease: "easeOut",
+                      delay: isActive ? 0.22 : 0,
+                    }}
+                    className="absolute inset-x-0 bottom-4 sm:bottom-7 flex justify-center px-4 sm:px-8"
+                  >
+                    <div className="bg-white rounded-full px-5 py-3 sm:px-9 sm:py-4 shadow-xl max-w-full">
+                      <h3 className="text-base sm:text-2xl lg:text-3xl font-extrabold text-gray-900 text-center leading-tight truncate">
+                        {s.title}
+                      </h3>
+                      {isActive && (
+                        <p className="mt-0.5 text-[10px] sm:text-sm text-gray-600 text-center truncate">
+                          {s.desc}
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                </motion.button>
+              );
+            })}
           </motion.div>
 
           {/* Tombol navigasi (kanan atas) */}
-          <div className="absolute top-5 right-5 sm:top-7 sm:right-8 flex gap-2">
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex gap-2">
             <button
               type="button"
               onClick={prev}
               aria-label="Slide sebelumnya"
-              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white border border-gray-200 text-gray-700 shadow-lg hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-white border border-gray-200 text-gray-700 shadow-lg hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all"
             >
               <ChevronLeft size={20} />
             </button>
@@ -128,31 +211,14 @@ export default function FeatureCarousel() {
               type="button"
               onClick={next}
               aria-label="Slide berikutnya"
-              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white border border-gray-200 text-gray-700 shadow-lg hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all"
+              className="flex items-center justify-center w-11 h-11 rounded-full bg-white border border-gray-200 text-gray-700 shadow-lg hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all"
             >
               <ChevronRight size={20} />
             </button>
           </div>
 
-          {/* Pill judul (bawah tengah) + indikator titik */}
-          <motion.div
-            key={`title-${index}`}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut", delay: 0.22 }}
-            className="absolute inset-x-0 bottom-16 sm:bottom-20 flex justify-center px-6"
-          >
-            <div className="bg-white rounded-full px-6 py-4 sm:px-10 sm:py-5 shadow-xl max-w-full">
-              <h3 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center leading-tight">
-                {slide.title}
-              </h3>
-              <p className="mt-1 text-xs sm:text-sm text-gray-600 text-center">
-                {slide.desc}
-              </p>
-            </div>
-          </motion.div>
-
-          <div className="absolute inset-x-0 bottom-5 flex justify-center gap-2">
+          {/* Indikator titik */}
+          <div className="absolute inset-x-0 bottom-3 sm:bottom-4 flex justify-center gap-2">
             {SLIDES.map((s, i) => (
               <button
                 key={s.title}

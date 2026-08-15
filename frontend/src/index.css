@@ -20,6 +20,15 @@ body {
   font-family: "Poppins", sans-serif;
 }
 
+/* Fallback default gelap sebelum React/theme mount — mencegah flash putih */
+html {
+  background-color: #0f172a;
+}
+
+body {
+  background-color: #0f172a;
+}
+
 #root,
 .App {
   transform: none !important;
@@ -116,4 +125,33 @@ body {
     width: 0;
     height: 0;
   }
+}
+
+/* Halaman homepage (root pakai h-screen + overflow-y-auto):
+   scrollbar SELALU gelap senada darkCard, independen dari toggle tema */
+.homepage-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.4) #1e293b;
+}
+
+.homepage-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.homepage-scroll::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.homepage-scroll::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.4);
+  border-radius: 8px;
+}
+
+.homepage-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(203 213 225 / 0.55);
+}
+
+.homepage-scroll::-webkit-scrollbar-corner {
+  background: transparent;
 }
