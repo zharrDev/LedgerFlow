@@ -45,17 +45,17 @@ const AUTO_ADVANCE_MS = 3000;
 const TOTAL = SLIDES.length;
 
 // Posisi slot relatif thd slide aktif (x dalam % lebar slide).
-// Tiap image = oval mengambang: kecil di sisi → membesar di tengah.
+// Tiap image = persegi panjang agak oval: kecil di sisi → membesar di tengah.
 const SLOT = {
-  "-2": { x: -125, scale: 0.32, opacity: 0, z: 1 },
-  "-1": { x: -75, scale: 0.34, opacity: 1, z: 2 },
+  "-2": { x: -145, scale: 0.4, opacity: 0, z: 1 },
+  "-1": { x: -82, scale: 0.4, opacity: 1, z: 2 },
   "0": { x: 0, scale: 1, opacity: 1, z: 3 },
-  "1": { x: 75, scale: 0.34, opacity: 1, z: 2 },
-  "2": { x: 125, scale: 0.32, opacity: 0, z: 1 },
+  "1": { x: 82, scale: 0.4, opacity: 1, z: 2 },
+  "2": { x: 145, scale: 0.4, opacity: 0, z: 1 },
 } as const;
 
-// ─── ✅ Fix B7 done: tanpa container — tiap image oval bebas,
-//      kecil dulu lalu membesar smooth ke tengah (spring), loop searah ───
+// ─── ✅ Fix B8 done: tanpa container, image besar persegi-panjang-agak-oval,
+//      judul & tombol di dalam image (crossfade), loop searah ───
 export default function FeatureCarousel() {
   // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih konten)
   const [n, setN] = useState(0);
@@ -115,7 +115,7 @@ export default function FeatureCarousel() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="relative mx-auto w-[92%] sm:w-[82%] lg:w-[75%] max-w-5xl h-[300px] sm:h-[440px] lg:h-[560px]"
+          className="relative mx-auto w-[92%] sm:w-[82%] lg:w-[75%] max-w-5xl h-[340px] sm:h-[480px] lg:h-[620px]"
         >
           {/* Track: oval kecil di sisi, membesar ke tengah saat gilirannya */}
           {renderKeys.map((k) => {
@@ -136,14 +136,14 @@ export default function FeatureCarousel() {
                   zIndex: slot.z,
                 }}
                 transition={transition}
-                style={{ width: "58%" }}
+                style={{ width: "70%" }}
                 onClick={() => {
                   if (!isCenter) {
                     if (isSide && slot.x > 0) next();
                     else if (isSide) prev();
                   }
                 }}
-                className={`absolute left-1/2 top-1/2 sm:w-[46%] lg:w-[36%] aspect-video rounded-[50%] overflow-hidden ${
+                className={`absolute left-1/2 top-1/2 sm:w-[56%] lg:w-[44%] aspect-video rounded-[2rem] sm:rounded-[2.5rem] lg:rounded-[3rem] overflow-hidden ${
                   isCenter ? "shadow-2xl" : "shadow-lg"
                 } ${
                   isSide
@@ -162,8 +162,8 @@ export default function FeatureCarousel() {
             );
           })}
 
-          {/* Teks statis — hanya di area oval tengah, tidak menumpuk berlapis */}
-          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[58%] sm:w-[46%] lg:w-[36%] aspect-video z-10">
+          {/* Teks & tombol statis — di dalam image tengah, tidak menumpuk berlapis */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] sm:w-[56%] lg:w-[44%] aspect-video z-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`badge-${n}`}
@@ -171,9 +171,9 @@ export default function FeatureCarousel() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 shadow-md"
+                className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 bg-white rounded-full px-2.5 py-0.5 sm:px-3.5 sm:py-1.5 shadow-md"
               >
-                <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
+                <span className="text-[8px] sm:text-[11px] font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
                   LedgerFlow Features
                 </span>
               </motion.div>
@@ -186,9 +186,9 @@ export default function FeatureCarousel() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="absolute inset-x-0 bottom-1.5 sm:bottom-3 flex justify-center px-2 sm:px-4"
+                className="absolute inset-x-0 bottom-2 sm:bottom-4 flex justify-center px-3 sm:px-6"
               >
-                <div className="max-w-[90%] bg-white/95 rounded-full px-3 py-1 sm:px-5 sm:py-2 shadow-lg">
+                <div className="max-w-[85%] bg-white/95 rounded-full px-3 py-1 sm:px-5 sm:py-2 shadow-lg">
                   <h3 className="text-[11px] sm:text-sm lg:text-base font-extrabold text-gray-900 text-center leading-tight truncate">
                     {SLIDES[index].title}
                   </h3>
@@ -198,25 +198,25 @@ export default function FeatureCarousel() {
                 </div>
               </motion.div>
             </AnimatePresence>
-          </div>
 
-          {/* Tombol navigasi — bulat cyan mengambang di sisi tengah */}
-          <button
-            type="button"
-            onClick={prev}
-            aria-label="Slide sebelumnya"
-            className="absolute left-1 sm:left-[12%] top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-primary-500 text-white shadow-lg hover:bg-primary-600 hover:scale-110 active:scale-95 transition-all"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <button
-            type="button"
-            onClick={next}
-            aria-label="Slide berikutnya"
-            className="absolute right-1 sm:right-[12%] top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-11 h-11 rounded-full bg-primary-500 text-white shadow-lg hover:bg-primary-600 hover:scale-110 active:scale-95 transition-all"
-          >
-            <ChevronRight size={22} />
-          </button>
+            {/* Tombol navigasi — bulat cyan di tepi kiri/kanan dalam image */}
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Slide sebelumnya"
+              className="pointer-events-auto absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-primary-500 text-white shadow-lg hover:bg-primary-600 hover:scale-110 active:scale-95 transition-all"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Slide berikutnya"
+              className="pointer-events-auto absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-primary-500 text-white shadow-lg hover:bg-primary-600 hover:scale-110 active:scale-95 transition-all"
+            >
+              <ChevronRight size={22} />
+            </button>
+          </div>
 
           {/* Indikator titik — aktif cyan sesuai tema */}
           <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 z-10">
