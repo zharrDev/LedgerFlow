@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureSlide {
@@ -46,15 +46,15 @@ const TOTAL = SLIDES.length;
 
 // Posisi slot relatif thd slide aktif (dalam % lebar slide)
 const SLOT = {
-  "-2": { x: -128, scale: 0.84, opacity: 0, z: 1 },
-  "-1": { x: -64, scale: 0.84, opacity: 0.92, z: 2 },
+  "-2": { x: -140, scale: 0.84, opacity: 0, z: 1 },
+  "-1": { x: -70, scale: 0.84, opacity: 0.85, z: 2 },
   "0": { x: 0, scale: 1, opacity: 1, z: 3 },
-  "1": { x: 64, scale: 0.84, opacity: 0.92, z: 2 },
-  "2": { x: 128, scale: 0.84, opacity: 0, z: 1 },
+  "1": { x: 70, scale: 0.84, opacity: 0.85, z: 2 },
+  "2": { x: 140, scale: 0.84, opacity: 0, z: 1 },
 } as const;
 
-// ─── ✅ Fix B5 done: rolling track (5 slot) — prev/next mengintip,
-//      slide masuk dari kanan kecil lalu membesar, loop searah tanpa lompat ───
+// ─── ✅ Fix B6 done: 1 image 1 container oval (tanpa wrapper dalam);
+//      teks = overlay statis (crossfade), peek prev/next tipis ~7% ───
 export default function FeatureCarousel() {
   // Counter tak-terbatas: arah selalu maju (modulo hanya utk pilih konten)
   const [n, setN] = useState(0);
@@ -115,7 +115,7 @@ export default function FeatureCarousel() {
           onMouseLeave={() => setPaused(false)}
           className="relative w-[92%] sm:w-[82%] lg:w-[75%] max-w-5xl mx-auto aspect-video overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800 shadow-2xl"
         >
-          {/* Track gulir: prev mengintip kiri — aktif tengah membesar — next mengintip kanan */}
+          {/* Track gulir: tiap slide = 1 container oval berisi 1 image */}
           {renderKeys.map((k) => {
             const pos = String(k - n) as keyof typeof SLOT;
             const slot = SLOT[pos];
@@ -132,41 +132,59 @@ export default function FeatureCarousel() {
                   zIndex: slot.z,
                 }}
                 transition={transition}
-                style={{ width: "78%" }}
-                className="absolute left-1/2 top-1/2 h-full"
+                style={{ width: "80%" }}
+                className="absolute left-1/2 top-1/2 h-full rounded-full overflow-hidden shadow-lg bg-gray-300 dark:bg-gray-700"
               >
-                <div className="relative w-full h-full overflow-hidden rounded-full shadow-lg">
-                  <img
-                    src={s.image}
-                    alt={s.title}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-
-                  {/* Badge pill kecil (kiri atas) */}
-                  <div className="absolute top-3 left-3 sm:top-6 sm:left-6 bg-white rounded-full px-3 py-1 sm:px-4 sm:py-1.5 shadow-lg">
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
-                      LedgerFlow Features
-                    </span>
-                  </div>
-
-                  {/* Pill judul (bawah tengah) — kecil agar tak tertutup lengkung oval */}
-                  <div className="absolute inset-x-0 bottom-3 sm:bottom-6 flex justify-center px-3 sm:px-4">
-                    <div className="max-w-[85%] bg-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-xl">
-                      <h3 className="text-sm sm:text-xl lg:text-2xl font-extrabold text-gray-900 text-center leading-tight truncate">
-                        {s.title}
-                      </h3>
-                      <p className="hidden sm:block text-xs text-gray-600 text-center truncate">
-                        {s.desc}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <img
+                  src={s.image}
+                  alt={s.title}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
               </motion.div>
             );
           })}
+
+          {/* Teks statis di atas track — crossfade per slide */}
+          <div className="pointer-events-none absolute inset-0 z-10">
+            {/* Badge pill kecil (kiri atas) */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`badge-${n}`}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="absolute top-4 left-4 sm:top-7 sm:left-8 bg-white rounded-full px-3 py-1 sm:px-4 sm:py-1.5 shadow-lg"
+              >
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] text-gray-900 whitespace-nowrap">
+                  LedgerFlow Features
+                </span>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Pill judul + deskripsi (bawah tengah) */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`title-${n}`}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 16 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                className="absolute inset-x-0 bottom-3 sm:bottom-6 flex justify-center px-4 sm:px-8"
+              >
+                <div className="max-w-[85%] bg-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-xl">
+                  <h3 className="text-sm sm:text-xl lg:text-2xl font-extrabold text-gray-900 text-center leading-tight truncate">
+                    {SLIDES[index].title}
+                  </h3>
+                  <p className="hidden sm:block text-xs text-gray-600 text-center truncate">
+                    {SLIDES[index].desc}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
           {/* Tombol navigasi (kanan atas) — tema cyan */}
           <div className="absolute top-4 right-4 sm:top-7 sm:right-8 flex gap-2 z-10">
