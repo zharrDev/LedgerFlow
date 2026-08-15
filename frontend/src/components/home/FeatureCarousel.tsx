@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeatureSlide {
   title: string;
@@ -77,7 +76,7 @@ export default function FeatureCarousel() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative mx-auto w-[96%] max-w-[1700px]"
       >
-        <div className="relative mx-auto w-[74%] sm:w-[82%] lg:w-[84%] h-[300px] sm:h-[430px] lg:h-[600px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl">
+        <div className="relative mx-auto w-[70%] sm:w-[78%] lg:w-[80%] h-[280px] sm:h-[400px] lg:h-[550px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl">
           <AnimatePresence initial={false}>
             <motion.div
               key={n}
@@ -108,32 +107,12 @@ export default function FeatureCarousel() {
               className="absolute inset-x-0 bottom-8 sm:bottom-12 flex justify-center px-5 sm:px-12"
             >
               <div className="max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2.5 sm:px-8 sm:py-4 shadow-xl">
-                <h3 className="text-lg sm:text-3xl lg:text-4xl font-medium text-gray-900 text-center leading-tight truncate">
+                <h3 className="text-lg sm:text-3xl lg:text-4xl font-poppins font-medium text-gray-900 text-center leading-tight truncate">
                   {slide.title}
                 </h3>
               </div>
             </motion.div>
           </AnimatePresence>
-
-          {/* Tombol panah kecil kanan-atas, menimpa image */}
-          <div className="absolute top-4 right-4 sm:top-7 sm:right-10 flex gap-2 z-10">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Slide sebelumnya"
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-800 shadow-md hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Slide berikutnya"
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-800 shadow-md hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
         </div>
 
         {/* Sliver prev/next — bentuk pill setengah: ujung membulat terlihat,
