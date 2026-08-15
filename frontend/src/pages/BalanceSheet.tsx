@@ -345,15 +345,15 @@ export default function BalanceSheet() {
               );
             })()}
 
-            {/* SATU panel glass besar: KIRI = ASET utuh | KANAN = LIABILITAS+EKUITAS utuh */}
-            {/* ─── ✅ Fix A1 done: tiap section = 1 node utuh (wrap div eksplisit) ─── */}
+            {/* 3 card terpisah: ASET & LIABILITAS sampingan, EKUITAS di bawah tengah */}
+            {/* ─── ✅ Fix A4 done: per section jadi card sendiri (grid 2 kolom + EKUITAS center) ─── */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg"
+              className="space-y-5"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/10 dark:divide-white/5">
-                <div className="min-w-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="min-w-0 rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg">
                   <BalanceSheetTable
                     title="ASET"
                     accounts={balanceSheet.assets}
@@ -361,24 +361,22 @@ export default function BalanceSheet() {
                     emptyMessage="Tidak ada data aset"
                   />
                 </div>
-                <div className="min-w-0 divide-y divide-white/10 dark:divide-white/5">
-                  <div className="min-w-0">
-                    <BalanceSheetTable
-                      title="LIABILITAS"
-                      accounts={balanceSheet.liabilities}
-                      total={balanceSheet.total_liabilities}
-                      emptyMessage="Tidak ada data liabilitas"
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <BalanceSheetTable
-                      title="EKUITAS"
-                      accounts={balanceSheet.equity}
-                      total={balanceSheet.total_equity}
-                      emptyMessage="Tidak ada data ekuitas"
-                    />
-                  </div>
+                <div className="min-w-0 rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg">
+                  <BalanceSheetTable
+                    title="LIABILITAS"
+                    accounts={balanceSheet.liabilities}
+                    total={balanceSheet.total_liabilities}
+                    emptyMessage="Tidak ada data liabilitas"
+                  />
                 </div>
+              </div>
+              <div className="mx-auto w-full lg:w-[calc(50%-0.625rem)] min-w-0 rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg">
+                <BalanceSheetTable
+                  title="EKUITAS"
+                  accounts={balanceSheet.equity}
+                  total={balanceSheet.total_equity}
+                  emptyMessage="Tidak ada data ekuitas"
+                />
               </div>
             </motion.div>
           </>
