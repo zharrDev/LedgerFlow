@@ -513,9 +513,9 @@ export default function HomePage() {
 
       {/* ═══ Hero ═══ */}
       <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-contain bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/90 via-white/85 to-transparent dark:from-primary-950/80 dark:via-darkBg/85 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/95 via-white/90 to-transparent dark:from-primary-950/90 dark:via-darkBg/95 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-300/20 rounded-full blur-3xl" />
 
         <motion.div
