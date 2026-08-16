@@ -2,7 +2,6 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { verifyAdminGatePassword } from "../services/adminGateService";
-import logo from "../assets/ledgerflow.png";
 
 // Halaman gerbang admin — HANYA meminta password (tanpa email/username),
 // terpisah total dari alur login WhatsApp OTP user biasa. Tidak ditautkan
@@ -54,10 +53,6 @@ export default function AdminGatePage() {
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-darkBg p-4">
       <div className="w-full max-w-md mx-auto">
         <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-primary-500/20 rounded-2xl shadow-2xl p-6 sm:p-8">
-          <div className="flex justify-center mb-6">
-            <img src={logo} alt="LedgerFlow" className="w-12 h-12" />
-          </div>
-
           <div className="text-center mb-6">
             <div className="mx-auto w-12 h-12 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500 mb-3">
               <ShieldCheck size={22} />
