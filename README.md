@@ -692,6 +692,7 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | Method | Endpoint | Deskripsi |
 |---|---|---|
 | GET | `/api/journal` | List jurnal + search/filter/sort/pagination (`?search=&status=&period_id=&page=`) |
+| GET | `/api/journal/quota` | Sisa kuota jurnal bulan ini (banner plan Free) |
 | GET | `/api/journal/:id` | Detail jurnal + lines |
 | POST | `/api/journal` | Buat jurnal baru (owner/akuntan) |
 | PUT | `/api/journal/:id` | Edit jurnal draft (owner/akuntan) |
@@ -886,6 +887,7 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Sandbox mode dengan test-complete endpoint
 - Cancel subscription (downgrade ke Free)
 - Feature access control berdasarkan plan
+- **Kuota jurnal plan Free divalidasi di backend** (`journal.ts`): jurnal ke-51 di bulan yang sama ditolak dengan HTTP 403 — Pro/Enterprise unlimited. Sisa kuota tampil sebagai banner di halaman Journal Entry (`GET /api/journal/quota`)
 
 ### 8. Autentikasi
 - Register dengan email & password, atau **WhatsApp OTP** (tanpa password)

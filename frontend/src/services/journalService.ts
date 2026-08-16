@@ -71,6 +71,16 @@ export const journalService = {
     return mapJournal(data);
   },
 
+  getQuota: async (): Promise<{
+    max: number | null;
+    used: number;
+    left: number | null;
+    planName?: string;
+  }> => {
+    const { data } = await api.get("/api/journal/quota");
+    return data;
+  },
+
   remove: async (id: string): Promise<void> => {
     await api.delete(`/api/journal/${id}`);
   },

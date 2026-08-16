@@ -24,13 +24,13 @@ function isMissingFunction(err: any): boolean {
 // ── Kuota jurnal bulanan (plan Free: 50 jurnal/bulan) ────────────────
 // Ambil max_journals dari plan subscription user. Kalau null (unlimited)
 // atau 0, tidak ada kuota. Hitung jurnal yang SUDAH dibuat di bulan yang
-// sama dengan entry_date (termasuk draft & posted, tidak termasuk yang
-// soft-delete). Mengembalikan sisa kuota, atau null bila unlimited.
-async function getJournalQuotaLeft(
+// diminta (termasuk draft & posted, tidak termasuk yang soft-delete).
+async function getJournalQuota(
   userId: string,
   companyId: string,
-  entryDate: string,
-): Promise<{ left: number | null; planName?: string }> {
+  year: number,
+  month: number,
+): Promise<{ max: number | null; used: number; left: number | null; planName?: string }> {
   const { data: sub } = await supabase
     .from("subscriptions")
     .select("plans(name, max_journals)")
@@ -41,11 +41,10 @@ async function getJournalQuotaLeft(
   // query; normalisasi agar aman terhadap keduanya.
   const plans = Array.isArray(sub?.plans) ? sub.plans[0] : sub?.plans;
   const maxJournals = plans?.max_journals;
-  if (!maxJournals || maxJournals <= 0) return { left: null }; // unlimited
+  if (!maxJournals || maxJournals <= 0) {
+    return { max: null, used: 0, left: null, planName: plans?.name }; // unlimited
+  }
 
-  const dt = new Date(entryDate);
-  const year = dt.getFullYear();
-  const month = dt.getMonth() + 1;
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const nextMonth = month === 12 ? year + 1 : year;
   const nextMonthNum = month === 12 ? 1 : month + 1;
@@ -59,8 +58,29 @@ async function getJournalQuotaLeft(
     .gte("entry_date", startDate)
     .lt("entry_date", endDate);
 
-  return { left: Math.max(0, maxJournals - (count || 0)), planName: plans?.name };
+  const used = count || 0;
+  return {
+    max: maxJournals,
+    used,
+    left: Math.max(0, maxJournals - used),
+    planName: plans?.name,
+  };
 }
+
+// GET /api/journal/quota — sisa kuota jurnal bulan ini (buat banner di
+// halaman jurnal). WAJIB didaftarkan sebelum GET /:id agar "quota" tidak
+// ditangkap sebagai parameter id.
+journal.get("/quota", async (c) => {
+  const { company_id, sub } = c.get("user");
+  const now = new Date();
+  const quota = await getJournalQuota(
+    sub,
+    company_id,
+    now.getFullYear(),
+    now.getMonth() + 1,
+  );
+  return c.json(quota);
+});
 
 // GET /api/journal — list entries (dengan search, filter, sort, pagination)
 journal.get("/", async (c) => {
@@ -281,10 +301,11 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   // Plan Free hanya 50 jurnal per bulan (draft + posted). Upgrade ke Pro
   // untuk unlimited. Dihitung dari bulan entry_date, bukan bulan kalender
   // berjalan, supaya konsisten dengan periode yang dipilih.
-  const { left: quotaLeft, planName } = await getJournalQuotaLeft(
+  const { left: quotaLeft, planName } = await getJournalQuota(
     created_by,
     company_id,
-    entry_date,
+    entryDate.getFullYear(),
+    entryDate.getMonth() + 1,
   );
   if (quotaLeft !== null && quotaLeft <= 0) {
     return c.json(
