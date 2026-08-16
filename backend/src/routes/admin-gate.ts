@@ -151,13 +151,25 @@ adminGate.get("/logs", requireAdminGate, async (c) => {
 });
 
 // ────────────────────────────────────────────────────────────────────────
-// Pandangan READ-ONLY global untuk Admin (pemilik aplikasi).
+// Pandangan global untuk Admin (pemilik aplikasi).
 // Model role: per company hanya ada OWNER (akses penuh) & AKUNTAN
 // (pencatatan). ADMIN di sini adalah pemilik aplikasi web — boleh MELIHAT
-// status/data seluruh sistem, tapi TIDAK boleh mengubah/menginput apa pun.
-// Karena itu endpoint di bawah hanya GET (tanpa mutasi). Semua dilindungi
-// requireAdminGate (token admin-gate, bukan token user biasa).
+// status/data seluruh sistem dan melakukan MODERASI (menghapus user/
+// company bermasalah dengan konfirmasi), tapi TIDAK boleh mengubah data
+// bisnis (jurnal/akun/role). Endpoint GET = view; DELETE = moderasi saja.
+// Semua dilindungi requireAdminGate (token admin-gate, bukan token user
+// biasa).
 // ────────────────────────────────────────────────────────────────────────
+
+// Hitung jumlah owner di sebuah company (proteksi owner terakhir)
+async function countOwners(companyId: string): Promise<number> {
+  const { count } = await supabase
+    .from("users")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("role", "owner");
+  return count || 0;
+}
 
 // GET /api/admin-gate/users — semua user lintas company + nama company
 // (read-only: admin hanya boleh melihat)
@@ -188,6 +200,61 @@ adminGate.get("/companies", requireAdminGate, async (c) => {
     return c.json({ error: "Gagal memuat company" }, 500);
   }
   return c.json(data ?? []);
+});
+
+// ── Moderasi (satu-satunya aksi mutasi admin) ──────────────────────────
+
+// DELETE /api/admin-gate/users/:id — hapus user bermasalah.
+// Proteksi: owner terakhir sebuah company tidak bisa dihapus.
+adminGate.delete("/users/:id", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+
+  const { data: target } = await supabase
+    .from("users")
+    .select("id, role, company_id")
+    .eq("id", id)
+    .single();
+
+  if (!target) return c.json({ error: "User tidak ditemukan" }, 404);
+
+  if (target.role === "owner") {
+    const owners = await countOwners(target.company_id);
+    if (owners <= 1) {
+      return c.json(
+        { error: "Tidak bisa menghapus owner terakhir dari company-nya." },
+        400,
+      );
+    }
+  }
+
+  const { error: authErr } = await supabase.auth.admin.deleteUser(id);
+  if (authErr) {
+    console.error("[admin-gate] delete auth error:", authErr);
+    return c.json({ error: "Gagal menghapus user" }, 500);
+  }
+  return c.json({ message: "User berhasil dihapus" });
+});
+
+// DELETE /api/admin-gate/companies/:id — hapus company bermasalah.
+// PERINGATAN: menghapus company ikut menghapus seluruh datanya via CASCADE
+// (user, akun, periode, jurnal, dst). Frontend wajib konfirmasi eksplisit.
+adminGate.delete("/companies/:id", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("id, name")
+    .eq("id", id)
+    .single();
+
+  if (!company) return c.json({ error: "Company tidak ditemukan" }, 404);
+
+  const { error } = await supabase.from("companies").delete().eq("id", id);
+  if (error) {
+    console.error("[admin-gate] delete company error:", error);
+    return c.json({ error: "Gagal menghapus company" }, 500);
+  }
+  return c.json({ message: `Company "${company.name}" berhasil dihapus` });
 });
 
 export default adminGate;

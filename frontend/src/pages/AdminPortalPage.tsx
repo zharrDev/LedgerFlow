@@ -10,12 +10,15 @@ import {
   Activity,
   Users,
   Building2,
+  Trash2,
   ScrollText,
 } from "lucide-react";
 import {
   fetchAdminGateLogs,
   fetchAdminGateUsers,
   fetchAdminGateCompanies,
+  deleteAdminGateUser,
+  deleteAdminGateCompany,
   logoutAdminGate,
   type AdminGateLog,
   type AdminGateUser,
@@ -47,6 +50,7 @@ export default function AdminPortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const hasToken = !!getAdminGateToken();
 
@@ -94,6 +98,45 @@ export default function AdminPortalPage() {
   const handleLogout = () => {
     logoutAdminGate();
     navigate("/login", { replace: true });
+  };
+
+  // ── Moderasi: satu-satunya aksi mutasi admin (hapus user/company) ──
+  const handleDeleteUser = async (u: AdminGateUser) => {
+    if (
+      !window.confirm(
+        `Hapus user "${u.name}" (${u.email || u.phone || "-"})?\n\nTindakan ini menghapus akun beserta datanya dan tidak bisa dibatalkan.`,
+      )
+    )
+      return;
+    setBusyId(u.id);
+    setError("");
+    try {
+      await deleteAdminGateUser(u.id);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Gagal menghapus user.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDeleteCompany = async (c: AdminGateCompany) => {
+    if (
+      !window.confirm(
+        `Hapus company "${c.name}"?\n\nPERINGATAN: seluruh data company ini (user, akun, periode, jurnal, dll.) akan ikut terhapus permanen. Tindakan ini tidak bisa dibatalkan.`,
+      )
+    )
+      return;
+    setBusyId(c.id);
+    setError("");
+    try {
+      await deleteAdminGateCompany(c.id);
+      setCompanies((prev) => prev.filter((x) => x.id !== c.id));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "Gagal menghapus company.");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   if (!hasToken) {
@@ -168,7 +211,7 @@ export default function AdminPortalPage() {
               Dashboard Admin
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Tampilan read-only: audit log gerbang · semua user · semua company
+              Pantau seluruh sistem + moderasi (hapus user/company bermasalah)
             </p>
           </div>
         </div>
@@ -208,9 +251,18 @@ export default function AdminPortalPage() {
         ) : tab === "log" ? (
           <AuditLogView logs={logs} statusBadge={statusBadge} stats={stats} />
         ) : tab === "users" ? (
-          <UsersView users={users} roleBadge={roleBadge} />
+          <UsersView
+            users={users}
+            roleBadge={roleBadge}
+            busyId={busyId}
+            onDelete={handleDeleteUser}
+          />
         ) : (
-          <CompaniesView companies={companies} />
+          <CompaniesView
+            companies={companies}
+            busyId={busyId}
+            onDelete={handleDeleteCompany}
+          />
         )}
       </main>
     </div>
@@ -328,13 +380,17 @@ function AuditLogView({
   );
 }
 
-// ── Users view (READ-ONLY — admin hanya boleh melihat) ────────────────
+// ── Users view (tampilan + moderasi hapus) ─────────────────────────────
 function UsersView({
   users,
   roleBadge,
+  busyId,
+  onDelete,
 }: {
   users: AdminGateUser[];
   roleBadge: Record<string, string>;
+  busyId: string | null;
+  onDelete: (u: AdminGateUser) => void;
 }) {
   return (
     <Card>
@@ -343,7 +399,7 @@ function UsersView({
           Semua User (lintas company)
         </span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          Hanya tampilan — admin tidak dapat mengubah data
+          Moderasi: hapus user bermasalah (owner terakhir dilindungi)
         </span>
       </div>
       {users.length === 0 ? (
@@ -355,14 +411,16 @@ function UsersView({
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/30">
               <tr>
-                {["Nama", "Email / No. HP", "Company", "Role"].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ))}
+                {["Nama", "Email / No. HP", "Company", "Role", "Aksi"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -384,6 +442,16 @@ function UsersView({
                       {u.role}
                     </span>
                   </td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      onClick={() => onDelete(u)}
+                      disabled={busyId === u.id}
+                      title="Hapus user (moderasi)"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition disabled:opacity-40"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -394,13 +462,24 @@ function UsersView({
   );
 }
 
-// ── Companies view ────────────────────────────────────────────────────
-function CompaniesView({ companies }: { companies: AdminGateCompany[] }) {
+// ── Companies view (tampilan + moderasi hapus) ────────────────────────
+function CompaniesView({
+  companies,
+  busyId,
+  onDelete,
+}: {
+  companies: AdminGateCompany[];
+  busyId: string | null;
+  onDelete: (c: AdminGateCompany) => void;
+}) {
   return (
     <Card>
-      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Semua Company
+        </span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">
+          Moderasi: hapus company (seluruh datanya ikut terhapus)
         </span>
       </div>
       {companies.length === 0 ? (
@@ -412,7 +491,7 @@ function CompaniesView({ companies }: { companies: AdminGateCompany[] }) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/30">
               <tr>
-                {["Nama", "Mata Uang", "Dibuat"].map((h) => (
+                {["Nama", "Mata Uang", "Dibuat", "Aksi"].map((h) => (
                   <th
                     key={h}
                     className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -433,6 +512,16 @@ function CompaniesView({ companies }: { companies: AdminGateCompany[] }) {
                   </td>
                   <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {new Date(c.created_at).toLocaleDateString("id-ID")}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      onClick={() => onDelete(c)}
+                      disabled={busyId === c.id}
+                      title="Hapus company (moderasi)"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition disabled:opacity-40"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -78,3 +78,13 @@ export async function fetchAdminGateCompanies(): Promise<AdminGateCompany[]> {
   });
   return Array.isArray(res.data) ? (res.data as AdminGateCompany[]) : [];
 }
+
+// ── Moderasi (satu-satunya aksi mutasi admin — hapus user/company) ─────
+
+export async function deleteAdminGateUser(id: string): Promise<void> {
+  await api.delete(`/api/admin-gate/users/${id}`, { headers: authHeaders() });
+}
+
+export async function deleteAdminGateCompany(id: string): Promise<void> {
+  await api.delete(`/api/admin-gate/companies/${id}`, { headers: authHeaders() });
+}
