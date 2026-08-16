@@ -524,7 +524,8 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-[2.25rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
-              Manage Your Financial Future <br className="hidden sm:block" />
+              Manage Your Financial <br />
+              Future <br />
               <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
                 With Confidence
               </span>
