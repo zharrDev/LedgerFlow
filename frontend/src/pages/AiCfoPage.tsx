@@ -277,7 +277,7 @@ export default function AiCfoPage() {
 
           {/* Area chat utama */}
           <div className="flex flex-col flex-1 min-h-0 min-w-0">
-            <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500/10 to-emerald-500/10 shrink-0">
+            <div className="h-14 flex items-center gap-2 px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500/10 to-emerald-500/10 shrink-0">
               {!historyOpen && (
                 <button
                   type="button"

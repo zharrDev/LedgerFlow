@@ -41,79 +41,71 @@ export const BalanceSheetTable = ({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-2 px-5 sm:px-6 py-3.5 bg-primary-500/10 dark:bg-primary-500/15 border-b border-white/10 dark:border-white/5">
+    <div className="min-w-0 h-full flex flex-col">
+      <div className="flex items-center gap-2 px-5 sm:px-6 py-3.5 bg-primary-500/10 dark:bg-primary-500/15 border-b border-white/10 dark:border-white/5 shrink-0">
         <FileText size={14} className="text-primary-600 dark:text-primary-300" />
         <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
           {title}
         </h3>
       </div>
 
-      {/* Tampilan Desktop (table) */}
-      <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50/70 dark:bg-white/[0.03] border-b border-white/10 dark:border-white/5">
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                Kode
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                Nama Akun
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                Saldo
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {accounts.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={3}
-                  className="px-6 py-10 text-center text-gray-400"
-                >
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              pageItems.map((account) => (
-                <tr
-                  key={account.account_id}
-                  className="border-b border-white/5 hover:bg-white/5 dark:hover:bg-white/5 transition-colors"
-                >
-                  <td className="px-6 py-3.5 whitespace-nowrap text-sm font-mono font-medium text-gray-700 dark:text-slate-200">
-                    {account.account_code}
-                  </td>
-                  <td className="px-6 py-3.5 text-sm text-gray-800 dark:text-slate-300">
-                    {account.account_name}
-                  </td>
-                  <td className="px-6 py-3.5 whitespace-nowrap text-sm text-right font-semibold tabular-nums text-gray-900 dark:text-white">
-                    {formatCurrency(account.balance)}
-                  </td>
+      {/* Tampilan Desktop (table) — area konten flex-1, Total jadi footer menempel bawah */}
+      {accounts.length === 0 ? (
+        <div className="hidden sm:flex flex-1 min-h-0 items-center justify-center px-6 py-10 text-center text-gray-400">
+          {emptyMessage}
+        </div>
+      ) : (
+        <div className="hidden sm:flex flex-col flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50/70 dark:bg-white/[0.03] border-b border-white/10 dark:border-white/5">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Kode
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Nama Akun
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Saldo
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-          <tfoot>
-            <tr className="bg-gray-50/70 dark:bg-white/[0.03]">
-              <td
-                colSpan={2}
-                className="px-6 py-3.5 text-sm font-bold text-gray-800 dark:text-white"
-              >
-                Total {title}
-              </td>
-              <td className="px-6 py-3.5 text-sm font-bold text-right tabular-nums text-gray-900 dark:text-white">
-                {formatCurrency(total)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {pageItems.map((account) => (
+                  <tr
+                    key={account.account_id}
+                    className="border-b border-white/5 hover:bg-white/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <td className="px-6 py-3.5 whitespace-nowrap text-sm font-mono font-medium text-gray-700 dark:text-slate-200">
+                      {account.account_code}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-gray-800 dark:text-slate-300">
+                      {account.account_name}
+                    </td>
+                    <td className="px-6 py-3.5 whitespace-nowrap text-sm text-right font-semibold tabular-nums text-gray-900 dark:text-white">
+                      {formatCurrency(account.balance)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="shrink-0 bg-gray-50/70 dark:bg-white/[0.03] px-6 py-3.5 flex items-center justify-between">
+            <span className="text-sm font-bold text-gray-800 dark:text-white">
+              Total {title}
+            </span>
+            <span className="text-sm font-bold text-right tabular-nums text-gray-900 dark:text-white">
+              {formatCurrency(total)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Tampilan Mobile (card list) */}
-      <div className="sm:hidden p-4 space-y-3">
+      <div className="sm:hidden p-4 space-y-3 flex flex-col flex-1 min-h-0">
         {accounts.length === 0 ? (
-          <div className="py-8 text-center text-gray-400 text-sm">
+          <div className="flex-1 flex items-center justify-center py-8 text-center text-gray-400 text-sm">
             {emptyMessage}
           </div>
         ) : (
@@ -151,7 +143,7 @@ export const BalanceSheetTable = ({
         )}
 
         {accounts.length > 0 && (
-          <div className="flex justify-between items-center bg-white/50 dark:bg-white/5 rounded-xl p-4 mt-3 border border-white/10 dark:border-white/10">
+          <div className="flex justify-between items-center bg-white/50 dark:bg-white/5 rounded-xl p-4 mt-auto border border-white/10 dark:border-white/10">
             <span className="text-sm font-bold text-gray-700 dark:text-white">
               Total {title}
             </span>

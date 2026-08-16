@@ -26,7 +26,7 @@ function SessionListBody({
 }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="px-3 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
+      <div className="px-3 h-14 flex items-center shrink-0 border-b border-gray-200 dark:border-gray-700">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           Riwayat hari ini ({sessions.length})
         </p>
@@ -142,7 +142,7 @@ export function AiCfoHistoryPanel({
       transition={{ duration: 0.22, ease: "easeInOut" }}
       className="hidden md:flex flex-col shrink-0 overflow-hidden border-r border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40"
     >
-      <div className="flex w-64 flex-col flex-1 min-h-0 h-full pt-2">
+      <div className="flex w-64 flex-col flex-1 min-h-0 h-full">
         <SessionListBody
           sessions={sessions}
           activeSessionId={activeSessionId}
