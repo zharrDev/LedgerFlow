@@ -229,14 +229,6 @@ function AnimatedRoutes() {
         }
       />
       <Route
-        path="/chart-of-accounts"
-        element={
-          <ProtectedRoute>
-            <ChartOfAccounts />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/journal-entries"
         element={
           <ProtectedRoute>
@@ -249,14 +241,6 @@ function AnimatedRoutes() {
         element={
           <ProtectedRoute>
             <BukuBesarPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/period-management"
-        element={
-          <ProtectedRoute>
-            <PeriodManagement />
           </ProtectedRoute>
         }
       />
@@ -287,7 +271,7 @@ function AnimatedRoutes() {
       <Route
         path="/users-management"
         element={
-          <RoleRoute roles={["owner", "admin"]}>
+          <RoleRoute roles={["owner"]}>
             <UserManagementPage />
           </RoleRoute>
         }
@@ -295,7 +279,7 @@ function AnimatedRoutes() {
       <Route
         path="/period-management"
         element={
-          <RoleRoute roles={["owner", "admin"]}>
+          <RoleRoute roles={["owner"]}>
             <PeriodManagement />
           </RoleRoute>
         }
@@ -303,7 +287,7 @@ function AnimatedRoutes() {
       <Route
         path="/chart-of-accounts"
         element={
-          <RoleRoute roles={["owner", "admin", "akuntan"]}>
+          <RoleRoute roles={["owner", "akuntan"]}>
             <ChartOfAccounts />
           </RoleRoute>
         }

@@ -31,12 +31,14 @@ CREATE TABLE IF NOT EXISTS companies (
 );
 
 -- Users (references Supabase auth.users)
+-- Model role: per company hanya owner & akuntan. (Role 'admin' per-company
+-- dihapus — admin aplikasi adalah pemilik aplikasi via gerbang terpisah.)
 CREATE TABLE IF NOT EXISTS users (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   email       TEXT NOT NULL UNIQUE,
   name        TEXT NOT NULL,
-  role        TEXT NOT NULL CHECK (role IN ('admin', 'akuntan', 'owner')),
+  role        TEXT NOT NULL CHECK (role IN ('akuntan', 'owner')),
   avatar_url  TEXT,
   created_at  TIMESTAMPTZ DEFAULT now()
 );
@@ -347,9 +349,9 @@ CREATE TABLE IF NOT EXISTS company_members (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  -- Default 'member' TIDAK valid (CHECK hanya mengizinkan admin/akuntan/owner),
+  -- Default 'member' TIDAK valid (CHECK hanya mengizinkan akuntan/owner),
   -- karenanya default dihapus: insert tanpa role akan gagal eksplisit.
-  role        TEXT NOT NULL CHECK (role IN ('admin', 'akuntan', 'owner')),
+  role        TEXT NOT NULL CHECK (role IN ('akuntan', 'owner')),
   created_at  TIMESTAMPTZ DEFAULT now(),
   UNIQUE (user_id, company_id)
 );

@@ -124,10 +124,10 @@ export default function JournalEntryPage() {
 
   const { user } = useAuth();
   const myRole = user?.role || "";
-  // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus = admin & owner.
+  // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus = owner only.
   // Disembunyikan di frontend agar tidak muncul tombol yang pasti ditolak 403.
   const canCreatePost = myRole === "owner" || myRole === "akuntan";
-  const canDelete = myRole === "owner" || myRole === "admin";
+  const canDelete = myRole === "owner";
 
   const location = useLocation();
   const [view, setView] = useState<ViewState>({ mode: "list" });

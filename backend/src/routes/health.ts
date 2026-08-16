@@ -9,7 +9,7 @@ const health = new Hono();
 // GET /api/health/smtp-test
 // Kirim email uji untuk mendiagnosis konfigurasi SMTP (admin/owner saja).
 // Bisa pakai ?to=email@example.com untuk menargetkan alamat lain.
-health.get("/smtp-test", authMiddleware, requireRole("admin", "owner"), async (c) => {
+health.get("/smtp-test", authMiddleware, requireRole("owner"), async (c) => {
   const user = c.get("user");
   const to = c.req.query("to") || user.email || "";
   const result = await probeSmtp(to);
@@ -91,7 +91,7 @@ async function isSafeFetchUrl(rawUrl: string): Promise<{ ok: boolean; reason?: s
 
 // GET /api/health/net-test?url=https://...
 // Cek keterjangkauan URL dari jaringan server (untuk memilih jalur email API).
-health.get("/net-test", authMiddleware, requireRole("admin", "owner"), async (c) => {
+health.get("/net-test", authMiddleware, requireRole("owner"), async (c) => {
   const url = c.req.query("url");
   if (!url) return c.json({ ok: false, error: "param url wajib" }, 400);
   if (url.length > 2048) return c.json({ ok: false, error: "url terlalu panjang" }, 400);

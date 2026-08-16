@@ -3,7 +3,7 @@
  * Jalankan: npm run seed
  *
  * Membuat:
- *  - 3 akun demo (Owner / Admin / Akuntan) via Supabase Auth admin API
+ *  - 2 akun demo (Owner / Akuntan) via Supabase Auth admin API
  *  - 1 company demo
  *  - Chart of Accounts (26 akun)
  *  - 12 periode (1 tahun berjalan)
@@ -26,18 +26,17 @@ const DEMO_COMPANY = {
 };
 
 // Nomor WhatsApp demo bisa di-override via env (format 08xx / +62xx / 62xx):
-//   DEMO_OWNER_PHONE, DEMO_ADMIN_PHONE, DEMO_AKUNTAN_PHONE
+//   DEMO_OWNER_PHONE, DEMO_AKUNTAN_PHONE
 // Default di bawah hanyalah placeholder — OTP WA hanya akan sampai ke nomor
 // ASLI yang bisa menerima pesan (butuh FONNTE_TOKEN aktif).
+// Catatan: model role baru = per company hanya owner & akuntan.
 const DEMO_PHONES: Record<string, string> = {
   "owner@demo.com": process.env.DEMO_OWNER_PHONE || "081234567890",
-  "admin@demo.com": process.env.DEMO_ADMIN_PHONE || "081298765430",
   "akuntan@demo.com": process.env.DEMO_AKUNTAN_PHONE || "081245678901",
 };
 
 const DEMO_USERS = [
   { email: "owner@demo.com", name: "Budi Santoso", role: "owner" },
-  { email: "admin@demo.com", name: "Siti Rahayu", role: "admin" },
   { email: "akuntan@demo.com", name: "Agus Wijaya", role: "akuntan" },
 ];
 

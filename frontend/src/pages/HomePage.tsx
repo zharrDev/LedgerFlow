@@ -155,7 +155,7 @@ const featureCards: Array<{
   {
     icon: KeyRound,
     title: "Role-Based Access",
-    desc: "Owner, Admin, and Accountant roles with tailored permissions",
+    desc: "Owner and Accountant roles with tailored permissions",
   },
   {
     icon: ShieldCheck,

@@ -61,7 +61,7 @@ accounts.get("/", async (c) => {
 
 // POST ACCOUNT
 // Membuat akun baru dan otomatis menentukan normal balance dari type
-accounts.post("/", requireRole("admin", "akuntan", "owner"), async (c) => {
+accounts.post("/", requireRole("akuntan", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
     const body = await c.req.json();
@@ -127,7 +127,7 @@ accounts.post("/", requireRole("admin", "akuntan", "owner"), async (c) => {
 
 // PUT ACCOUNT
 // Update akun milik company yang sedang login
-accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
+accounts.put("/:id", requireRole("akuntan", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
     const id = c.req.param("id");
@@ -259,8 +259,9 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
 });
 
 // DELETE ACCOUNT
-// Soft delete: akun tidak dihapus permanen, hanya dinonaktifkan
-accounts.delete("/:id", requireRole("admin"), async (c) => {
+// Soft delete: akun tidak dihapus permanen, hanya dinonaktifkan.
+// Hanya owner (role admin per-company sudah tidak ada).
+accounts.delete("/:id", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
 

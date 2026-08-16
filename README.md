@@ -33,7 +33,7 @@
 | 1 | Responsive layout (mobile/tablet/desktop) | ⚠️ | Bottom Navigation mobile (tab + bottom sheet) & drawer terpasang; belum diverifikasi tiap halaman utama bebas overflow di 3 breakpoint |
 | 2 | Auth flow: Login, Register, Logout, **Forgot Password**, **Reset Password** | ✅ | Semua halaman ada: Login, Register, ForgotPassword, ResetPassword, Logout via menu user |
 | 2a | JWT disimpan di Local Storage/Cookie | ✅ | Token & user disimpan di `localStorage` via `AuthContext` |
-| 3 | Routing: Public, Private, **Role Route**, redirect jika tanpa akses | ✅ | `PublicRoute`, `ProtectedRoute`, `RoleRoute` (owner/admin/akuntan) — redirect ke `/dashboard` bila role tidak berhak |
+| 3 | Routing: Public, Private, **Role Route**, redirect jika tanpa akses | ✅ | `PublicRoute`, `ProtectedRoute`, `RoleRoute` (owner/akuntan) — redirect ke `/dashboard` bila role tidak berhak |
 | 4 | Dashboard real-time (card summary, total data, statistik, aktivitas terbaru) | ✅ | `useDashboardData` + `DashboardPage` |
 | 5 | CRUD Interface lengkap (List/Detail/Tambah/Edit/Hapus) per data utama | ⚠️ | Chart of Accounts & Journal lengkap (list/detail/form edit/hapus). Modul lain read-only sesuai sifatnya |
 | 6 | Search, Filter (status/kategori/tanggal), Sorting (terbaru/terlama/A-Z/Z-A), bisa dipakai bersamaan | ✅ | Chart of Accounts (search + filter tipe/status), Journal (search + filter status), Buku Besar (filter akun/range tanggal) |
@@ -49,7 +49,7 @@
 |---|---|---|---|
 | 1 | REST API standar (GET/POST/PUT/PATCH/DELETE) + status code sesuai | ✅ | Konsisten: 400/401/403/404/409/422/500 sesuai kasus |
 | 2 | Register, Login, **Logout**, Refresh Token (opsional), **Forgot Password**, **Reset Password** | ✅ | `/logout` (audit), `/forgot-password`, `/reset-password`, plus WhatsApp OTP (`/api/wa/{register,login}/{start,verify}`) |
-| 3 | RBAC minimal 2 role, hak akses beda | ✅ | 3 role: owner/admin/akuntan via `requireRole` |
+| 3 | RBAC minimal 2 role, hak akses beda | ✅ | Per company: owner & akuntan via `requireRole`; admin aplikasi (pemilik aplikasi) lewat gerbang terpisah, read-only + moderasi |
 | 4 | CRUD lengkap (C/R/U/D) di minimal 6 entitas utama, tidak boleh dummy | ✅ | Full CRUD: `accounts`, `journal` (incl. PUT & soft-delete), `periods` (incl. DELETE), `users`, `users-management`, `subscriptions` |
 | 5 | Server-side validation (required/email/unique/min/max/enum/numeric/date), error JSON | ✅ | Validasi manual + error handler global JSON di semua route POST/PUT |
 | 6 | Upload file (gambar/PDF) di backend | ✅ | `POST /api/upload/avatar` & `/api/upload/proof` → Supabase Storage (bucket `avatars`, `payment-proofs`) |
@@ -70,7 +70,7 @@
 | 4 | Normalisasi minimal 3NF | ✅ | Struktur sudah cukup ternormalisasi |
 | 5 | Timestamp `created_at` & `updated_at` di **setiap** tabel utama | ✅ | Trigger `set_updated_at` di 6 tabel utama (companies, users, accounts, periods, journal_entries, journal_entry_lines) |
 | 6 | Soft delete minimal 2 tabel | ✅ | `accounts` (`is_active`) + `journal_entries` (`deleted_at`) |
-| 7 | Seed data minimal 20 data/tabel utama | ✅ | `npm run seed` (backend): 3 user, 26 akun, 12 periode, 54 jurnal + lines, company & members |
+| 7 | Seed data minimal 20 data/tabel utama | ✅ | `npm run seed` (backend): 2 user, 26 akun, 12 periode, 54 jurnal + lines, company & members |
 
 ### TATA CARA PENGUMPULAN
 
@@ -190,7 +190,7 @@ LedgerFlow/
 │   │   │   ├── user-management.ts     # Kelola anggota company + role (RBAC)
 │   │   │   ├── upload.ts             # Upload avatar & bukti pembayaran ke Storage
 │   │   │   ├── companies.ts           # Manajemen perusahaan
-│   │   │   ├── health.ts              # Diagnostik SMTP / jaringan (admin)
+│   │   │   ├── health.ts              # Diagnostik SMTP / jaringan (owner)
 │   │   │   └── ai.ts                  # POST /api/ai/chat — AI CFO
 │   │   ├── ai/                         # LangGraph AI CFO Assistant
 │   │   │   ├── graph/                  # StateGraph + router agent
@@ -393,9 +393,10 @@ Autentikasi alternatif berbasis OTP WhatsApp (gateway **Fonnte**) untuk register
 
 1. **`authMiddleware`** — Middleware utama:
    - Ekstrak dan verifikasi Bearer token dari header `Authorization`
+   - Revalidasi role & `company_id` dari database setiap request (anti stale-JWT)
    - Simpan payload user ke context untuk digunakan di route handlers
 
-2. **`requireRole(...roles)`** — Middleware untuk membatasi akses berdasarkan role user
+2. **`requireRole(...roles)`** — Middleware untuk membatasi akses berdasarkan role user (per company: `owner` / `akuntan`)
 
 ### Supabase Client (`backend/src/lib/supabase.ts`)
 
@@ -442,15 +443,15 @@ Sistem pembayaran terintegrasi dengan **Midtrans** (payment gateway Indonesia) d
 ### Chart of Accounts (`backend/src/routes/accounts.ts`)
 
 - **`GET /`** — Ambil semua akun milik company (search/sort/pagination, urutan kode ascending)
-- **`POST /`** — Buat akun baru (admin/akuntan/owner):
+- **`POST /`** — Buat akun baru (owner/akuntan):
   - Mapping tipe frontend ke enum database
   - Otomatis tentukan `normal_balance` dari tipe akun
   - Dukungan `parent_id` untuk hierarki akun
-- **`PUT /:id`** — Update akun (admin/akuntan/owner):
+- **`PUT /:id`** — Update akun (owner/akuntan):
   - Mapping ulang tipe akun
   - Hapus field undefined agar tidak overwrite
   - Multi-tenant guard via `company_id`
-- **`DELETE /:id`** — Soft delete (set `is_active: false`), admin only
+- **`DELETE /:id`** — Soft delete (set `is_active: false`), owner only
 
 ### Journal Entries (`backend/src/routes/journal.ts`)
 
@@ -462,7 +463,7 @@ Sistem pembayaran terintegrasi dengan **Midtrans** (payment gateway Indonesia) d
   - Validasi saldo debit = kredit
   - Ganti seluruh lines via `accountCode` → `account_id`
 - **`POST /:id/post`** — Posting jurnal (draft → posted)
-- **`DELETE /:id`** — Hapus jurnal (owner/admin) — **soft delete** (set `deleted_at`), periode closed ditolak
+- **`DELETE /:id`** — Hapus jurnal (owner only) — **soft delete** (set `deleted_at`), periode closed ditolak
 
 ### Upload & Storage (`backend/src/routes/upload.ts` + `lib/storage.ts`)
 
@@ -516,7 +517,7 @@ Provider wrapping:
 **Route Guards:**
 - **`ProtectedRoute`** — Cek `token` dan `loading` dari `useAuth()`. Jika belum login, redirect ke `/login`. Menampilkan spinner saat loading.
 - **`PublicRoute`** — Jika sudah login, redirect ke `/dashboard`.
-- **`RoleRoute`** — Cek role user (`owner`/`admin`/`akuntan`). Jika role tidak berhak, redirect ke `/dashboard`.
+- **`RoleRoute`** — Cek role user (`owner`/`akuntan`). Jika role tidak berhak, redirect ke `/dashboard`.
 
 **Theme System:**
 - Inisialisasi tema dari localStorage
@@ -534,11 +535,11 @@ Provider wrapping:
 | `/reset-password` | ResetPasswordPage | - |
 | `/onboarding` | OnboardingPage | ProtectedRoute |
 | `/dashboard` | DashboardPage | ProtectedRoute |
-| `/chart-of-accounts` | ChartOfAccounts | RoleRoute (owner/admin/akuntan) |
+| `/chart-of-accounts` | ChartOfAccounts | RoleRoute (owner/akuntan) |
 | `/journal-entries` | JournalEntryPage | ProtectedRoute |
 | `/buku-besar` | BukuBesarPage | ProtectedRoute |
-| `/period-management` | PeriodManagement | RoleRoute (owner/admin) |
-| `/users-management` | UserManagementPage | RoleRoute (owner/admin) |
+| `/period-management` | PeriodManagement | RoleRoute (owner) |
+| `/users-management` | UserManagementPage | RoleRoute (owner) |
 | `/profile` | ProfilePage | ProtectedRoute |
 | `/settings` | SettingsPage | ProtectedRoute |
 | `/help-center` | HelpCenterPage | ProtectedRoute |
@@ -652,7 +653,7 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 2. **Trigger `set_updated_at`** — `updated_at` otomatis diperbarui di 6 tabel utama
 3. **Soft delete** — `journal_entries.deleted_at` + `accounts.is_active`
 4. **Supabase Storage buckets** — `avatars` & `payment-proofs` (public) dibuat lewat SQL
-5. **Seed data** — `npm run seed` (backend): 3 user, 26 akun, 12 periode, 54 jurnal
+5. **Seed data** — `npm run seed` (backend): 2 user, 26 akun, 12 periode, 54 jurnal
 6. **Migration WA auth** — `migration-wa-auth.sql`: tabel `wa_otp_codes`, kolom `users.phone` + `phone_verified` (menggantikan `otp_codes` lama)
 
 ---
@@ -683,9 +684,9 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | Method | Endpoint | Deskripsi |
 |---|---|---|
 | GET | `/api/accounts` | List akun + search/sort/pagination (`?search=&page=&limit=`) |
-| POST | `/api/accounts` | Buat akun baru (admin/akuntan/owner) |
-| PUT | `/api/accounts/:id` | Update akun (admin/akuntan/owner) |
-| DELETE | `/api/accounts/:id` | Soft delete akun (admin) |
+| POST | `/api/accounts` | Buat akun baru (owner/akuntan) |
+| PUT | `/api/accounts/:id` | Update akun (owner/akuntan) |
+| DELETE | `/api/accounts/:id` | Soft delete akun (owner) |
 
 ### Journal Entries
 | Method | Endpoint | Deskripsi |
@@ -719,16 +720,16 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | Method | Endpoint | Deskripsi |
 |---|---|---|
 | GET | `/api/periods` | List periode |
-| POST | `/api/periods` | Buka periode baru (admin/owner) |
-| PATCH | `/api/periods/:id/close` | Tutup periode (admin/owner) |
-| DELETE | `/api/periods/:id` | Hapus periode (admin/owner, hanya bila kosong & belum closed) |
+| POST | `/api/periods` | Buka periode baru (owner) |
+| PATCH | `/api/periods/:id/close` | Tutup periode (owner) |
+| DELETE | `/api/periods/:id` | Hapus periode (owner, hanya bila kosong & belum closed) |
 
 ### User Management
 | Method | Endpoint | Deskripsi |
 |---|---|---|
-| GET | `/api/users-management` | List anggota company + search/role/pagination (admin/owner) |
-| PUT | `/api/users-management/:id/role` | Ubah role user (admin/owner) |
-| DELETE | `/api/users-management/:id` | Hapus user dari company (admin/owner) |
+| GET | `/api/users-management` | List anggota company + search/role/pagination (owner) |
+| PUT | `/api/users-management/:id/role` | Ubah role user (owner) |
+| DELETE | `/api/users-management/:id` | Hapus user dari company (owner) |
 
 ### Upload
 | Method | Endpoint | Deskripsi |
@@ -926,15 +927,14 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 
 ## Akun Demo
 
-Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang kali). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 3 user, 26 akun, 12 periode, dan 54 jurnal (6 bulan pertama tahun berjalan).
+Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang kali). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 2 user, 26 akun, 12 periode, dan 54 jurnal (6 bulan pertama tahun berjalan).
 
 | Role | Email | Password | No. WhatsApp (default) |
 |---|---|---|---|
 | Owner | `owner@demo.com` | `Demo123!` | `081234567890` |
-| Admin | `admin@demo.com` | `Demo123!` | `081298765430` |
 | Akuntan | `akuntan@demo.com` | `Demo123!` | `081245678901` |
 
-> Semua akun demo berada di company yang sama (`PT-DEMO-001`), sehingga admin/owner bisa melihat ketiganya lewat halaman **User Management** dan langsung mencoba fitur ubah role.
+> Kedua akun demo berada di company yang sama (`PT-DEMO-001`), sehingga owner bisa melihat keduanya lewat halaman **User Management** dan langsung mencoba fitur ubah role.
 
 ### Cara Login
 
@@ -946,7 +946,6 @@ Ada **dua metode** di halaman login:
 ```env
 # backend/.env
 DEMO_OWNER_PHONE=08xxxxxxxxxx
-DEMO_ADMIN_PHONE=08xxxxxxxxxx
 DEMO_AKUNTAN_PHONE=08xxxxxxxxxx
 ```
 
@@ -956,23 +955,24 @@ cd backend && npm run seed
 
 ### Perbedaan Role (biar bisa dicoba-coba)
 
-Ketiganya berada di halaman yang sama (dashboard, COA, jurnal, buku besar, laporan) — bedanya terletak pada **tindakan** yang boleh dilakukan:
+Keduanya berada di halaman yang sama (dashboard, COA, jurnal, buku besar, laporan) — bedanya terletak pada **tindakan** yang boleh dilakukan:
 
-| Aksi | Owner | Admin | Akuntan |
-|---|---|---|---|
-| Input & posting jurnal | ✅ | ❌ | ✅ |
-| Edit hapus draft jurnal | ✅ | ✅ | ✅ |
-| Buat / edit akun (COA) | ✅ | ✅ | ✅ |
-| Hapus (nonaktifkan) akun | ❌ | ✅ | ❌ |
-| Buka / tutup / hapus periode | ✅ | ✅ | ❌ |
-| Kelola anggota & ubah role | ✅ | ✅ | ❌ |
-| Laporan, buku besar, dashboard | ✅ | ✅ | ✅ |
+| Aksi | Owner | Akuntan |
+|---|---|---|
+| Input & posting jurnal | ✅ | ✅ |
+| Edit hapus draft jurnal | ✅ | ✅ |
+| Buat / edit akun (COA) | ✅ | ✅ |
+| Hapus (nonaktifkan) akun | ✅ | ❌ |
+| Buka / tutup / hapus periode | ✅ | ❌ |
+| Kelola anggota & ubah role | ✅ | ❌ |
+| Laporan, buku besar, dashboard | ✅ | ✅ |
 
-- **Owner** (`owner@demo.com`) — akses penuh: jurnal, akun, periode, dan manajemen anggota.
-- **Admin** (`admin@demo.com`) — fokus manajemen: bisa **hapus akun** dan kelola periode/anggota, tapi **tidak bisa input jurnal**.
+- **Owner** (`owner@demo.com`) — akses penuh: jurnal, akun, periode, dan manajemen anggota. Satu-satunya yang bisa kelola anggota & ubah role.
 - **Akuntan** (`akuntan@demo.com`) — fokus pencatatan: input & posting jurnal, kelola akun; **tidak bisa** hapus akun, kelola periode, atau kelola anggota.
 
-Coba alur ini: login sebagai **Admin** → halaman **User Management** → ubah role **Akuntan** menjadi **Admin**, lalu logout & login sebagai **Owner** untuk melihat hasilnya.
+> **Admin aplikasi** (pemilik aplikasi, bukan anggota company) tidak ada di tabel ini — dia masuk lewat gerbang terpisah (`/portal-akses`) dan hanya **read-only + moderasi** (lihat seluruh sistem, hapus user/company bermasalah).
+
+Coba alur ini: login sebagai **Owner** → halaman **User Management** → ubah role **Akuntan** menjadi **Owner** (atau sebaliknya), lalu logout & login sebagai **Akuntan** untuk melihat perbedaannya.
 
 ---
 

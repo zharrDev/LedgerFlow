@@ -130,7 +130,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     section: "menu",
     desktopOrder: 8,
-    roles: ["owner", "admin"],
+    roles: ["owner"],
     keywords: ["periode", "period", "buka", "tutup"],
   },
   {
@@ -140,7 +140,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     section: "menu",
     desktopOrder: 9,
-    roles: ["owner", "admin"],
+    roles: ["owner"],
     keywords: ["user", "users", "management", "member", "role"],
   },
   {

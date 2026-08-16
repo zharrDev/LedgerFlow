@@ -26,7 +26,7 @@ periods.get("/", async (c) => {
 
 // OPEN NEW PERIOD (POST)
 // company_id diambil dari JWT, bukan dari body (cegah bikin periode untuk company lain).
-periods.post("/", requireRole("admin", "owner"), async (c) => {
+periods.post("/", requireRole("owner"), async (c) => {
   const user = c.get("user");
   const { year, month } = await c.req.json();
 
@@ -54,7 +54,7 @@ periods.post("/", requireRole("admin", "owner"), async (c) => {
 
 // CLOSE PERIOD (PATCH)
 // Menutup periode agar tidak bisa dipakai input transaksi lagi.
-periods.patch("/:id/close", requireRole("admin", "owner"), async (c) => {
+periods.patch("/:id/close", requireRole("owner"), async (c) => {
   const id = c.req.param("id");
   const user = c.get("user");
 
@@ -87,7 +87,7 @@ periods.patch("/:id/close", requireRole("admin", "owner"), async (c) => {
 
 // DELETE PERIOD (DELETE)
 // Hanya periode yang masih open & belum punya jurnal (non-deleted) yang bisa dihapus.
-periods.delete("/:id", requireRole("admin", "owner"), async (c) => {
+periods.delete("/:id", requireRole("owner"), async (c) => {
   const id = c.req.param("id");
   const user = c.get("user");
 

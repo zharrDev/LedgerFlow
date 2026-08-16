@@ -8,7 +8,10 @@ const userMgmt = new Hono();
 
 userMgmt.use("*", authMiddleware);
 
-const ALLOWED_ROLES = ["admin", "akuntan", "owner"] as const;
+// Model role baru: per company hanya ada owner & akuntan.
+// (Role "admin" per-company dihapus — admin aplikasi sekarang adalah
+// pemilik aplikasi yang masuk lewat gerbang terpisah, read-only + moderasi.)
+const ALLOWED_ROLES = ["akuntan", "owner"] as const;
 
 // Hitung jumlah owner di sebuah perusahaan (untuk proteksi owner terakhir)
 async function countOwners(companyId: string): Promise<number> {
@@ -30,10 +33,10 @@ async function getCompanyName(companyId: string): Promise<string> {
 }
 
 // POST /api/users-management
-// Tambah anggota baru ke perusahaan (owner/admin).
-// Saat ini hanya boleh membuat role admin / akuntan — owner hanya bisa
+// Tambah anggota baru ke perusahaan (owner only).
+// Anggota baru selalu dibuat sebagai akuntan — role owner hanya bisa
 // diberikan lewat route ganti role oleh owner.
-userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
+userMgmt.post("/", requireRole("owner"), async (c) => {
   try {
     const { company_id: companyId, sub: myId } = c.get("user");
     const { name, email, role } = await c.req.json();
@@ -44,8 +47,8 @@ userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return c.json({ error: "Format email tidak valid." }, 400);
     }
-    if (!["admin", "akuntan"].includes(role)) {
-      return c.json({ error: "Role anggota hanya bisa admin atau akuntan." }, 400);
+    if (role !== "akuntan") {
+      return c.json({ error: "Anggota baru hanya bisa dibuat dengan role akuntan." }, 400);
     }
 
     const { data: existing, error: findErr } = await supabase
@@ -133,8 +136,8 @@ userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
   }
 });
 
-// GET / (list)
-userMgmt.get("/", requireRole("admin", "owner"), async (c) => {
+// GET / (list) — hanya owner
+userMgmt.get("/", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
   const { search, sort, role, page, limit } = c.req.query();
 
@@ -162,19 +165,17 @@ userMgmt.get("/", requireRole("admin", "owner"), async (c) => {
   return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
-// PUT /:id/role
-// Standar RBAC:
-// - Owner: boleh mengubah role siapa pun (kecuali aturannya sendiri tetap diproteksi owner terakhir).
-// - Admin: TIDAK boleh menyentuh role owner (tidak bisa mengubah/memberi role owner).
-// - Owner terakhir tidak boleh didemote.
-userMgmt.put("/:id/role", requireRole("admin", "owner"), async (c) => {
-  const { company_id, role: myRole } = c.get("user");
+// PUT /:id/role — hanya owner
+// Owner boleh mengubah role siapa pun antara akuntan <-> owner,
+// dengan proteksi: owner terakhir tidak boleh didemote.
+userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
+  const { company_id } = c.get("user");
   const id = c.req.param("id");
   const { role } = await c.req.json();
 
   if (!ALLOWED_ROLES.includes(role)) {
     return c.json(
-      { error: "Role tidak valid. Pilih: admin, akuntan, atau owner." },
+      { error: "Role tidak valid. Pilih: akuntan atau owner." },
       400,
     );
   }
@@ -188,15 +189,6 @@ userMgmt.put("/:id/role", requireRole("admin", "owner"), async (c) => {
   if (!targetUser) return c.json({ error: "User tidak ditemukan" }, 404);
   if (targetUser.company_id !== company_id) {
     return c.json({ error: "Forbidden" }, 403);
-  }
-
-  if (myRole === "admin") {
-    if (targetUser.role === "owner" || role === "owner") {
-      return c.json(
-        { error: "Hanya owner yang bisa mengubah role owner." },
-        403,
-      );
-    }
   }
 
   if (targetUser.role === "owner" && role !== "owner") {
@@ -218,9 +210,9 @@ userMgmt.put("/:id/role", requireRole("admin", "owner"), async (c) => {
   return c.json({ message: "Role berhasil diubah" });
 });
 
-// DELETE /:id
-userMgmt.delete("/:id", requireRole("admin", "owner"), async (c) => {
-  const { company_id, role: myRole, sub: myId } = c.get("user");
+// DELETE /:id — hanya owner
+userMgmt.delete("/:id", requireRole("owner"), async (c) => {
+  const { company_id, sub: myId } = c.get("user");
   const id = c.req.param("id");
 
   if (id === myId) {
@@ -236,10 +228,6 @@ userMgmt.delete("/:id", requireRole("admin", "owner"), async (c) => {
   if (!targetUser) return c.json({ error: "User tidak ditemukan" }, 404);
   if (targetUser.company_id !== company_id) {
     return c.json({ error: "Forbidden" }, 403);
-  }
-
-  if (myRole === "admin" && targetUser.role === "owner") {
-    return c.json({ error: "Hanya owner yang bisa menghapus owner." }, 403);
   }
 
   if (targetUser.role === "owner") {

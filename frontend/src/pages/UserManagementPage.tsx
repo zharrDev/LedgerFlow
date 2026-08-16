@@ -27,19 +27,16 @@ type UserData = {
 
 const roleIcons: Record<string, typeof Shield> = {
   owner: ShieldCheck,
-  admin: Shield,
   akuntan: User,
 };
 
 const roleColors: Record<string, string> = {
   owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  admin: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
 };
 
 const ALL_ROLES = [
   { value: "owner", label: "Owner" },
-  { value: "admin", label: "Admin" },
   { value: "akuntan", label: "Akuntan" },
 ];
 
@@ -57,13 +54,10 @@ export default function UserManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Owner melihat semua opsi role; Admin hanya admin/akuntan
-  const roleOptions =
-    myRole === "owner" ? ALL_ROLES : ALL_ROLES.filter((r) => r.value !== "owner");
-
-  // Baris owner hanya boleh diubah oleh owner
-  const canManageRole = (row: UserData) =>
-    myRole === "owner" || row.role !== "owner";
+  // Halaman ini hanya bisa diakses owner (RoleRoute), jadi semua baris editable.
+  // Owner boleh mengubah role antara owner <-> akuntan.
+  const roleOptions = ALL_ROLES;
+  const canManageRole = () => true;
 
   const fetchUsers = async () => {
     try {
@@ -187,7 +181,7 @@ export default function UserManagementPage() {
         <div className="space-y-3">
           {users.map((user, idx) => {
             const RoleIcon = roleIcons[user.role] || User;
-            const editable = canManageRole(user);
+            const editable = canManageRole();
             return (
               <motion.div
                 key={user.id}

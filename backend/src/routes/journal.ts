@@ -645,7 +645,7 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
 });
 
 // DELETE /api/journal/:id — soft delete (set deleted_at, tidak hapus permanen)
-journal.delete("/:id", requireRole("admin", "owner"), async (c) => {
+journal.delete("/:id", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
 
