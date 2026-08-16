@@ -515,7 +515,7 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/95 via-white/90 to-transparent dark:from-primary-900/90 dark:via-darkBg/95 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/70 via-darkBg/80 to-transparent pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-300/20 rounded-full blur-3xl" />
 
         <motion.div
@@ -527,13 +527,13 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-[2rem] leading-[1.15] sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <h2 className="text-[2rem] leading-[1.15] sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
               Manage Your Financial Future <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent break-words">
+              <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
                 With Confidence
               </span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto px-2">
+            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto px-2">
               LedgerFlow eliminates manual bookkeeping, speeds up month-end
               close, and gives you real-time financials.
             </p>
@@ -555,14 +555,14 @@ export default function HomePage() {
                   </Link>
                   <Link
                     to="/login"
-                    className="w-full sm:w-auto text-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
                   >
                     See how it works
                   </Link>
                 </>
               )}
             </div>
-            <p className="mt-6 text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center justify-center gap-2 px-4 text-center">
+            <p className="mt-6 text-xs sm:text-sm text-gray-300 flex flex-wrap items-center justify-center gap-2 px-4 text-center">
               <Lock size={14} className="flex-shrink-0" /> Enterprise-grade
               security · SOC 2 Type II · GDPR
             </p>
@@ -575,8 +575,8 @@ export default function HomePage() {
           transition={{ delay: 1, duration: 1 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <div className="w-6 h-10 rounded-full border-2 border-gray-400 flex justify-center">
-            <div className="w-1 h-2 bg-gray-400 rounded-full mt-2 animate-bounce" />
+          <div className="w-6 h-10 rounded-full border-2 border-white/60 flex justify-center">
+            <div className="w-1 h-2 bg-white/60 rounded-full mt-2 animate-bounce" />
           </div>
         </motion.div>
       </section>
