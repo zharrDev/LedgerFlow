@@ -131,7 +131,7 @@ body {
    scrollbar SELALU gelap senada darkCard, independen dari toggle tema */
 .homepage-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgb(34 211 238 / 0.55) #1e293b;
+  scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
 
 .homepage-scroll::-webkit-scrollbar {
@@ -144,12 +144,12 @@ body {
 }
 
 .homepage-scroll::-webkit-scrollbar-thumb {
-  background: rgb(34 211 238 / 0.55);
+  background: rgb(34 211 238 / 0.75);
   border-radius: 8px;
 }
 
 .homepage-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgb(6 182 212 / 0.8);
+  background: rgb(6 182 212 / 0.95);
 }
 
 .homepage-scroll::-webkit-scrollbar-corner {

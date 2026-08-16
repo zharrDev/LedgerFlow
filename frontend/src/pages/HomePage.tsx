@@ -802,8 +802,8 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.08 }}
-                whileHover={{ y: -6 }}
-                className="group bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all"
+                whileHover={{ y: -6, transition: { type: "tween", duration: 0.15 } }}
+                className="relative group bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all duration-150"
               >
                 <div className="w-11 h-11 rounded-xl bg-primary-500/10 dark:bg-primary-500/15 text-primary-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <feat.icon size={22} />
@@ -814,6 +814,7 @@ export default function HomePage() {
                 <p className="mt-2 text-gray-500 dark:text-gray-400">
                   {feat.desc}
                 </p>
+                <div className="absolute bottom-0 inset-x-0 h-[3px] rounded-b-2xl bg-gradient-to-r from-primary-500 to-cyan-400 scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-150" />
               </motion.div>
             ))}
           </div>
