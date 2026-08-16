@@ -515,7 +515,7 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/70 via-darkBg/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/40 via-darkBg/55 to-transparent pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-300/20 rounded-full blur-3xl" />
 
         <motion.div
@@ -528,7 +528,7 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-[2rem] leading-[1.15] sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
-              Manage Your Financial Future <br className="hidden sm:block" />
+              Manage Your Financial Future <br />
               <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
                 With Confidence
               </span>
