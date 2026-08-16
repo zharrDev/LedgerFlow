@@ -5,8 +5,10 @@ import { ChevronDown } from "lucide-react";
 
 /**
  * HoverDropdown — muncul saat hover/klik.
- * Panel pakai posisi `fixed` (bukan absolute di flow dokumen) supaya
- * membuka dropdown tidak memperpanjang tinggi halaman / memicu scroll jump.
+ * Panel pakai posisi `absolute` relatif terhadap container (bukan viewport)
+ * supaya selalu menempel ke tombol meski ancestor-nya punya transform /
+ * filter / backdrop-filter (yang bikin `fixed` meleset jauh). Karena
+ * container sudah `relative`, panel tidak ikut mengubah flow dokumen.
  */
 
 export interface DropdownOption {
@@ -69,9 +71,11 @@ export function HoverDropdown({
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
+    const containerW = el.offsetWidth;
+    const containerH = el.offsetHeight;
     const gap = 4;
     const viewportPad = 8;
-    const preferredWidth = Math.max(rect.width, minWidth);
+    const preferredWidth = Math.max(containerW, minWidth);
     const maxPanelH = Math.min(288, window.innerHeight - viewportPad * 2);
 
     const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPad;
@@ -87,15 +91,22 @@ export function HoverDropdown({
         ? Math.max(96, Math.min(maxPanelH, spaceBelow))
         : Math.max(96, Math.min(maxPanelH, spaceAbove));
 
-    let left = alignRight ? rect.right - preferredWidth : rect.left;
+    // Posisi panel RELATIF terhadap container (absolute), bukan viewport.
+    // Kalau pakai position:fixed, ancestor dengan transform / filter /
+    // backdrop-filter (mis. animasi framer-motion atau backdrop-blur pada
+    // header card Neraca) membuat panel ter-hitung terhadap ancestor itu,
+    // sehingga dropdown muncul jauh dari tombol. Absolute relatif container
+    // selalu menempel ke tombol apa pun kondisi ancestor-nya.
+    let left = alignRight ? preferredWidth - containerW : 0;
+    // Clamp agar panel tidak keluar viewport kiri/kanan
     left = Math.min(
-      Math.max(viewportPad, left),
-      window.innerWidth - preferredWidth - viewportPad,
+      Math.max(viewportPad - rect.left, left),
+      window.innerWidth - rect.left - preferredWidth - viewportPad,
     );
 
     if (place === "bottom") {
       setPanelPos({
-        top: rect.bottom + gap,
+        top: containerH + gap,
         left,
         width: preferredWidth,
         maxHeight,
@@ -103,7 +114,7 @@ export function HoverDropdown({
       });
     } else {
       setPanelPos({
-        bottom: window.innerHeight - rect.top + gap,
+        bottom: containerH + gap,
         left,
         width: preferredWidth,
         maxHeight,
@@ -195,7 +206,7 @@ export function HoverDropdown({
 
   const panelStyle: CSSProperties | undefined = panelPos
     ? {
-        position: "fixed",
+        position: "absolute",
         top: panelPos.top,
         bottom: panelPos.bottom,
         left: panelPos.left,
