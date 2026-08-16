@@ -14,6 +14,7 @@ import { JournalDetail } from "../components/journal/JournalDetail";
 import { ConfirmDialog } from "../components/journal/ConfirmDialog";
 import { IconJournal, IconPlus } from "../components/journal/JournalShared";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
 import {
@@ -120,6 +121,13 @@ export default function JournalEntryPage() {
     postEntry,
     deleteEntry,
   } = useJournal();
+
+  const { user } = useAuth();
+  const myRole = user?.role || "";
+  // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus = admin & owner.
+  // Disembunyikan di frontend agar tidak muncul tombol yang pasti ditolak 403.
+  const canCreatePost = myRole === "owner" || myRole === "akuntan";
+  const canDelete = myRole === "owner" || myRole === "admin";
 
   const location = useLocation();
   const [view, setView] = useState<ViewState>({ mode: "list" });
@@ -288,7 +296,7 @@ export default function JournalEntryPage() {
             </p>
           </div>
 
-          {view.mode === "list" && (
+          {view.mode === "list" && canCreatePost && (
             <button
               type="button"
               onClick={() => setView({ mode: "new" })}
@@ -392,6 +400,8 @@ export default function JournalEntryPage() {
               onView={handleViewEntry}
               onPost={(entry) => openConfirm("post", entry)}
               onDelete={(entry) => openConfirm("delete", entry)}
+              canPost={canCreatePost}
+              canDelete={canDelete}
               pagination={{
                 page: pagination.page,
                 totalPages: pagination.totalPages,
@@ -440,6 +450,8 @@ export default function JournalEntryPage() {
             onBack={() => setView({ mode: "list" })}
             onPost={(entry) => openConfirm("post", entry)}
             onDelete={(entry) => openConfirm("delete", entry)}
+            canPost={canCreatePost}
+            canDelete={canDelete}
           />
         )}
       </motion.div>

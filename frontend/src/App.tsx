@@ -28,6 +28,8 @@ import PricingPage from "./pages/PricingPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AdminGatePage from "./pages/AdminGatePage";
+import AdminPortalPage from "./pages/AdminPortalPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AiCfoPage from "./pages/AiCfoPage";
@@ -192,6 +194,11 @@ function AnimatedRoutes() {
         }
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
+
+      {/* Gerbang admin — sengaja TIDAK didaftarkan di navigasi/menu manapun.
+          Hanya bisa dicapai lewat shortcut rahasia di /login. */}
+      <Route path="/portal-akses" element={<AdminGatePage />} />
+      <Route path="/admin-portal" element={<AdminPortalPage />} />
       <Route
         path="/forgot-password"
         element={

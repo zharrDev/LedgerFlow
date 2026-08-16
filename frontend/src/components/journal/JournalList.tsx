@@ -22,6 +22,9 @@ interface JournalListProps {
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
   pagination?: TablePaginationProps;
+  /** Izin sesuai role (backend): post/edit = owner/akuntan, delete = admin/owner. */
+  canPost?: boolean;
+  canDelete?: boolean;
 }
 
 const HEADERS = [
@@ -43,6 +46,8 @@ export function JournalList({
   onPost,
   onDelete,
   pagination,
+  canPost = true,
+  canDelete = true,
 }: JournalListProps) {
 
   return (
@@ -105,13 +110,15 @@ export function JournalList({
                       <p className="text-sm text-gray-400 mb-3">
                         Belum ada journal entry
                       </p>
-                      <button
-                        type="button"
-                        onClick={onNew}
-                        className="px-4 py-2 text-sm bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:shadow-lg transition-all"
-                      >
-                        Buat Entry Pertama
-                      </button>
+                      {canPost && (
+                        <button
+                          type="button"
+                          onClick={onNew}
+                          className="px-4 py-2 text-sm bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:shadow-lg transition-all"
+                        >
+                          Buat Entry Pertama
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -122,6 +129,8 @@ export function JournalList({
                       onView={onView}
                       onPost={onPost}
                       onDelete={onDelete}
+                      canPost={canPost}
+                      canDelete={canDelete}
                     />
                   ))
                 )}
@@ -144,9 +153,18 @@ interface JournalRowProps {
   onView: (e: JournalEntry) => void;
   onPost: (e: JournalEntry) => void;
   onDelete: (e: JournalEntry) => void;
+  canPost: boolean;
+  canDelete: boolean;
 }
 
-function JournalRow({ entry, onView, onPost, onDelete }: JournalRowProps) {
+function JournalRow({
+  entry,
+  onView,
+  onPost,
+  onDelete,
+  canPost,
+  canDelete,
+}: JournalRowProps) {
   const isDraft = entry.status === "draft";
 
   return (
@@ -188,18 +206,22 @@ function JournalRow({ entry, onView, onPost, onDelete }: JournalRowProps) {
           />
           {isDraft && (
             <>
-              <ActionButton
-                title="Posting ke buku besar"
-                onClick={() => onPost(entry)}
-                icon={<IconSend size={14} />}
-                variant="primary"
-              />
-              <ActionButton
-                title="Hapus draft"
-                onClick={() => onDelete(entry)}
-                icon={<IconTrash size={14} />}
-                variant="danger"
-              />
+              {canPost && (
+                <ActionButton
+                  title="Posting ke buku besar"
+                  onClick={() => onPost(entry)}
+                  icon={<IconSend size={14} />}
+                  variant="primary"
+                />
+              )}
+              {canDelete && (
+                <ActionButton
+                  title="Hapus draft"
+                  onClick={() => onDelete(entry)}
+                  icon={<IconTrash size={14} />}
+                  variant="danger"
+                />
+              )}
             </>
           )}
         </div>

@@ -24,7 +24,12 @@ api.interceptors.response.use(
   (err) => {
     const url = err.config?.url || "";
     const isPaymentRoute = url.includes("/api/payments/");
-    const isAuthRoute = url.includes("/api/auth/") || url.includes("/api/wa/");
+    const isAuthRoute =
+      url.includes("/api/auth/") ||
+      url.includes("/api/wa/") ||
+      // Gerbang admin: 401 (password salah / token expired) ditangani oleh
+      // halaman AdminGate/AdminPortal sendiri, bukan redirect ke login WA OTP.
+      url.includes("/api/admin-gate/");
 
     if (err.response?.status === 401 && !isPaymentRoute && !isAuthRoute) {
       clearSession();

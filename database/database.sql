@@ -347,7 +347,9 @@ CREATE TABLE IF NOT EXISTS company_members (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  role        TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'akuntan', 'owner')),
+  -- Default 'member' TIDAK valid (CHECK hanya mengizinkan admin/akuntan/owner),
+  -- karenanya default dihapus: insert tanpa role akan gagal eksplisit.
+  role        TEXT NOT NULL CHECK (role IN ('admin', 'akuntan', 'owner')),
   created_at  TIMESTAMPTZ DEFAULT now(),
   UNIQUE (user_id, company_id)
 );
@@ -529,5 +531,20 @@ UPDATE users SET email_verified = true WHERE email_verified = false;
 -- Anti brute-force OTP: hitung percobaan verify yang gagal per kode.
 -- Di-reset natural saat user minta kode baru (kode lama di-set used=true).
 ALTER TABLE otp_codes ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
+
+-- ─── 17. ADMIN GATE (dashboard admin khusus) ─────────────────────────
+-- Audit log setiap percobaan password gerbang admin (berhasil/gagal/
+-- diblokir). Detail lengkap di database/migration-admin-gate.sql.
+CREATE TABLE IF NOT EXISTS public.admin_gate_logs (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ip         TEXT NOT NULL,
+  status     TEXT NOT NULL CHECK (status IN ('success', 'failed', 'blocked')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_gate_logs_created
+  ON public.admin_gate_logs (created_at DESC);
+
+GRANT ALL PRIVILEGES ON TABLE public.admin_gate_logs TO service_role;
 
 

@@ -408,7 +408,7 @@ journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
 
   const { data: period } = await supabase
     .from("periods")
-    .select("status")
+    .select("status, year, month")
     .eq("id", existing.period_id)
     .single();
 
@@ -417,6 +417,27 @@ journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
       { error: "Periode sudah ditutup. Tidak bisa mengedit jurnal." },
       400,
     );
+  }
+
+  // entry_date baru wajib tetap berada dalam bulan periode jurnal ini.
+  // Tanpa ini, jurnal bisa dipindah ke bulan lain tanpa mengubah period_id,
+  // membuat buku besar (berbasis entry_date) tidak konsisten dengan laporan
+  // (berbasis period_id) — saldo awal periode ikut salah.
+  if (entry_date) {
+    const entryDate = new Date(entry_date);
+    if (
+      Number.isNaN(entryDate.getTime()) ||
+      !period ||
+      entryDate.getFullYear() !== Number(period.year) ||
+      entryDate.getMonth() + 1 !== Number(period.month)
+    ) {
+      return c.json(
+        {
+          error: `entry_date (${entry_date}) tidak berada dalam periode jurnal ini (${period ? `${period.year}-${String(period.month).padStart(2, "0")}` : "tidak ditemukan"}).`,
+        },
+        400,
+      );
+    }
   }
 
   if (lines) {

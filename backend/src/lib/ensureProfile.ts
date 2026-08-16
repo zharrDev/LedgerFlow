@@ -42,31 +42,18 @@ export async function ensureUserProfile(authUser: AuthUserLike) {
     email.split("@")[0] ||
     "User";
 
-  // Reuse company dengan nama sama bila sudah ada (hindari company orphan
-  // saat provision diulang karena retry/fail-follows).
-  let company: { id: string } | null = null;
-  {
-    const { data: existingCompany, error: companyLookupError } = await supabase
-      .from("companies")
-      .select("id")
-      .eq("name", `Perusahaan ${name}`)
-      .maybeSingle();
-    if (companyLookupError) {
-      throw new Error(`lookup_company: ${fmtError(companyLookupError)}`);
-    }
-    if (existingCompany) company = existingCompany;
-  }
-
-  if (!company) {
-    const { data: inserted, error: companyError } = await supabase
-      .from("companies")
-      .insert({ name: `Perusahaan ${name}`, currency: "IDR" })
-      .select("id")
-      .single();
-    if (companyError) {
-      throw new Error(`create_company: ${fmtError(companyError)}`);
-    }
-    company = inserted;
+  // SELALU buat company baru — JANGAN reuse berdasarkan nama. Dua user
+  // berbeda dengan nama sama (mis. "Budi") tidak boleh berakhir di company
+  // yang sama sebagai sesama owner (celah isolasi antar-akun). Nama company
+  // tidak unik di schema, jadi membuat baru aman. Bila langkah berikutnya
+  // gagal, company di-compensate (dihapus) agar tidak jadi yatim.
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .insert({ name: `Perusahaan ${name}`, currency: "IDR" })
+    .select("id")
+    .single();
+  if (companyError) {
+    throw new Error(`create_company: ${fmtError(companyError)}`);
   }
 
   // Trigger AFTER INSERT di users ikut membuat baris di tabel subscriptions
@@ -110,6 +97,8 @@ export async function ensureUserProfile(authUser: AuthUserLike) {
     .single();
 
   if (userError) {
+    // Kompensasi: company yang baru dibuat dihapus agar tidak yatim.
+    await supabase.from("companies").delete().eq("id", company.id);
     throw new Error(`create_user_profile: ${fmtError(userError)}`);
   }
 

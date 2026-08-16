@@ -1,5 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { verifyToken, type JWTPayload } from "../lib/jwt.js";
+import { supabase } from "../lib/supabase.js";
 
 // Tambahkan typed variable 'user' ke context Hono agar bisa dipakai di route lain
 // Setelah authMiddleware sukses, c.get("user") akan berisi payload JWT user
@@ -28,6 +29,13 @@ export const authMiddleware = createMiddleware(async (c, next) => {
   try {
     const user = await verifyToken(token); // verifikasi token JWT
 
+    // Token admin-gate (dashboard admin khusus) TIDAK boleh dipakai di
+    // endpoint user biasa — payload-nya tidak punya company_id, cek eksplisit
+    // di sini sebagai lapisan kedua.
+    if ((user as any).type === "admin-gate") {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
     if (!user?.company_id) {
       return c.json(
         { error: "Invalid token payload: missing company_id" },
@@ -44,7 +52,36 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       );
     }
 
-    c.set("user", user); // simpan payload user ke context agar bisa dipakai endpoint berikutnya
+    // ── Revalidasi role & company_id dari database (anti stale-JWT) ──
+    // Role/company di-bake ke token selama 1 hari. Jika user di-demote,
+    // dihapus, atau dipindah company, token lama masih membawa role lama
+    // sampai expire — itu celah privilege escalation. Karena itu, cek ulang
+    // setiap request: user harus masih ada, dan role/company_id di token
+    // harus sama dengan yang tersimpan saat ini. Kalau beda → tolak (401).
+    const { data: freshUser, error: dbError } = await supabase
+      .from("users")
+      .select("id, role, company_id")
+      .eq("id", user.sub)
+      .maybeSingle();
+
+    if (dbError) {
+      console.error("AUTH DB CHECK ERROR =", dbError);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+
+    if (!freshUser) {
+      return c.json({ error: "Invalid or expired token" }, 401);
+    }
+
+    if (freshUser.role !== user.role || freshUser.company_id !== user.company_id) {
+      return c.json({ error: "Invalid or expired token" }, 401);
+    }
+
+    c.set("user", {
+      ...user,
+      role: freshUser.role,
+      company_id: freshUser.company_id,
+    }); // simpan payload user (role/company segar dari DB) ke context
     await next(); // lanjut ke middleware/handler selanjutnya
   } catch (err) {
     console.error("JWT ERROR =", err);

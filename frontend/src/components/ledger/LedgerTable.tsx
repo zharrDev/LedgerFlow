@@ -39,6 +39,20 @@ function balanceSideLabel(
   return onNormalSide ? `${side} (normal)` : `${side} (terbalik)`;
 }
 
+/** Huruf sisi saldo (D/K) sesuai normal balance akun, bukan asumsi "positif = Debit". */
+function balanceSideLetter(
+  normalBalance: NormalBalance,
+  balance: number,
+): "D" | "K" {
+  const onNormalSide = balance >= 0;
+  const side = onNormalSide
+    ? normalBalance
+    : normalBalance === "Debit"
+      ? "Kredit"
+      : "Debit";
+  return side === "Debit" ? "D" : "K";
+}
+
 const HEADERS = [
   "Tanggal",
   "No. Jurnal",
@@ -214,6 +228,7 @@ export function LedgerTable({
                 balance={closingBalance}
                 totalDebit={totalDebit}
                 totalCredit={totalCredit}
+                normalBalance={account.normalBalance}
               />
             </tfoot>
           </table>
@@ -425,7 +440,7 @@ function LedgerRow({
           {formatIDR(Math.abs(line.balance))}
           {line.balance !== 0 && (
             <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-1">
-              {line.balance > 0 ? "D" : "K"}
+              {balanceSideLetter(normalBalance, line.balance)}
             </span>
           )}
         </span>
@@ -440,10 +455,12 @@ function ClosingRow({
   balance,
   totalDebit,
   totalCredit,
+  normalBalance,
 }: {
   balance: number;
   totalDebit: number;
   totalCredit: number;
+  normalBalance: NormalBalance;
 }) {
   return (
     <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
@@ -468,7 +485,7 @@ function ClosingRow({
           {formatIDR(Math.abs(balance))}
           {balance !== 0 && (
             <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-1">
-              {balance > 0 ? "D" : "K"}
+              {balanceSideLetter(normalBalance, balance)}
             </span>
           )}
         </span>

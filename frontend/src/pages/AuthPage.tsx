@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import InfoPanel from "../components/InfoPanel";
 import AuthFlipCard from "../components/auth/AuthFlipCard";
@@ -14,10 +14,24 @@ export default function AuthPage({
   const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [isHovered, setIsHovered] = useState(false);
   const [showUI, setShowUI] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setShowUI(true);
   }, []);
+
+  // Shortcut rahasia ke gerbang admin: Ctrl+Shift+A.
+  // Sengaja tanpa indikasi visual apa pun di halaman ini.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+        e.preventDefault();
+        navigate("/portal-akses");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-hidden">

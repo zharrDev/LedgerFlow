@@ -73,12 +73,26 @@ accounts.post("/", requireRole("admin", "akuntan", "owner"), async (c) => {
     if (!code || !name || !type) {
       return c.json({ error: "missing fields" }, 400);
     }
+    if (typeof code !== "string" || !/^\d{3,6}$/.test(code.trim())) {
+      return c.json({ error: "Code akun harus 3-6 digit angka." }, 400);
+    }
+    if (
+      typeof name !== "string" ||
+      name.trim().length < 2 ||
+      name.trim().length > 100
+    ) {
+      return c.json({ error: "Nama akun harus 2-100 karakter." }, 400);
+    }
+    const mappedType = TYPE_MAP[type];
+    if (!mappedType) {
+      return c.json({ error: "Tipe akun tidak valid." }, 400);
+    }
 
     const insertData = {
       company_id,
-      code,
-      name,
-      type: TYPE_MAP[type],
+      code: code.trim(),
+      name: name.trim(),
+      type: mappedType,
       normal_balance: BALANCE_MAP[type],
       parent_id: parent_id ?? null,
       is_active: true,
@@ -93,25 +107,21 @@ accounts.post("/", requireRole("admin", "akuntan", "owner"), async (c) => {
       .maybeSingle();
 
     if (error) {
-      return c.json(
-        {
-          error: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        },
-        500,
-      );
+      // Duplikat (company_id, code) → 409, bukan 500 dengan detail DB.
+      if (error.code === "23505") {
+        return c.json(
+          { error: `Kode akun "${code}" sudah dipakai di perusahaan ini.` },
+          409,
+        );
+      }
+      console.error("INSERT ACCOUNT ERROR:", error);
+      return c.json({ error: "Gagal menyimpan akun." }, 500);
     }
 
     return c.json(data, 201);
   } catch (err) {
-    return c.json(
-      {
-        error: err instanceof Error ? err.message : "Unknown error",
-      },
-      500,
-    );
+    console.error("POST ACCOUNT CRASH:", err);
+    return c.json({ error: "Gagal menyimpan akun." }, 500);
   }
 });
 
@@ -141,6 +151,25 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
       REVENUE: "CREDIT",
       EXPENSE: "DEBIT",
     };
+
+    // Validasi format field yang dikirim (hanya yang di-update)
+    if (
+      body.code !== undefined &&
+      (typeof body.code !== "string" || !/^\d{3,6}$/.test(body.code.trim()))
+    ) {
+      return c.json({ error: "Code akun harus 3-6 digit angka." }, 400);
+    }
+    if (
+      body.name !== undefined &&
+      (typeof body.name !== "string" ||
+        body.name.trim().length < 2 ||
+        body.name.trim().length > 100)
+    ) {
+      return c.json({ error: "Nama akun harus 2-100 karakter." }, 400);
+    }
+    if (body.type !== undefined && !TYPE_MAP[body.type]) {
+      return c.json({ error: "Tipe akun tidak valid." }, 400);
+    }
 
     // Ambil akun lama untuk cek perubahan type & kepemilikan
     const { data: existing } = await supabase
@@ -202,16 +231,14 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
     console.log("SUPABASE RESPONSE:", { data, error });
 
     if (error) {
+      if (error.code === "23505") {
+        return c.json(
+          { error: `Kode akun "${body.code}" sudah dipakai di perusahaan ini.` },
+          409,
+        );
+      }
       console.error("SUPABASE ERROR FULL:", error);
-      return c.json(
-        {
-          error: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        },
-        500,
-      );
+      return c.json({ error: "Gagal memperbarui akun." }, 500);
     }
 
     if (!data || data.length === 0) {
@@ -227,12 +254,7 @@ accounts.put("/:id", requireRole("admin", "akuntan", "owner"), async (c) => {
     return c.json(data[0]);
   } catch (err) {
     console.error("PUT CRASH:", err);
-    return c.json(
-      {
-        error: err instanceof Error ? err.message : "Unknown error",
-      },
-      500,
-    );
+    return c.json({ error: "Gagal memperbarui akun." }, 500);
   }
 });
 

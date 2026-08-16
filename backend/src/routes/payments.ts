@@ -430,6 +430,15 @@ payments.post("/subscribe", authMiddleware, async (c) => {
 // ═══════════════════════════════════════════════════════════════════════
 // POST /test-complete — Force-complete pembayaran pending (SANDBOX ONLY)
 // ═══════════════════════════════════════════════════════════════════════
+// GUARD FAIL-CLOSED:
+//   - Sebelumnya hanya memblokir bila MIDTRANS_IS_PRODUCTION === "true".
+//     Karena default-nya sandbox, lupa set env di production membuat
+//     endpoint ini AKTIF → siapa pun bisa mengaktifkan plan berbayar gratis.
+//   - Sekarang WAJIB flag eksplisit ALLOW_TEST_COMPLETE === "true" DAN
+//     bukan production. Tanpa flag itu endpoint mati di semua environment.
+const TEST_COMPLETE_ALLOWED =
+  process.env.ALLOW_TEST_COMPLETE === "true" &&
+  process.env.MIDTRANS_IS_PRODUCTION !== "true";
 // KENAPA ENDPOINT INI DIBUTUHKAN?
 // ──────────────────────────────────────────────────────────────────────
 // Di Midtrans Sandbox, pembayaran via Virtual Account / Bank Transfer
@@ -455,13 +464,13 @@ payments.post("/subscribe", authMiddleware, async (c) => {
 //   6. Update subscription → "active" + plan sesuai yang dibeli
 // ═══════════════════════════════════════════════════════════════════════
 payments.post("/test-complete", authMiddleware, async (c) => {
-  // ─── GUARD: Hanya boleh jalan di sandbox ────────────────────────────
-  // Cek env var: kalau MIDTRANS_IS_PRODUCTION === "true", berarti production
-  // Endpoint ini BAHAYA kalau bisa diakses di production — orang bisa
-  // bayar gratis tanpa bayar beneran! Jadi harus di-block.
-  if (process.env.MIDTRANS_IS_PRODUCTION === "true") {
+  // ─── GUARD: Hanya boleh jalan bila diaktifkan EKSPLISIT (sandbox) ───
+  // Fail-closed: tanpa ALLOW_TEST_COMPLETE=true, endpoint ini tidak tersedia
+  // di environment mana pun (termasuk development). Mencegah aktivasi plan
+  // berbayar gratis akibat env production tidak ter-set.
+  if (!TEST_COMPLETE_ALLOWED) {
     return c.json(
-      { error: "This endpoint is not available in production" },
+      { error: "This endpoint is not available" },
       403,
     );
   }

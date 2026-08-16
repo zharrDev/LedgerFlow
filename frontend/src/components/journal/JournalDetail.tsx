@@ -17,6 +17,9 @@ interface JournalDetailProps {
   onBack: () => void;
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
+  /** Izin sesuai role (backend): post = owner/akuntan, delete = admin/owner. */
+  canPost?: boolean;
+  canDelete?: boolean;
 }
 
 export function JournalDetail({
@@ -25,6 +28,8 @@ export function JournalDetail({
   onBack,
   onDelete,
   onPost,
+  canPost = true,
+  canDelete = true,
 }: JournalDetailProps) {
   const isDraft = entry.status === "draft";
   const isBalanced = Math.abs(entry.totalDebit - entry.totalCredit) < 0.005;
@@ -57,30 +62,34 @@ export function JournalDetail({
           <div className="flex gap-2">
             {isDraft && (
               <>
-                <button
-                  type="button"
-                  onClick={() => onPost(entry)}
-                  disabled={posting || !isBalanced}
-                  title={
-                    !isBalanced
-                      ? "Entry tidak seimbang — tidak dapat diposting"
-                      : "Posting ke buku besar"
-                  }
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl hover:shadow-lg hover:shadow-primary-500/25 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  {posting ? (
-                    <SpinnerIcon className="w-3.5 h-3.5" />
-                  ) : (
-                    <IconSend size={14} />
-                  )}
-                  Post ke Buku Besar
-                </button>
-                <ActionButton
-                  title="Hapus draft"
-                  onClick={() => onDelete(entry)}
-                  icon={<IconTrash size={14} />}
-                  variant="danger"
-                />
+                {canPost && (
+                  <button
+                    type="button"
+                    onClick={() => onPost(entry)}
+                    disabled={posting || !isBalanced}
+                    title={
+                      !isBalanced
+                        ? "Entry tidak seimbang — tidak dapat diposting"
+                        : "Posting ke buku besar"
+                    }
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl hover:shadow-lg hover:shadow-primary-500/25 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    {posting ? (
+                      <SpinnerIcon className="w-3.5 h-3.5" />
+                    ) : (
+                      <IconSend size={14} />
+                    )}
+                    Post ke Buku Besar
+                  </button>
+                )}
+                {canDelete && (
+                  <ActionButton
+                    title="Hapus draft"
+                    onClick={() => onDelete(entry)}
+                    icon={<IconTrash size={14} />}
+                    variant="danger"
+                  />
+                )}
               </>
             )}
           </div>

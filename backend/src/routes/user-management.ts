@@ -54,7 +54,7 @@ userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
       .eq("email", email)
       .maybeSingle();
 
-    if (findErr) return c.json({ error: findErr.message }, 500);
+    if (findErr) return c.json({ error: "Gagal memeriksa email." }, 500);
     if (existing) {
       return c.json(
         { error: "Email sudah terdaftar di sistem. Pilih email lain." },
@@ -72,7 +72,11 @@ userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
       });
 
     if (authError) {
-      return c.json({ error: authError.message }, 400);
+      // Jangan bocorkan detail Supabase Auth; pesan generik saja.
+      return c.json(
+        { error: "Gagal membuat akun. Periksa kembali email yang dimasukkan." },
+        400,
+      );
     }
 
     const companyName = await getCompanyName(companyId);
@@ -91,7 +95,7 @@ userMgmt.post("/", requireRole("admin", "owner"), async (c) => {
       .single();
 
     if (userError) {
-      return c.json({ error: userError.message }, 500);
+      return c.json({ error: "Gagal menyimpan anggota." }, 500);
     }
 
     await supabase.from("company_members").insert({

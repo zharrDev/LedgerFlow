@@ -89,11 +89,36 @@ async function notifyCompanyOwners(
   }
 }
 
+// Rate-limit kasar per-IP untuk login/register email-password (in-memory;
+// cukup untuk mencegah brute-force per instance). 10 percobaan per 15 menit.
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_PER_IP = 10;
+const authHits = new Map<string, number[]>();
+
+function checkAuthRateLimit(c: any): boolean {
+  const ip = getClientIp(c);
+  const now = Date.now();
+  const hits = (authHits.get(ip) ?? []).filter((t) => now - t < AUTH_WINDOW_MS);
+  if (hits.length >= AUTH_MAX_PER_IP) {
+    authHits.set(ip, hits);
+    return false;
+  }
+  authHits.set(ip, [...hits, now]);
+  return true;
+}
+
 // POST /api/auth/register
 // Alur: buat company -> buat auth user -> buat profil user -> kirim JWT
 
 auth.post("/register", async (c) => {
   try {
+    if (!checkAuthRateLimit(c)) {
+      return c.json(
+        { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." },
+        429,
+      );
+    }
+
     const { email, password, name, company_name } = await c.req.json();
 
     if (!email || !password || !name || !company_name) {
@@ -113,10 +138,8 @@ auth.post("/register", async (c) => {
       .single();
 
     if (companyError) {
-      return c.json(
-        { step: "create_company", error: companyError.message },
-        500,
-      );
+      console.error("REGISTER create_company error:", companyError);
+      return c.json({ error: "Gagal mendaftar. Silakan coba lagi." }, 500);
     }
 
     const { data: authData, error: authError } =
@@ -127,8 +150,9 @@ auth.post("/register", async (c) => {
       });
 
     if (authError) {
+      console.error("REGISTER create_auth_user error:", authError);
       return c.json(
-        { step: "create_auth_user", error: authError.message },
+        { error: "Gagal membuat akun. Email mungkin sudah terdaftar." },
         400,
       );
     }
@@ -147,10 +171,8 @@ auth.post("/register", async (c) => {
       .single();
 
     if (userError) {
-      return c.json(
-        { step: "create_user_profile", error: userError.message },
-        500,
-      );
+      console.error("REGISTER create_user_profile error:", userError);
+      return c.json({ error: "Gagal mendaftar. Silakan coba lagi." }, 500);
     }
 
     // Relasi M:M — daftarkan user sebagai member company
@@ -207,6 +229,13 @@ auth.post("/register", async (c) => {
 // Login via Supabase Auth, lalu ambil profil aplikasi dan buat JWT internal
 
 auth.post("/login", async (c) => {
+  if (!checkAuthRateLimit(c)) {
+    return c.json(
+      { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." },
+      429,
+    );
+  }
+
   const { email, password } = await c.req.json();
 
   if (!email || !password) {

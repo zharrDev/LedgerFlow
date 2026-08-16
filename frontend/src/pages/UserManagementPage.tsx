@@ -14,6 +14,7 @@ import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 type UserData = {
   id: string;
@@ -44,6 +45,7 @@ const ALL_ROLES = [
 
 export default function UserManagementPage() {
   const { user: me } = useAuth();
+  const { toast } = useToast();
   const myRole = me?.role || "owner";
 
   const [users, setUsers] = useState<UserData[]>([]);
@@ -82,8 +84,17 @@ export default function UserManagementPage() {
     try {
       await api.put(`/api/users-management/${userId}/role`, { role: newRole });
       await fetchUsers();
+      toast({
+        variant: "success",
+        title: "Role berhasil diubah",
+        message: `Role diperbarui menjadi ${newRole}.`,
+      });
     } catch (err: any) {
-      alert(err.response?.data?.error || "Gagal mengubah role");
+      toast({
+        variant: "error",
+        title: "Gagal mengubah role",
+        message: err.response?.data?.error || "Terjadi kesalahan saat mengubah role.",
+      });
     }
   };
 
@@ -95,8 +106,17 @@ export default function UserManagementPage() {
     try {
       await api.delete(`/api/users-management/${userId}`);
       await fetchUsers();
+      toast({
+        variant: "success",
+        title: "User dihapus",
+        message: `${userName} berhasil dihapus dari perusahaan.`,
+      });
     } catch (err: any) {
-      alert(err.response?.data?.error || "Gagal menghapus user");
+      toast({
+        variant: "error",
+        title: "Gagal menghapus user",
+        message: err.response?.data?.error || "Terjadi kesalahan saat menghapus user.",
+      });
     }
   };
 

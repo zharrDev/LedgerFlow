@@ -25,6 +25,7 @@ import companiesRoutes from "./routes/companies.js";
 import passwordResetRoutes from "./routes/password-reset.js";
 
 import userMgmtRoutes from "./routes/user-management.js";
+import adminGateRoutes from "./routes/admin-gate.js";
 import uploadRoutes from "./routes/upload.js";
 import healthRoutes from "./routes/health.js";
 import aiRoutes from "./routes/ai.js";
@@ -76,6 +77,7 @@ app.route("/api/companies", companiesRoutes);
 app.route("/api/payments", payments);
 app.route("/api/auth", passwordResetRoutes);
 app.route("/api/users-management", userMgmtRoutes);
+app.route("/api/admin-gate", adminGateRoutes);
 app.route("/api/upload", uploadRoutes);
 app.route("/api/health", healthRoutes);
 app.route("/api/ai", aiRoutes);

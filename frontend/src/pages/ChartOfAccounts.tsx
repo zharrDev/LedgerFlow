@@ -113,6 +113,7 @@ export default function ChartOfAccounts() {
   const [importResult, setImportResult] = useState<{
     success: number;
     failed: number;
+    errors: string[];
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -260,23 +261,43 @@ export default function ChartOfAccounts() {
 
     let success = 0;
     let failed = 0;
+    const failures: string[] = [];
 
     for (const acc of importData) {
+      // Cegah duplikat client-side sebelum kirim (code unik per company)
+      const isDuplicate = safeAccounts.some(
+        (a) => a.code.trim().toLowerCase() === acc.code.trim().toLowerCase(),
+      );
+      if (isDuplicate) {
+        failed++;
+        failures.push(`${acc.code} — ${acc.name}: kode sudah dipakai`);
+        continue;
+      }
+
       try {
-        await saveAccount({
+        const ok = await saveAccount({
           code: acc.code,
           name: acc.name,
           type: acc.type.toLowerCase(),
           normalBalance: acc.normalBalance,
         });
-        success++;
+        if (ok) {
+          success++;
+        } else {
+          failed++;
+          failures.push(
+            `${acc.code} — ${acc.name}: gagal disimpan (mungkin kode sudah dipakai)`,
+          );
+        }
       } catch (err) {
         failed++;
-        console.error(`Failed to import ${acc.code}:`, err);
+        const msg =
+          err instanceof Error ? err.message : "terjadi kesalahan tidak terduga";
+        failures.push(`${acc.code} — ${acc.name}: ${msg}`);
       }
     }
 
-    setImportResult({ success, failed });
+    setImportResult({ success, failed, errors: failures });
     setImporting(false);
 
     if (success > 0) {
@@ -577,6 +598,20 @@ export default function ChartOfAccounts() {
                           `, ${importResult.failed} gagal`}
                       </span>
                     </div>
+                    {importResult.errors.length > 0 && (
+                      <div className="mt-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 p-3 max-h-40 overflow-y-auto scrollbar-thin">
+                        <ul className="space-y-1">
+                          {importResult.errors.map((msg, i) => (
+                            <li
+                              key={i}
+                              className="text-xs text-rose-600 dark:text-rose-400"
+                            >
+                              • {msg}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
 

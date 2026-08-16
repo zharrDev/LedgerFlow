@@ -1,0 +1,454 @@
+================================================================================
+LAPORAN AUDIT KEAMANAN & VALIDASI — LEDGERFLOW
+Tanggal: 17 Agustus 2026
+Tipe: Audit menyeluruh (tanpa perubahan kode)
+================================================================================
+
+--------------------------------------------------------------------------------
+0. KOREKSI ASUMSI STACK
+--------------------------------------------------------------------------------
+Permintaan mengasumsikan backend Java Spring Boot, namun kenyataannya:
+
+| Aspek       | Fakta di repo                                                  |
+|-------------|----------------------------------------------------------------|
+| Backend     | Hono (Node.js/TypeScript) + @hono/node-server — bukan Spring   |
+|             | Boot (backend/package.json, backend/src/index.ts)              |
+| ORM/DB      | Supabase (PostgREST) via service-role key (backend/src/lib/    |
+|             | supabase.ts)                                                   |
+| Validasi    | TIDAK ada skema Zod untuk request body — zod hanya dipakai di  |
+|             | AI tool schema (backend/src/ai/tools/*.ts). Semua validasi REST|
+|             | manual (if-checks). Konsep "@Valid/@NotNull/@Size" tidak ada   |
+|             | padanannya; yang ada = validasi manual + CHECK constraint SQL  |
+| Error       | Global handler di index.ts:62-66 (tanpa stack trace), tapi     |
+| handling    | banyak route membocorkan err.message Supabase mentah           |
+
+Daftar file route backend:
+- backend/src/routes/auth.ts            (register/login/exchange-token/logout)
+- backend/src/routes/wa-auth.ts         (4 endpoint OTP WhatsApp)
+- backend/src/routes/accounts.ts        (CRUD akun)
+- backend/src/routes/journal.ts         (CRUD + post jurnal)
+- backend/src/routes/ledger.ts          (GET buku besar)
+- backend/src/routes/periods.ts         (CRUD + close periode)
+- backend/src/routes/reports.ts         (3 laporan + periods)
+- backend/src/routes/users.ts           (profil self)
+- backend/src/routes/companies.ts       (GET company)
+- backend/src/routes/user-management.ts (kelola anggota & role)
+- backend/src/routes/payments.ts        (9 endpoint Midtrans)
+- backend/src/routes/password-reset.ts  (forgot/reset password)
+- backend/src/routes/upload.ts          (avatar & bukti pembayaran)
+- backend/src/routes/health.ts          (smtp-test & net-test)
+- backend/src/routes/ai.ts              (AI CFO chat)
+Middleware & lib:
+- backend/src/middleware/auth.ts        (authMiddleware, requireRole)
+- backend/src/lib/jwt.ts                (sign/verify JWT, TTL 1 hari)
+- backend/src/lib/supabase.ts           (client service-role)
+- backend/src/lib/authClient.ts         (client anon untuk login)
+- backend/src/lib/ensureProfile.ts      (auto-provision profil)
+- backend/src/lib/email.ts, whatsapp.ts, midtrans.ts, storage.ts, env.ts
+Database:
+- database/database.sql, database/migration-journal-rpc-and-email-verify.sql,
+  database/migration-wa-auth.sql
+
+================================================================================
+1. VALIDASI BACKEND
+================================================================================
+
+--------------------------------------------------------------------------------
+1.1 Matriks endpoint (create/update = titik risiko)
+--------------------------------------------------------------------------------
+| Endpoint                              | File:Baris          | Role        | Status      |
+|---------------------------------------|---------------------|-------------|-------------|
+| POST /api/auth/register               | auth.ts:95          | publik      | ⚠️ Sebagian |
+| POST /api/auth/login                  | auth.ts:209         | publik      | ⚠️ Sebagian |
+| POST /api/auth/exchange-token         | auth.ts:310         | publik      | ⚠️ Sebagian |
+| POST /api/wa/register/start,verify    | wa-auth.ts          | publik      | ✅ Lengkap  |
+| POST /api/wa/login/start,verify       | wa-auth.ts          | publik      | ✅ Lengkap  |
+| POST /api/accounts                    | accounts.ts:64      | semua role  | ⚠️ Sebagian |
+| PUT /api/accounts/:id                 | accounts.ts:120     | semua role  | ⚠️ Sebagian |
+| DELETE /api/accounts/:id              | accounts.ts:241     | admin       | ⚠️ Sebagian |
+| POST /api/journal                     | journal.ts:106      | owner/aktn  | ✅ Lengkap  |
+| PUT /api/journal/:id                  | journal.ts:377      | owner/aktn  | ⚠️ Sebagian |
+| POST /api/journal/:id/post            | journal.ts:586      | owner/aktn  | ✅          |
+| DELETE /api/journal/:id               | journal.ts:627      | admin/owner | ✅          |
+| POST /api/periods                     | periods.ts:29       | admin/owner | ✅          |
+| PATCH /api/periods/:id/close          | periods.ts:57       | admin/owner | ✅          |
+| DELETE /api/periods/:id               | periods.ts:90       | admin/owner | ✅          |
+| POST /api/users-management            | user-management.ts:36  | admin/owner| ✅ (⚠️ bocor error) |
+| PUT /api/users-management/:id/role    | user-management.ts:166 | admin/owner| ✅          |
+| DELETE /api/users-management/:id      | user-management.ts:218 | admin/owner| ✅          |
+| POST /api/payments/subscribe          | payments.ts:217     | login       | ✅          |
+| POST /api/payments/test-complete      | payments.ts:457     | login       | ❌ KRITIS (backdoor) |
+| POST /api/payments/webhook            | payments.ts:647     | publik(sig) | ✅ (sangat baik) |
+| POST /api/upload/avatar & /proof      | upload.ts           | login       | ✅          |
+| GET /api/health/net-test              | health.ts:19        | admin/owner | ❌ SSRF     |
+| POST /api/ai/chat                     | ai.ts:13            | login       | ✅          |
+
+--------------------------------------------------------------------------------
+1.2 ✅ Sudah diterapkan dengan baik
+--------------------------------------------------------------------------------
+1. Jurnal POST (journal.ts:106-375) — validasi terlengkap di repo:
+   - Minimal 2 baris; setiap baris wajib accountCode
+   - Nominal >= 0 dan maksimal 2 angka desimal
+   - Tepat satu sisi debit ATAU kredit per baris (tidak boleh keduanya/kosong)
+   - Periode wajib ada dan berstatus "open"
+   - entry_date harus berada dalam bulan periode yang dipilih
+   - Total debit = total kredit (toleransi 0.01)
+   - Semua akun harus ada & aktif di company yang sama
+   - Double-entry via RPC atomik create_journal_entry + fallback non-atomik
+     yang ber-rollback (hapus entry jika insert line gagal)
+
+2. WhatsApp OTP (wa-auth.ts):
+   - OTP di-hash SHA-256 (baris 58-61), bukan disimpan teks
+   - Perbandingan memakai timingSafeEqual (anti timing attack)
+   - Expiry 5 menit; maksimal 5 percobaan salah lalu kunci
+   - Cooldown kirim ulang 60 detik; rate-limit per-IP in-memory (baris 34-50)
+   - Anti-loncatan: nomor dicek belum terdaftar sebelum konsumsi OTP
+   - Rollback provisi akun bila gagal di tengah (tidak ada data yatim)
+
+3. Webhook Midtrans (payments.ts:647-900):
+   - Verifikasi signature SHA-512 (baris 668-684) — tolak webhook palsu
+   - Rekonsiliasi nominal sebelum aktivasi subscription (baris 774-793)
+   - Idempotensi & anti out-of-order (baris 756-772)
+   - Mapping status lengkap (capture/settlement/cancel/deny/expire/refund)
+
+4. Otorisasi:
+   - requireRole middleware (middleware/auth.ts:47-62) dipakai konsisten
+     di semua endpoint sensitif
+   - Tenant isolation: company_id SELALU dari JWT, bukan body/query
+   - IDOR guard: companies.ts:20-23, users.ts:29-32, ledger.ts:71-75,
+     payments/test-complete:500-503, upload/proof:34-44
+
+5. Upload (lib/storage.ts):
+   - Allowlist MIME (PNG/JPG/WebP/GIF), batas 5 MB, cek file kosong
+   - sanitizeFolder anti path-traversal
+
+6. Password reset (password-reset.ts:47-97):
+   - Target user WAJIB diturunkan dari token, bukan email body (baris 82-89)
+     -> anti account-takeover
+   - Email body harus cocok dengan pemilik token; pesan error generik
+   - Token sekali pakai (used flag) + expiry 1 jam
+
+--------------------------------------------------------------------------------
+1.3 ⚠️ Diterapkan sebagian / bermasalah
+--------------------------------------------------------------------------------
+1. Bocor error Supabase mentah ke client:
+   - accounts.ts:94-97 (mengirim error.message, details, hint, code)
+   - user-management.ts:74 (authError.message)
+   - auth.ts:118/130/143 (companyError.message, authError.message,
+     userError.message)
+   Inkonsisten dengan kebijakan global index.ts:62-66 ("jangan bocorkan
+   detail internal ke client").
+
+2. Duplikat code akun -> HTTP 500, bukan 409/400:
+   - accounts.ts:87-97: constraint UNIQUE(company_id, code)
+     (database.sql:47) memunculkan error DB sebagai 500.
+   - Frontend useAccounts.ts (parseAccountError) sudah menebak pola
+     "duplicate", tapi API-nya salah secara semantik.
+
+3. accounts.ts POST/PUT minim validasi format:
+   - Hanya cek !code || !name || !type (accounts.ts:80)
+   - Tidak ada validasi panjang/format code (3-6 digit), panjang nama,
+     atau validasi type dari allowlist
+   - TYPE_MAP[type] yang tidak dikenal -> undefined -> 500 dari CHECK
+     constraint DB
+   - parent_id tidak dicek milik company yang sama
+
+4. Journal PUT: entry_date bisa dipindah ke bulan di luar periode:
+   - journal.ts:389 hanya memvalidasi format tanggal
+   - Saat POST, entry_date dipaksa dalam bulan periode (baris 224-236),
+     tapi saat PUT tidak ada cek ulang, padahal headerUpdates.entry_date
+     tetap di-update (baris 447-449)
+   - Risiko: inkonsistensi laporan/ledger
+
+5. /api/health/net-test — SSRF (Server-Side Request Forgery):
+   - health.ts:19-34: admin/owner dapat menyuruh server fetch URL http(s)
+     bebas (termasuk POST dengan body) dan server mengembalikan 200
+     karakter pertama respons
+   - Bisa dipakai menyentuh layanan internal (metadata cloud 169.254.169.254,
+     service internal). Terbatas role admin/owner tapi tetap risiko.
+
+6. Login email/password tanpa rate-limit:
+   - auth.ts:209-227 (proteksi hanya dari Supabase Auth bawaan)
+
+7. Role & company_id di-bake ke JWT, expire 1 hari (lib/jwt.ts:19-22):
+   - Saat role user diubah/dihapus, token lama tetap valid 24 jam dengan
+     role lama. Tidak ada token revocation / cek role ke DB di middleware.
+
+--------------------------------------------------------------------------------
+1.4 ❌ Belum diterapkan / kritis
+--------------------------------------------------------------------------------
+1. POST /api/payments/test-complete — BACKDOOR aktivasi plan berbayar
+   - payments.ts:457-460:
+       if (process.env.MIDTRANS_IS_PRODUCTION === "true") { return 403; }
+   - Guard ini FAIL-OPEN: jika env MIDTRANS_IS_PRODUCTION tidak diset di
+     production (lupa set / salah nama), endpoint aktif dan siapa pun user
+     login bisa meng-upgrade subscription ke Pro/Enterprise GRATIS:
+       1) POST /subscribe (buat order pending)
+       2) POST /test-complete {order_id} (force-paid)
+   - Ini jalur pembayaran gratis penuh.
+
+2. Tidak ada validasi batas teks (max length) di endpoint create/update:
+   - description jurnal, name akun, name user, company_name, dsb. tidak
+     dibatasi panjangnya di backend
+   - Satu-satunya batasan: ai.ts:31-33 (4000 karakter)
+
+================================================================================
+2. VALIDASI FRONTEND
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 ✅ Sudah lengkap
+--------------------------------------------------------------------------------
+| Form                    | File                          | Validasi client | Error/field | Disable submit | Error backend |
+|-------------------------|-------------------------------|-----------------|-------------|----------------|---------------|
+| Tambah/Edit Akun        | components/AccountModal.tsx   | ✅ code required + regex 3-6 digit + cek duplikat (baris 50-64); name required | ✅ | ✅ disabled={saving} + spinner | ✅ toast via parseAccountError |
+| Form Jurnal             | components/journal/JournalForm.tsx | ✅ tanggal, deskripsi, min 2 baris, debit+kredit ada, balance live, revenue harus kredit / expense harus debit, akun debit=kredit dilarang (baris 91-130) | ✅ | ✅ + tombol post disabled bila tidak balanced | ✅ toast dari useJournal |
+| Register/Login WA OTP   | components/auth/RegisterForm.tsx, LoginForm.tsx | ✅ PHONE_RE regex, OTP 6 digit, error per-field, checklist T&C | ✅ | ✅ | ✅ apiError ditampilkan |
+| Forgot/Reset Password   | pages/ForgotPasswordPage.tsx, ResetPasswordPage.tsx | ✅ validateEmail, validatePassword, konfirmasi cocok, token wajib | ✅ | ✅ | ✅ |
+| Profil                  | pages/ProfilePage.tsx         | ✅ validator di utils/validation.ts | ✅ | ✅ | ✅ notification |
+| Period Management       | pages/PeriodManagement.tsx    | ✅ bulan via dropdown | — | ✅ | ✅ notification |
+
+--------------------------------------------------------------------------------
+2.2 ⚠️ Sebagian / ❌ kurang
+--------------------------------------------------------------------------------
+1. Aksi manajemen user memakai alert() generik:
+   - UserManagementPage.tsx:86 (gagal ubah role) dan :99 (gagal hapus user)
+   - Popup browser, bukan UI konsisten; modal tambah anggota sudah memakai
+     formError inline (baris 306-309)
+
+2. Import CSV akun gagal per-baris hanya console.error:
+   - ChartOfAccounts.tsx:275; user hanya lihat ringkasan success/failed di
+     akhir, detail error per-baris hilang
+
+3. Tombol aksi jurnal tidak di-gate oleh role:
+   - components/journal/JournalList.tsx:186-199 dan JournalDetail.tsx:62-80
+     menampilkan tombol Post/Delete ke SEMUA role tanpa pengecekan
+   - Admin bisa masuk halaman jurnal (App.tsx:233-237 memakai ProtectedRoute,
+     bukan RoleRoute) padahal backend menolak POST/PUT jurnal untuk admin
+     (journal.ts:106 -> 403)
+   - Akuntan melihat tombol hapus padahal backend menolak DELETE akuntan
+     (journal.ts:627 -> 403)
+   - Backend fail-closed (aman), tapi UX rusak: tombol diklik -> error 403
+
+4. Tidak ada indikator "semua field" di beberapa form kecil (minor).
+
+Catatan positif: useAccounts.parseAccountError (hooks/useAccounts.ts:20-45)
+sudah memetakan error backend (409/duplicate/403/5xx) menjadi pesan ramah —
+pola yang bagus dan sebaiknya direplikasi di halaman lain.
+
+================================================================================
+3. ANALISIS SISTEM ROLE (Admin, Owner, Akuntan)
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1 Definisi role
+--------------------------------------------------------------------------------
+- BUKAN enum PostgreSQL, melainkan TEXT + CHECK constraint:
+    role TEXT NOT NULL CHECK (role IN ('admin','akuntan','owner'))
+  - database/database.sql:39 (tabel users)
+  - database/database.sql:350 (tabel company_members)
+- Direplikasi di 3 tempat kode:
+  - ALLOWED_ROLES (user-management.ts:11)
+  - tipe JWTPayload.role (lib/jwt.ts:10-16)
+  - hardcode string di requireRole(...) di setiap route
+- Model data:
+  - users memiliki company_id NOT NULL (satu company per user secara praktis)
+  - tabel company_members (M:M, database.sql:345-356) dipakai paralel
+  - ⚠️ Latent bug: company_members.role DEFAULT 'member' (baris 350) MELANGGAR
+    CHECK constraint sendiri (default 'member' tidak ada di list). Insert
+    tanpa role akan gagal; tidak terpicu karena kode selalu menyetel role.
+- RLS dimatikan (database.sql:223-225); semua otorisasi di level aplikasi.
+
+--------------------------------------------------------------------------------
+3.2 Perbedaan hak akses per role (backend, via requireRole)
+--------------------------------------------------------------------------------
+| Kemampuan                    | Owner | Admin | Akuntan |
+|------------------------------|-------|-------|---------|
+| CRUD akun                    | ✅    | ✅    | ✅ (tapi ❌ delete) |
+| Buat/edit/post jurnal        | ✅    | ❌ 403 | ✅      |
+| Hapus jurnal                 | ✅    | ✅    | ❌ 403  |
+| Buka/tutup/hapus periode     | ✅    | ✅    | ❌      |
+| Manajemen user (invite/role/delete) | ✅ | ✅  | ❌      |
+| Hapus akun (accounts.delete) | ❌    | ✅    | ❌      |
+| Health SMTP/net-test         | ✅    | ✅    | ❌      |
+
+Konsistensi frontend vs backend:
+- Frontend menyembunyikan menu via role (data/navigation.ts:133,143 — periode
+  & user management = owner/admin) dan RoleRoute di App.tsx:283-301.
+- MISMATCH FUNGSIONAL UTAMA: halaman jurnal terbuka untuk semua role
+  (App.tsx:233-237 = ProtectedRoute):
+  - Admin melihat form/tombol yang backend-nya tolak 403
+  - Akuntan melihat tombol hapus yang backend-nya tolak 403
+- Pembatasan BACKEND LEBIH KETAT daripada frontend — aman secara keamanan,
+  buruk secara UX.
+
+--------------------------------------------------------------------------------
+3.3 Alur "menambah anggota baru"
+--------------------------------------------------------------------------------
+1. Siapa yang boleh invite: hanya ADMIN atau OWNER
+   - POST /api/users-management, requireRole("admin","owner")
+     (user-management.ts:36)
+
+2. BUKAN sistem invite-link/email — langsung create manual (baris 63-107):
+   - Generate password acak 16-byte hex (crypto.randomBytes)
+   - supabase.auth.admin.createUser(email_confirm: true, tanpa verifikasi
+     email riil)
+   - Insert baris users + company_members (role sama)
+   - Buat token password_resets (berlaku 1 jam)
+   - Kirim email berisi link set-password (sendAccountCreatedEmail)
+   - Frontend: modal "Tambah Anggota" (UserManagementPage.tsx:242-326)
+
+3. Role yang bisa di-assign saat invite: HANYA admin/akuntan
+   - user-management.ts:47-51: ["admin","akuntan"].includes(role)
+   - Owner hanya bisa diberikan lewat PUT role oleh owner (komentar baris
+     33-35)
+
+4. Apakah Owner dibatasi satu per company? TIDAK ADA
+   - Tidak ada UNIQUE constraint (company_id, role) di DB maupun cek di kode
+   - Beberapa owner diperbolehkan
+   - Satu-satunya proteksi: "owner terakhir tidak boleh di-demote/dihapus"
+     (user-management.ts:187-193, 243-247)
+
+--------------------------------------------------------------------------------
+3.4 Alur mengubah role anggota
+--------------------------------------------------------------------------------
+- PUT /:id/role (user-management.ts:166-217), siapa pun admin/owner:
+  - Role target divalidasi terhadap ALLOWED_ROLES
+  - Tenant check: targetUser.company_id harus == company_id JWT
+  - Admin TIDAK boleh menyentuh role owner:
+      - target owner -> 403
+      - mencoba menaikkan ke owner -> 403 (baris 181-186)
+  - Owner boleh mengubah siapa pun (naik/turun), kecuali mendemote owner
+    terakhir (baris 187-193)
+  - ⚠️ Admin bisa mengubah role admin lain (tidak ada hierarki antar-admin)
+  - ⚠️ Efek token basi: owner yang didemote tetap punya token valid 24 jam
+    dengan role owner (lib/jwt.ts:22)
+
+--------------------------------------------------------------------------------
+3.5 Alur menghapus/menonaktifkan anggota
+--------------------------------------------------------------------------------
+- DELETE /:id (user-management.ts:218-253):
+  - Tidak bisa hapus diri sendiri (baris 226-228)
+  - Admin tidak bisa hapus owner (baris 239-241)
+  - PROTEKSI OWNER TERAKHIR ada (baris 243-247)
+  - Hapus auth user via supabase.auth.admin.deleteUser (baris 248)
+  - Baris users/company_members terhapus via ON DELETE CASCADE
+- TIDAK ADA fitur "keluar dari company":
+  - Satu-satunya jalan keluar = dihapus oleh admin/owner
+  - User tidak bisa menghapus dirinya sendiri
+  - Tidak ada suspend/nonaktifkan sementara
+
+--------------------------------------------------------------------------------
+3.6 Celah keamanan yang ditemukan
+--------------------------------------------------------------------------------
+1. ❌ KRITIS — Aktivasi plan berbayar gratis via /test-complete
+   - payments.ts:457-460 (guard fail-open pada env, lihat 1.4)
+2. ⚠️ TINGGI — SSRF /api/health/net-test
+   - health.ts:19-34 (admin/owner bisa proxy fetch internal)
+3. ⚠️ SEDANG — Isolasi tenant lemah di ensureUserProfile
+   - lib/ensureProfile.ts:43-57: company direuse berdasarkan nama
+     "Perusahaan {name}" — DUA USER BERBEDA dengan nama sama (mis. "Budi")
+     bisa bergabung ke company yang sama dan sama-sama ber-role owner.
+     Celah isolasi antar-akun nyata di jalur auto-provision (Google
+     sign-up / auto-heal login).
+4. ⚠️ SEDANG — JWT stale role (lihat 3.4)
+5. ⚠️ RENDAH — Bocor detail DB (lihat 1.3.1) & duplikat code akun -> 500
+6. ✅ TIDAK ditemukan:
+   - IDOR lintas-tenant pada akses data (company selalu dari JWT)
+   - Akses endpoint manajemen user oleh akuntan (backend 403)
+   - Promosi ke owner oleh admin (403)
+   - Penghapusan owner terakhir (diblokir)
+
+================================================================================
+4. RINGKASAN PRIORITAS PERBAIKAN (status per 17 Agu 2026)
+================================================================================
+| # | Prioritas | Temuan                                              | Status | Lokasi fix                  |
+|---|-----------|-----------------------------------------------------|--------|-----------------------------|
+| 1 | KRITIS    | /test-complete fail-open -> upgrade plan gratis     | ✅      | payments.ts (guard          |
+|   |           |                                                     | FIXED  | ALLOW_TEST_COMPLETE)        |
+| 2 | TINGGI    | SSRF /health/net-test                               | ✅      | health.ts (block IP privat, |
+|   |           |                                                     | FIXED  | port 80/443 saja, DNS check)| 
+| 3 | TINGGI    | JWT stale (role demote/delete tak dicabut, TTL 1d)  | ✅      | middleware/auth.ts          |
+|   |           |                                                     | FIXED  | (revalidasi role & company  |
+|   |           |                                                     |        | dari DB tiap request)       |
+| 4 | TINGGI    | ensureUserProfile menggabungkan company by nama     | ✅      | lib/ensureProfile.ts        |
+|   |           |                                                     | FIXED  | (selalu buat company baru)  |
+| 5 | SEDANG    | Journal PUT bisa memindah entry_date ke luar bulan  | ✅      | journal.ts (validasi bulan  |
+|   |           |                                                     | FIXED  | periode, mirip POST)        |
+| 6 | SEDANG    | Bocor err.message Supabase + duplikat akun -> 500   | ✅      | accounts.ts (409 + validasi |
+|   |           | (harus 409/400)                                     | FIXED  | code/name/type),            |
+|   |           |                                                     |        | user-management.ts, auth.ts |
+| 7 | SEDANG    | Mismatch role jurnal: tombol post/delete tampil     | ✅      | JournalList.tsx,            |
+|   |           | ke role yang backend-nya 403                        | FIXED  | JournalDetail.tsx,          |
+|   |           |                                                     |        | JournalEntryPage.tsx        |
+| 8 | SEDANG    | alert() di user management; import CSV tanpa error  | ✅      | UserManagementPage.tsx      |
+|   |           | per-baris                                           | FIXED  | (toast), ChartOfAccounts.tsx|
+| 9 | RENDAH    | Rate-limit login; validasi akun; DEFAULT 'member'   | ✅      | auth.ts (rate-limit),       |
+|   |           |                                                     | FIXED  | accounts.ts,                |
+|   |           |                                                     |        | migration-fix-company-      |
+|   |           |                                                     |        | members-default.sql         |
+| 10| BARU     | Logika saldo awal buku besar (label D/K akun        | ✅      | LedgerTable.tsx             |
+|   |           | normal-Credit salah; celah entry_date PUT)          | FIXED  | journal.ts                  |
+
+KESIMPULAN UMUM (diperbarui):
+- Semua temuan audit (no. 1-9) + perbaikan saldo awal (no. 10) telah
+  diimplementasikan dan lolos typecheck (backend & frontend).
+- Catatan item 9: migrasi database/migration-fix-company-members-default.sql
+  dan database/migration-admin-gate.sql WAJIB dijalankan manual di Supabase
+  SQL editor agar perbaikan DEFAULT & tabel admin_gate_logs aktif.
+
+================================================================================
+5. FITUR BARU: ADMIN GATE (dashboard admin khusus)
+================================================================================
+Implementasi sesuai spesifikasi (password-only, terpisah total dari alur
+login WhatsApp OTP user biasa).
+
+BACKEND:
+- backend/src/routes/admin-gate.ts
+  - POST /api/admin-gate/verify: { password } -> bcrypt.compare terhadap
+    env ADMIN_GATE_PASSWORD_HASH. Sukses -> JWT terpisah { type:
+    "admin-gate" } TTL 6 jam (lib/adminGateJwt.ts). Gagal -> 401 generik.
+  - Rate limit KETAT (in-memory per IP): maks 5 percobaan gagal/15 menit,
+    lalu blokir 1 jam (pola dari wa-auth.ts, diperketat).
+  - Audit log WAJIB tiap percobaan (success/failed/blocked): timestamp, IP,
+    status -> tabel admin_gate_logs; bila migrasi belum jalan, fallback ke
+    log server (console) yang persisten.
+  - GET /api/admin-gate/logs: riwayat untuk dashboard admin, dilindungi
+    middleware requireAdminGate.
+- backend/src/middleware/admin-gate.ts: verifyAdminGateToken — HANYA menerima
+  token type "admin-gate"; token user biasa ditolak (401).
+- backend/src/lib/adminGateJwt.ts: JWT terpisah, payload minimal, TTL 6 jam.
+- backend/src/middleware/auth.ts: menolak token admin-gate di endpoint user
+  biasa (lapisan kedua selain cek company_id).
+- database/migration-admin-gate.sql: tabel admin_gate_logs (wajib dijalankan
+  manual di Supabase SQL editor).
+
+FRONTEND:
+- frontend/src/pages/AdminGatePage.tsx: SATU input password (tanpa email),
+  styling konsisten tema LedgerFlow, meta noindex, error generik "Password
+  salah", penanganan 429 (rate-limit).
+- frontend/src/pages/AdminPortalPage.tsx: dashboard admin (statistik +
+  tabel audit log), hanya bisa diakses token admin-gate, tombol keluar.
+- Route /portal-akses & /admin-portal di App.tsx — TIDAK didaftarkan di
+  data/navigation.ts / menu manapun.
+- Shortcut rahasia di /login (AuthPage.tsx): Ctrl+Shift+A -> redirect ke
+  /portal-akses. Tanpa indikasi visual apa pun.
+- frontend/src/services/adminGateService.ts + helper sesi admin_gate_token
+  di lib/session.ts (terpisah dari token user biasa).
+
+SETUP MANUAL (developer, sekali saja):
+1. Generate hash bcrypt:  node -e "console.log(require('bcryptjs').hashSync('PASSWORD_PILIHAN_KAMU', 10))"
+   (dari folder backend; hash bcryptjs kompatibel dengan bcrypt).
+2. Set di backend/.env:  ADMIN_GATE_PASSWORD_HASH=<hasil hash>
+   JANGAN commit .env (sudah ada di .gitignore).
+3. Jalankan database/migration-admin-gate.sql di Supabase SQL editor
+   (agar audit log tersimpan ke tabel, bukan hanya log server).
+
+HASIL PENGUJIAN RUNTIME (server lokal, 17 Agu 2026):
+- Password benar -> 200 + token { type: "admin-gate" } TTL 21600 detik ✅
+- Token admin-gate dipakai ke /api/journal -> 401 (ditolak) ✅
+- Password salah x4 -> 401; percobaan ke-5 -> 429 (blokir); ke-6 (walau
+  password benar) -> 429 ✅
+- Audit log tercatat di log server (fallback; tabel belum ada di DB lokal) ✅
+- GET /api/admin-gate/logs -> 500 sampai migrasi tabel dijalankan (normal)
+================================================================================
