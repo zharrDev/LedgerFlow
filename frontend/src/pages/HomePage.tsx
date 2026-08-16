@@ -46,8 +46,8 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import logo from "../assets/ledgerflow.png";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
-import fintechBgDesktop from "../assets/hero/fintech-bg.png";
-import fintechBgMobile from "../assets/hero/fintech-bg-mobile.png";
+import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.png";
+import fintechBgMobile from "../assets/hero/fintech-bgmobile.png";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -523,21 +523,13 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="relative px-5 sm:px-10 py-8 sm:py-10 -mx-2 sm:-mx-4">
-              <div
-                className="absolute inset-0 -z-10 rounded-[48px] pointer-events-none"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at center, rgba(15,23,42,0.78) 0%, rgba(15,23,42,0.5) 45%, transparent 75%)",
-                }}
-              />
-            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
+            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
               Manage Your Financial Future <br />
               <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
                 With Confidence
               </span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2 [text-shadow:0_2px_16px_rgba(0,0,0,0.6)]">
+            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
               LedgerFlow eliminates manual bookkeeping, speeds up month-end
               close, and gives you real-time financials.
             </p>
@@ -570,7 +562,6 @@ export default function HomePage() {
               <Lock size={14} className="flex-shrink-0" /> Enterprise-grade
               security · SOC 2 Type II · GDPR
             </p>
-            </div>
           </motion.div>
         </motion.div>
 
