@@ -46,8 +46,8 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import logo from "../assets/ledgerflow.png";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
-import fintechBgDesktop from "../assets/hero/fintech-bg.webp";
-import fintechBgMobile from "../assets/hero/fintech-bg-mobile.webp";
+import fintechBgDesktop from "../assets/hero/fintech-bg.png";
+import fintechBgMobile from "../assets/hero/fintech-bg-mobile.png";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -515,7 +515,7 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/95 via-white/90 to-transparent dark:from-primary-950/90 dark:via-darkBg/95 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/95 via-white/90 to-transparent dark:from-primary-900/90 dark:via-darkBg/95 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-300/20 rounded-full blur-3xl" />
 
         <motion.div
@@ -695,7 +695,7 @@ export default function HomePage() {
           <div className="relative max-w-[1500px] mx-auto">
             {/* Heading */}
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary-500/20 bg-primary-50 dark:bg-primary-950/20 text-primary-600 font-medium text-sm">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary-500/20 bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-medium text-sm">
                 <Sparkles size={16} />
                 Product Demo
               </div>

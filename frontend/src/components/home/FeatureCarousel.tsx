@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import automaticReconciliation from "../../assets/hero/Automatic-Reconsiliation.png";
+import realtimeAnalytics from "../../assets/hero/Realtimeanalityc.png";
+import auditTrail from "../../assets/hero/AuditTrail.png";
+import smartBudgeting from "../../assets/hero/Smartbudgetting.png";
+import multiEntitySupport from "../../assets/hero/multyEntitySupport.png";
+import multiCurrency from "../../assets/hero/MultyCurrency.png";
 
 interface FeatureSlide {
   title: string;
@@ -11,32 +17,32 @@ const SLIDES: FeatureSlide[] = [
   {
     title: "Automated Reconciliation",
     desc: "Match transactions automatically with bank feeds",
-    image: "/Automatic-Reconsiliation.png",
+    image: automaticReconciliation,
   },
   {
     title: "Real-time Analytics",
     desc: "Live dashboard with key financial metrics",
-    image: "/Realtimeanalityc.png",
+    image: realtimeAnalytics,
   },
   {
     title: "Audit Trail",
     desc: "Complete history of every change and access",
-    image: "/AuditTrail.png",
+    image: auditTrail,
   },
   {
     title: "Smart Budgeting",
     desc: "AI-powered budget forecasting and alerts",
-    image: "/Smartbudgetting.png",
+    image: smartBudgeting,
   },
   {
     title: "Multi-entity Support",
     desc: "Manage multiple companies from one account",
-    image: "/multyEntitySupport.png",
+    image: multiEntitySupport,
   },
   {
     title: "Multi-currency",
     desc: "Handle transactions in 150+ currencies",
-    image: "/MultyCurrency.png",
+    image: multiCurrency,
   },
 ];
 
