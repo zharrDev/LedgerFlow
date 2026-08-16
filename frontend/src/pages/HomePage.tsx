@@ -814,7 +814,6 @@ export default function HomePage() {
                 <p className="mt-2 text-gray-500 dark:text-gray-400">
                   {feat.desc}
                 </p>
-                <div className="absolute bottom-0 inset-x-0 h-[3px] rounded-b-2xl bg-gradient-to-r from-primary-500 to-cyan-400 scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-150" />
               </motion.div>
             ))}
           </div>
