@@ -37,3 +37,44 @@ export async function fetchAdminGateLogs(): Promise<AdminGateLog[]> {
 export function logoutAdminGate(): void {
   clearAdminGateToken();
 }
+
+// ── Pandangan read-only global — hanya dengan token admin-gate ──
+// Admin (pemilik aplikasi) hanya boleh MELIHAT, tidak mengubah/menginput.
+
+function authHeaders(): Record<string, string> {
+  const token = getAdminGateToken();
+  if (!token) throw new Error("Belum terautentikasi sebagai admin");
+  return { Authorization: `Bearer ${token}` };
+}
+
+export type AdminGateUser = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: "admin" | "akuntan" | "owner";
+  company_id: string;
+  created_at: string;
+  companies?: { name: string } | null;
+};
+
+export type AdminGateCompany = {
+  id: string;
+  name: string;
+  currency: string;
+  created_at: string;
+};
+
+export async function fetchAdminGateUsers(): Promise<AdminGateUser[]> {
+  const res = await api.get("/api/admin-gate/users", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(res.data) ? (res.data as AdminGateUser[]) : [];
+}
+
+export async function fetchAdminGateCompanies(): Promise<AdminGateCompany[]> {
+  const res = await api.get("/api/admin-gate/companies", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(res.data) ? (res.data as AdminGateCompany[]) : [];
+}

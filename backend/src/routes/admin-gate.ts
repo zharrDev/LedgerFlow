@@ -150,4 +150,44 @@ adminGate.get("/logs", requireAdminGate, async (c) => {
   return c.json(data ?? []);
 });
 
+// ────────────────────────────────────────────────────────────────────────
+// Pandangan READ-ONLY global untuk Admin (pemilik aplikasi).
+// Model role: per company hanya ada OWNER (akses penuh) & AKUNTAN
+// (pencatatan). ADMIN di sini adalah pemilik aplikasi web — boleh MELIHAT
+// status/data seluruh sistem, tapi TIDAK boleh mengubah/menginput apa pun.
+// Karena itu endpoint di bawah hanya GET (tanpa mutasi). Semua dilindungi
+// requireAdminGate (token admin-gate, bukan token user biasa).
+// ────────────────────────────────────────────────────────────────────────
+
+// GET /api/admin-gate/users — semua user lintas company + nama company
+// (read-only: admin hanya boleh melihat)
+adminGate.get("/users", requireAdminGate, async (c) => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, name, email, phone, role, company_id, created_at, companies(name)")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("[admin-gate] users error:", error);
+    return c.json({ error: "Gagal memuat user" }, 500);
+  }
+  return c.json(data ?? []);
+});
+
+// GET /api/admin-gate/companies — semua company (read-only)
+adminGate.get("/companies", requireAdminGate, async (c) => {
+  const { data, error } = await supabase
+    .from("companies")
+    .select("id, name, currency, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("[admin-gate] companies error:", error);
+    return c.json({ error: "Gagal memuat company" }, 500);
+  }
+  return c.json(data ?? []);
+});
+
 export default adminGate;
