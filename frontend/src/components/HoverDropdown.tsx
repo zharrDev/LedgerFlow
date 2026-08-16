@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 import type { ReactNode, CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 /**
  * HoverDropdown — muncul saat hover/klik.
- * Panel pakai posisi `absolute` relatif terhadap container (bukan viewport)
- * supaya selalu menempel ke tombol meski ancestor-nya punya transform /
- * filter / backdrop-filter (yang bikin `fixed` meleset jauh). Karena
- * container sudah `relative`, panel tidak ikut mengubah flow dokumen.
+ * Panel dirender via PORTAL ke document.body dengan position:fixed berbasis
+ * koordinat viewport. Dua keuntungan:
+ *  1) Keluar dari ancestor ber-transform/filter/backdrop-filter (mis.
+ *     animasi framer-motion / backdrop-blur di header card Neraca) yang
+ *     bikin `fixed` meleset jauh dari tombol.
+ *  2) Tidak terkurung stacking context card — panel selalu tampil DI ATAS
+ *     konten lain (card ekuitas, tabel, dll).
  */
 
 export interface DropdownOption {
@@ -71,11 +75,9 @@ export function HoverDropdown({
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
-    const containerW = el.offsetWidth;
-    const containerH = el.offsetHeight;
     const gap = 4;
     const viewportPad = 8;
-    const preferredWidth = Math.max(containerW, minWidth);
+    const preferredWidth = Math.max(rect.width, minWidth);
     const maxPanelH = Math.min(288, window.innerHeight - viewportPad * 2);
 
     const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPad;
@@ -91,22 +93,19 @@ export function HoverDropdown({
         ? Math.max(96, Math.min(maxPanelH, spaceBelow))
         : Math.max(96, Math.min(maxPanelH, spaceAbove));
 
-    // Posisi panel RELATIF terhadap container (absolute), bukan viewport.
-    // Kalau pakai position:fixed, ancestor dengan transform / filter /
-    // backdrop-filter (mis. animasi framer-motion atau backdrop-blur pada
-    // header card Neraca) membuat panel ter-hitung terhadap ancestor itu,
-    // sehingga dropdown muncul jauh dari tombol. Absolute relatif container
-    // selalu menempel ke tombol apa pun kondisi ancestor-nya.
-    let left = alignRight ? preferredWidth - containerW : 0;
-    // Clamp agar panel tidak keluar viewport kiri/kanan
+    // Panel dirender via PORTAL ke document.body + position:fixed berbasis
+    // koordinat viewport (rect dari getBoundingClientRect). Karena portal
+    // keluar dari ancestor ber-transform/filter, koordinat fixed akurat —
+    // panel selalu menempel tepat di bawah tombol.
+    let left = alignRight ? rect.right - preferredWidth : rect.left;
     left = Math.min(
-      Math.max(viewportPad - rect.left, left),
-      window.innerWidth - rect.left - preferredWidth - viewportPad,
+      Math.max(viewportPad, left),
+      window.innerWidth - preferredWidth - viewportPad,
     );
 
     if (place === "bottom") {
       setPanelPos({
-        top: containerH + gap,
+        top: rect.bottom + gap,
         left,
         width: preferredWidth,
         maxHeight,
@@ -114,7 +113,7 @@ export function HoverDropdown({
       });
     } else {
       setPanelPos({
-        bottom: containerH + gap,
+        bottom: window.innerHeight - rect.top + gap,
         left,
         width: preferredWidth,
         maxHeight,
@@ -206,13 +205,13 @@ export function HoverDropdown({
 
   const panelStyle: CSSProperties | undefined = panelPos
     ? {
-        position: "absolute",
+        position: "fixed",
         top: panelPos.top,
         bottom: panelPos.bottom,
         left: panelPos.left,
         width: panelPos.width,
         maxHeight: panelPos.maxHeight,
-        zIndex: 10050,
+        zIndex: 2147483000,
       }
     : undefined;
 
@@ -245,44 +244,47 @@ export function HoverDropdown({
         />
       </button>
 
-      <AnimatePresence>
-        {isOpen && panelPos && (
-          <motion.div
-            ref={panelRef}
-            initial={{
-              opacity: 0,
-              y: panelPos.place === "top" ? 6 : -6,
-              scale: 0.98,
-            }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{
-              opacity: 0,
-              y: panelPos.place === "top" ? 6 : -6,
-              scale: 0.98,
-            }}
-            transition={{ duration: 0.12 }}
-            style={panelStyle}
-            onMouseEnter={open}
-            onMouseLeave={scheduleClose}
-            className="overflow-y-auto overscroll-contain bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl scrollbar-thin"
-          >
-            {options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors break-words ${
-                  value === option.value
-                    ? "text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-500/10 font-medium"
-                    : "text-gray-700 dark:text-gray-300"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && panelPos && (
+            <motion.div
+              ref={panelRef}
+              initial={{
+                opacity: 0,
+                y: panelPos.place === "top" ? 6 : -6,
+                scale: 0.98,
+              }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{
+                opacity: 0,
+                y: panelPos.place === "top" ? 6 : -6,
+                scale: 0.98,
+              }}
+              transition={{ duration: 0.12 }}
+              style={panelStyle}
+              onMouseEnter={open}
+              onMouseLeave={scheduleClose}
+              className="overflow-y-auto overscroll-contain bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl scrollbar-thin"
+            >
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors break-words ${
+                    value === option.value
+                      ? "text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-500/10 font-medium"
+                      : "text-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 }
