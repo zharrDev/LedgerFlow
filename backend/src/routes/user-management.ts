@@ -14,24 +14,26 @@ userMgmt.use("*", authMiddleware);
 const ALLOWED_ROLES = ["akuntan", "owner"] as const;
 
 // Hitung jumlah owner di sebuah perusahaan (untuk proteksi owner terakhir).
-// Dipakai untuk memastikan company tidak pernah "yatim" tanpa owner.
+// Role tersimpan di DUA tabel (users.role + company_members.role) yang bisa
+// tidak sinkron (mis. data lama sebelum sinkronisasi role). Agar TIDAK pernah
+// salah memblokir user yang bukan owner terakhir, hitung MAX dari kedua
+// sumber — nilai terbesar = jumlah owner paling akurat.
 async function countOwners(companyId: string): Promise<number> {
-  // Sumber kebenaran: relasi keanggotaan company_members (bukan users.role
-  // yang bisa ketinggalan). Fallback ke users.role bila baris member tidak
-  // ditemukan (data lama / migrasi belum jalan).
-  const { count, error } = await supabase
+  const { count: memberCount, error: memberErr } = await supabase
     .from("company_members")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("role", "owner");
-  if (!error && (count ?? 0) > 0) return count ?? 0;
 
-  const { count: uCount } = await supabase
+  const { count: userCount, error: userErr } = await supabase
     .from("users")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("role", "owner");
-  return uCount || 0;
+
+  const a = !memberErr ? (memberCount ?? 0) : 0;
+  const b = !userErr ? (userCount ?? 0) : 0;
+  return Math.max(a, b);
 }
 
 async function getCompanyName(companyId: string): Promise<string> {
