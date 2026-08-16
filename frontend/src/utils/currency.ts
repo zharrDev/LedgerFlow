@@ -55,6 +55,16 @@ export function getCurrency(): string {
   return "IDR";
 }
 
+/** Set mata uang aktif (hanya menerima kode yang ada di daftar). */
+export function setCurrency(code: string): void {
+  if (!CURRENCIES.some((c) => c.code === code)) return;
+  try {
+    localStorage.setItem("currency", code);
+  } catch {
+    // ignore — localStorage tidak tersedia.
+  }
+}
+
 /** Locale untuk kode mata uang (fallback id-ID). */
 function getLocale(code: string): string {
   return CURRENCY_LOCALE[code] || "id-ID";

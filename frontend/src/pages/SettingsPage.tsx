@@ -8,7 +8,8 @@ import { useToast } from "../context/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { formatPrice, cancelSubscription } from "../services/paymentService";
 import { HoverDropdown } from "../components/HoverDropdown";
-import { CURRENCIES } from "../utils/currency";
+import { CURRENCIES, getCurrency, setCurrency } from "../utils/currency";
+import { getMyCompany, updateCompanyCurrency } from "../services/companiesService";
 import {
   Settings,
   Palette,
@@ -88,20 +89,30 @@ export default function SettingsPage() {
   });
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  // Load settings from localStorage
+  // Load settings dari localStorage + mata uang dari database (per-company).
   useEffect(() => {
     const savedTheme = (localStorage.getItem("theme") ||
       "system") as ThemeOption;
     setTheme(savedTheme);
-    const savedCurrency = (localStorage.getItem("currency") ||
-      "IDR") as CurrencyOption;
-    setCurrency(savedCurrency);
+    setCurrency(getCurrency());
     const savedNotif = localStorage.getItem("notifications");
     if (savedNotif) {
       try {
         setNotifications(JSON.parse(savedNotif));
       } catch {}
     }
+
+    // Mata uang tersimpan per-company di database — ambil yang terbaru
+    // supaya tampilan Settings selalu konsisten dengan company.
+    getMyCompany()
+      .then((company) => {
+        if (company?.currency) {
+          setCurrency(company.currency);
+        }
+      })
+      .catch(() => {
+        // Abaikan — localStorage tetap dipakai sebagai fallback.
+      });
   }, []);
 
   const applyTheme = (t: ThemeOption) => {
@@ -119,9 +130,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = () => {
-    localStorage.setItem("currency", currency);
-    localStorage.setItem("notifications", JSON.stringify(notifications));
+  const handleSave = async () => {
     setSaved(true);
     toast({
       variant: "success",
@@ -129,6 +138,16 @@ export default function SettingsPage() {
       message: "Semua preferensi Anda berhasil diperbarui.",
     });
     setTimeout(() => setSaved(false), 2000);
+
+    // Mata uang disimpan ke database (berlaku untuk semua anggota company)
+    // + localStorage (untuk tampilan langsung).
+    setCurrency(currency);
+    try {
+      await updateCompanyCurrency(currency);
+    } catch {
+      // Simpan lokal tetap jalan; sinkron DB gagal tidak memblokir UI.
+    }
+    localStorage.setItem("notifications", JSON.stringify(notifications));
   };
 
   const handleCancelSubscription = async () => {

@@ -49,4 +49,39 @@ companies.get("/", async (c) => {
   return c.json(data ? [data] : []);
 });
 
+// Daftar mata uang yang didukung (sama dengan daftar di frontend
+// utils/currency.ts). Update di dua tempat sekaligus bila menambah mata uang.
+const SUPPORTED_CURRENCIES = [
+  "IDR", "USD", "EUR", "SGD", "MYR", "GBP", "JPY", "AUD", "CNY",
+  "THB", "PHP", "BND", "VND", "SAR", "AED", "INR", "KRW",
+];
+
+// PATCH /api/companies/currency — simpan mata uang default company.
+// Disimpan per-company di database, bukan per-browser, sehingga konsisten
+// di semua perangkat anggota company.
+companies.patch("/currency", async (c) => {
+  const user = c.get("user");
+  const { currency } = await c.req.json();
+
+  if (typeof currency !== "string" || !SUPPORTED_CURRENCIES.includes(currency)) {
+    return c.json(
+      { error: "Mata uang tidak valid. Pilih dari daftar mata uang yang tersedia." },
+      400,
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("companies")
+    .update({ currency })
+    .eq("id", user.company_id)
+    .select("id, name, currency")
+    .single();
+
+  if (error) {
+    return c.json({ error: "Gagal menyimpan mata uang." }, 500);
+  }
+
+  return c.json(data);
+});
+
 export default companies;

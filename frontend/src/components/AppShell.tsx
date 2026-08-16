@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { AppNav } from "./AppNav";
+import { getMyCompany } from "../services/companiesService";
+import { getCurrency, setCurrency } from "../utils/currency";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -30,6 +32,27 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Sinkronkan mata uang dari database (per-company) ke localStorage.
+  // Jadi pilihan mata uang yang disimpan company berlaku di semua perangkat
+  // anggota, bukan hanya browser yang dipakai saat mengubahnya.
+  useEffect(() => {
+    let cancelled = false;
+    getMyCompany()
+      .then((company) => {
+        if (cancelled) return;
+        if (company?.currency && company.currency !== getCurrency()) {
+          setCurrency(company.currency);
+        }
+      })
+      .catch(() => {
+        // Gagal mengambil company (mis. token belum siap) — biarkan
+        // localStorage memakai nilai yang sudah ada.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const toggleMobileMenu = useCallback(
