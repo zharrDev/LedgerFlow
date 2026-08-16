@@ -205,7 +205,7 @@ function Navbar() {
 
   return (
     <header
-      className={`fixed top-2 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[999] bg-white/80 dark:bg-darkCard/80 backdrop-blur-md rounded-xl border border-primary-500/20 transition-all duration-300 ${
+      className={`fixed top-2 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[999] bg-darkCard/80 backdrop-blur-md rounded-xl border border-primary-500/20 transition-all duration-300 ${
         scrolled ? "shadow-lg" : "shadow-none"
       }`}
     >
@@ -217,10 +217,10 @@ function Navbar() {
             className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
           />
           <div className="flex flex-col justify-center leading-none">
-            <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-all">
+            <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-white transition-all">
               LedgerFlow
             </span>
-            <span className="text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-blue-500 transition-all mt-0.5">
+            <span className="text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400 transition-all mt-0.5">
               Financial Platform
             </span>
           </div>
@@ -235,7 +235,7 @@ function Navbar() {
               onMouseEnter={() => setOpenDropdown(item.key)}
               onMouseLeave={() => setOpenDropdown(null)}
             >
-              <button className="relative text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-500/5">
+              <button className="relative text-sm font-medium text-gray-200 hover:text-primary-400 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10">
                 {item.name}
                 <ChevronDown
                   size={14}
@@ -248,7 +248,7 @@ function Navbar() {
               {/* Mega-style Dropdown */}
               <AnimateDropdown open={openDropdown === item.key}>
                 <div
-                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700/50 py-3 z-50 ${
+                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-darkCard/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 py-3 z-50 ${
                     item.items.length > 4
                       ? "w-[480px] grid grid-cols-2 gap-0.5 px-3"
                       : "w-[280px] px-2"
@@ -256,17 +256,17 @@ function Navbar() {
                 >
                   {item.items.map((sub) => {
                     const className =
-                      "flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors group/sub";
+                      "flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-900/20 transition-colors group/sub";
                     const content = (
                       <>
-                        <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-50 dark:bg-primary-500/10 text-primary-500 group-hover/sub:bg-primary-100 dark:group-hover/sub:bg-primary-500/20 transition-colors">
+                        <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-400 group-hover/sub:bg-primary-500/20 transition-colors">
                           <sub.icon size={16} />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">
+                          <p className="text-sm font-medium text-gray-200 group-hover/sub:text-primary-400 transition-colors">
                             {sub.title}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
+                          <p className="text-xs text-gray-400 mt-0.5 leading-snug">
                             {sub.desc}
                           </p>
                         </div>
@@ -292,14 +292,14 @@ function Navbar() {
 
           <Link
             to="/login"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-500/5"
+            className="text-sm font-medium text-gray-200 hover:text-primary-400 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-primary-500/10"
           >
             Pricing
           </Link>
 
           <Link
             to="/login"
-            className="text-sm font-medium text-primary-600 dark:text-primary-400 border-l border-gray-200 dark:border-gray-700 pl-4 ml-2 hover:text-primary-700 dark:hover:text-primary-300 transition"
+            className="text-sm font-medium text-primary-400 border-l border-white/20 pl-4 ml-2 hover:text-primary-300 transition"
           >
             See it in action
           </Link>
@@ -319,7 +319,7 @@ function Navbar() {
               </Link>
               <button
                 onClick={logout}
-                className="hidden sm:inline-flex text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                className="hidden sm:inline-flex text-sm font-medium text-gray-200 hover:text-primary-400"
               >
                 Logout
               </button>
@@ -328,7 +328,7 @@ function Navbar() {
             <>
               <Link
                 to="/login"
-                className="hidden sm:inline-flex text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                className="hidden sm:inline-flex text-sm font-medium text-gray-200 hover:text-primary-400"
               >
                 Sign in
               </Link>
@@ -338,7 +338,7 @@ function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-darkCard transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+            className="lg:hidden p-2 rounded-xl text-gray-200 hover:bg-white/10 transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-500/50"
             aria-label="Toggle mobile menu"
           >
             <motion.div
@@ -350,10 +350,7 @@ function Navbar() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
             >
               {mobileMenuOpen ? (
-                <X
-                  size={22}
-                  className="text-primary-600 dark:text-primary-400"
-                />
+                <X size={22} className="text-primary-400" />
               ) : (
                 <Menu size={22} />
               )}
@@ -370,29 +367,29 @@ function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden border-t border-gray-200 dark:border-gray-700/80 bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl overflow-hidden rounded-b-2xl shadow-2xl"
+            className="lg:hidden border-t border-white/10 bg-darkCard/95 backdrop-blur-xl overflow-hidden rounded-b-2xl shadow-2xl"
           >
             <div className="px-6 py-6 space-y-6 max-h-[82vh] overflow-y-auto scrollbar-thin">
               <div className="space-y-6">
                 {menuItems.map((item) => (
                   <div key={item.key} className="space-y-2.5">
-                    <p className="text-xs font-extrabold text-primary-600 dark:text-primary-400 uppercase tracking-wider px-1">
+                    <p className="text-xs font-extrabold text-primary-400 uppercase tracking-wider px-1">
                       {item.name}
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-50/70 dark:bg-[#111827]/70 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#111827]/70 p-3 rounded-2xl border border-white/10">
                       {item.items.map((sub) => {
                         const className =
-                          "flex items-start gap-3 p-2.5 rounded-xl hover:bg-white dark:hover:bg-darkCard text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all group/mob shadow-sm hover:shadow";
+                          "flex items-start gap-3 p-2.5 rounded-xl hover:bg-darkCard text-gray-200 hover:text-primary-400 transition-all group/mob shadow-sm hover:shadow";
                         const content = (
                           <>
-                            <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-500 group-hover/mob:scale-110 transition-transform flex-shrink-0 mt-0.5">
+                            <div className="p-2 rounded-xl bg-primary-500/10 text-primary-400 group-hover/mob:scale-110 transition-transform flex-shrink-0 mt-0.5">
                               <sub.icon size={18} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-bold leading-snug">
                                 {sub.title}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
                                 {sub.desc}
                               </p>
                             </div>
@@ -422,10 +419,10 @@ function Navbar() {
               </div>
 
               {/* Action Links in Mobile Menu */}
-              <div className="border-t border-gray-200 dark:border-gray-700/80 pt-6 flex flex-col sm:flex-row gap-3">
+              <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row gap-3">
                 <Link
                   to="/pricing"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/20 text-sm font-semibold text-gray-200 hover:bg-white/5 transition-all shadow-sm"
                 >
                   Pricing
                 </Link>
@@ -439,7 +436,7 @@ function Navbar() {
                     </Link>
                     <button
                       onClick={logout}
-                      className="w-full sm:w-auto px-4 py-3 text-sm font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                      className="w-full sm:w-auto px-4 py-3 text-sm font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-all"
                     >
                       Logout
                     </button>
@@ -515,6 +512,7 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/25 via-darkBg/35 to-transparent pointer-events-none" />
 
         <motion.div
           style={{ y: heroY, opacity: opacityHero }}
@@ -525,13 +523,21 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+            <div className="relative px-5 sm:px-10 py-8 sm:py-10 -mx-2 sm:-mx-4">
+              <div
+                className="absolute inset-0 -z-10 rounded-[48px] pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, rgba(15,23,42,0.78) 0%, rgba(15,23,42,0.5) 45%, transparent 75%)",
+                }}
+              />
+            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
               Manage Your Financial Future <br />
               <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
                 With Confidence
               </span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto px-2">
+            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2 [text-shadow:0_2px_16px_rgba(0,0,0,0.6)]">
               LedgerFlow eliminates manual bookkeeping, speeds up month-end
               close, and gives you real-time financials.
             </p>
@@ -564,6 +570,7 @@ export default function HomePage() {
               <Lock size={14} className="flex-shrink-0" /> Enterprise-grade
               security · SOC 2 Type II · GDPR
             </p>
+            </div>
           </motion.div>
         </motion.div>
 

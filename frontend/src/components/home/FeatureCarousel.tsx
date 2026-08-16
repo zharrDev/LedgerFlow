@@ -112,7 +112,7 @@ export default function FeatureCarousel() {
               transition={{ duration: 0.4, ease: "easeOut" }}
               className="absolute inset-x-0 bottom-8 sm:bottom-12 flex justify-center px-5 sm:px-12"
             >
-              <div className="group relative max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-xl overflow-hidden">
+              <div className="group relative max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-md overflow-hidden">
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] aspect-square rounded-full bg-primary-400 scale-0 transition-transform duration-500 ease-out group-hover:scale-100" />
                 <h3 className="relative z-10 text-base sm:text-2xl lg:text-3xl font-poppins font-medium text-gray-900 text-center leading-tight truncate">
                   {slide.title}
@@ -128,7 +128,7 @@ export default function FeatureCarousel() {
           type="button"
           onClick={prev}
           aria-label="Slide sebelumnya (intip)"
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden shadow-xl cursor-pointer group"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden cursor-pointer group"
         >
           <div className="absolute inset-0 rounded-full border-2 border-white/80 dark:border-white/30 transition-colors group-hover:border-primary-400">
             <motion.img
@@ -146,7 +146,7 @@ export default function FeatureCarousel() {
           type="button"
           onClick={next}
           aria-label="Slide berikutnya (intip)"
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden shadow-xl cursor-pointer group"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden cursor-pointer group"
         >
           <div className="absolute inset-0 rounded-full border-2 border-white/80 dark:border-white/30 transition-colors group-hover:border-primary-400">
             <motion.img
