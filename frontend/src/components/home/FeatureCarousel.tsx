@@ -82,7 +82,7 @@ export default function FeatureCarousel() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative mx-auto w-[96%] max-w-[1700px]"
       >
-        <div className="relative mx-auto w-[70%] sm:w-[78%] lg:w-[80%] h-[280px] sm:h-[400px] lg:h-[550px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-2xl">
+        <div className="relative mx-auto w-[70%] sm:w-[78%] lg:w-[80%] h-[280px] sm:h-[400px] lg:h-[550px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900">
           <AnimatePresence initial={false}>
             <motion.div
               key={n}
