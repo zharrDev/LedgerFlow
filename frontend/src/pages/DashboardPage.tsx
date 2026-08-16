@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useAccounts } from "../hooks/useAccounts";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { reportsService } from "../services/reportsService";
+import { journalService } from "../services/journalService";
 import { AppShell } from "../components/AppShell";
 import BrandedLoader from "../components/BrandedLoader";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -75,9 +76,20 @@ export default function DashboardPage() {
     periodId || undefined,
   );
   const [periods, setPeriods] = useState<Period[]>([]);
+  const [quota, setQuota] = useState<{
+    max: number | null;
+    used: number;
+    left: number | null;
+    planName?: string;
+  } | null>(null);
 
   useEffect(() => {
     reportsService.getPeriods().then(setPeriods).catch(console.error);
+    // Sisa kuota jurnal bulan ini (plan Free) untuk banner kecil di bawah hero
+    journalService
+      .getQuota()
+      .then(setQuota)
+      .catch(() => setQuota(null));
   }, []);
 
   // Initial load: tampilkan BrandedLoader sampai data pertama siap.
@@ -322,6 +334,59 @@ export default function DashboardPage() {
           </div>
           <div className="h-0.5 w-full bg-gradient-to-r from-primary-500 via-emerald-500 to-primary-500"></div>
         </motion.div>
+
+        {/* ═══ Banner sisa kuota jurnal (plan Free) ═══ */}
+        {quota && quota.max !== null && quota.max > 0 && (
+          <motion.div
+            variants={itemVariants}
+            className={`flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border px-4 py-3 ${
+              (quota.left ?? 0) <= 10
+                ? "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40"
+                : "bg-white dark:bg-darkCard border-gray-200 dark:border-gray-700/50 shadow-sm"
+            }`}
+          >
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div
+                className={`p-2 rounded-xl shrink-0 ${
+                  (quota.left ?? 0) <= 10
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    : "bg-primary-500/10 text-primary-500"
+                }`}
+              >
+                <FileText size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {quota.planName === "free" ? "Plan Free" : "Kuota Jurnal"} —{" "}
+                  {quota.left} jurnal tersisa bulan ini (dari {quota.max})
+                </p>
+                <div className="mt-1.5 h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700/60 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      (quota.left ?? 0) <= 10
+                        ? "bg-amber-500"
+                        : "bg-gradient-to-r from-primary-500 to-primary-600"
+                    }`}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(4, ((quota.used || 0) / quota.max) * 100),
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            {(quota.left ?? 0) <= 10 && (
+              <Link
+                to="/pricing"
+                className="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors text-center"
+              >
+                Upgrade ke Pro
+              </Link>
+            )}
+          </motion.div>
+        )}
 
         {/* ═══ Period Selector Row ═══ */}
         <motion.div

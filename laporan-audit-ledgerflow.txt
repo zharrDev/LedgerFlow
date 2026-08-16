@@ -396,6 +396,119 @@ KESIMPULAN UMUM (diperbarui):
 - Catatan item 9: migrasi database/migration-fix-company-members-default.sql
   dan database/migration-admin-gate.sql WAJIB dijalankan manual di Supabase
   SQL editor agar perbaikan DEFAULT & tabel admin_gate_logs aktif.
+- CATATAN MODEL ROLE BARU: sejak commit 790cb04, per company HANYA ada
+  role owner & akuntan (role 'admin' per-company DIPERTAHANKAN secara
+  historis di tabel lama, lihat Bagian 6). Admin = pemilik aplikasi yang
+  masuk lewat Admin Gate.
+
+================================================================================
+6. PERUBAHAN PASCA-AUDIT (model role, kuota jurnal, mata uang)
+================================================================================
+Bagian ini mencatat perubahan yang dilakukan SETELAH audit awal (Bagian 1-4)
+untuk menyelaraskan sistem dengan model role yang disepakati pemilik aplikasi.
+
+--------------------------------------------------------------------------------
+6.1 Model role baru: per company = Owner + Akuntan saja
+--------------------------------------------------------------------------------
+Keputusan pemilik aplikasi: role 'admin' TIDAK lagi menjadi role per-company.
+- Per company: Owner (akses penuh) & Akuntan (pencatatan) saja.
+- Admin = PEMILIK APLIKASI (read-only + moderasi hapus user/company
+  bermasalah), masuk lewat Admin Gate (/portal-akses), BUKAN anggota company.
+
+PERUBAHAN BACKEND (commit 790cb04):
+- user-management.ts: semua endpoint -> owner only (requireRole("owner")).
+  Invite anggota baru HANYA role akuntan (role !== "akuntan" -> 400).
+  Ubah role hanya akuntan <-> owner; blok myRole === "admin" dihapus.
+- accounts.ts: POST/PUT -> owner/akuntan; DELETE -> owner only (dulu admin).
+- journal.ts: DELETE -> owner only (dulu admin/owner).
+- periods.ts: POST/close/delete -> owner only (dulu admin/owner).
+- health.ts: smtp-test/net-test -> owner only.
+- seed-demo.ts: demo user Admin dihapus -> 2 user (Owner & Akuntan).
+- database.sql: CHECK role -> ('akuntan','owner').
+- MIGRASI BARU: database/migration-remove-admin-role.sql — konversi user
+  lama ber-role 'admin' -> 'akuntan' + perketat constraint. WAJIB dijalankan
+  manual sekali di Supabase SQL editor untuk DB yang sudah terpakai.
+
+PERUBAHAN FRONTEND:
+- App.tsx: RoleRoute users-management & period-management -> owner;
+  chart-of-accounts -> owner/akuntan; hapus route duplikat yang membuat
+  role gating tidak efektif.
+- navigation.ts: menu Periode & User Management hanya tampil untuk owner.
+- UserManagementPage.tsx: opsi role "Admin" dihapus dari dropdown.
+- JournalEntryPage.tsx: tombol hapus jurnal hanya owner.
+- HomePage.tsx: teks role disesuaikan (Owner & Akuntan).
+- AdminPortalPage.tsx: dashboard admin read-only + moderasi (hapus
+  user/company bermasalah dengan konfirmasi popup, proteksi owner terakhir).
+
+PROTEKSI YANG DIJAGA:
+- Owner terakhir tidak bisa didemote/dihapus (backend countOwners -> 400).
+- Akuntan tidak bisa mengubah role/anggota (backend 403).
+- Invite selalu sebagai akuntan; promosi ke owner dilakukan owner lewat
+  dropdown role di daftar anggota (pola 2-langkah, sesuai rekomendasi).
+
+--------------------------------------------------------------------------------
+6.2 Validasi kuota jurnal plan Free (50/bulan) di BACKEND
+--------------------------------------------------------------------------------
+Menutup celah audit: sebelumnya kuota 50 jurnal/bulan plan Free hanya
+tertulis di deskripsi plan, TIDAK divalidasi backend.
+- backend/src/routes/journal.ts: helper getJournalQuota() menghitung jumlah
+  jurnal (draft + posted, tidak termasuk soft-delete) di bulan entry_date.
+  - POST /api/journal: jurnal ke-51 di bulan sama -> 403 dengan pesan
+    upgrade. Pro/Enterprise (max_journals null) tidak diblokir.
+  - GET /api/journal/quota (BARU): { max, used, left, planName } untuk UI.
+- frontend: banner sisa kuota di halaman Journal Entry (JournalEntryPage.tsx)
+  dan Dashboard (DashboardPage.tsx): progress bar pemakaian + tombol
+  "Upgrade ke Pro" (ke /pricing) saat sisa <= 10.
+- README diperbarui (tabel endpoint + catatan kuota).
+
+--------------------------------------------------------------------------------
+6.3 Multi-mata uang (17 mata uang)
+--------------------------------------------------------------------------------
+Sebelumnya semua format uang hardcoded IDR ("Rp", locale id-ID).
+- frontend/src/utils/currency.ts: daftar CURRENCIES (IDR, USD, EUR, SGD,
+  MYR, GBP, JPY, AUD, CNY, THB, PHP, BND, VND, SAR, AED, INR, KRW) +
+  getCurrency() (baca localStorage) + formatCurrency() dinamis per locale.
+- Semua halaman pengganti formatter hardcoded -> formatCurrency:
+  JournalShared, LedgerShared, JournalEntryPage, JournalForm, CashFlowPage,
+  DashboardPage, IncomeStatementPage, exportPDF.
+- SettingsPage: dropdown 17 mata uang (dulu 4).
+- Penyimpanan per-company di DB (commit 112ed77):
+  - backend/src/routes/companies.ts: PATCH /api/companies/currency
+    (validasi kode dari daftar 17 mata uang).
+  - AppShell: saat masuk aplikasi, sinkronkan currency company dari DB ke
+    localStorage -> semua anggota company dapat mata uang yang sama.
+
+--------------------------------------------------------------------------------
+6.4 Perbaikan UI dashboard admin & notifikasi
+--------------------------------------------------------------------------------
+- AdminPortalPage.tsx: pagination 5 data/halaman (dulu 10) di semua tabel
+  (Audit Log, User, Company), konfirmasi hapus pakai modal popup animasi
+  (bukan window.confirm), notifikasi pakai toast (ToastContext, bukan alert),
+  badge status log berbahasa Indonesia, badge jumlah data per tab.
+- Notifikasi (Header.tsx + pushNotification): perbaiki link notif periode
+  yang salah (/periods -> /period-management) sehingga klik notif tidak
+  lagi masuk halaman 404.
+- PeriodManagement.tsx: konfirmasi popup bila tahun periode yang diketik
+  selisih > 2 tahun dari tahun berjalan (cegah salah ketik, tetap fleksibel
+  untuk periode historis/masa depan).
+
+--------------------------------------------------------------------------------
+6.5 Status keamanan terkini
+--------------------------------------------------------------------------------
+- Semua endpoint yang menyentuh data company mengambil company_id dari JWT
+  (bukan body) — isolasi tenant tetap terjaga.
+- Role revalidasi dari DB tiap request (middleware/auth.ts) — JWT stale
+  role tidak lagi berlaku 24 jam.
+- Admin Gate: rate-limit ketat (5 gagal/15 menit, blokir 1 jam) + audit
+  log setiap percobaan + token terpisah (type admin-gate) yang ditolak di
+  endpoint user biasa.
+- Belum ada rate-limit khusus untuk percobaan password email login (hanya
+  proteksi Supabase Auth bawaan) — prioritas lanjutan bila diperlukan.
+
+RINGKASAN VERIFIKASI TERAKHIR: typecheck backend & frontend lolos;
+build frontend (vite build) sukses. Commit terakhir: 78c91c3.
+================================================================================
+
 
 ================================================================================
 5. FITUR BARU: ADMIN GATE (dashboard admin khusus)
