@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { JournalStatus, Toast } from "../../types/journal";
 import { STATUS_CONFIG } from "../../types/constants";
+import { formatCurrency } from "../../utils/currency";
 
 // ─── StatusBadge ──────────────────────────────────────────────────────
 export function StatusBadge({ status }: { status: JournalStatus }) {
@@ -106,14 +107,11 @@ export function ToastContainer({ toasts }: { toasts: Toast[] }) {
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────
+// Format uang mengikuti mata uang aktif user (Settings → Regional),
+// bukan hardcoded IDR.
 export function formatIDR(value: number): string {
   if (value === 0) return "—";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatCurrency(value);
 }
 
 export function formatDate(iso: string): string {

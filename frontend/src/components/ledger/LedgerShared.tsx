@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import type { Toast } from "../../types/ledger";
+import { formatCurrency } from "../../utils/currency";
 
 // ─── SpinnerIcon ──────────────────────────────────────────────────────
 export function SpinnerIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -113,23 +114,15 @@ export function StatCard({
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────
+// Format uang mengikuti mata uang aktif user (Settings → Regional),
+// bukan hardcoded IDR.
 export function formatIDR(value: number): string {
   if (value === 0) return "—";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatCurrency(value);
 }
 
 export function formatIDRCompact(value: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatCurrency(value);
 }
 
 export function formatDate(iso: string): string {

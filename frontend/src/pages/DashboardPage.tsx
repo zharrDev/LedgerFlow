@@ -35,6 +35,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { Period } from "../types/reports";
+import { formatAbsCurrency, getCurrency } from "../utils/currency";
 
 // ─── Animation variants ─────────────────────────────────────────────
 const containerVariants = {
@@ -54,19 +55,15 @@ const itemVariants = {
 };
 
 // ─── Format helpers ─────────────────────────────────────────────────
-const formatIDR = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
+const formatIDR = (amount: number) => formatAbsCurrency(amount);
 
 const formatCompact = (amount: number) => {
   const abs = Math.abs(amount);
-  if (abs >= 1_000_000_000) return `Rp ${(amount / 1_000_000_000).toFixed(1)}M`;
-  if (abs >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(1)}jt`;
-  if (abs >= 1_000) return `Rp ${(amount / 1_000).toFixed(0)}rb`;
+  const symbol =
+    getCurrency() === "IDR" ? "Rp" : getCurrency() === "USD" ? "$" : getCurrency();
+  if (abs >= 1_000_000_000) return `${symbol} ${(amount / 1_000_000_000).toFixed(1)}M`;
+  if (abs >= 1_000_000) return `${symbol} ${(amount / 1_000_000).toFixed(1)}jt`;
+  if (abs >= 1_000) return `${symbol} ${(amount / 1_000).toFixed(0)}rb`;
   return formatIDR(amount);
 };
 

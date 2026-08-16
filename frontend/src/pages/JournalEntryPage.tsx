@@ -17,6 +17,7 @@ import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { formatCurrency } from "../utils/currency";
 import {
   ArrowLeft,
   Search,
@@ -179,13 +180,7 @@ export default function JournalEntryPage() {
   }, [entries]);
 
   const fmtIDR = (n: number) =>
-    n === 0
-      ? "Rp 0"
-      : new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          minimumFractionDigits: 0,
-        }).format(n);
+    n === 0 ? formatCurrency(0) : formatCurrency(n);
 
   // ── Handlers ──
   const handleSave = async (
@@ -420,13 +415,7 @@ export default function JournalEntryPage() {
                     {pagination.totalItems} entry · {stats.posted} posted ·{" "}
                     {stats.draft} draft · Total Debit:{" "}
                     <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
-                      {stats.totalPostedDebit === 0
-                        ? "Rp 0"
-                        : new Intl.NumberFormat("id-ID", {
-                            style: "currency",
-                            currency: "IDR",
-                            minimumFractionDigits: 0,
-                          }).format(stats.totalPostedDebit)}
+                      {fmtIDR(stats.totalPostedDebit)}
                     </span>
                   </>
                 ),

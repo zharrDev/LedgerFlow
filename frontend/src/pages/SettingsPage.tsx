@@ -8,6 +8,7 @@ import { useToast } from "../context/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { formatPrice, cancelSubscription } from "../services/paymentService";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { CURRENCIES } from "../utils/currency";
 import {
   Settings,
   Palette,
@@ -56,7 +57,7 @@ const letterVariants = {
 };
 
 type ThemeOption = "light" | "dark" | "system";
-type CurrencyOption = "IDR" | "USD" | "EUR" | "SGD";
+type CurrencyOption = (typeof CURRENCIES)[number]["code"];
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -414,13 +415,12 @@ export default function SettingsPage() {
               onChange={(v) => setCurrency(v as CurrencyOption)}
               fullWidth
               minWidth={240}
-              options={[
-                { value: "IDR", label: "🇮🇩 IDR - Rupiah Indonesia" },
-                { value: "USD", label: "🇺🇸 USD - US Dollar" },
-                { value: "EUR", label: "🇪🇺 EUR - Euro" },
-                { value: "SGD", label: "🇸🇬 SGD - Singapore Dollar" },
-              ]}
+              options={CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
             />
+            <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+              Mata uang ini dipakai untuk menampilkan semua angka di aplikasi
+              (jurnal, buku besar, laporan, dashboard) dan hasil export.
+            </p>
           </div>
         </motion.div>
 

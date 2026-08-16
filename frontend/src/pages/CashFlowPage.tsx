@@ -24,16 +24,11 @@ import {
   exportCashFlowExcel,
   exportCashFlowWord,
 } from "../utils/exportPDF";
+import { formatCurrency } from "../utils/currency";
 import type { Period, CashFlowSection } from "../types/reports";
 
 // ─── Helpers ────────────────────────────────────────────────────────
-const formatIDR = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+const formatIDR = (amount: number) => formatCurrency(amount);
 
 const containerVariants = {
   hidden: { opacity: 0 },

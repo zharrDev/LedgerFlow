@@ -21,6 +21,47 @@ function isMissingFunction(err: any): boolean {
   );
 }
 
+// ── Kuota jurnal bulanan (plan Free: 50 jurnal/bulan) ────────────────
+// Ambil max_journals dari plan subscription user. Kalau null (unlimited)
+// atau 0, tidak ada kuota. Hitung jurnal yang SUDAH dibuat di bulan yang
+// sama dengan entry_date (termasuk draft & posted, tidak termasuk yang
+// soft-delete). Mengembalikan sisa kuota, atau null bila unlimited.
+async function getJournalQuotaLeft(
+  userId: string,
+  companyId: string,
+  entryDate: string,
+): Promise<{ left: number | null; planName?: string }> {
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plans(name, max_journals)")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  // Relasi plans bisa berbentuk objek (single) atau array tergantung hasil
+  // query; normalisasi agar aman terhadap keduanya.
+  const plans = Array.isArray(sub?.plans) ? sub.plans[0] : sub?.plans;
+  const maxJournals = plans?.max_journals;
+  if (!maxJournals || maxJournals <= 0) return { left: null }; // unlimited
+
+  const dt = new Date(entryDate);
+  const year = dt.getFullYear();
+  const month = dt.getMonth() + 1;
+  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+  const nextMonth = month === 12 ? year + 1 : year;
+  const nextMonthNum = month === 12 ? 1 : month + 1;
+  const endDate = `${nextMonth}-${String(nextMonthNum).padStart(2, "0")}-01`;
+
+  const { count } = await supabase
+    .from("journal_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .gte("entry_date", startDate)
+    .lt("entry_date", endDate);
+
+  return { left: Math.max(0, maxJournals - (count || 0)), planName: plans?.name };
+}
+
 // GET /api/journal — list entries (dengan search, filter, sort, pagination)
 journal.get("/", async (c) => {
   const { company_id } = c.get("user");
@@ -233,6 +274,27 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
         error: `entry_date (${entry_date}) tidak berada dalam periode yang dipilih (${period.year}-${String(period.month).padStart(2, "0")}).`,
       },
       400,
+    );
+  }
+
+  // ── Kuota jurnal bulanan ──
+  // Plan Free hanya 50 jurnal per bulan (draft + posted). Upgrade ke Pro
+  // untuk unlimited. Dihitung dari bulan entry_date, bukan bulan kalender
+  // berjalan, supaya konsisten dengan periode yang dipilih.
+  const { left: quotaLeft, planName } = await getJournalQuotaLeft(
+    created_by,
+    company_id,
+    entry_date,
+  );
+  if (quotaLeft !== null && quotaLeft <= 0) {
+    return c.json(
+      {
+        error:
+          planName === "free"
+            ? "Kuota jurnal bulan ini sudah habis (50 jurnal untuk plan Free). Upgrade ke Pro untuk jurnal tanpa batas."
+            : "Kuota jurnal bulan ini sudah habis. Upgrade plan Anda untuk jurnal tanpa batas.",
+      },
+      403,
     );
   }
 

@@ -18,6 +18,7 @@ import {
   Calendar,
 } from "lucide-react";
 import type { Period } from "../types/reports";
+import { formatCurrency, getCurrency } from "../utils/currency";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -50,19 +51,16 @@ const letterVariants = {
   },
 };
 
-const formatRupiah = (val: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(val);
+// Format uang mengikuti mata uang aktif user (Settings → Regional).
+const formatRupiah = (val: number) => formatCurrency(val);
 
 const formatCompact = (val: number) => {
   const abs = Math.abs(val);
-  if (abs >= 1_000_000_000) return `Rp ${(val / 1_000_000_000).toFixed(1)}M`;
-  if (abs >= 1_000_000) return `Rp ${(val / 1_000_000).toFixed(1)}jt`;
-  if (abs >= 1_000) return `Rp ${(val / 1_000).toFixed(0)}rb`;
+  const symbol =
+    getCurrency() === "IDR" ? "Rp" : getCurrency() === "USD" ? "$" : getCurrency();
+  if (abs >= 1_000_000_000) return `${symbol} ${(val / 1_000_000_000).toFixed(1)}M`;
+  if (abs >= 1_000_000) return `${symbol} ${(val / 1_000_000).toFixed(1)}jt`;
+  if (abs >= 1_000) return `${symbol} ${(val / 1_000).toFixed(0)}rb`;
   return formatRupiah(val);
 };
 

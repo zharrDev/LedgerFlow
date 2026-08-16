@@ -9,14 +9,10 @@ import {
   exportOfficeWord,
   type OfficeExportDoc,
 } from "./exportOffice";
+import { formatCurrency } from "./currency";
 
-const formatRupiah = (val: number): string =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(val);
+// Format uang mengikuti mata uang aktif user (Settings → Regional).
+const formatRupiah = (val: number): string => formatCurrency(val);
 
 const today = (): string =>
   new Date().toLocaleDateString("id-ID", {

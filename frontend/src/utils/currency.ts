@@ -1,24 +1,87 @@
-// Helper format angka dan mata uang Rupiah
+// Helper format angka & mata uang dinamis.
+// Mata uang aktif dibaca dari localStorage (key "currency", di-set lewat
+// halaman Settings), default "IDR". Semua halaman memakai fungsi ini
+// sehingga angka otomatis mengikuti pilihan mata uang user.
 
-// Format number menjadi mata uang Rupiah, misalnya Rp99.000
+export const CURRENCIES: { code: string; label: string }[] = [
+  { code: "IDR", label: "🇮🇩 IDR — Rupiah Indonesia" },
+  { code: "USD", label: "🇺🇸 USD — US Dollar" },
+  { code: "EUR", label: "🇪🇺 EUR — Euro" },
+  { code: "SGD", label: "🇸🇬 SGD — Singapore Dollar" },
+  { code: "MYR", label: "🇲🇾 MYR — Malaysian Ringgit" },
+  { code: "GBP", label: "🇬🇧 GBP — British Pound" },
+  { code: "JPY", label: "🇯🇵 JPY — Japanese Yen" },
+  { code: "AUD", label: "🇦🇺 AUD — Australian Dollar" },
+  { code: "CNY", label: "🇨🇳 CNY — Chinese Yuan" },
+  { code: "THB", label: "🇹🇭 THB — Thai Baht" },
+  { code: "PHP", label: "🇵🇭 PHP — Philippine Peso" },
+  { code: "BND", label: "🇧🇳 BND — Brunei Dollar" },
+  { code: "VND", label: "🇻🇳 VND — Vietnamese Dong" },
+  { code: "SAR", label: "🇸🇦 SAR — Saudi Riyal" },
+  { code: "AED", label: "🇦🇪 AED — UAE Dirham" },
+  { code: "INR", label: "🇮🇳 INR — Indian Rupee" },
+  { code: "KRW", label: "🇰🇷 KRW — South Korean Won" },
+];
+
+// Locale yang cocok untuk tiap mata uang (agar simbol & format angka sesuai).
+const CURRENCY_LOCALE: Record<string, string> = {
+  IDR: "id-ID",
+  USD: "en-US",
+  EUR: "de-DE",
+  SGD: "en-SG",
+  MYR: "ms-MY",
+  GBP: "en-GB",
+  JPY: "ja-JP",
+  AUD: "en-AU",
+  CNY: "zh-CN",
+  THB: "th-TH",
+  PHP: "en-PH",
+  BND: "ms-BN",
+  VND: "vi-VN",
+  SAR: "ar-SA",
+  AED: "ar-AE",
+  INR: "en-IN",
+  KRW: "ko-KR",
+};
+
+/** Kode mata uang aktif (dari localStorage, fallback IDR). */
+export function getCurrency(): string {
+  try {
+    const saved = localStorage.getItem("currency");
+    if (saved && CURRENCIES.some((c) => c.code === saved)) return saved;
+  } catch {
+    // localStorage tidak tersedia (SSR/test) — pakai default.
+  }
+  return "IDR";
+}
+
+/** Locale untuk kode mata uang (fallback id-ID). */
+function getLocale(code: string): string {
+  return CURRENCY_LOCALE[code] || "id-ID";
+}
+
+// Format number menjadi mata uang sesuai pilihan user, misal:
+//   IDR → "Rp 99.000", USD → "$99,000", EUR → "99.000 €"
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat("id-ID", {
+  const code = getCurrency();
+  return new Intl.NumberFormat(getLocale(code), {
     style: "currency",
-    currency: "IDR",
+    currency: code,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 };
 
-// Format angka biasa dengan pemisah ribuan
+// Format angka biasa dengan pemisah ribuan (tanpa simbol mata uang)
 export const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat("id-ID", {
+  const code = getCurrency();
+  return new Intl.NumberFormat(getLocale(code), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
 };
 
-// Ambil nilai absolut lalu format sebagai Rupiah
+// Ambil nilai absolut lalu format sebagai mata uang
 export const formatAbsCurrency = (value: number): string => {
   return formatCurrency(Math.abs(value));
 };
