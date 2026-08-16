@@ -57,6 +57,7 @@ export default function PeriodManagement() {
   const [newYear, setNewYear] = useState(new Date().getFullYear());
   const [newMonth, setNewMonth] = useState(new Date().getMonth() + 1);
   const [confirmClose, setConfirmClose] = useState<string | null>(null);
+  const [confirmYearFar, setConfirmYearFar] = useState(false);
 
   useEffect(() => {
     fetchPeriods();
@@ -74,8 +75,12 @@ export default function PeriodManagement() {
     }
   };
 
-  const handleOpenPeriod = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Tahun yang wajar = tahun sekarang ± 2. Di luar itu minta konfirmasi dulu
+  // (tetap boleh dibuka — misal periode historis/futuristik — tapi dicegah
+  // dari salah ketik yang tidak disengaja).
+  const isYearFar = Math.abs(newYear - new Date().getFullYear()) > 2;
+
+  const doOpenPeriod = async () => {
     if (!user?.company_id) return;
     setIsSubmitting(true);
     try {
@@ -85,7 +90,7 @@ export default function PeriodManagement() {
         type: "period_opened",
         title: "Periode Dibuka",
         message: `Periode ${monthNames[newMonth - 1]} ${newYear} sekarang aktif dan siap menerima transaksi.`,
-        link: "/periods",
+        link: "/period-management",
       });
     } catch (err: any) {
       pushNotification({
@@ -101,6 +106,17 @@ export default function PeriodManagement() {
     }
   };
 
+  const handleOpenPeriod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.company_id) return;
+    // Tahun jauh dari tahun berjalan → minta konfirmasi dulu.
+    if (isYearFar) {
+      setConfirmYearFar(true);
+      return;
+    }
+    await doOpenPeriod();
+  };
+
   const handleClosePeriod = async (id: string) => {
     try {
       await periodsService.close(id);
@@ -111,14 +127,14 @@ export default function PeriodManagement() {
         title: "Periode Ditutup",
         message:
           "Periode berhasil ditutup. Transaksi tidak bisa diposting lagi ke periode ini.",
-        link: "/periods",
+        link: "/period-management",
       });
     } catch {
       pushNotification({
         type: "period_closed",
         title: "Gagal Menutup Periode",
         message: "Terjadi kesalahan saat menutup periode.",
-        link: "/periods",
+        link: "/period-management",
       });
     }
   };
@@ -399,6 +415,85 @@ export default function PeriodManagement() {
             </div>
           )}
         </motion.div>
+
+        {/* ─────── Confirm Tahun Jauh Dialog ─────── */}
+        {confirmYearFar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            onClick={() => setConfirmYearFar(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className="bg-white dark:bg-darkCard rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700/50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Gradient top accent */}
+              <div className="h-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-rose-500" />
+
+              <div className="p-6">
+                <div className="flex items-start gap-4">
+                  {/* Animated warning icon */}
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 18,
+                      delay: 0.1,
+                    }}
+                    className="shrink-0 p-3 rounded-2xl bg-amber-100 dark:bg-amber-500/10"
+                  >
+                    <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  </motion.div>
+
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      Konfirmasi Tahun Periode
+                    </h3>
+                    <p className="text-primary-500 font-semibold text-sm mt-0.5">
+                      {monthNames[newMonth - 1]} {newYear}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                      Tahun ini jauh dari tahun berjalan ({" "}
+                      {new Date().getFullYear()}). Pastikan ini memang yang
+                      Anda maksud — periode bisa dibuka untuk tahun apa saja
+                      (historis atau masa depan), tapi salah ketik akan membuat
+                      periode yang salah.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  onClick={() => setConfirmYearFar(false)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                >
+                  Batal
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    setConfirmYearFar(false);
+                    doOpenPeriod();
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold shadow-md transition-all"
+                >
+                  <Calendar size={15} />
+                  Ya, Buka Periode Ini
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         {/* ─────── Confirm Close Dialog ─────── */}
         {confirmClose && (

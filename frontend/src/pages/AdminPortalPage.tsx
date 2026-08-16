@@ -45,7 +45,7 @@ const roleBadge: Record<string, string> = {
   akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 // Dashboard admin khusus — hanya bisa diakses dengan token admin-gate
 // (token user biasa ditolak oleh backend). Terpisah total dari aplikasi
