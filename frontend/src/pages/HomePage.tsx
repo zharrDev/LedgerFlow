@@ -27,8 +27,6 @@ import {
   FileText,
   TrendingUp,
   Zap,
-  BarChart3,
-  CheckCircle,
   Calculator,
   Users,
   Layers,
@@ -39,6 +37,10 @@ import {
   Newspaper,
   GraduationCap,
   MessageSquare,
+  KeyRound,
+  ShieldCheck,
+  Bot,
+  Download,
 } from "lucide-react";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import logo from "../assets/ledgerflow.png";
@@ -151,34 +153,34 @@ const featureCards: Array<{
   desc: string;
 }> = [
   {
-    icon: Zap,
-    title: "Automated Reconciliation",
-    desc: "Match transactions automatically with bank feeds",
+    icon: KeyRound,
+    title: "Role-Based Access",
+    desc: "Owner, Admin, and Accountant roles with tailored permissions",
   },
   {
-    icon: BarChart3,
-    title: "Real-time Analytics",
-    desc: "Live dashboard with key financial metrics",
+    icon: ShieldCheck,
+    title: "Bank-Grade Security",
+    desc: "Encrypted data with WhatsApp OTP and Google sign-in",
   },
   {
-    icon: Shield,
-    title: "Audit Trail",
-    desc: "Complete history of every change and access",
+    icon: FileText,
+    title: "Instant Financial Reports",
+    desc: "Balance sheet, income statement, and cash flow, always current",
   },
   {
-    icon: CheckCircle,
-    title: "Smart Budgeting",
-    desc: "AI-powered budget forecasting and alerts",
+    icon: Bot,
+    title: "AI CFO Assistant",
+    desc: "Ask about your finances and get insights instantly",
   },
   {
-    icon: Building,
-    title: "Multi-entity Support",
-    desc: "Manage multiple companies from one account",
+    icon: Users,
+    title: "Team Collaboration",
+    desc: "Invite your team to work together on one shared ledger",
   },
   {
-    icon: Globe,
-    title: "Multi-currency",
-    desc: "Handle transactions in 150+ currencies",
+    icon: Download,
+    title: "Export & Integration",
+    desc: "Export reports anytime, fits right into your existing workflow",
   },
 ];
 
@@ -764,6 +766,19 @@ export default function HomePage() {
       )}
 
       {/* ═══ Hero Carousel (gambar fitur) ═══ */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="text-center max-w-2xl mx-auto px-6 mb-10"
+      >
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+          Explore What's Inside
+        </h2>
+        <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
+          Every tool you need, built into one platform.
+        </p>
+      </motion.div>
       <FeatureCarousel />
 
       {/* ═══ Features ═══ */}
