@@ -161,14 +161,27 @@ adminGate.get("/logs", requireAdminGate, async (c) => {
 // biasa).
 // ────────────────────────────────────────────────────────────────────────
 
-// Hitung jumlah owner di sebuah company (proteksi owner terakhir)
+// Hitung jumlah owner di sebuah company (proteksi owner terakhir).
+// Role tersimpan di DUA tabel (users.role + company_members.role) yang bisa
+// tidak sinkron (mis. data lama sebelum sinkronisasi role). Agar TIDAK pernah
+// salah memblokir user yang bukan owner terakhir, hitung MAX dari kedua
+// sumber — nilai terbesar = jumlah owner paling akurat.
 async function countOwners(companyId: string): Promise<number> {
-  const { count } = await supabase
+  const { count: memberCount, error: memberErr } = await supabase
+    .from("company_members")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("role", "owner");
+
+  const { count: userCount, error: userErr } = await supabase
     .from("users")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("role", "owner");
-  return count || 0;
+
+  const a = !memberErr ? (memberCount ?? 0) : 0;
+  const b = !userErr ? (userCount ?? 0) : 0;
+  return Math.max(a, b);
 }
 
 // GET /api/admin-gate/users — semua user lintas company + nama company
@@ -220,8 +233,19 @@ adminGate.delete("/users/:id", requireAdminGate, async (c) => {
   if (target.role === "owner") {
     const owners = await countOwners(target.company_id);
     if (owners <= 1) {
+      console.error(
+        "[admin-gate] blokir hapus owner:",
+        JSON.stringify({
+          userId: id,
+          companyId: target.company_id,
+          countedOwners: owners,
+        }),
+      );
       return c.json(
-        { error: "Tidak bisa menghapus owner terakhir dari company-nya." },
+        {
+          error:
+            "Tidak bisa menghapus owner terakhir dari company-nya. Masih ada user lain ber-role owner di company ini? Pastikan role-nya tersimpan dengan benar.",
+        },
         400,
       );
     }

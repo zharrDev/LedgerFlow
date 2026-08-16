@@ -13,14 +13,25 @@ userMgmt.use("*", authMiddleware);
 // pemilik aplikasi yang masuk lewat gerbang terpisah, read-only + moderasi.)
 const ALLOWED_ROLES = ["akuntan", "owner"] as const;
 
-// Hitung jumlah owner di sebuah perusahaan (untuk proteksi owner terakhir)
+// Hitung jumlah owner di sebuah perusahaan (untuk proteksi owner terakhir).
+// Dipakai untuk memastikan company tidak pernah "yatim" tanpa owner.
 async function countOwners(companyId: string): Promise<number> {
-  const { count } = await supabase
+  // Sumber kebenaran: relasi keanggotaan company_members (bukan users.role
+  // yang bisa ketinggalan). Fallback ke users.role bila baris member tidak
+  // ditemukan (data lama / migrasi belum jalan).
+  const { count, error } = await supabase
+    .from("company_members")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("role", "owner");
+  if (!error && (count ?? 0) > 0) return count ?? 0;
+
+  const { count: uCount } = await supabase
     .from("users")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
     .eq("role", "owner");
-  return count || 0;
+  return uCount || 0;
 }
 
 async function getCompanyName(companyId: string): Promise<string> {
@@ -201,12 +212,27 @@ userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
     }
   }
 
+  // Role tersimpan di DUA tempat (users.role + company_members.role) dan
+  // wajib sinkron. Kalau hanya users yang di-update, company_members
+  // ketinggalan → perhitungan "jumlah owner" (countOwners) bisa salah dan
+  // user yang bukan owner terakhir ikut terblokir.
   const { error } = await supabase
     .from("users")
     .update({ role })
     .eq("id", id);
-
   if (error) return c.json({ error: error.message }, 500);
+
+  const { error: memberErr } = await supabase
+    .from("company_members")
+    .update({ role })
+    .eq("user_id", id)
+    .eq("company_id", company_id);
+  // Gagal sinkron member bukan kegagalan fatal — users sudah ter-update,
+  // tapi dicatat supaya bisa didiagnosis.
+  if (memberErr) {
+    console.error("[user-management] sync company_members role error:", memberErr);
+  }
+
   return c.json({ message: "Role berhasil diubah" });
 });
 
