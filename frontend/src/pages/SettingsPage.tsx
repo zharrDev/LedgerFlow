@@ -8,7 +8,7 @@ import { useToast } from "../context/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { formatPrice, cancelSubscription } from "../services/paymentService";
 import { HoverDropdown } from "../components/HoverDropdown";
-import { CURRENCIES, getCurrency, setCurrency } from "../utils/currency";
+import { CURRENCIES, getCurrency, setCurrency as persistCurrency } from "../utils/currency";
 import { getMyCompany, updateCompanyCurrency } from "../services/companiesService";
 import {
   Settings,
@@ -140,8 +140,9 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2000);
 
     // Mata uang disimpan ke database (berlaku untuk semua anggota company)
-    // + localStorage (untuk tampilan langsung).
-    setCurrency(currency);
+    // + localStorage (untuk tampilan langsung). CATATAN: setCurrency di sini
+    // adalah state setter, jadi localStorage ditulis eksplisit via persistCurrency.
+    persistCurrency(currency);
     try {
       await updateCompanyCurrency(currency);
     } catch {

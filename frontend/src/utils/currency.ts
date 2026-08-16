@@ -72,24 +72,57 @@ function getLocale(code: string): string {
 
 // Format number menjadi mata uang sesuai pilihan user, misal:
 //   IDR → "Rp 99.000", USD → "$99,000", EUR → "99.000 €"
+// Dilindungi try/catch: kalau Intl.NumberFormat gagal di browser tertentu
+// (locale/currency tidak didukung), fallback ke format manual — jangan
+// sampai error render membuat halaman kosong.
 export const formatCurrency = (value: number): string => {
   const code = getCurrency();
-  return new Intl.NumberFormat(getLocale(code), {
-    style: "currency",
-    currency: code,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  try {
+    return new Intl.NumberFormat(getLocale(code), {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return fallbackFormat(value, code);
+  }
 };
 
 // Format angka biasa dengan pemisah ribuan (tanpa simbol mata uang)
 export const formatNumber = (value: number): string => {
   const code = getCurrency();
-  return new Intl.NumberFormat(getLocale(code), {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
+  try {
+    return new Intl.NumberFormat(getLocale(code), {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return fallbackFormat(value, "");
+  }
 };
+
+// Fallback sederhana: pisahkan ribuan dengan titik dan tambahkan simbol
+// mata uang jika diminta (dipakai bila Intl tidak tersedia/gagal).
+function fallbackFormat(value: number, code: string): string {
+  const rounded = Math.round(Math.abs(value));
+  const str = String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const sign = value < 0 ? "-" : "";
+  if (!code) return `${sign}${str}`;
+  const symbol =
+    code === "IDR"
+      ? "Rp"
+      : code === "USD"
+        ? "$"
+        : code === "EUR"
+          ? "€"
+          : code === "GBP"
+            ? "£"
+            : code === "JPY"
+              ? "¥"
+              : `${code} `;
+  return `${sign}${symbol} ${str}`;
+}
 
 // Ambil nilai absolut lalu format sebagai mata uang
 export const formatAbsCurrency = (value: number): string => {
