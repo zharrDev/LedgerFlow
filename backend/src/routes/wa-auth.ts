@@ -17,6 +17,8 @@ import { Hono } from "hono";
 import { randomInt, createHash, timingSafeEqual } from "node:crypto";
 import { supabase } from "../lib/supabase.js";
 import { signToken } from "../lib/jwt.js";
+import { DEMO_MODE_ENABLED, DEMO_OTP_CODE } from "../lib/env.js";
+import { DEMO_PHONE_SET } from "../lib/demoConfig.js";
 import {
   normalizePhoneNumber,
   sendWhatsAppOTP,
@@ -29,6 +31,13 @@ const waAuth = new Hono();
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
+
+// DEMO MODE: nomor demo (whitelist dari env, sumber yang sama dengan
+// seed-demo.ts) mendapat bypass OTP — HANYA saat DEMO_MODE_ENABLED=true.
+// Semua nomor lain tetap 100% alur normal (dicek sebelum pemakaian).
+function isDemoPhone(phone: string): boolean {
+  return DEMO_MODE_ENABLED && DEMO_PHONE_SET.has(phone);
+}
 
 // Rate-limit kasar per-IP (in-memory; cukup untuk pencegahan spam per instance).
 const IP_WINDOW_MS = 10 * 60 * 1000;
@@ -267,6 +276,30 @@ function normalizeOr400(c: any, raw: any): { phone: string } | { errorResponse: 
   }
 }
 
+// Payload sukses login — dipakai jalur normal & demo agar satu bentuk respons.
+async function buildLoginPayload(user: any) {
+  const companyName = await getCompanyName(user.company_id);
+  const token = await signToken({
+    sub: user.id,
+    email: user.email ?? undefined,
+    role: user.role,
+    company_id: user.company_id,
+  });
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      phone: user.phone,
+      email: user.email,
+      role: user.role,
+      company_id: user.company_id,
+      company_name: companyName,
+      avatar_url: user.avatar_url || null,
+    },
+  };
+}
+
 // --- POST /register/start ---
 
 waAuth.post("/register/start", async (c) => {
@@ -466,6 +499,12 @@ waAuth.post("/login/start", async (c) => {
       );
     }
 
+    // DEMO MODE: nomor demo tidak memanggil Fonnte — balas sukses biasa.
+    if (isDemoPhone(phone)) {
+      console.log("[DEMO MODE] Login demo dipakai untuk nomor:", phone);
+      return c.json({ success: true, message: "Kode OTP dikirim ke WhatsApp Anda." });
+    }
+
     await issueOtp(phone, "login");
     return c.json({ success: true, message: "Kode OTP dikirim ke WhatsApp Anda." });
   } catch (err: any) {
@@ -486,9 +525,8 @@ waAuth.post("/login/verify", async (c) => {
     if ("errorResponse" in norm) return norm.errorResponse;
     const phone = norm.phone;
 
-    if (!code || !/^\d{6}$/.test(String(code))) {
-      return c.json({ error: "Format kode OTP tidak valid." }, 400);
-    }
+    // Validasi format 6 digit diterapkan UNTUK jalur normal; jalur demo
+    // memakai DEMO_OTP_CODE apa adanya (bisa bukan 6 digit bila di-set).
 
     if (!checkIpRateLimit(getClientIp(c), IP_VERIFY_MAX)) {
       return c.json(
@@ -525,6 +563,20 @@ waAuth.post("/login/verify", async (c) => {
       );
     }
 
+    // DEMO MODE: bypass verifikasi OTP untuk nomor demo (tanpa row OTP di
+    // database dan tanpa panggilan Fonnte).
+    if (isDemoPhone(phone)) {
+      console.log("[DEMO MODE] Login demo dipakai untuk nomor:", phone);
+      if (String(code) !== DEMO_OTP_CODE) {
+        return c.json({ error: "Kode OTP salah." }, 400);
+      }
+      return c.json(await buildLoginPayload(user));
+    }
+
+    if (!code || !/^\d{6}$/.test(String(code))) {
+      return c.json({ error: "Format kode OTP tidak valid." }, 400);
+    }
+
     const result = await verifyOtp(phone, "login", String(code));
     if (!result.ok) {
       if (result.status === "locked") {
@@ -549,33 +601,13 @@ waAuth.post("/login/verify", async (c) => {
       );
     }
 
-    const companyName = await getCompanyName(user.company_id);
-    const token = await signToken({
-      sub: user.id,
-      email: user.email ?? undefined,
-      role: user.role,
-      company_id: user.company_id,
-    });
-
     sendWhatsAppLoginAlert(
       phone,
       parseUserAgent(c.req.header("user-agent") || ""),
       getClientIp(c),
     ).catch(console.error);
 
-    return c.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        role: user.role,
-        company_id: user.company_id,
-        company_name: companyName,
-        avatar_url: user.avatar_url || null,
-      },
-    });
+    return c.json(await buildLoginPayload(user));
   } catch (err: any) {
     console.error("WA LOGIN VERIFY ERROR:", err);
     return c.json({ error: err?.message ?? "Gagal masuk." }, 500);

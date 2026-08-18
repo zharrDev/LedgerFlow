@@ -39,4 +39,28 @@ export function loadEnv() {
       "[env] FONNTE_TOKEN belum diset — fitur auth WhatsApp OTP tidak berfungsi.",
     );
   }
+
+  // DEMO MODE — HANYA untuk lingkungan demo/staging (lihat konstanta di bawah).
+  // Peringatan keras bila diaktifkan, supaya tidak terlewat di production.
+  if (process.env.DEMO_MODE_ENABLED?.trim().toLowerCase() === "true") {
+    console.warn(
+      "[env] DEMO_MODE_ENABLED=true — bypass OTP AKTIF untuk nomor demo. HANYA untuk lingkungan demo/staging, JANGAN dipakai di production!",
+    );
+  }
 }
+
+// ESM mengeksekusi semua import sebelum tubuh index.ts berjalan, jadi loadEnv()
+// dipanggil eksplisit di sini agar konstanta di bawah selalu membaca .env
+// (idempotent — aman walau sudah dipanggil di index.ts).
+loadEnv();
+
+// DEMO MODE — kontrol login cepat untuk akun demo (lihat lib/demoConfig.ts).
+// HANYA untuk lingkungan demo/staging:
+//   DEMO_MODE_ENABLED (default "false") — true = kode DEMO_OTP_CODE diterima
+//     untuk nomor demo tanpa kirim WhatsApp asli. JANGAN aktifkan di
+//     production dengan data user asli.
+//   DEMO_OTP_CODE (default "123456") — kode yang diterima sebagai OTP valid.
+// Semua kode lain wajib memakai konstanta ini (bukan baca process.env).
+export const DEMO_MODE_ENABLED =
+  (process.env.DEMO_MODE_ENABLED ?? "false").trim().toLowerCase() === "true";
+export const DEMO_OTP_CODE = (process.env.DEMO_OTP_CODE ?? "123456").trim();

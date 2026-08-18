@@ -813,8 +813,13 @@ FONNTE_TOKEN=<token Fonnte>            # dari https://fonnte.com — WA gateway 
 
 # Opsional — nomor WA untuk akun demo (lihat bagian Akun Demo):
 DEMO_OWNER_PHONE=08xxxxxxxxxx
-DEMO_ADMIN_PHONE=08xxxxxxxxxx
 DEMO_AKUNTAN_PHONE=08xxxxxxxxxx
+
+# DEMO MODE (HANYA lingkungan demo/staging — JANGAN di production dengan
+# data user asli!): bypass OTP login untuk nomor demo di atas, tanpa
+# benar-benar kirim WhatsApp.
+DEMO_MODE_ENABLED=false        # default mati; true = aktifkan
+DEMO_OTP_CODE=123456           # kode OTP demo yang diterima saat verifikasi
 ```
 
 **Frontend (`frontend/.env`)** — lokal vs production:
@@ -954,6 +959,20 @@ DEMO_AKUNTAN_PHONE=08xxxxxxxxxx
 ```bash
 cd backend && npm run seed
 ```
+
+### DEMO MODE — Login Cepat Tanpa WA (khusus reviewer demo)
+
+OTP WhatsApp tidak sampai ke nomor placeholder — untuk mencoba login demo **tanpa WA asli**, aktifkan Demo Mode (hanya untuk lingkungan demo/staging):
+
+```env
+# backend/.env
+DEMO_MODE_ENABLED=true
+DEMO_OTP_CODE=123456
+```
+
+Lalu mulai ulang backend (`npm run dev`), dan login lewat tab **WhatsApp** dengan nomor dari tabel di atas + kode OTP `123456` (atau nilai `DEMO_OTP_CODE` yang di-set). Setiap pemakaian tercatat di log server sebagai `[DEMO MODE] Login demo dipakai untuk nomor: ...`.
+
+> ⚠️ **Jangan pernah mengaktifkan `DEMO_MODE_ENABLED=true` di production** dengan data user asli — siapa pun yang tahu kode demo bisa login ke akun demo. Fitur ini mati by default dan hanya berlaku untuk nomor-nomor demo (`DEMO_OWNER_PHONE`/`DEMO_AKUNTAN_PHONE`); nomor lain tetap lewat OTP WhatsApp normal.
 
 ### Perbedaan Role (biar bisa dicoba-coba)
 
