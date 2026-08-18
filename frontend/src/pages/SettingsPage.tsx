@@ -7,6 +7,7 @@ import { AppShell } from "../components/AppShell";
 import { useToast } from "../context/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { formatPrice, cancelSubscription } from "../services/paymentService";
+import { getErrorMessage } from "../lib/errorMessage";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { CURRENCIES, getCurrency, setCurrency as persistCurrency } from "../utils/currency";
 import { getMyCompany, updateCompanyCurrency } from "../services/companiesService";
@@ -171,7 +172,7 @@ export default function SettingsPage() {
       toast({
         variant: "error",
         title: "Gagal",
-        message: err.message || "Gagal membatalkan subscription",
+        message: getErrorMessage(err),
       });
     } finally {
       setCancelLoading(false);

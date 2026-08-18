@@ -51,6 +51,7 @@ import {
 import { getAdminGateToken } from "../lib/session";
 import { useToast } from "../context/ToastContext";
 import { usePagination } from "../hooks/usePagination";
+import { getErrorMessage } from "../lib/errorMessage";
 import { TablePagination } from "../components/TablePagination";
 import logo from "../assets/ledgerflow.png";
 
@@ -168,9 +169,7 @@ export default function AdminPortalPage() {
     try {
       setDetailData(await fetchAdminGateCompanyDetail(c.id));
     } catch (err: any) {
-      setDetailError(
-        err?.response?.data?.error || "Gagal memuat detail company.",
-      );
+      setDetailError(getErrorMessage(err));
     } finally {
       setDetailLoading(false);
     }
@@ -263,7 +262,7 @@ export default function AdminPortalPage() {
       toast({
         variant: "error",
         title: "Gagal",
-        message: err?.response?.data?.error || "Terjadi kesalahan.",
+        message: getErrorMessage(err),
       });
     } finally {
       setConfirming(false);

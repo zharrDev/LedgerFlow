@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import { getErrorMessage } from "../lib/errorMessage";
 import { AppShell } from "../components/AppShell";
 import {
   User,
@@ -146,7 +147,7 @@ export default function ProfilePage() {
         );
         setMessage({
           type: "error",
-          text: err.response?.data?.error || "Gagal mengupload foto profil",
+          text: getErrorMessage(err),
         });
       }
     } catch (err: any) {
@@ -189,7 +190,7 @@ export default function ProfilePage() {
     } catch (err: any) {
       setMessage({
         type: "error",
-        text: err.response?.data?.error || "Gagal menyimpan profil",
+        text: getErrorMessage(err),
       });
     } finally {
       setSaving(false);

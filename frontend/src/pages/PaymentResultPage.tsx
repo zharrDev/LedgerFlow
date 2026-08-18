@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { testComplete, isSandboxMode } from "../services/paymentService";
 import { api } from "../lib/api";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // ─── Types ──────────────────────────────────────────────────────────
 type ResultType = "success" | "pending" | "failed";
@@ -146,8 +147,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
       await testComplete(orderId);
       navigate("/payment/success?order_id=" + orderId);
     } catch (err: any) {
-      const msg =
-        err.response?.data?.error || "Gagal force-complete pembayaran";
+      const msg = getErrorMessage(err);
       setForceCompleteError(msg);
     } finally {
       setIsForceCompleting(false);
@@ -185,9 +185,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
       });
       setProofUrl(data?.url ?? null);
     } catch (err: any) {
-      setProofError(
-        err.response?.data?.error || "Gagal mengupload bukti pembayaran",
-      );
+      setProofError(getErrorMessage(err));
     } finally {
       setUploadingProof(false);
     }

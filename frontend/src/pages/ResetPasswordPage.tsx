@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { api } from "../lib/api";
+import { getErrorMessage } from "../lib/errorMessage";
 import {
   validatePassword,
   validateConfirmPassword,
@@ -45,7 +46,7 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Gagal mereset password.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

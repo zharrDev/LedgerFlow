@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AppShell } from "../components/AppShell";
 import { periodsService } from "../services/periodsService";
+import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
 import { pushNotification } from "../components/Header";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -96,9 +97,7 @@ export default function PeriodManagement() {
       pushNotification({
         type: "period_opened",
         title: "Gagal Membuka Periode",
-        message:
-          err.response?.data?.error ||
-          "Terjadi kesalahan saat membuka periode.",
+        message: getErrorMessage(err),
         link: "/period-management",
       });
     } finally {

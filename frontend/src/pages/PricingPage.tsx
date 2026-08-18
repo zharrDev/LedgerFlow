@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSubscription } from "../hooks/useSubscription";
+import { getErrorMessage } from "../lib/errorMessage";
 import {
   getPlans,
   subscribe,
@@ -206,7 +207,7 @@ export default function PricingPage() {
       });
     } catch (err: any) {
       console.error("Subscribe error:", err);
-      alert(err.response?.data?.error || "Gagal membuat pembayaran");
+      alert(getErrorMessage(err));
     } finally {
       setSubscribing(null);
     }

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { supabase } from "../lib/supabaseClient";
+import { getErrorMessage } from "../lib/errorMessage";
 import {
   getSessionToken,
   setSessionToken,
@@ -94,8 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await api.post("/api/auth/register", data);
       login(response.data.token, response.data.user);
-    } catch (err: any) {
-      throw new Error(err.response?.data?.error || "Registration failed");
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
     }
   };
 
@@ -122,10 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : { phone: payload.phone };
     try {
       await api.post(url, body);
-    } catch (err: any) {
-      const detail =
-        err.response?.data?.error || err.response?.data?.message || "Gagal mengirim kode OTP.";
-      throw new Error(detail);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
     }
   };
 
@@ -145,10 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await api.post(url, body);
       login(response.data.token, response.data.user);
-    } catch (err: any) {
-      const detail =
-        err.response?.data?.error || err.response?.data?.message || "Kode OTP salah atau kedaluwarsa.";
-      throw new Error(detail);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
     }
   };
 

@@ -13,6 +13,7 @@ import {
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { api } from "../lib/api";
+import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
@@ -64,7 +65,7 @@ export default function UserManagementPage() {
       const res = await api.get("/api/users-management");
       setUsers(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch (err: any) {
-      setError(err.response?.data?.error || "Gagal memuat data user");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ export default function UserManagementPage() {
       toast({
         variant: "error",
         title: "Gagal mengubah role",
-        message: err.response?.data?.error || "Terjadi kesalahan saat mengubah role.",
+        message: getErrorMessage(err),
       });
     }
   };
@@ -109,7 +110,7 @@ export default function UserManagementPage() {
       toast({
         variant: "error",
         title: "Gagal menghapus user",
-        message: err.response?.data?.error || "Terjadi kesalahan saat menghapus user.",
+        message: getErrorMessage(err),
       });
     }
   };
@@ -135,7 +136,7 @@ export default function UserManagementPage() {
       setForm({ name: "", email: "", role: "akuntan" });
       await fetchUsers();
     } catch (err: any) {
-      setFormError(err.response?.data?.error || "Gagal menambahkan anggota");
+      setFormError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

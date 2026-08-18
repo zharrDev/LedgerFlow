@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { api } from "../lib/api";
+import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
 import BrandedLoader from "../components/BrandedLoader";
 
@@ -58,12 +59,7 @@ export default function AuthCallback() {
           return;
         }
 
-        setErrorMsg(
-          err.response?.data?.message ||
-            err.response?.data?.error ||
-            err.message ||
-            "Authentication failed",
-        );
+        setErrorMsg(getErrorMessage(err));
         setStatus("error");
       }
     };

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import { api } from "../lib/api";
+import { getErrorMessage } from "../lib/errorMessage";
 import { validateEmail } from "../utils/validation";
 
 export default function ForgotPasswordPage() {
@@ -26,7 +27,7 @@ export default function ForgotPasswordPage() {
       await api.post("/api/auth/forgot-password", { email });
       setSent(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || "Gagal mengirim email.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

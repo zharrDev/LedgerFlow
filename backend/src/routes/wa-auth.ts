@@ -347,7 +347,7 @@ waAuth.post("/register/start", async (c) => {
   } catch (err: any) {
     console.error("WA REGISTER START ERROR:", err);
     const status = err instanceof FonnteError ? 502 : 500;
-    return c.json({ error: err?.message ?? "Gagal mengirim kode OTP." }, status);
+    return c.json({ error: "Gagal mengirim kode OTP. Coba lagi beberapa saat." }, status);
   }
 });
 
@@ -465,7 +465,7 @@ waAuth.post("/register/verify", async (c) => {
     }
   } catch (err: any) {
     console.error("WA REGISTER VERIFY ERROR:", err);
-    return c.json({ error: err?.message ?? "Gagal membuat akun." }, 500);
+    return c.json({ error: "Gagal membuat akun. Coba lagi beberapa saat." }, 500);
   }
 });
 
@@ -510,7 +510,7 @@ waAuth.post("/login/start", async (c) => {
   } catch (err: any) {
     console.error("WA LOGIN START ERROR:", err);
     const status = err instanceof FonnteError ? 502 : 500;
-    return c.json({ error: err?.message ?? "Gagal mengirim kode OTP." }, status);
+    return c.json({ error: "Gagal mengirim kode OTP. Coba lagi beberapa saat." }, status);
   }
 });
 
@@ -610,7 +610,7 @@ waAuth.post("/login/verify", async (c) => {
     return c.json(await buildLoginPayload(user));
   } catch (err: any) {
     console.error("WA LOGIN VERIFY ERROR:", err);
-    return c.json({ error: err?.message ?? "Gagal masuk." }, 500);
+    return c.json({ error: "Gagal masuk. Coba lagi beberapa saat." }, 500);
   }
 });
 

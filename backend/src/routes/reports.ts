@@ -1,4 +1,4 @@
-// routes/reports.ts (FIXED — Balance Sheet includes Net Income in Equity)
+﻿// routes/reports.ts (FIXED â€” Balance Sheet includes Net Income in Equity)
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -128,7 +128,7 @@ reports.get("/income-statement", async (c) => {
     });
   } catch (err: any) {
     console.error("[Income Statement] Error:", err);
-    return c.json({ error: err?.message || "Internal Server Error" }, 500);
+    return c.json({ error: "Terjadi kesalahan saat memuat laporan. Coba lagi beberapa saat." }, 500);
   }
 });
 // BALANCE SHEET
@@ -248,7 +248,7 @@ reports.get("/balance-sheet", async (c) => {
     });
   } catch (err: any) {
     console.error("[Balance Sheet] Error:", err);
-    return c.json({ error: err?.message || "Internal Server Error" }, 500);
+    return c.json({ error: "Terjadi kesalahan saat memuat laporan. Coba lagi beberapa saat." }, 500);
   }
 });
 
@@ -449,7 +449,7 @@ reports.get("/cash-flow", async (c) => {
     });
   } catch (err: any) {
     console.error("[Cash Flow] Fatal error:", err);
-    return c.json({ error: err?.message || "Internal Server Error" }, 500);
+    return c.json({ error: "Terjadi kesalahan saat memuat laporan. Coba lagi beberapa saat." }, 500);
   }
 });
 
