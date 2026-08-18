@@ -20,11 +20,11 @@ export default function AuthPage({
     setShowUI(true);
   }, []);
 
-  // Shortcut rahasia ke gerbang admin: Ctrl+Shift+A.
+  // Shortcut rahasia ke gerbang admin: Ctrl+Alt+\.
   // Sengaja tanpa indikasi visual apa pun di halaman ini.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+      if (e.ctrlKey && e.altKey && (e.key === "\\" || e.key === "|")) {
         e.preventDefault();
         navigate("/portal-akses");
       }

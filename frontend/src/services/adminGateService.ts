@@ -33,7 +33,7 @@ export async function fetchAdminGateLogs(params?: {
   const token = getAdminGateToken();
   if (!token) throw new Error("Belum terautentikasi sebagai admin");
   const res = await api.get("/api/admin-gate/logs", {
-    headers: { Authorization: "Bearer $token" }, skipErrorToast: true,
+    headers: { Authorization: `Bearer ${token}` }, skipErrorToast: true,
     params: {
       status: params?.status || undefined,
       ip: params?.ip || undefined,
