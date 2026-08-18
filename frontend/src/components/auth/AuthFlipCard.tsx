@@ -17,10 +17,8 @@ export default function AuthFlipCard({
   const backRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number>(0);
 
-  const visible = mode === "login" ? frontRef : backRef;
-
   useLayoutEffect(() => {
-    const el = visible.current;
+    const el = frontRef.current;
     if (!el) return;
     const measure = () =>
       setHeight(Math.min(el.scrollHeight, Math.max(320, window.innerHeight - 112)));
@@ -32,7 +30,7 @@ export default function AuthFlipCard({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [mode, visible]);
+  }, []);
 
   return (
     <div
@@ -52,7 +50,7 @@ export default function AuthFlipCard({
           {/* Sisi depan: Login */}
           <div
             ref={frontRef}
-            className="overflow-y-auto scrollbar-thin pr-2.5"
+            className="overflow-y-auto scrollbar-thin pr-3.5"
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -64,7 +62,7 @@ export default function AuthFlipCard({
           {/* Sisi belakang: Register (menumpuk, diputar 180°) */}
           <div
             ref={backRef}
-            className="overflow-y-auto scrollbar-thin pr-2.5"
+            className="overflow-y-auto scrollbar-thin pr-3.5"
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
