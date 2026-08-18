@@ -34,10 +34,10 @@ export default function AuthPage({
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-hidden">
+    <div className="h-[100dvh] flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-hidden">
       {/* LEFT PANEL */}
       <div
-        className="hidden lg:flex flex-col bg-gradient-to-br from-darkBg via-[#111827] to-primary-900/40 p-8 transition-all duration-500 ease-in-out relative z-10"
+        className="hidden lg:flex flex-col bg-gradient-to-br from-darkBg via-[#111827] to-primary-900/40 p-8 transition-all duration-500 ease-in-out relative z-10 overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{ width: isHovered ? "55%" : "42%" }}
@@ -46,7 +46,7 @@ export default function AuthPage({
       </div>
 
       {/* RIGHT FORM AREA */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 relative">
+      <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-6 relative">
         <div
           className={`w-full max-w-md mx-auto transition-all duration-700 ${
             showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"

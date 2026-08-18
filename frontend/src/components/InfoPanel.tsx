@@ -17,16 +17,12 @@ const compactFeatures = [
 ];
 
 const expandedFeatures = [
-  "Kelola Pemasukan",
-  "Kelola Pengeluaran",
-  "Dashboard Interaktif",
-  "Analisis Keuangan",
-  "Manajemen Waktu",
-  "Reminder Aktivitas",
-  "Dark Mode",
-  "Responsive Design",
-  "Monitoring Keuangan",
-  "Statistik Real-Time",
+  "Pemasukan & Pengeluaran",
+  "Laporan Laba Rugi & Neraca Otomatis",
+  "Dashboard & Analisis Real-Time",
+  "Integrasi Bank & E-Wallet",
+  "Multi-entity & Multi-currency",
+  "Audit Trail Lengkap & Aman",
 ];
 
 function LogoMark({ size = 32 }: { size?: number }) {
@@ -73,9 +69,7 @@ export default function InfoPanel({
       </div>
       <div className="transition-all duration-500">
         <h2 className="text-3xl font-bold text-white leading-tight mb-3">
-          {isExpanded
-            ? "LedgerFlow"
-            : "Kelola keuangan bisnis Anda dengan lebih cerdas."}
+          Kelola keuangan bisnis Anda dengan lebih cerdas.
         </h2>
         <p className="text-sm text-white/65 leading-relaxed mb-8">
           {isExpanded
@@ -104,11 +98,15 @@ export default function InfoPanel({
             {stats.map(({ value, label, icon: Icon }) => (
               <div
                 key={label}
-                className="bg-white/10 backdrop-blur-sm rounded-xl p-3.5 border border-white/10"
+                className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 border border-white/10"
               >
-                <Icon className="w-4 h-4 text-cyan-300 mb-2" />
-                <p className="text-lg font-bold text-white">{value}</p>
-                <p className="text-xs text-white/55">{label}</p>
+                <Icon className="w-3.5 h-3.5 text-cyan-300 mb-1.5" />
+                <p className="text-base font-bold text-white leading-tight">
+                  {value}
+                </p>
+                <p className="text-[11px] text-white/55 leading-tight mt-0.5">
+                  {label}
+                </p>
               </div>
             ))}
           </div>

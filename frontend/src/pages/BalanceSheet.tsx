@@ -47,6 +47,11 @@ export default function BalanceSheet() {
     }
   }, [selectedPeriodId, user?.company_id]);
 
+  const handlePeriodChange = (id: string) => {
+    setSelectedPeriodId(id);
+    if (!id) fetchBalanceSheet(id);
+  };
+
   const fetchPeriods = async () => {
     try {
       setIsLoadingPeriods(true);
@@ -188,13 +193,13 @@ export default function BalanceSheet() {
               <div className="w-full sm:w-auto">
                 <HoverDropdown
                   value={selectedPeriodId}
-                  onChange={setSelectedPeriodId}
+                  onChange={handlePeriodChange}
                   disabled={isLoadingReport}
                   placeholder="Pilih Periode"
                   icon={<Calendar size={16} />}
                   minWidth={210}
                   options={[
-                    { value: "", label: "Pilih Periode" },
+                    { value: "", label: "Semua Periode" },
                     ...periods.map((period) => ({
                       value: period.id,
                       label: `${getPeriodLabel(period)}${

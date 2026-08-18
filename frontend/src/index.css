@@ -39,10 +39,10 @@ body {
   font-family: "Dancing Script", cursive;
 }
 
-/* ───────── Scrollbar kustom (tipis, ala AI CFO) ───────── */
+/* ───────── Scrollbar kustom (selaras homepage: gelap + cyan) ───────── */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(148 163 184 / 0.55) #e2e8f0;
+  scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
 
 *::-webkit-scrollbar {
@@ -51,42 +51,26 @@ body {
 }
 
 *::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: #1e293b;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgb(148 163 184 / 0.55);
+  background: rgb(34 211 238 / 0.75);
   border-radius: 8px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgb(100 116 139 / 0.6);
+  background: rgb(6 182 212 / 0.95);
 }
 
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-.dark * {
-  scrollbar-color: rgb(148 163 184 / 0.4) #1e293b;
-}
-
-.dark *::-webkit-scrollbar-track {
-  background: #1e293b;
-}
-
-.dark *::-webkit-scrollbar-thumb {
-  background: rgb(148 163 184 / 0.4);
-}
-
-.dark *::-webkit-scrollbar-thumb:hover {
-  background: rgb(203 213 225 / 0.55);
-}
-
 /* Panel kecil (dropdown, notifikasi, chat): scrollbar 6px */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgb(148 163 184 / 0.55) #e2e8f0;
+  scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -95,14 +79,6 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #e2e8f0;
-}
-
-.dark .scrollbar-thin {
-  scrollbar-color: rgb(148 163 184 / 0.4) #1e293b;
-}
-
-.dark .scrollbar-thin::-webkit-scrollbar-track {
   background: #1e293b;
 }
 

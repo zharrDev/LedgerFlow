@@ -77,6 +77,7 @@ const SidebarContent = ({
   const companyFetchedRef = React.useRef(false);
   const initials = (user?.name || "U").charAt(0).toUpperCase();
   const role = user?.role;
+  const fillSidebar = role === "akuntan";
 
   const menuItems =
     mode === "desktop"
@@ -101,8 +102,8 @@ const SidebarContent = ({
       .catch(() => {});
   }, [user?.company_id, user?.company_name, updateUser]);
 
-  const navLinkClass = (isActive: boolean, compact?: boolean) =>
-    `group relative flex items-center gap-2.5 ${
+  const navLinkClass = (isActive: boolean, compact?: boolean, fill?: boolean) =>
+    `group relative flex items-center gap-2.5 ${fill ? "flex-1" : ""} ${
       compact ? "px-3" : "pl-4 pr-3"
     } py-2 text-xs rounded-xl transition-all duration-200 ${
       isActive
@@ -131,7 +132,7 @@ const SidebarContent = ({
         </div>
       )}
 
-      <nav className="flex-1 px-3 pt-2 pb-1 overflow-y-auto scrollbar-thin">
+      <nav className="flex-1 flex flex-col px-3 pt-2 pb-1 overflow-y-auto scrollbar-thin">
         <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
           {mode === "mobile-drawer" ? "Lainnya" : "Menu"}
         </p>
@@ -142,7 +143,13 @@ const SidebarContent = ({
               : "Tidak ada menu."}
           </p>
         ) : (
-          <div className="space-y-1.5">
+          <div
+            className={
+              fillSidebar
+                ? "flex flex-col flex-1 gap-1.5"
+                : "space-y-1.5"
+            }
+          >
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -150,7 +157,9 @@ const SidebarContent = ({
                   key={item.path}
                   to={item.path}
                   onClick={onLinkClick}
-                  className={({ isActive }) => navLinkClass(isActive)}
+                  className={({ isActive }) =>
+                    navLinkClass(isActive, false, fillSidebar)
+                  }
                 >
                   {({ isActive }) => (
                     <>
