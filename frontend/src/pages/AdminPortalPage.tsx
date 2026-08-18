@@ -22,6 +22,9 @@ import {
   CreditCard,
   RotateCcw,
   Search,
+  Eye,
+  ListTree,
+  UserCheck,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
@@ -31,6 +34,7 @@ import {
   fetchAdminGateOverview,
   fetchAdminGateSubscriptions,
   fetchAdminGatePayments,
+  fetchAdminGateCompanyDetail,
   deleteAdminGateUser,
   deleteAdminGateCompany,
   setAdminGateUserStatus,
@@ -39,6 +43,7 @@ import {
   type AdminGateLog,
   type AdminGateUser,
   type AdminGateCompany,
+  type AdminGateCompanyDetail,
   type AdminGateOverview,
   type AdminGateSubscription,
   type AdminGatePayment,
@@ -89,6 +94,10 @@ export default function AdminPortalPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [confirming, setConfirming] = useState(false);
+  const [detailOpen, setDetailOpen] = useState<AdminGateCompany | null>(null);
+  const [detailData, setDetailData] = useState<AdminGateCompanyDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
 
   const hasToken = !!getAdminGateToken();
 
@@ -148,6 +157,29 @@ export default function AdminPortalPage() {
   const handleLogout = () => {
     logoutAdminGate();
     navigate("/login", { replace: true });
+  };
+
+  // ── Lihat detail company (modal) ──
+  const openDetail = async (c: AdminGateCompany) => {
+    setDetailOpen(c);
+    setDetailData(null);
+    setDetailLoading(true);
+    setDetailError("");
+    try {
+      setDetailData(await fetchAdminGateCompanyDetail(c.id));
+    } catch (err: any) {
+      setDetailError(
+        err?.response?.data?.error || "Gagal memuat detail company.",
+      );
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetailOpen(null);
+    setDetailData(null);
+    setDetailError("");
   };
 
   // ── Moderasi: buka modal konfirmasi dulu, baru eksekusi ──
@@ -384,6 +416,7 @@ export default function AdminPortalPage() {
             onDelete={requestDeleteCompany}
             onSuspend={requestSuspendCompany}
             onUnsuspend={requestUnsuspendCompany}
+            onView={openDetail}
           />
         )}
       </main>
@@ -394,6 +427,15 @@ export default function AdminPortalPage() {
         confirming={confirming}
         onCancel={() => !confirming && setConfirm(null)}
         onConfirm={handleConfirmAction}
+      />
+
+      {/* Modal detail company */}
+      <CompanyDetailModal
+        company={detailOpen}
+        data={detailData}
+        loading={detailLoading}
+        error={detailError}
+        onClose={closeDetail}
       />
     </div>
   );
@@ -1166,12 +1208,14 @@ function CompaniesView({
   onDelete,
   onSuspend,
   onUnsuspend,
+  onView,
 }: {
   companies: AdminGateCompany[];
   error: string;
   onDelete: (c: AdminGateCompany) => void;
   onSuspend: (c: AdminGateCompany) => void;
   onUnsuspend: (c: AdminGateCompany) => void;
+  onView: (c: AdminGateCompany) => void;
 }) {
   const pagination = usePagination(companies, PAGE_SIZE);
 
@@ -1218,6 +1262,13 @@ function CompaniesView({
                     <td className="px-4 py-2.5">{entityStatusBadge(c.status)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onView(c)}
+                          title="Lihat detail company"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
+                        >
+                          <Eye size={14} />
+                        </button>
                         {c.status === "suspended" ? (
                           <button
                             onClick={() => onUnsuspend(c)}
@@ -1473,6 +1524,183 @@ function ConfirmActionModal({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+// ── Modal detail company (info + ringkasan data + subscription) ────────
+function CompanyDetailModal({
+  company,
+  data,
+  loading,
+  error,
+  onClose,
+}: {
+  company: AdminGateCompany | null;
+  data: AdminGateCompanyDetail | null;
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+}) {
+  const formatDate = (d: string) => new Date(d).toLocaleDateString("id-ID");
+
+  return (
+    <AnimatePresence>
+      {company && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-start gap-4 px-6 pt-6">
+              <div className="shrink-0 p-3 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25">
+                <Building2 size={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">
+                  {company.name}
+                </h3>
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {entityStatusBadge(company.status)}
+                  {data?.code && (
+                    <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500">
+                      Kode: {data.code}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 pt-5">
+              {loading ? (
+                <div className="py-14 flex justify-center">
+                  <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-primary-500" />
+                </div>
+              ) : error ? (
+                <div className="py-14 text-center">
+                  <XCircle size={36} className="mx-auto mb-3 opacity-40 text-rose-400" />
+                  <p className="text-sm text-gray-400 dark:text-gray-500">{error}</p>
+                </div>
+              ) : data ? (
+                <div className="space-y-5">
+                  {/* Info dasar */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <InfoCell label="Mata Uang" value={data.currency} />
+                    <InfoCell
+                      label="Dibuat"
+                      value={formatDate(data.created_at)}
+                    />
+                  </div>
+
+                  {/* Ringkasan data */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <StatCard
+                      icon={<Users size={15} />}
+                      label="User"
+                      value={data.total_users}
+                    />
+                    <StatCard
+                      icon={<UserCheck size={15} />}
+                      label="Member"
+                      value={data.total_members}
+                    />
+                    <StatCard
+                      icon={<ListTree size={15} />}
+                      label="Akun"
+                      value={data.total_accounts}
+                    />
+                    <StatCard
+                      icon={<ScrollText size={15} />}
+                      label="Jurnal"
+                      value={data.total_journals}
+                    />
+                  </div>
+
+                  {/* Subscription aktif */}
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gray-50/70 dark:bg-white/[0.03] px-4 py-3.5">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                      Subscription Aktif
+                    </p>
+                    {data.subscription ? (
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <CreditCard size={15} className="text-primary-500" />
+                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            {data.subscription.plan_name || "—"}
+                          </span>
+                          {subBadge(data.subscription.status)}
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {data.subscription.billing_cycle === "yearly"
+                            ? "Tahunan"
+                            : "Bulanan"}
+                          {data.subscription.current_period_end
+                            ? ` · berakhir ${formatDate(
+                                data.subscription.current_period_end,
+                              )}`
+                            : ""}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 dark:text-gray-500">
+                        Belum ada subscription.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-14 text-center">
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Tidak ada data.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end px-6 py-5 mt-5 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition"
+              >
+                Tutup
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Sel kecil untuk info dasar company.
+function InfoCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gray-50/70 dark:bg-white/[0.03] px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200">
+        {value}
+      </p>
+    </div>
   );
 }
 

@@ -89,6 +89,51 @@ export async function fetchAdminGateCompanies(): Promise<AdminGateCompany[]> {
   return Array.isArray(res.data) ? (res.data as AdminGateCompany[]) : [];
 }
 
+// ── Detail satu company (modal "Lihat Detail" di tab Company) ──────────
+
+export type AdminGateCompanyDetail = {
+  id: string;
+  name: string;
+  code: string | null;
+  currency: string;
+  status?: "active" | "suspended";
+  created_at: string;
+  total_users: number;
+  total_members: number;
+  total_accounts: number;
+  total_journals: number;
+  subscription: {
+    billing_cycle: string;
+    status: string;
+    current_period_end: string | null;
+    plan_name: string | null;
+  } | null;
+};
+
+export async function fetchAdminGateCompanyDetail(
+  id: string,
+): Promise<AdminGateCompanyDetail> {
+  const res = await api.get(`/api/admin-gate/companies/${id}/detail`, {
+    headers: authHeaders(),
+  });
+  const raw = res.data as any;
+  // Join `plans` dari PostgREST bisa berbentuk objek tunggal (to-one) —
+  // normalisasi ke nama plan agar konsisten di UI.
+  const planRaw = raw?.subscription?.plans;
+  const plan = Array.isArray(planRaw) ? planRaw[0] : planRaw;
+  return {
+    ...raw,
+    subscription: raw?.subscription
+      ? {
+          billing_cycle: raw.subscription.billing_cycle,
+          status: raw.subscription.status,
+          current_period_end: raw.subscription.current_period_end,
+          plan_name: plan?.display_name || plan?.name || null,
+        }
+      : null,
+  } as AdminGateCompanyDetail;
+}
+
 // ── Ringkasan global untuk tab Overview ────────────────────────────────
 
 export type AdminGateOverview = {

@@ -235,6 +235,83 @@ adminGate.get("/companies", requireAdminGate, async (c) => {
   return c.json(data ?? []);
 });
 
+// GET /api/admin-gate/companies/:id/detail — detail satu company untuk
+// modal "Lihat Detail" di tab Company: info dasar + jumlah user, member,
+// akun, jurnal, dan subscription aktif (read-only).
+adminGate.get("/companies/:id/detail", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+
+  const [
+    company,
+    userCount,
+    memberCount,
+    accountCount,
+    journalCount,
+    subscription,
+  ] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("id, name, code, currency, status, created_at")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", id),
+    supabase
+      .from("company_members")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", id),
+    supabase
+      .from("accounts")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", id),
+    supabase
+      .from("journal_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", id),
+    supabase
+      .from("subscriptions")
+      .select(
+        "billing_cycle, status, current_period_end, plans(name, display_name)",
+      )
+      .eq("company_id", id)
+      .maybeSingle(),
+  ]);
+
+  if (
+    company.error ||
+    userCount.error ||
+    memberCount.error ||
+    accountCount.error ||
+    journalCount.error ||
+    subscription.error
+  ) {
+    console.error("[admin-gate] company detail error:", {
+      company: company.error,
+      users: userCount.error,
+      members: memberCount.error,
+      accounts: accountCount.error,
+      journals: journalCount.error,
+      subscription: subscription.error,
+    });
+    return c.json({ error: "Gagal memuat detail company" }, 500);
+  }
+
+  if (!company.data) {
+    return c.json({ error: "Company tidak ditemukan" }, 404);
+  }
+
+  return c.json({
+    ...company.data,
+    total_users: userCount.count ?? 0,
+    total_members: memberCount.count ?? 0,
+    total_accounts: accountCount.count ?? 0,
+    total_journals: journalCount.count ?? 0,
+    subscription: subscription.data ?? null,
+  });
+});
+
 // GET /api/admin-gate/overview — ringkasan statistik global untuk tab
 // "Overview" dashboard admin (view-only, tidak ada mutasi):
 //   - total_users / total_companies: jumlah seluruh user & company
