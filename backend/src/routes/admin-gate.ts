@@ -189,7 +189,7 @@ async function countOwners(companyId: string): Promise<number> {
 adminGate.get("/users", requireAdminGate, async (c) => {
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, email, phone, role, company_id, created_at, companies(name)")
+    .select("id, name, email, phone, role, company_id, status, created_at, companies(name)")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -204,7 +204,7 @@ adminGate.get("/users", requireAdminGate, async (c) => {
 adminGate.get("/companies", requireAdminGate, async (c) => {
   const { data, error } = await supabase
     .from("companies")
-    .select("id, name, currency, created_at")
+    .select("id, name, currency, status, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -398,6 +398,87 @@ adminGate.delete("/companies/:id", requireAdminGate, async (c) => {
     return c.json({ error: "Gagal menghapus company" }, 500);
   }
   return c.json({ message: `Company "${company.name}" berhasil dihapus` });
+});
+
+// ── Suspend / unsuspend (soft delete) ─────────────────────────────────
+// Moderasi yang TIDAK menghapus data: user/company dinonaktifkan sementara
+// (status = 'suspended'). Akibatnya otomatis diterapkan di lapisan auth:
+//   - user suspended      → tidak bisa login & semua request-nya ditolak
+//   - company suspended   → seluruh anggotanya kehilangan akses
+// Data bisnis tetap utuh sehingga bisa diaktifkan kembali kapan saja.
+
+// PATCH /api/admin-gate/users/:id/status — body { suspended: boolean }
+adminGate.patch("/users/:id/status", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+
+  let body: { suspended?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Body JSON tidak valid" }, 400);
+  }
+  if (typeof body.suspended !== "boolean") {
+    return c.json({ error: "Field `suspended` (boolean) wajib diisi" }, 400);
+  }
+
+  const { data: target } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("id", id)
+    .maybeSingle();
+  if (!target) return c.json({ error: "User tidak ditemukan" }, 404);
+
+  const { error } = await supabase
+    .from("users")
+    .update({ status: body.suspended ? "suspended" : "active" })
+    .eq("id", id);
+  if (error) {
+    console.error("[admin-gate] suspend user error:", error);
+    return c.json({ error: "Gagal mengubah status user" }, 500);
+  }
+
+  return c.json({
+    message: body.suspended
+      ? `${target.name} dinonaktifkan sementara.`
+      : `${target.name} diaktifkan kembali.`,
+  });
+});
+
+// PATCH /api/admin-gate/companies/:id/status — body { suspended: boolean }
+adminGate.patch("/companies/:id/status", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+
+  let body: { suspended?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Body JSON tidak valid" }, 400);
+  }
+  if (typeof body.suspended !== "boolean") {
+    return c.json({ error: "Field `suspended` (boolean) wajib diisi" }, 400);
+  }
+
+  const { data: target } = await supabase
+    .from("companies")
+    .select("id, name")
+    .eq("id", id)
+    .maybeSingle();
+  if (!target) return c.json({ error: "Company tidak ditemukan" }, 404);
+
+  const { error } = await supabase
+    .from("companies")
+    .update({ status: body.suspended ? "suspended" : "active" })
+    .eq("id", id);
+  if (error) {
+    console.error("[admin-gate] suspend company error:", error);
+    return c.json({ error: "Gagal mengubah status company" }, 500);
+  }
+
+  return c.json({
+    message: body.suspended
+      ? `${target.name} dinonaktifkan sementara (semua anggota kehilangan akses).`
+      : `${target.name} diaktifkan kembali.`,
+  });
 });
 
 export default adminGate;

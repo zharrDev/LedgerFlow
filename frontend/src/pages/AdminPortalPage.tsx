@@ -20,6 +20,7 @@ import {
   UserMinus,
   Wallet,
   CreditCard,
+  RotateCcw,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
@@ -31,6 +32,8 @@ import {
   fetchAdminGatePayments,
   deleteAdminGateUser,
   deleteAdminGateCompany,
+  setAdminGateUserStatus,
+  setAdminGateCompanyStatus,
   logoutAdminGate,
   type AdminGateLog,
   type AdminGateUser,
@@ -48,7 +51,13 @@ import logo from "../assets/ledgerflow.png";
 type Tab = "overview" | "billing" | "log" | "users" | "companies";
 
 type ConfirmState = {
-  type: "user" | "company";
+  type:
+    | "deleteUser"
+    | "deleteCompany"
+    | "suspendUser"
+    | "suspendCompany"
+    | "unsuspendUser"
+    | "unsuspendCompany";
   item: AdminGateUser | AdminGateCompany;
 } | null;
 
@@ -141,15 +150,24 @@ export default function AdminPortalPage() {
   };
 
   // ── Moderasi: buka modal konfirmasi dulu, baru eksekusi ──
-  const requestDeleteUser = (u: AdminGateUser) => setConfirm({ type: "user", item: u });
+  const requestDeleteUser = (u: AdminGateUser) =>
+    setConfirm({ type: "deleteUser", item: u });
   const requestDeleteCompany = (c: AdminGateCompany) =>
-    setConfirm({ type: "company", item: c });
+    setConfirm({ type: "deleteCompany", item: c });
+  const requestSuspendUser = (u: AdminGateUser) =>
+    setConfirm({ type: "suspendUser", item: u });
+  const requestUnsuspendUser = (u: AdminGateUser) =>
+    setConfirm({ type: "unsuspendUser", item: u });
+  const requestSuspendCompany = (c: AdminGateCompany) =>
+    setConfirm({ type: "suspendCompany", item: c });
+  const requestUnsuspendCompany = (c: AdminGateCompany) =>
+    setConfirm({ type: "unsuspendCompany", item: c });
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmAction = async () => {
     if (!confirm) return;
     setConfirming(true);
     try {
-      if (confirm.type === "user") {
+      if (confirm.type === "deleteUser") {
         const u = confirm.item as AdminGateUser;
         await deleteAdminGateUser(u.id);
         setUsers((prev) => prev.filter((x) => x.id !== u.id));
@@ -158,7 +176,7 @@ export default function AdminPortalPage() {
           title: "User dihapus",
           message: `${u.name} (${u.email || u.phone || "-"}) berhasil dihapus.`,
         });
-      } else {
+      } else if (confirm.type === "deleteCompany") {
         const c = confirm.item as AdminGateCompany;
         await deleteAdminGateCompany(c.id);
         setCompanies((prev) => prev.filter((x) => x.id !== c.id));
@@ -167,13 +185,52 @@ export default function AdminPortalPage() {
           title: "Company dihapus",
           message: `${c.name} beserta seluruh datanya berhasil dihapus.`,
         });
+      } else if (
+        confirm.type === "suspendUser" ||
+        confirm.type === "unsuspendUser"
+      ) {
+        const u = confirm.item as AdminGateUser;
+        const suspended = confirm.type === "suspendUser";
+        await setAdminGateUserStatus(u.id, suspended);
+        setUsers((prev) =>
+          prev.map((x) =>
+            x.id === u.id
+              ? { ...x, status: suspended ? "suspended" : "active" }
+              : x,
+          ),
+        );
+        toast({
+          variant: "success",
+          title: suspended ? "User disuspend" : "User diaktifkan",
+          message: suspended
+            ? `${u.name} dinonaktifkan sementara.`
+            : `${u.name} diaktifkan kembali.`,
+        });
+      } else {
+        const c = confirm.item as AdminGateCompany;
+        const suspended = confirm.type === "suspendCompany";
+        await setAdminGateCompanyStatus(c.id, suspended);
+        setCompanies((prev) =>
+          prev.map((x) =>
+            x.id === c.id
+              ? { ...x, status: suspended ? "suspended" : "active" }
+              : x,
+          ),
+        );
+        toast({
+          variant: "success",
+          title: suspended ? "Company disuspend" : "Company diaktifkan",
+          message: suspended
+            ? `${c.name} dinonaktifkan sementara (semua anggota kehilangan akses).`
+            : `${c.name} diaktifkan kembali.`,
+        });
       }
       setConfirm(null);
     } catch (err: any) {
       toast({
         variant: "error",
-        title: "Gagal menghapus",
-        message: err?.response?.data?.error || "Terjadi kesalahan saat menghapus.",
+        title: "Gagal",
+        message: err?.response?.data?.error || "Terjadi kesalahan.",
       });
     } finally {
       setConfirming(false);
@@ -316,22 +373,26 @@ export default function AdminPortalPage() {
             roleBadge={roleBadge}
             error={error}
             onDelete={requestDeleteUser}
+            onSuspend={requestSuspendUser}
+            onUnsuspend={requestUnsuspendUser}
           />
         ) : (
           <CompaniesView
             companies={companies}
             error={error}
             onDelete={requestDeleteCompany}
+            onSuspend={requestSuspendCompany}
+            onUnsuspend={requestUnsuspendCompany}
           />
         )}
       </main>
 
-      {/* Modal konfirmasi hapus */}
-      <ConfirmDeleteModal
+      {/* Modal konfirmasi aksi moderasi (hapus permanen / suspend / aktifkan) */}
+      <ConfirmActionModal
         confirm={confirm}
         confirming={confirming}
         onCancel={() => !confirming && setConfirm(null)}
-        onConfirm={handleConfirmDelete}
+        onConfirm={handleConfirmAction}
       />
     </div>
   );
@@ -899,17 +960,21 @@ function AuditLogView({
   );
 }
 
-// ── Users view (read-only + moderasi hapus) ───────────────────────────
+// ── Users view (read-only + moderasi: suspend & hapus permanen) ────────
 function UsersView({
   users,
   roleBadge,
   error,
   onDelete,
+  onSuspend,
+  onUnsuspend,
 }: {
   users: AdminGateUser[];
   roleBadge: Record<string, string>;
   error: string;
   onDelete: (u: AdminGateUser) => void;
+  onSuspend: (u: AdminGateUser) => void;
+  onUnsuspend: (u: AdminGateUser) => void;
 }) {
   const pagination = usePagination(users, PAGE_SIZE);
 
@@ -920,7 +985,7 @@ function UsersView({
           Semua User (lintas company)
         </span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          Hanya tampilan · moderasi: hapus user bermasalah
+          Hanya tampilan · moderasi: suspend atau hapus permanen
         </span>
       </div>
       {users.length === 0 ? (
@@ -931,7 +996,7 @@ function UsersView({
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800/30">
                 <tr>
-                  {["Nama", "Email / No. HP", "Company", "Role", "Aksi"].map(
+                  {["Nama", "Email / No. HP", "Company", "Role", "Status", "Aksi"].map(
                     (h) => (
                       <th
                         key={h}
@@ -962,14 +1027,34 @@ function UsersView({
                         {u.role}
                       </span>
                     </td>
+                    <td className="px-4 py-2.5">{entityStatusBadge(u.status)}</td>
                     <td className="px-4 py-2.5">
-                      <button
-                        onClick={() => onDelete(u)}
-                        title="Hapus user (moderasi)"
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {u.status === "suspended" ? (
+                          <button
+                            onClick={() => onUnsuspend(u)}
+                            title="Aktifkan kembali (unsuspend)"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onSuspend(u)}
+                            title="Suspend (soft delete — data aman)"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                          >
+                            <Ban size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDelete(u)}
+                          title="Hapus permanen (moderasi)"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -995,15 +1080,19 @@ function UsersView({
   );
 }
 
-// ── Companies view (read-only + moderasi hapus) ───────────────────────
+// ── Companies view (read-only + moderasi: suspend & hapus permanen) ────
 function CompaniesView({
   companies,
   error,
   onDelete,
+  onSuspend,
+  onUnsuspend,
 }: {
   companies: AdminGateCompany[];
   error: string;
   onDelete: (c: AdminGateCompany) => void;
+  onSuspend: (c: AdminGateCompany) => void;
+  onUnsuspend: (c: AdminGateCompany) => void;
 }) {
   const pagination = usePagination(companies, PAGE_SIZE);
 
@@ -1014,7 +1103,7 @@ function CompaniesView({
           Semua Company
         </span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          Hanya tampilan · moderasi: hapus company (data ikut terhapus)
+          Hanya tampilan · moderasi: suspend atau hapus permanen
         </span>
       </div>
       {companies.length === 0 ? (
@@ -1025,7 +1114,7 @@ function CompaniesView({
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800/30">
                 <tr>
-                  {["Nama", "Mata Uang", "Dibuat", "Aksi"].map((h) => (
+                  {["Nama", "Mata Uang", "Dibuat", "Status", "Aksi"].map((h) => (
                     <th
                       key={h}
                       className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -1047,14 +1136,34 @@ function CompaniesView({
                     <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                       {new Date(c.created_at).toLocaleDateString("id-ID")}
                     </td>
+                    <td className="px-4 py-2.5">{entityStatusBadge(c.status)}</td>
                     <td className="px-4 py-2.5">
-                      <button
-                        onClick={() => onDelete(c)}
-                        title="Hapus company (moderasi)"
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {c.status === "suspended" ? (
+                          <button
+                            onClick={() => onUnsuspend(c)}
+                            title="Aktifkan kembali (unsuspend)"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onSuspend(c)}
+                            title="Suspend (soft delete — data aman)"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                          >
+                            <Ban size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDelete(c)}
+                          title="Hapus permanen (data ikut terhapus)"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1080,8 +1189,8 @@ function CompaniesView({
   );
 }
 
-// ── Modal konfirmasi hapus (popup, bukan window.confirm) ───────────────
-function ConfirmDeleteModal({
+// ── Modal konfirmasi aksi moderasi (hapus permanen / suspend / aktifkan) ─
+function ConfirmActionModal({
   confirm,
   confirming,
   onCancel,
@@ -1092,21 +1201,131 @@ function ConfirmDeleteModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const isUser = confirm?.type === "user";
+  const type = confirm?.type;
+  const isUser = type?.endsWith("User") ?? false;
+  const isDelete = type?.startsWith("delete") ?? false;
+  const isSuspend = type?.startsWith("suspend") ?? false;
+  const isUnsuspend = type?.startsWith("unsuspend") ?? false;
+
   const name = confirm
     ? isUser
       ? (confirm.item as AdminGateUser).name
       : (confirm.item as AdminGateCompany).name
     : "";
-  const detail = confirm && isUser
-    ? (confirm.item as AdminGateUser).email ||
-      (confirm.item as AdminGateUser).phone ||
-      ""
-    : "";
+  const detail =
+    confirm && isUser
+      ? (confirm.item as AdminGateUser).email ||
+        (confirm.item as AdminGateUser).phone ||
+        ""
+      : "";
+
+  // Meta per varian aksi: warna, judul, ikon, dan teks tombol.
+  const meta = isDelete
+    ? {
+        icon: <AlertTriangle size={22} />,
+        iconBox:
+          "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
+        title: `Hapus ${isUser ? "User" : "Company"}?`,
+        body: isUser ? (
+          <>
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {name}
+            </span>
+            {detail && (
+              <span className="text-gray-400 dark:text-gray-500">
+                {" "}
+                ({detail})
+              </span>
+            )}{" "}
+            akan dihapus <span className="font-semibold text-rose-600 dark:text-rose-400">permanen</span> beserta
+            seluruh datanya. Tindakan ini tidak bisa dibatalkan.
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {name}
+            </span>{" "}
+            akan dihapus <span className="font-semibold text-rose-600 dark:text-rose-400">permanen</span> beserta
+            seluruh datanya (user, akun, periode, jurnal, dll.). Tindakan ini
+            tidak bisa dibatalkan.
+          </>
+        ),
+        button: "Ya, Hapus",
+        buttonCls:
+          "bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-500/25",
+      }
+    : isSuspend
+      ? {
+          icon: <Ban size={22} />,
+          iconBox:
+            "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
+          title: `Suspend ${isUser ? "User" : "Company"}?`,
+          body: isUser ? (
+            <>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {name}
+              </span>
+              {detail && (
+                <span className="text-gray-400 dark:text-gray-500">
+                  {" "}
+                  ({detail})
+                </span>
+              )}{" "}
+              akan dinonaktifkan sementara — tidak bisa login & semua akses
+              ditolak. <span className="font-semibold text-amber-600 dark:text-amber-400">Data tidak dihapus</span> dan
+              bisa diaktifkan kembali.
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {name}
+              </span>{" "}
+              akan dinonaktifkan sementara — seluruh anggotanya kehilangan
+              akses. <span className="font-semibold text-amber-600 dark:text-amber-400">Data tidak dihapus</span> dan
+              bisa diaktifkan kembali.
+            </>
+          ),
+          button: "Ya, Suspend",
+          buttonCls:
+            "bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-500/25",
+        }
+      : isUnsuspend
+        ? {
+            icon: <CheckCircle2 size={22} />,
+            iconBox:
+              "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+            title: `Aktifkan Kembali ${isUser ? "User" : "Company"}?`,
+            body: isUser ? (
+              <>
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {name}
+                </span>
+                {detail && (
+                  <span className="text-gray-400 dark:text-gray-500">
+                    {" "}
+                    ({detail})
+                  </span>
+                )}{" "}
+                akan diaktifkan kembali — bisa login seperti biasa.
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {name}
+                </span>{" "}
+                akan diaktifkan kembali — seluruh anggotanya bisa mengakses
+                seperti biasa.
+              </>
+            ),
+            button: "Ya, Aktifkan",
+            buttonCls:
+              "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/25",
+          }
+        : null;
 
   return (
     <AnimatePresence>
-      {confirm && (
+      {confirm && meta && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1122,41 +1341,17 @@ function ConfirmDeleteModal({
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden"
           >
-            {/* Header merah */}
+            {/* Header sesuai varian */}
             <div className="flex items-start gap-4 px-6 pt-6">
-              <div className="shrink-0 p-3 rounded-2xl bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                <AlertTriangle size={22} />
+              <div className={`shrink-0 p-3 rounded-2xl ${meta.iconBox}`}>
+                {meta.icon}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Hapus {isUser ? "User" : "Company"}?
+                  {meta.title}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-words">
-                  {isUser ? (
-                    <>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">
-                        {name}
-                      </span>
-                      {detail && (
-                        <span className="text-gray-400 dark:text-gray-500">
-                          {" "}
-                          ({detail})
-                        </span>
-                      )}
-                      {" "}
-                      akan dihapus permanen beserta seluruh datanya. Tindakan ini
-                      tidak bisa dibatalkan.
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">
-                        {name}
-                      </span>
-                      {" "}
-                      akan dihapus permanen beserta seluruh datanya (user, akun,
-                      periode, jurnal, dll.). Tindakan ini tidak bisa dibatalkan.
-                    </>
-                  )}
+                  {meta.body}
                 </p>
               </div>
               <button
@@ -1180,17 +1375,17 @@ function ConfirmDeleteModal({
               <button
                 onClick={onConfirm}
                 disabled={confirming}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${meta.buttonCls}`}
               >
                 {confirming ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Menghapus...
+                    Memproses...
                   </>
                 ) : (
                   <>
-                    <Trash2 size={14} />
-                    Ya, Hapus
+                    {meta.icon}
+                    {meta.button}
                   </>
                 )}
               </button>
@@ -1199,6 +1394,24 @@ function ConfirmDeleteModal({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+// ── Badge status entitas (user/company): active / suspended ───────────
+function entityStatusBadge(status?: "active" | "suspended") {
+  if (status === "suspended") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+        <Ban size={10} />
+        Suspend
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+      <CheckCircle2 size={10} />
+      Aktif
+    </span>
   );
 }
 

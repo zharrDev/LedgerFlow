@@ -511,6 +511,20 @@ waAuth.post("/login/verify", async (c) => {
       return c.json({ error: "Akun tidak ditemukan." }, 404);
     }
 
+    // Gate status suspend (moderasi admin) — cek SEBELUM consume OTP supaya
+    // kode yang valid tidak terbuang untuk akun yang dinonaktifkan.
+    // Kolom `status` ada sejak migrasi migration-admin-suspend.sql; bila
+    // undefined → fail-open.
+    if (user.status === "suspended") {
+      return c.json(
+        {
+          error:
+            "Akun dinonaktifkan sementara oleh administrator. Hubungi dukungan.",
+        },
+        403,
+      );
+    }
+
     const result = await verifyOtp(phone, "login", String(code));
     if (!result.ok) {
       if (result.status === "locked") {

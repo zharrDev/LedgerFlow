@@ -54,6 +54,7 @@ export type AdminGateUser = {
   phone: string | null;
   role: "admin" | "akuntan" | "owner";
   company_id: string;
+  status?: "active" | "suspended";
   created_at: string;
   companies?: { name: string } | null;
 };
@@ -62,6 +63,7 @@ export type AdminGateCompany = {
   id: string;
   name: string;
   currency: string;
+  status?: "active" | "suspended";
   created_at: string;
 };
 
@@ -142,4 +144,30 @@ export async function deleteAdminGateUser(id: string): Promise<void> {
 
 export async function deleteAdminGateCompany(id: string): Promise<void> {
   await api.delete(`/api/admin-gate/companies/${id}`, { headers: authHeaders() });
+}
+
+// ── Moderasi: suspend / unsuspend (soft delete) ───────────────────────
+// Dinonaktifkan sementara tanpa menghapus data. Backend otomatis menolak
+// login & semua akses user (atau seluruh anggota company) yang di-suspend.
+
+export async function setAdminGateUserStatus(
+  id: string,
+  suspended: boolean,
+): Promise<void> {
+  await api.patch(
+    `/api/admin-gate/users/${id}/status`,
+    { suspended },
+    { headers: authHeaders() },
+  );
+}
+
+export async function setAdminGateCompanyStatus(
+  id: string,
+  suspended: boolean,
+): Promise<void> {
+  await api.patch(
+    `/api/admin-gate/companies/${id}/status`,
+    { suspended },
+    { headers: authHeaders() },
+  );
 }

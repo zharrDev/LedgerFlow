@@ -60,7 +60,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     // harus sama dengan yang tersimpan saat ini. Kalau beda → tolak (401).
     const { data: freshUser, error: dbError } = await supabase
       .from("users")
-      .select("id, role, company_id")
+      .select("id, role, company_id, status")
       .eq("id", user.sub)
       .maybeSingle();
 
@@ -75,6 +75,43 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
     if (freshUser.role !== user.role || freshUser.company_id !== user.company_id) {
       return c.json({ error: "Invalid or expired token" }, 401);
+    }
+
+    // ── Cek status suspend (moderasi admin) ──
+    // User yang dinonaktifkan admin, atau anggota company yang dinonaktifkan,
+    // langsung ditolak di lapisan ini (menyasar SEMUA endpoint, tidak perlu
+    // cek ulang per route). Kolom `status` ada sejak migrasi
+    // migration-admin-suspend.sql; jika kolom belum ada (undefined) →
+    // fail-open (perilaku lama) agar tidak mengunci semua user.
+    if (freshUser.status === "suspended") {
+      return c.json(
+        {
+          error:
+            "Akun dinonaktifkan sementara oleh administrator. Hubungi dukungan.",
+        },
+        403,
+      );
+    }
+
+    const { data: company, error: companyError } = await supabase
+      .from("companies")
+      .select("status")
+      .eq("id", user.company_id)
+      .maybeSingle();
+
+    if (companyError) {
+      console.error("AUTH COMPANY CHECK ERROR =", companyError);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+
+    if (!company || company.status === "suspended") {
+      return c.json(
+        {
+          error:
+            "Perusahaan dinonaktifkan sementara oleh administrator. Hubungi dukungan.",
+        },
+        403,
+      );
     }
 
     c.set("user", {

@@ -294,6 +294,18 @@ auth.post("/login", async (c) => {
     );
   }
 
+  // Gate status suspend (moderasi admin). Kolom `status` ada sejak migrasi
+  // migration-admin-suspend.sql; bila undefined → fail-open.
+  if (user.status === "suspended") {
+    return c.json(
+      {
+        error:
+          "Akun dinonaktifkan sementara oleh administrator. Hubungi dukungan.",
+      },
+      403,
+    );
+  }
+
   const companyName = await getCompanyName(user.company_id);
 
   const token = await signToken({
