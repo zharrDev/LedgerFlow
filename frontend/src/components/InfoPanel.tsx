@@ -128,7 +128,7 @@ export default function InfoPanel({
           </div>
         </div>
       )}
-      <p className="mt-auto text-xs text-white/30 pt-6 border-t border-white/10">
+      <p className="mt-auto text-xs text-white/30 pt-6">
     © 2026 LedgerFlow.
   </p>
       {onToggle && (
