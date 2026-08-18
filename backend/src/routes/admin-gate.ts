@@ -397,11 +397,14 @@ adminGate.get("/overview", requireAdminGate, async (c) => {
 
 // GET /api/admin-gate/subscriptions — daftar subscription global (view-only)
 // untuk tab Billing: siapa berlangganan plan apa, status & periode aktif.
+// CATATAN: `subscriptions.user_id` menunjuk ke auth.users (bukan public.users),
+// jadi join `users(...)` via PostgREST tidak bisa dibuat (PGRST200) — data user
+// diambil lewat query terpisah lalu digabung manual.
 adminGate.get("/subscriptions", requireAdminGate, async (c) => {
   const { data, error } = await supabase
     .from("subscriptions")
     .select(
-      "id, status, billing_cycle, current_period_end, canceled_at, users(name, email, phone), plans(name, display_name)",
+      "id, user_id, status, billing_cycle, current_period_end, canceled_at, plans(name, display_name)",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -410,17 +413,31 @@ adminGate.get("/subscriptions", requireAdminGate, async (c) => {
     console.error("[admin-gate] subscriptions error:", error);
     return c.json({ error: "Gagal memuat subscription" }, 500);
   }
-  return c.json(data ?? []);
+
+  const rows = data ?? [];
+  const userIds = [...new Set(rows.map((s) => s.user_id).filter(Boolean))];
+  const { data: userRows } = await supabase
+    .from("users")
+    .select("id, name, email, phone")
+    .in("id", userIds);
+  const userMap = new Map((userRows ?? []).map((u) => [u.id, u]));
+
+  return c.json(
+    rows.map((s) => ({
+      ...s,
+      users: s.user_id ? (userMap.get(s.user_id) ?? null) : null,
+    })),
+  );
 });
 
 // GET /api/admin-gate/payments — riwayat pembayaran global (view-only):
 // order_id Midtrans, jumlah, status, dan siapa yang membayar.
+// CATATAN: sama seperti subscriptions, `payments.user_id` menunjuk ke
+// auth.users — data user diambil lewat query terpisah lalu digabung manual.
 adminGate.get("/payments", requireAdminGate, async (c) => {
   const { data, error } = await supabase
     .from("payments")
-    .select(
-      "id, order_id, amount, currency, status, paid_at, created_at, users(name, email, phone)",
-    )
+    .select("id, user_id, order_id, amount, currency, status, paid_at, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -428,7 +445,21 @@ adminGate.get("/payments", requireAdminGate, async (c) => {
     console.error("[admin-gate] payments error:", error);
     return c.json({ error: "Gagal memuat pembayaran" }, 500);
   }
-  return c.json(data ?? []);
+
+  const rows = data ?? [];
+  const userIds = [...new Set(rows.map((p) => p.user_id).filter(Boolean))];
+  const { data: userRows } = await supabase
+    .from("users")
+    .select("id, name, email, phone")
+    .in("id", userIds);
+  const userMap = new Map((userRows ?? []).map((u) => [u.id, u]));
+
+  return c.json(
+    rows.map((p) => ({
+      ...p,
+      users: p.user_id ? (userMap.get(p.user_id) ?? null) : null,
+    })),
+  );
 });
 
 // ── Moderasi (satu-satunya aksi mutasi admin) ──────────────────────────
