@@ -21,6 +21,7 @@ import {
   Wallet,
   CreditCard,
   RotateCcw,
+  Search,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
@@ -366,7 +367,7 @@ export default function AdminPortalPage() {
         ) : tab === "billing" ? (
           <BillingView subscriptions={subscriptions} payments={payments} error={error} />
         ) : tab === "log" ? (
-          <AuditLogView logs={logs} statusBadge={statusBadge} stats={stats} error={error} />
+          <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
         ) : tab === "users" ? (
           <UsersView
             users={users}
@@ -854,19 +855,50 @@ function payBadge(status: string) {
   );
 }
 
-// ── Audit Log view ────────────────────────────────────────────────────
+// ── Audit Log view (filter status + cari IP, fetch di sisi server) ────
 function AuditLogView({
-  logs,
   statusBadge,
   stats,
   error,
 }: {
-  logs: AdminGateLog[];
   statusBadge: (s: AdminGateLog["status"]) => React.ReactNode;
   stats: { total: number; success: number; failed: number; blocked: number };
   error: string;
 }) {
+  const [logs, setLogs] = useState<AdminGateLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const pagination = usePagination(logs, PAGE_SIZE);
+
+  // Debounce pencarian: tunggu 400ms setelah berhenti mengetik sebelum
+  // fetch ulang ke server dengan filter status & IP.
+  useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => {
+      (async () => {
+        try {
+          const data = await fetchAdminGateLogs({
+            status: statusFilter || undefined,
+            ip: query.trim() || undefined,
+          });
+          setLogs(data);
+          setFetchError("");
+        } catch {
+          setFetchError("Gagal memuat log.");
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }, 400);
+    return () => clearTimeout(t);
+  }, [query, statusFilter]);
+
+  const resetFilters = () => {
+    setQuery("");
+    setStatusFilter("");
+  };
 
   return (
     <div className="space-y-6">
@@ -901,14 +933,61 @@ function AuditLogView({
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Riwayat Percobaan Login Gerbang
           </span>
-          {logs.length > 0 && (
+          {!loading && logs.length > 0 && (
             <span className="text-[11px] text-gray-400 dark:text-gray-500">
               {logs.length} catatan
             </span>
           )}
         </div>
-        {logs.length === 0 ? (
-          <EmptyState error={error} text="Belum ada percobaan tercatat." />
+
+        {/* Filter bar: cari IP + dropdown status */}
+        <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[160px]">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari IP... (mis. 182.16.1.25)"
+              className="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 transition"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/40 transition"
+          >
+            <option value="">Semua Status</option>
+            <option value="success">Berhasil</option>
+            <option value="failed">Gagal</option>
+            <option value="blocked">Diblokir</option>
+          </select>
+          {(query || statusFilter) && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 transition"
+            >
+              <X size={14} />
+              Reset
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="py-12 flex justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500" />
+          </div>
+        ) : logs.length === 0 ? (
+          <EmptyState
+            error={fetchError || error}
+            text={
+              query || statusFilter
+                ? "Tidak ada catatan yang cocok dengan filter."
+                : "Belum ada percobaan tercatat."
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">

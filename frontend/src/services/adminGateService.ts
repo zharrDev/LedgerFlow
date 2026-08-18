@@ -25,11 +25,19 @@ export async function verifyAdminGatePassword(
 
 // Ambil audit log percobaan (dashboard admin). Hanya berhasil dengan token
 // admin-gate — token user biasa ditolak backend (401).
-export async function fetchAdminGateLogs(): Promise<AdminGateLog[]> {
+// Filter opsional: status (success|failed|blocked) & pencarian IP.
+export async function fetchAdminGateLogs(params?: {
+  status?: string;
+  ip?: string;
+}): Promise<AdminGateLog[]> {
   const token = getAdminGateToken();
   if (!token) throw new Error("Belum terautentikasi sebagai admin");
   const res = await api.get("/api/admin-gate/logs", {
     headers: { Authorization: `Bearer ${token}` },
+    params: {
+      status: params?.status || undefined,
+      ip: params?.ip || undefined,
+    },
   });
   return Array.isArray(res.data) ? (res.data as AdminGateLog[]) : [];
 }

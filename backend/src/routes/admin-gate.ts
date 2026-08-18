@@ -135,13 +135,33 @@ adminGate.post("/verify", async (c) => {
 });
 
 // GET /api/admin-gate/logs — riwayat percobaan (dashboard admin).
+// Dukung filter opsional via query string:
+//   ?status=success|failed|blocked  → filter berdasarkan status
+//   ?ip=1.2.3.4                     → cari IP (pencocokan sebagian)
 // Hanya bisa diakses dengan token admin-gate (bukan token user biasa).
 adminGate.get("/logs", requireAdminGate, async (c) => {
-  const { data, error } = await supabase
+  const status = c.req.query("status");
+  const ip = c.req.query("ip")?.trim();
+
+  // Filter status hanya menerima nilai enum yang valid; nilai lain diabaikan
+  // (tidak melempar error, tapi dianggap tanpa filter status).
+  const validStatuses = ["success", "failed", "blocked"];
+
+  let query = supabase
     .from("admin_gate_logs")
-    .select("id, ip, status, created_at")
+    .select("id, ip, status, created_at");
+
+  if (status && validStatuses.includes(status)) {
+    query = query.eq("status", status);
+  }
+  if (ip) {
+    // Pencarian IP sebagian (contains) — tanpa pola regex berbahaya.
+    query = query.ilike("ip", `%${ip}%`);
+  }
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(200);
 
   if (error) {
     return c.json({ error: "Gagal memuat log" }, 500);
