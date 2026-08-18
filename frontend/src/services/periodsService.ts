@@ -8,23 +8,30 @@ export const periodsService = {
   getAll: async (companyId: string): Promise<Period[]> => {
     const { data } = await api.get("api/periods", {
       params: { company_id: companyId },
+      skipErrorToast: true,
     });
     return data;
   },
 
   // Membuka periode baru
   open: async (companyId: string, year: number, month: number) => {
-    const { data } = await api.post("api/periods", {
-      company_id: companyId,
-      year,
-      month,
-    });
+    const { data } = await api.post(
+      "api/periods",
+      {
+        company_id: companyId,
+        year,
+        month,
+      },
+      { skipErrorToast: true },
+    );
     return data;
   },
 
   // Menutup periode berdasarkan id
   close: async (id: string) => {
-    const { data } = await api.patch(`api/periods/${id}/close`);
+    const { data } = await api.patch(`api/periods/${id}/close`, undefined, {
+      skipErrorToast: true,
+    });
     return data;
   },
 };

@@ -4,6 +4,7 @@ import { accountsService } from "../services/accountsService";
 import { useToast } from "../context/ToastContext";
 import { getSessionToken } from "../lib/session";
 import { pushNotification } from "../components/Header";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // Helper: urutkan akun berdasarkan kode akun
 function sortByCode(list: Account[]): Account[] {
@@ -40,10 +41,7 @@ function parseAccountError(e: unknown, code?: string): string {
   if (status === 401 || status === 403)
     return "Sesi Anda berakhir atau tidak memiliki izin. Silakan login ulang.";
 
-  if (status && status >= 500)
-    return "Server sedang bermasalah. Coba lagi beberapa saat.";
-
-  return serverMsg || "Terjadi kesalahan saat menyimpan akun.";
+  return getErrorMessage(e);
 }
 
 // Hook akun: handle fetch, create/update, dan toggle status akun
@@ -82,8 +80,7 @@ export function useAccounts() {
 
       setAccounts(sortByCode(mapped));
     } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Terjadi kesalahan saat memuat akun";
+      const msg = getErrorMessage(e);
       setError(msg);
       setAccounts([]);
       toast({ variant: "error", title: "Gagal memuat akun", message: msg });
@@ -182,7 +179,7 @@ export function useAccounts() {
         toast({
           variant: "error",
           title: "Gagal mengubah status",
-          message: e instanceof Error ? e.message : "Terjadi kesalahan",
+          message: getErrorMessage(e),
         });
         return false;
       } finally {

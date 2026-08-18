@@ -1,5 +1,16 @@
 import axios from "axios";
 import { getSessionToken, clearSession } from "./session";
+import { getErrorMessage, errorToastTitle } from "./errorMessage";
+import { showToast } from "./toastBridge";
+
+// Opsi tambahan per-request: komponen/service yang SUDAH menangani error
+// dengan pesan spesifik (mis. validasi form) bisa menonaktifkan toast
+// otomatis ini supaya tidak muncul dobel.
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipErrorToast?: boolean;
+  }
+}
 
 // Axios instance utama untuk semua request API frontend -> backend
 export const api = axios.create({
@@ -18,7 +29,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor response: jika token invalid, arahkan ulang ke login
+// Interceptor response:
+//   1. Jika token invalid, arahkan ulang ke login (logic lama, tidak diubah).
+//   2. Toast otomatis untuk setiap request yang gagal — kecuali dimatikan
+//      via `skipErrorToast` atau 401 di route auth/admin-gate (sudah ada
+//      UI/redirect yang menangani sendiri, supaya tidak dobel).
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -35,6 +50,16 @@ api.interceptors.response.use(
       clearSession();
       window.location.href = "/login";
     }
+
+    const is401AuthRoute = err.response?.status === 401 && isAuthRoute;
+    if (!err.config?.skipErrorToast && !is401AuthRoute) {
+      showToast({
+        variant: "error",
+        title: errorToastTitle(err),
+        message: getErrorMessage(err),
+      });
+    }
+
     return Promise.reject(err);
   },
 );

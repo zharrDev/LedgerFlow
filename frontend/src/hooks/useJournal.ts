@@ -5,6 +5,7 @@ import type {
   CreateJournalPayload,
 } from "../types/journal";
 import { journalService } from "../services/journalService";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // Helper: urutkan jurnal berdasarkan nomor entry secara ascending
 function sortByEntryNumber(list: JournalEntry[]): JournalEntry[] {
@@ -46,7 +47,7 @@ export function useJournal() {
       const data = await journalService.getAll();
       setEntries(sortByEntryNumber(data));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Terjadi kesalahan");
+      setError(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -66,10 +67,7 @@ export function useJournal() {
         addToast("Entry berhasil dibuat");
         return created;
       } catch (e) {
-        addToast(
-          e instanceof Error ? e.message : "Gagal membuat entry",
-          "error",
-        );
+        addToast(getErrorMessage(e), "error");
         return null;
       } finally {
         setSaving(false);
@@ -90,10 +88,7 @@ export function useJournal() {
         addToast("Entry berhasil diposting ke buku besar");
         return true;
       } catch (e) {
-        addToast(
-          e instanceof Error ? e.message : "Gagal posting entry",
-          "error",
-        );
+        addToast(getErrorMessage(e), "error");
         return false;
       } finally {
         setPosting(false);
@@ -111,10 +106,7 @@ export function useJournal() {
         addToast("Draft berhasil dihapus");
         return true;
       } catch (e) {
-        addToast(
-          e instanceof Error ? e.message : "Gagal menghapus entry",
-          "error",
-        );
+        addToast(getErrorMessage(e), "error");
         return false;
       }
     },

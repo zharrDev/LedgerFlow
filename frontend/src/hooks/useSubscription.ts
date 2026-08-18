@@ -8,6 +8,7 @@ import {
   checkFeatureAccess,
   type Subscription,
 } from "../services/paymentService";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // Mapping fitur ke plan minimum yang boleh mengaksesnya
 const FEATURE_PLAN: Record<string, string[]> = {
@@ -34,9 +35,9 @@ export function useSubscription() {
       setError(null);
       const data = await getSubscription();
       setSubscription(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error("[useSubscription] Error:", err);
-      setError(err.message || "Failed to load subscription");
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

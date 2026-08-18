@@ -35,14 +35,14 @@ function mapJournal(j: any): JournalEntry {
 
 export const journalService = {
   getAll: async (): Promise<JournalEntry[]> => {
-    const { data } = await api.get("/api/journal");
+    const { data } = await api.get("/api/journal", { skipErrorToast: true });
     // Backend return { data, total, page, limit } — unwrap array
     const list = Array.isArray(data) ? data : (data?.data ?? []);
     return list.map(mapJournal);
   },
 
   getById: async (id: string): Promise<JournalEntry> => {
-    const { data } = await api.get(`/api/journal/${id}`);
+    const { data } = await api.get(`/api/journal/${id}`, { skipErrorToast: true });
     return mapJournal(data);
   },
 
@@ -58,7 +58,7 @@ export const journalService = {
     }
 
     try {
-      const { data } = await api.post("/api/journal", payload);
+      const { data } = await api.post("/api/journal", payload, { skipErrorToast: true });
       return journalService.getById(data.id);
     } catch (error: any) {
       console.error("Journal creation error:", error.response?.data);
@@ -67,7 +67,7 @@ export const journalService = {
   },
 
   post: async (id: string): Promise<JournalEntry> => {
-    const { data } = await api.post(`/api/journal/${id}/post`);
+    const { data } = await api.post(`/api/journal/${id}/post`, undefined, { skipErrorToast: true });
     return mapJournal(data);
   },
 
@@ -77,11 +77,11 @@ export const journalService = {
     left: number | null;
     planName?: string;
   }> => {
-    const { data } = await api.get("/api/journal/quota");
+    const { data } = await api.get("/api/journal/quota", { skipErrorToast: true });
     return data;
   },
 
   remove: async (id: string): Promise<void> => {
-    await api.delete(`/api/journal/${id}`);
+    await api.delete(`/api/journal/${id}`, { skipErrorToast: true });
   },
 };

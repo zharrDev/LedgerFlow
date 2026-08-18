@@ -20,6 +20,7 @@ export const accountsService = {
     const companyId = getCompanyId();
     const { data } = await api.get(API_BASE, {
       params: { company_id: companyId },
+      skipErrorToast: true,
     });
     // Backend return { data, total, page, limit } — unwrap array
     return Array.isArray(data) ? data : (data?.data ?? []);
@@ -28,14 +29,18 @@ export const accountsService = {
   // Buat akun baru
   create: async (formData: AccountFormData): Promise<Account> => {
     const companyId = getCompanyId();
-    const { data } = await api.post(API_BASE, {
-      code: formData.code,
-      name: formData.name,
-      type: formData.type,
-      normal_balance: formData.normalBalance,
-      is_active: formData.isActive,
-      company_id: companyId,
-    });
+    const { data } = await api.post(
+      API_BASE,
+      {
+        code: formData.code,
+        name: formData.name,
+        type: formData.type,
+        normal_balance: formData.normalBalance,
+        is_active: formData.isActive,
+        company_id: companyId,
+      },
+      { skipErrorToast: true },
+    );
     return data;
   },
 
@@ -52,13 +57,17 @@ export const accountsService = {
       payload.normal_balance = formData.normalBalance;
     if (formData.isActive !== undefined) payload.is_active = formData.isActive;
 
-    const { data } = await api.put(`${API_BASE}/${id}`, payload);
+    const { data } = await api.put(`${API_BASE}/${id}`, payload, {
+      skipErrorToast: true,
+    });
     return data;
   },
 
   // Hapus/nonaktifkan akun
   remove: async (id: string): Promise<{ message: string }> => {
-    const { data } = await api.delete(`${API_BASE}/${id}`);
+    const { data } = await api.delete(`${API_BASE}/${id}`, {
+      skipErrorToast: true,
+    });
     return data;
   },
 };

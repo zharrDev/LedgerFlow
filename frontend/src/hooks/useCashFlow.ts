@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { CashFlowResponse } from "../types/reports";
 import { reportsService } from "../services/reportsService";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // Hook untuk mengambil dan mengelola data laporan arus kas
 export function useCashFlow(initialPeriodId?: string) {
@@ -17,11 +18,7 @@ export function useCashFlow(initialPeriodId?: string) {
       const result = await reportsService.getCashFlow(periodId);
       setData(result);
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Terjadi kesalahan saat memuat Laporan Arus Kas",
-      );
+      setError(getErrorMessage(e));
     } finally {
       setLoading(false);
     }

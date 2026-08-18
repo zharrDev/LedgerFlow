@@ -6,12 +6,10 @@ import type {
   AccountOption,
   Period,
 } from "../types/ledger";
-import { useToast } from "../context/ToastContext";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // Hook buku besar: kelola data referensi akun/periode dan hasil ledger
 export function useLedger() {
-  const { toast } = useToast();
-
   const [result, setResult] = useState<LedgerResult | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerError, setLedgerError] = useState<string | null>(null);
@@ -33,18 +31,11 @@ export function useLedger() {
       setAccounts(accs);
       setPeriods(per);
     } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Gagal memuat data referensi";
-      setRefError(msg);
-      toast({
-        variant: "error",
-        title: "Gagal memuat data referensi",
-        message: msg,
-      });
+      setRefError(getErrorMessage(e));
     } finally {
       setRefLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   // Ambil hasil buku besar berdasarkan filter yang dipilih user
   const fetchLedger = useCallback(
@@ -55,19 +46,13 @@ export function useLedger() {
         const data = await ledgerService.getLedger(params);
         setResult(data);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Gagal memuat buku besar";
-        setLedgerError(msg);
+        setLedgerError(getErrorMessage(e));
         setResult(null);
-        toast({
-          variant: "error",
-          title: "Gagal memuat buku besar",
-          message: msg,
-        });
       } finally {
         setLedgerLoading(false);
       }
     },
-    [toast],
+    [],
   );
 
   return {

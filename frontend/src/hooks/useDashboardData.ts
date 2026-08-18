@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { reportsService } from "../services/reportsService";
 import { getSessionUser } from "../lib/session";
+import { getErrorMessage } from "../lib/errorMessage";
 
 // Ringkasan data dashboard dari beberapa laporan keuangan
 export interface DashboardSummary {
@@ -63,8 +64,8 @@ export function useDashboardData(periodId?: string) {
           investingCash: cashFlow?.investing?.subtotal ?? 0,
           financingCash: cashFlow?.financing?.subtotal ?? 0,
         });
-      } catch (e: any) {
-        setError(e?.message || "Gagal memuat data dashboard");
+      } catch (e) {
+        setError(getErrorMessage(e));
       } finally {
         if (active) setLoading(false);
       }

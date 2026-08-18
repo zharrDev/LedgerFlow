@@ -17,7 +17,7 @@ export type AdminGateLog = {
 export async function verifyAdminGatePassword(
   password: string,
 ): Promise<string> {
-  const res = await api.post("/api/admin-gate/verify", { password });
+  const res = await api.post("/api/admin-gate/verify", { password }, { skipErrorToast: true });
   const token: string = res.data.token;
   setAdminGateToken(token);
   return token;
@@ -33,7 +33,7 @@ export async function fetchAdminGateLogs(params?: {
   const token = getAdminGateToken();
   if (!token) throw new Error("Belum terautentikasi sebagai admin");
   const res = await api.get("/api/admin-gate/logs", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: "Bearer $token" }, skipErrorToast: true,
     params: {
       status: params?.status || undefined,
       ip: params?.ip || undefined,
@@ -77,14 +77,14 @@ export type AdminGateCompany = {
 
 export async function fetchAdminGateUsers(): Promise<AdminGateUser[]> {
   const res = await api.get("/api/admin-gate/users", {
-    headers: authHeaders(),
+    headers: authHeaders(), skipErrorToast: true,
   });
   return Array.isArray(res.data) ? (res.data as AdminGateUser[]) : [];
 }
 
 export async function fetchAdminGateCompanies(): Promise<AdminGateCompany[]> {
   const res = await api.get("/api/admin-gate/companies", {
-    headers: authHeaders(),
+    headers: authHeaders(), skipErrorToast: true,
   });
   return Array.isArray(res.data) ? (res.data as AdminGateCompany[]) : [];
 }
@@ -114,7 +114,7 @@ export async function fetchAdminGateCompanyDetail(
   id: string,
 ): Promise<AdminGateCompanyDetail> {
   const res = await api.get(`/api/admin-gate/companies/${id}/detail`, {
-    headers: authHeaders(),
+    headers: authHeaders(), skipErrorToast: true,
   });
   const raw = res.data as any;
   // Join `plans` dari PostgREST bisa berbentuk objek tunggal (to-one) —
@@ -147,7 +147,7 @@ export type AdminGateOverview = {
 
 export async function fetchAdminGateOverview(): Promise<AdminGateOverview> {
   const res = await api.get("/api/admin-gate/overview", {
-    headers: authHeaders(),
+    headers: authHeaders(), skipErrorToast: true,
   });
   return res.data as AdminGateOverview;
 }
@@ -177,14 +177,14 @@ export type AdminGatePayment = {
 
 export async function fetchAdminGateSubscriptions(): Promise<AdminGateSubscription[]> {
   const res = await api.get("/api/admin-gate/subscriptions", {
-    headers: authHeaders(),
+    headers: authHeaders(), skipErrorToast: true,
   });
   return Array.isArray(res.data) ? (res.data as AdminGateSubscription[]) : [];
 }
 
 export async function fetchAdminGatePayments(): Promise<AdminGatePayment[]> {
   const res = await api.get("/api/admin-gate/payments", {
-    headers: authHeaders(),
+    headers: authHeaders(), skipErrorToast: true,
   });
   return Array.isArray(res.data) ? (res.data as AdminGatePayment[]) : [];
 }
@@ -192,11 +192,17 @@ export async function fetchAdminGatePayments(): Promise<AdminGatePayment[]> {
 // ── Moderasi (satu-satunya aksi mutasi admin — hapus user/company) ─────
 
 export async function deleteAdminGateUser(id: string): Promise<void> {
-  await api.delete(`/api/admin-gate/users/${id}`, { headers: authHeaders() });
+  await api.delete(`/api/admin-gate/users/${id}`, {
+    headers: authHeaders(),
+    skipErrorToast: true,
+  });
 }
 
 export async function deleteAdminGateCompany(id: string): Promise<void> {
-  await api.delete(`/api/admin-gate/companies/${id}`, { headers: authHeaders() });
+  await api.delete(`/api/admin-gate/companies/${id}`, {
+    headers: authHeaders(),
+    skipErrorToast: true,
+  });
 }
 
 // ── Moderasi: suspend / unsuspend (soft delete) ───────────────────────
@@ -210,7 +216,7 @@ export async function setAdminGateUserStatus(
   await api.patch(
     `/api/admin-gate/users/${id}/status`,
     { suspended },
-    { headers: authHeaders() },
+    { headers: authHeaders(), skipErrorToast: true },
   );
 }
 
@@ -221,6 +227,6 @@ export async function setAdminGateCompanyStatus(
   await api.patch(
     `/api/admin-gate/companies/${id}/status`,
     { suspended },
-    { headers: authHeaders() },
+    { headers: authHeaders(), skipErrorToast: true },
   );
 }

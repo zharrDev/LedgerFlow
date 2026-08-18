@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -7,6 +7,7 @@ import {
   Info,
   X,
 } from "lucide-react";
+import { setToastBridge } from "../lib/toastBridge";
 
 /* ───────── Types ───────── */
 export type ToastVariant = "success" | "error" | "warning" | "info";
@@ -152,6 +153,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     },
     [dismiss]
   );
+
+  // Aktifkan jembatan toast untuk non-React (interceptor axios di lib/api.ts).
+  useEffect(() => {
+    setToastBridge(addToast);
+    return () => setToastBridge(null);
+  }, [addToast]);
 
   return (
     <ToastContext.Provider value={{ toast: addToast, dismiss }}>
