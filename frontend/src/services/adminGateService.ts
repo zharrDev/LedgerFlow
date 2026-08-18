@@ -97,6 +97,43 @@ export async function fetchAdminGateOverview(): Promise<AdminGateOverview> {
   return res.data as AdminGateOverview;
 }
 
+// ── Billing: subscription & pembayaran global (tab Billing) ────────────
+
+export type AdminGateSubscription = {
+  id: string;
+  status: string;
+  billing_cycle: "monthly" | "yearly";
+  current_period_end: string | null;
+  canceled_at: string | null;
+  users?: { name: string | null; email: string | null; phone: string | null } | null;
+  plans?: { name: string | null; display_name: string | null } | null;
+};
+
+export type AdminGatePayment = {
+  id: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+  users?: { name: string | null; email: string | null; phone: string | null } | null;
+};
+
+export async function fetchAdminGateSubscriptions(): Promise<AdminGateSubscription[]> {
+  const res = await api.get("/api/admin-gate/subscriptions", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(res.data) ? (res.data as AdminGateSubscription[]) : [];
+}
+
+export async function fetchAdminGatePayments(): Promise<AdminGatePayment[]> {
+  const res = await api.get("/api/admin-gate/payments", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(res.data) ? (res.data as AdminGatePayment[]) : [];
+}
+
 // ── Moderasi (satu-satunya aksi mutasi admin — hapus user/company) ─────
 
 export async function deleteAdminGateUser(id: string): Promise<void> {

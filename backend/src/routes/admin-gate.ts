@@ -298,6 +298,42 @@ adminGate.get("/overview", requireAdminGate, async (c) => {
   }
 });
 
+// GET /api/admin-gate/subscriptions — daftar subscription global (view-only)
+// untuk tab Billing: siapa berlangganan plan apa, status & periode aktif.
+adminGate.get("/subscriptions", requireAdminGate, async (c) => {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select(
+      "id, status, billing_cycle, current_period_end, canceled_at, users(name, email, phone), plans(name, display_name)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("[admin-gate] subscriptions error:", error);
+    return c.json({ error: "Gagal memuat subscription" }, 500);
+  }
+  return c.json(data ?? []);
+});
+
+// GET /api/admin-gate/payments — riwayat pembayaran global (view-only):
+// order_id Midtrans, jumlah, status, dan siapa yang membayar.
+adminGate.get("/payments", requireAdminGate, async (c) => {
+  const { data, error } = await supabase
+    .from("payments")
+    .select(
+      "id, order_id, amount, currency, status, paid_at, created_at, users(name, email, phone)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("[admin-gate] payments error:", error);
+    return c.json({ error: "Gagal memuat pembayaran" }, 500);
+  }
+  return c.json(data ?? []);
+});
+
 // ── Moderasi (satu-satunya aksi mutasi admin) ──────────────────────────
 
 // DELETE /api/admin-gate/users/:id — hapus user bermasalah.

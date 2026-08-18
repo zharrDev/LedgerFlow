@@ -19,6 +19,7 @@ import {
   TrendingUp,
   UserMinus,
   Wallet,
+  CreditCard,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
@@ -26,6 +27,8 @@ import {
   fetchAdminGateUsers,
   fetchAdminGateCompanies,
   fetchAdminGateOverview,
+  fetchAdminGateSubscriptions,
+  fetchAdminGatePayments,
   deleteAdminGateUser,
   deleteAdminGateCompany,
   logoutAdminGate,
@@ -33,6 +36,8 @@ import {
   type AdminGateUser,
   type AdminGateCompany,
   type AdminGateOverview,
+  type AdminGateSubscription,
+  type AdminGatePayment,
 } from "../services/adminGateService";
 import { getAdminGateToken } from "../lib/session";
 import { useToast } from "../context/ToastContext";
@@ -40,7 +45,7 @@ import { usePagination } from "../hooks/usePagination";
 import { TablePagination } from "../components/TablePagination";
 import logo from "../assets/ledgerflow.png";
 
-type Tab = "overview" | "log" | "users" | "companies";
+type Tab = "overview" | "billing" | "log" | "users" | "companies";
 
 type ConfirmState = {
   type: "user" | "company";
@@ -67,6 +72,8 @@ export default function AdminPortalPage() {
   const [users, setUsers] = useState<AdminGateUser[]>([]);
   const [companies, setCompanies] = useState<AdminGateCompany[]>([]);
   const [overview, setOverview] = useState<AdminGateOverview | null>(null);
+  const [subscriptions, setSubscriptions] = useState<AdminGateSubscription[]>([]);
+  const [payments, setPayments] = useState<AdminGatePayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -90,16 +97,21 @@ export default function AdminPortalPage() {
     setRefreshing(true);
     setError("");
     try {
-      const [logData, userData, companyData, overviewData] = await Promise.all([
-        fetchAdminGateLogs(),
-        fetchAdminGateUsers(),
-        fetchAdminGateCompanies(),
-        fetchAdminGateOverview(),
-      ]);
+      const [logData, userData, companyData, overviewData, subData, payData] =
+        await Promise.all([
+          fetchAdminGateLogs(),
+          fetchAdminGateUsers(),
+          fetchAdminGateCompanies(),
+          fetchAdminGateOverview(),
+          fetchAdminGateSubscriptions(),
+          fetchAdminGatePayments(),
+        ]);
       setLogs(logData);
       setUsers(userData);
       setCompanies(companyData);
       setOverview(overviewData);
+      setSubscriptions(subData);
+      setPayments(payData);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         // Token admin-gate expired/ditolak → kembali ke gerbang.
@@ -259,6 +271,13 @@ export default function AdminPortalPage() {
             label="Overview"
           />
           <TabButton
+            active={tab === "billing"}
+            onClick={() => setTab("billing")}
+            icon={<CreditCard size={14} />}
+            label="Billing"
+            count={subscriptions.length}
+          />
+          <TabButton
             active={tab === "log"}
             onClick={() => setTab("log")}
             icon={<ScrollText size={14} />}
@@ -287,6 +306,8 @@ export default function AdminPortalPage() {
           </div>
         ) : tab === "overview" ? (
           <OverviewView overview={overview} error={error} />
+        ) : tab === "billing" ? (
+          <BillingView subscriptions={subscriptions} payments={payments} error={error} />
         ) : tab === "log" ? (
           <AuditLogView logs={logs} statusBadge={statusBadge} stats={stats} error={error} />
         ) : tab === "users" ? (
@@ -523,6 +544,252 @@ function PlanDistributionChart({
         )}
       </div>
     </Card>
+  );
+}
+
+// ── Billing view (subscription & riwayat pembayaran global) ───────────
+function BillingView({
+  subscriptions,
+  payments,
+  error,
+}: {
+  subscriptions: AdminGateSubscription[];
+  payments: AdminGatePayment[];
+  error: string;
+}) {
+  const [subTab, setSubTab] = useState<"subs" | "payments">("subs");
+  const subPagination = usePagination(subscriptions, PAGE_SIZE);
+  const payPagination = usePagination(payments, PAGE_SIZE);
+
+  const formatRp = (v: number, currency: string) =>
+    v.toLocaleString("id-ID", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between flex-wrap gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Data Pembayaran & Langganan
+          </span>
+          {/* Sub-tab di dalam tab Billing */}
+          <div className="flex gap-1">
+            {(
+              [
+                { key: "subs", label: "Subscriptions" },
+                { key: "payments", label: "Riwayat Pembayaran" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setSubTab(t.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  subTab === t.key
+                    ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                    : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {subTab === "subs" ? (
+          subscriptions.length === 0 ? (
+            <EmptyState error={error} text="Belum ada subscription." />
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 dark:bg-gray-800/30">
+                    <tr>
+                      {["User", "Plan", "Siklus", "Status", "Periode Berakhir"].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                    {subPagination.pageItems.map((s) => (
+                      <tr
+                        key={s.id}
+                        className="hover:bg-gray-50 dark:hover:bg-white/5"
+                      >
+                        <td className="px-4 py-2.5">
+                          <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                            {s.users?.name || "—"}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {s.users?.email || s.users?.phone || ""}
+                          </p>
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                          {s.plans?.display_name || s.plans?.name || "—"}
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {s.billing_cycle === "yearly" ? "Tahunan" : "Bulanan"}
+                        </td>
+                        <td className="px-4 py-2.5">{subBadge(s.status)}</td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {s.current_period_end
+                            ? new Date(s.current_period_end).toLocaleDateString(
+                                "id-ID",
+                              )
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <TablePagination
+                page={subPagination.page}
+                totalPages={subPagination.totalPages}
+                totalItems={subPagination.totalItems}
+                startIndex={subPagination.startIndex}
+                endIndex={subPagination.endIndex}
+                canPrev={subPagination.canPrev}
+                canNext={subPagination.canNext}
+                onPrev={subPagination.prev}
+                onNext={subPagination.next}
+                onGoTo={subPagination.goTo}
+                itemLabel="subscription"
+              />
+            </>
+          )
+        ) : payments.length === 0 ? (
+          <EmptyState error={error} text="Belum ada pembayaran." />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800/30">
+                  <tr>
+                    {["Order ID", "User", "Jumlah", "Status", "Waktu"].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  {payPagination.pageItems.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="hover:bg-gray-50 dark:hover:bg-white/5"
+                    >
+                      <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {p.order_id}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                          {p.users?.name || "—"}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {p.users?.email || p.users?.phone || ""}
+                        </p>
+                      </td>
+                      <td className="px-4 py-2.5 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap tabular-nums">
+                        {formatRp(p.amount, p.currency)}
+                      </td>
+                      <td className="px-4 py-2.5">{payBadge(p.status)}</td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {new Date(p.paid_at || p.created_at).toLocaleString(
+                          "id-ID",
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <TablePagination
+              page={payPagination.page}
+              totalPages={payPagination.totalPages}
+              totalItems={payPagination.totalItems}
+              startIndex={payPagination.startIndex}
+              endIndex={payPagination.endIndex}
+              canPrev={payPagination.canPrev}
+              canNext={payPagination.canNext}
+              onPrev={payPagination.prev}
+              onNext={payPagination.next}
+              onGoTo={payPagination.goTo}
+              itemLabel="pembayaran"
+            />
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// Badge status subscription — warna mengikuti arti status.
+function subBadge(status: string) {
+  const map: Record<string, string> = {
+    active:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+    trialing: "bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
+    past_due:
+      "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+    canceled:
+      "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400",
+    expired:
+      "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400",
+  };
+  const label: Record<string, string> = {
+    active: "Aktif",
+    trialing: "Trial",
+    past_due: "Tunggakan",
+    canceled: "Dibatalkan",
+    expired: "Kedaluwarsa",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.canceled}`}
+    >
+      {label[status] || status}
+    </span>
+  );
+}
+
+// Badge status pembayaran.
+function payBadge(status: string) {
+  const map: Record<string, string> = {
+    paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+    pending:
+      "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+    failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
+    expired:
+      "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400",
+    refunded:
+      "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
+  };
+  const label: Record<string, string> = {
+    paid: "Lunas",
+    pending: "Menunggu",
+    failed: "Gagal",
+    expired: "Kedaluwarsa",
+    refunded: "Refund",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.expired}`}
+    >
+      {label[status] || status}
+    </span>
   );
 }
 
