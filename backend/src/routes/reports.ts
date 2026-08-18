@@ -1,4 +1,4 @@
-﻿// routes/reports.ts (FIXED â€” Balance Sheet includes Net Income in Equity)
+// routes/reports.ts (FIXED — Balance Sheet includes Net Income in Equity)
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware } from "../middleware/auth.js";

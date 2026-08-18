@@ -1,24 +1,24 @@
-﻿// ============================================================================
+// ============================================================================
 // LEDGERFLOW - Payment Routes (Midtrans Integration)
 // ============================================================================
 // File ini handle semua route yang berhubungan sama pembayaran & subscription:
-//   - GET  /plans          â†’ Ambil daftar semua plan yang tersedia
-//   - GET  /is-sandbox     â†’ Cek apakah lagi jalan di mode sandbox/test
-//   - GET  /subscription   â†’ Ambil data subscription user yang login
-//   - POST /subscribe      â†’ Buat transaksi pembayaran & dapet Snap token
-//   - POST /test-complete  â†’ Force-complete pembayaran pending (sandbox only)
-//   - POST /webhook        â†’ Terima notifikasi pembayaran dari Midtrans
-//   - GET  /history        â†’ Ambil riwayat pembayaran user
-//   - POST /cancel         â†’ Cancel subscription user
-//   - GET  /check-access   â†’ Cek apakah user bisa akses fitur tertentu
+//   - GET  /plans          → Ambil daftar semua plan yang tersedia
+//   - GET  /is-sandbox     → Cek apakah lagi jalan di mode sandbox/test
+//   - GET  /subscription   → Ambil data subscription user yang login
+//   - POST /subscribe      → Buat transaksi pembayaran & dapet Snap token
+//   - POST /test-complete  → Force-complete pembayaran pending (sandbox only)
+//   - POST /webhook        → Terima notifikasi pembayaran dari Midtrans
+//   - GET  /history        → Ambil riwayat pembayaran user
+//   - POST /cancel         → Cancel subscription user
+//   - GET  /check-access   → Cek apakah user bisa akses fitur tertentu
 // ============================================================================
 
 import { Hono } from "hono"; // Framework web ringan buat bikin API routes
 import { supabase } from "../lib/supabase.js"; // Client Supabase buat akses database
 import { authMiddleware } from "../middleware/auth.js"; // Verifikasi JWT -> c.get("user")
 import {
-  snap, // Midtrans Snap API â€” buat bikin transaksi payment popup
-  coreApi, // Midtrans Core API â€” buat approve/cancel transaksi langsung
+  snap, // Midtrans Snap API — buat bikin transaksi payment popup
+  coreApi, // Midtrans Core API — buat approve/cancel transaksi langsung
   generateOrderId, // Helper buat bikin order ID unik (format: LF-{userId}-{timestamp}-{random})
   verifySignature, // Helper buat verifikasi signature webhook dari Midtrans (pencegahan fraud)
   getPlanPrice, // Helper buat ambil harga plan berdasarkan nama & billing cycle
@@ -29,16 +29,16 @@ import {
 // Inisialisasi router Hono buat prefix /api/payments
 const payments = new Hono();
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET /plans â€” Ambil daftar semua plan yang tersedia
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// GET /plans — Ambil daftar semua plan yang tersedia
+// ═══════════════════════════════════════════════════════════════════════
 // Dipake frontend buat nampilin pricing page (card Free, Pro, Enterprise)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 payments.get("/plans", async (c) => {
   // Query ke tabel "plans" di Supabase:
-  //   - select("*")        â†’ ambil semua kolom
-  //   - eq("is_active", true) â†’ cuma plan yang aktif (yang gak aktif gak ditampilin)
-  //   - order("price_monthly", { ascending: true }) â†’ urutin dari termurah ke termahal
+  //   - select("*")        → ambil semua kolom
+  //   - eq("is_active", true) → cuma plan yang aktif (yang gak aktif gak ditampilin)
+  //   - order("price_monthly", { ascending: true }) → urutin dari termurah ke termahal
   const { data, error } = await supabase
     .from("plans")
     .select("*")
@@ -52,14 +52,14 @@ payments.get("/plans", async (c) => {
   return c.json(data);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET /is-sandbox â€” Cek apakah lagi jalan di mode sandbox/test
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// GET /is-sandbox — Cek apakah lagi jalan di mode sandbox/test
+// ═══════════════════════════════════════════════════════════════════════
 // Frontend manggil ini buat nentuin:
 //   - Apakah harus auto-complete payment pas onPending
 //   - Apakah tombol "Simulasi Bayar Berhasil" harus ditampilin
 //   - Apakah lagi development atau udah production
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 payments.get("/is-sandbox", async (c) => {
   // Cek env var: kalau MIDTRANS_IS_PRODUCTION BUKAN "true", berarti lagi sandbox
   // Default-nya sandbox (karena env var biasanya belum diset pas development)
@@ -69,22 +69,22 @@ payments.get("/is-sandbox", async (c) => {
   return c.json({ is_sandbox: isSandbox });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET /subscription â€” Ambil data subscription user yang login
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// GET /subscription — Ambil data subscription user yang login
+// ═══════════════════════════════════════════════════════════════════════
 // Dipake frontend buat:
 //   - Nampilin badge plan di navbar (Free / Pro / Enterprise)
 //   - Nampilin trial banner & sisa hari trial
 //   - Nentuin apakah user bisa akses fitur tertentu
 //   - Nampilin info subscription di halaman settings
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 payments.get("/subscription", authMiddleware, async (c) => {
   // User ID diambil dari JWT terverifikasi, bukan header yang bisa dipalsukan
   const userId = c.get("user").sub;
 
   // Query ke tabel "subscriptions" + join tabel "plans" buat dapet detail plan:
-  //   - eq("user_id", userId) â†’ cuma subscription milik user ini
-  //   - maybeSingle()         â†’ return 1 record atau null (gak error kalau kosong)
+  //   - eq("user_id", userId) → cuma subscription milik user ini
+  //   - maybeSingle()         → return 1 record atau null (gak error kalau kosong)
   //     (beda sama .single() yang bakal error kalau record gak ditemukan)
   const { data, error } = await supabase
     .from("subscriptions")
@@ -106,7 +106,7 @@ payments.get("/subscription", authMiddleware, async (c) => {
     return c.json({ error: error.message }, 500);
   }
 
-  // â”€â”€â”€ Kalau user belum punya subscription, auto-create yang free â”€â”€â”€â”€â”€
+  // ─── Kalau user belum punya subscription, auto-create yang free ─────
   // Ini terjadi kalau user baru daftar tapi belum pernah bikin subscription
   // Kita auto-create subscription free + 15 hari trial
   if (!data) {
@@ -119,7 +119,7 @@ payments.get("/subscription", authMiddleware, async (c) => {
       .eq("name", "free")
       .single();
 
-    // Kalau plan free gak ada di DB, berarti ada masalah di seeding â†’ error
+    // Kalau plan free gak ada di DB, berarti ada masalah di seeding → error
     if (!freePlan) return c.json({ error: "Free plan not found" }, 500);
 
     // Hitung tanggal sekarang & 15 hari ke depan buat trial period
@@ -127,11 +127,11 @@ payments.get("/subscription", authMiddleware, async (c) => {
     const trialEnd = new Date(now.getTime() + 15 * 86400000); // 15 hari ke depan (86400000ms = 1 hari)
 
     // Insert subscription baru buat user ini:
-    //   - plan_id      â†’ ID plan free
-    //   - status       â†’ "trialing" (masa trial 15 hari)
-    //   - trial_start  â†’ kapan trial mulai
-    //   - trial_end    â†’ kapan trial selesai
-    //   - current_period_start/end â†’ periode berlangganan saat ini
+    //   - plan_id      → ID plan free
+    //   - status       → "trialing" (masa trial 15 hari)
+    //   - trial_start  → kapan trial mulai
+    //   - trial_end    → kapan trial selesai
+    //   - current_period_start/end → periode berlangganan saat ini
     const { data: newSub, error: insertErr } = await supabase
       .from("subscriptions")
       .insert({
@@ -161,9 +161,9 @@ payments.get("/subscription", authMiddleware, async (c) => {
     }
 
     // Return subscription baru + info tambahan:
-    //   - is_active: true       â†’ subscription aktif (lagi trial)
-    //   - trial_days_left: 15   â†’ sisa 15 hari trial
-    //   - is_trial: true        â†’ ini subscription trial, bukan berbayar
+    //   - is_active: true       → subscription aktif (lagi trial)
+    //   - trial_days_left: 15   → sisa 15 hari trial
+    //   - is_trial: true        → ini subscription trial, bukan berbayar
     return c.json({
       ...newSub,
       is_active: true,
@@ -172,7 +172,7 @@ payments.get("/subscription", authMiddleware, async (c) => {
     });
   }
 
-  // â”€â”€â”€ Kalau user udah punya subscription, hitung info tambahan â”€â”€â”€â”€â”€â”€
+  // ─── Kalau user udah punya subscription, hitung info tambahan ──────
 
   // Hitung sisa hari trial (kalau masih trial)
   const now = new Date(); // Tanggal sekarang
@@ -200,20 +200,20 @@ payments.get("/subscription", authMiddleware, async (c) => {
   });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// POST /subscribe â€” Buat transaksi pembayaran & dapet Midtrans Snap token
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// POST /subscribe — Buat transaksi pembayaran & dapet Midtrans Snap token
+// ═══════════════════════════════════════════════════════════════════════
 // Ini endpoint utama yang dipanggil pas user klik "Upgrade Sekarang"
 // Alurnya:
 //   1. Validasi input (plan & billing cycle)
 //   2. Ambil data user dari DB
 //   3. Ambil data plan dari DB
 //   4. Generate order ID unik
-//   5. Buat transaksi di Midtrans â†’ dapet Snap token
+//   5. Buat transaksi di Midtrans → dapet Snap token
 //   6. Get/create subscription record
 //   7. Simpan payment record ke DB (status: pending)
-//   8. Return Snap token ke frontend â†’ frontend buka popup Snap
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//   8. Return Snap token ke frontend → frontend buka popup Snap
+// ═══════════════════════════════════════════════════════════════════════
 payments.post("/subscribe", authMiddleware, async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
@@ -233,7 +233,7 @@ payments.post("/subscribe", authMiddleware, async (c) => {
   }
 
   // Ambil harga plan dari konfigurasi di midtrans.ts
-  // Contoh: getPlanPrice("pro", "monthly") â†’ 99000
+  // Contoh: getPlanPrice("pro", "monthly") → 99000
   const amount = getPlanPrice(plan_name, billing_cycle);
 
   // Validasi: harga harus lebih dari 0 (kalau 0 berarti kombinasi plan/cycle gak valid)
@@ -242,7 +242,7 @@ payments.post("/subscribe", authMiddleware, async (c) => {
   }
 
   try {
-    // â”€â”€â”€ STEP 1: Ambil data user dari database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 1: Ambil data user dari database ────────────────────────
     // Butuh nama & email buat ditampilin di halaman pembayaran Midtrans
     const { data: userData } = await supabase
       .from("users")
@@ -255,7 +255,7 @@ payments.post("/subscribe", authMiddleware, async (c) => {
       return c.json({ error: "User not found" }, 404);
     }
 
-    // â”€â”€â”€ STEP 2: Ambil data plan dari database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 2: Ambil data plan dari database ────────────────────────
     // Butuh plan ID & display name buat Midtrans & payment record
     const { data: plan } = await supabase
       .from("plans")
@@ -266,13 +266,13 @@ payments.post("/subscribe", authMiddleware, async (c) => {
     // Kalau plan gak ditemukan di DB, return 404
     if (!plan) return c.json({ error: "Plan not found" }, 404);
 
-    // â”€â”€â”€ STEP 3: Generate order ID unik â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 3: Generate order ID unik ───────────────────────────────
     // Format: LF-{userId 8 char}-{timestamp}-{random 6 char}
     // Contoh: LF-a1b2c3d4-1703123456789-x9k2m1
     // Ini penting biar setiap transaksi punya ID unik (Midtrans butuh ini)
     const orderId = generateOrderId(userId);
 
-    // â”€â”€â”€ STEP 4: Buat transaksi di Midtrans Snap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 4: Buat transaksi di Midtrans Snap ──────────────────────
     // Label buat ditampilin di halaman pembayaran Midtrans
     // "Bulanan" kalau monthly, "Tahunan" kalau yearly
     const cycleLabel = billing_cycle === "yearly" ? "Tahunan" : "Bulanan";
@@ -280,12 +280,12 @@ payments.post("/subscribe", authMiddleware, async (c) => {
     // Parameter yang dikirim ke Midtrans Snap API
     // Ini yang nentuin apa yang muncul di popup pembayaran
     const snapParameter = {
-      // Detail transaksi â€” WAJIB ada di setiap transaksi Midtrans
+      // Detail transaksi — WAJIB ada di setiap transaksi Midtrans
       transaction_details: {
         order_id: orderId, // ID unik transaksi (harus unik per transaksi)
         gross_amount: amount, // Total jumlah yang harus dibayar (dalam IDR, tanpa desimal)
       },
-      // Detail item â€” nampilin di halaman pembayaran Midtrans
+      // Detail item — nampilin di halaman pembayaran Midtrans
       // User bisa lihat "Ah mau bayar LedgerFlow Pro - Bulanan seharga Rp99.000"
       item_details: [
         {
@@ -296,17 +296,17 @@ payments.post("/subscribe", authMiddleware, async (c) => {
           category: "subscription", // Kategori item
         },
       ],
-      // Detail customer â€” nampilin info pembayar di halaman Midtrans
+      // Detail customer — nampilin info pembayar di halaman Midtrans
       customer_details: {
         first_name: userData.name || "User", // Nama user (fallback ke "User" kalau null)
         email: userData.email || "", // Email user (buat notifikasi pembayaran)
       },
       // Konfigurasi credit card
       credit_card: {
-        secure: true, // Aktifkan 3DS (verifikasi tambahan kartu kredit) â€” WAJIB untuk Indonesia
+        secure: true, // Aktifkan 3DS (verifikasi tambahan kartu kredit) — WAJIB untuk Indonesia
         save_card: true, // Simpan kartu buat pembayaran berikutnya (tokenisasi)
       },
-      // Callback URLs â€” kemana user di-redirect setelah selesai pembayaran
+      // Callback URLs — kemana user di-redirect setelah selesai pembayaran
       // Midtrans akan redirect user ke URL ini sesuai status pembayaran
       callbacks: {
         finish: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment/success?order_id=${orderId}`, // Setelah selesai (sukses/pending)
@@ -322,7 +322,7 @@ payments.post("/subscribe", authMiddleware, async (c) => {
       plan_name,
     });
 
-    // Kirim parameter ke Midtrans Snap API â†’ bikin transaksi
+    // Kirim parameter ke Midtrans Snap API → bikin transaksi
     // Response berisi:
     //   - token: Snap token yang dipake frontend buka popup (string panjang)
     //   - redirect_url: URL kalau mau redirect langsung (alternatif popup)
@@ -334,7 +334,7 @@ payments.post("/subscribe", authMiddleware, async (c) => {
       hasRedirect: !!snapResponse.redirect_url,
     });
 
-    // â”€â”€â”€ STEP 5: Get atau create subscription record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 5: Get atau create subscription record ──────────────────
     // Cek apakah user udah punya subscription sebelumnya
     const { data: existingSub } = await supabase
       .from("subscriptions")
@@ -347,10 +347,10 @@ payments.post("/subscribe", authMiddleware, async (c) => {
 
     if (existingSub) {
       // Kalau user udah punya subscription (misal dari free plan / trial),
-      // PAKAI subscription yang udah ada â€” JANGAN update plan disini!
+      // PAKAI subscription yang udah ada — JANGAN update plan disini!
       // Plan baru di-update SETELAH pembayaran berhasil (via webhook atau test-complete)
       // Kenapa? Kalau di-update sekarang, user bisa langung akses fitur Pro
-      // sebelum bayar â€” itu bocor!
+      // sebelum bayar — itu bocor!
       subscriptionId = existingSub.id;
     } else {
       // Kalau user belum punya subscription sama sekali (edge case),
@@ -381,11 +381,11 @@ payments.post("/subscribe", authMiddleware, async (c) => {
       subscriptionId = newSub.id;
     }
 
-    // â”€â”€â”€ STEP 6: Simpan payment record ke database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 6: Simpan payment record ke database ────────────────────
     // Ini penting buat tracking status pembayaran
     // Di dalam midtrans_response, kita simpan:
-    //   - pending_plan_id       â†’ ID plan yang MAU dibeli (belum aktif, nunggu bayar)
-    //   - pending_billing_cycle â†’ billing cycle yang dipilih
+    //   - pending_plan_id       → ID plan yang MAU dibeli (belum aktif, nunggu bayar)
+    //   - pending_billing_cycle → billing cycle yang dipilih
     // Kenapa disimpan di midtrans_response? Karena nanti webhook/test-complete
     // butuh info ini buat update subscription ke plan yang benar setelah bayar
     const { error: paymentErr } = await supabase.from("payments").insert({
@@ -427,25 +427,25 @@ payments.post("/subscribe", authMiddleware, async (c) => {
   }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// POST /test-complete â€” Force-complete pembayaran pending (SANDBOX ONLY)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// POST /test-complete — Force-complete pembayaran pending (SANDBOX ONLY)
+// ═══════════════════════════════════════════════════════════════════════
 // GUARD FAIL-CLOSED:
 //   - Sebelumnya hanya memblokir bila MIDTRANS_IS_PRODUCTION === "true".
 //     Karena default-nya sandbox, lupa set env di production membuat
-//     endpoint ini AKTIF â†’ siapa pun bisa mengaktifkan plan berbayar gratis.
+//     endpoint ini AKTIF → siapa pun bisa mengaktifkan plan berbayar gratis.
 //   - Sekarang WAJIB flag eksplisit ALLOW_TEST_COMPLETE === "true" DAN
 //     bukan production. Tanpa flag itu endpoint mati di semua environment.
 const TEST_COMPLETE_ALLOWED =
   process.env.ALLOW_TEST_COMPLETE === "true" &&
   process.env.MIDTRANS_IS_PRODUCTION !== "true";
 // KENAPA ENDPOINT INI DIBUTUHKAN?
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ──────────────────────────────────────────────────────────────────────
 // Di Midtrans Sandbox, pembayaran via Virtual Account / Bank Transfer
 // statusnya tetap "pending" selamanya karena:
 //   1. Gak ada orang yang beneran transfer ke VA sandbox
 //   2. Webhook "settlement" gak pernah fire di sandbox
-//   3. Jadi subscription gak pernah aktif â†’ user stuck di pending
+//   3. Jadi subscription gak pernah aktif → user stuck di pending
 //
 // Endpoint ini SIMULASI pembayaran berhasil biar di sandbox kita bisa
 // test full flow upgrade tanpa nunggu webhook yang gak pernah datang.
@@ -456,15 +456,15 @@ const TEST_COMPLETE_ALLOWED =
 //   - Hanya bisa complete payment yang statusnya "pending"
 //
 // YANG DILAKUKAN ENDPOINT INI:
-//   1. Cek apakah sandbox â†’ kalau production, block
+//   1. Cek apakah sandbox → kalau production, block
 //   2. Cari payment record berdasarkan order_id
 //   3. Cek status payment harus "pending"
 //   4. Coba approve via Midtrans Core API (opsional)
-//   5. Update payment status â†’ "paid"
-//   6. Update subscription â†’ "active" + plan sesuai yang dibeli
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//   5. Update payment status → "paid"
+//   6. Update subscription → "active" + plan sesuai yang dibeli
+// ═══════════════════════════════════════════════════════════════════════
 payments.post("/test-complete", authMiddleware, async (c) => {
-  // â”€â”€â”€ GUARD: Hanya boleh jalan bila diaktifkan EKSPLISIT (sandbox) â”€â”€â”€
+  // ─── GUARD: Hanya boleh jalan bila diaktifkan EKSPLISIT (sandbox) ───
   // Fail-closed: tanpa ALLOW_TEST_COMPLETE=true, endpoint ini tidak tersedia
   // di environment mana pun (termasuk development). Mencegah aktivasi plan
   // berbayar gratis akibat env production tidak ter-set.
@@ -475,7 +475,7 @@ payments.post("/test-complete", authMiddleware, async (c) => {
     );
   }
 
-  // User ID dari JWT â€” dipakai memastikan user cuma bisa complete payment miliknya
+  // User ID dari JWT — dipakai memastikan user cuma bisa complete payment miliknya
   const userId = c.get("user").sub;
 
   try {
@@ -488,7 +488,7 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       return c.json({ error: "order_id is required" }, 400);
     }
 
-    // â”€â”€â”€ STEP 1: Cari payment record di database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 1: Cari payment record di database ──────────────────────
     // Query ke tabel "payments" + join tabel "subscriptions" buat dapet info subscription
     // Ini penting karena kita butuh subscription_id buat update subscription nanti
     const { data: payment, error: paymentError } = await supabase
@@ -503,16 +503,16 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       return c.json({ error: "Payment not found" }, 404);
     }
 
-    // â”€â”€â”€ OWNERSHIP: payment harus milik user yang login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── OWNERSHIP: payment harus milik user yang login ───────────────
     // Tanpa ini, user A bisa meng-complete payment user B hanya dengan
     // menebak/mengetahui order_id-nya.
     if (payment.user_id !== userId) {
       return c.json({ error: "Payment not found" }, 404);
     }
 
-    // â”€â”€â”€ STEP 2: Cek status payment harus "pending" â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 2: Cek status payment harus "pending" ───────────────────
     // Hanya payment yang BELUM dibayar (pending) yang bisa di-force complete
-    // Kalau udah "paid", "failed", dll â†’ gak boleh di-complete lagi
+    // Kalau udah "paid", "failed", dll → gak boleh di-complete lagi
     // Ini buat mencegah double-activate atau modify payment yang udah final
     if (payment.status !== "pending") {
       return c.json(
@@ -524,10 +524,10 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       );
     }
 
-    // â”€â”€â”€ STEP 3: Coba approve transaksi via Midtrans Core API â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Ini optional â€” kalau transaksi Midtrans statusnya "challenge" (fraud check),
+    // ─── STEP 3: Coba approve transaksi via Midtrans Core API ─────────
+    // Ini optional — kalau transaksi Midtrans statusnya "challenge" (fraud check),
     // kita approve supaya Midtrans juga update status-nya
-    // Kalau gagal (misal transaksi bukan challenge), gak masalah â€” kita tetap
+    // Kalau gagal (misal transaksi bukan challenge), gak masalah — kita tetap
     // force-complete di database kita
     try {
       // Panggil Midtrans Core API: transaction.approve()
@@ -536,19 +536,19 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       console.log(`[Test-Complete] Midtrans approve called for ${order_id}`);
     } catch (approveErr: any) {
       // Kalau approve gagal (misal transaksi udah settle atau bukan challenge),
-      // itu gak masalah â€” kita tetap update database kita sendiri
+      // itu gak masalah — kita tetap update database kita sendiri
       console.log(
         `[Test-Complete] Approve call skipped: ${approveErr?.message || approveErr}`,
       );
     }
 
-    // â”€â”€â”€ STEP 4: Update payment status ke "paid" â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── STEP 4: Update payment status ke "paid" ──────────────────────
     // Update record di tabel payments:
-    //   - status                    â†’ "paid" (dari "pending")
-    //   - payment_type              â†’ metode pembayaran (kalau gak ada, set "test_simulation")
-    //   - midtrans_transaction_id   â†’ ID transaksi dari Midtrans (kalau gak ada, generate placeholder)
-    //   - paid_at                   â†’ timestamp kapan dibayar (sekarang)
-    //   - updated_at                â†’ timestamp update (sekarang)
+    //   - status                    → "paid" (dari "pending")
+    //   - payment_type              → metode pembayaran (kalau gak ada, set "test_simulation")
+    //   - midtrans_transaction_id   → ID transaksi dari Midtrans (kalau gak ada, generate placeholder)
+    //   - paid_at                   → timestamp kapan dibayar (sekarang)
+    //   - updated_at                → timestamp update (sekarang)
     const { error: updatePaymentErr } = await supabase
       .from("payments")
       .update({
@@ -567,13 +567,13 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       return c.json({ error: "Failed to update payment" }, 500);
     }
 
-    // â”€â”€â”€ STEP 5: Aktifkan subscription (sama kayak webhook "paid") â”€â”€â”€â”€
+    // ─── STEP 5: Aktifkan subscription (sama kayak webhook "paid") ────
     // Ambil data subscription dari payment record yang udah di-query tadi
     const sub = payment.subscriptions;
 
     // Ambil plan ID & billing cycle yang disimpan saat subscribe
     // Kenapa dari midtrans_response? Karena saat subscribe kita simpan
-    // pending_plan_id di midtrans_response â€” ini plan yang MAU dibeli user
+    // pending_plan_id di midtrans_response — ini plan yang MAU dibeli user
     // (belum di-apply ke subscription, nunggu bayar)
     const pendingPlanId =
       payment.midtrans_response?.pending_plan_id || sub.plan_id; // Fallback ke plan_id subscription
@@ -583,8 +583,8 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       "monthly"; // Default monthly
 
     // Hitung durasi periode subscription:
-    //   - yearly  â†’ 365 hari
-    //   - monthly â†’ 30 hari
+    //   - yearly  → 365 hari
+    //   - monthly → 30 hari
     const periodDays = pendingBillingCycle === "yearly" ? 365 : 30;
 
     // Hitung tanggal berakhirnya periode (sekarang + durasi)
@@ -595,7 +595,7 @@ payments.post("/test-complete", authMiddleware, async (c) => {
     // Data yang mau di-update di tabel subscriptions:
     const updateData: Record<string, any> = {
       status: "active", // Status diubah dari "trialing" ke "active" (sudah berbayar)
-      plan_id: pendingPlanId, // Update plan ke plan yang dibeli (misal dari free â†’ pro)
+      plan_id: pendingPlanId, // Update plan ke plan yang dibeli (misal dari free → pro)
       billing_cycle: pendingBillingCycle, // Set billing cycle (monthly/yearly)
       current_period_start: new Date().toISOString(), // Periode mulai hari ini
       current_period_end: periodEnd, // Periode berakhir N hari ke depan
@@ -614,9 +614,9 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       return c.json({ error: "Failed to activate subscription" }, 500);
     }
 
-    // Log sukses â€” ini penting buat debugging
+    // Log sukses — ini penting buat debugging
     console.log(
-      `[Test-Complete] âœ… Subscription activated for user ${sub.user_id}, plan: ${pendingPlanId}`,
+      `[Test-Complete] ✅ Subscription activated for user ${sub.user_id}, plan: ${pendingPlanId}`,
     );
 
     // Return response sukses ke frontend
@@ -633,26 +633,26 @@ payments.post("/test-complete", authMiddleware, async (c) => {
   }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// POST /webhook â€” Terima notifikasi pembayaran dari Midtrans
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// POST /webhook — Terima notifikasi pembayaran dari Midtrans
+// ═══════════════════════════════════════════════════════════════════════
 // Ini endpoint yang dipanggil OLEH MIDTRANS (bukan frontend) setiap kali
 // ada perubahan status transaksi. Midtrans ngirim POST request ke sini.
 //
 // CONTOH SKENARIO:
-//   1. User bayar pake GoPay â†’ Midtrans kirim webhook "settlement"
-//   2. User bayar pake VA BCA â†’ setelah transfer, Midtrans kirim "settlement"
-//   3. Pembayaran gagal â†’ Midtrans kirim "deny" atau "cancel"
-//   4. Pembayaran expired (24 jam belum bayar) â†’ Midtrans kirim "expire"
+//   1. User bayar pake GoPay → Midtrans kirim webhook "settlement"
+//   2. User bayar pake VA BCA → setelah transfer, Midtrans kirim "settlement"
+//   3. Pembayaran gagal → Midtrans kirim "deny" atau "cancel"
+//   4. Pembayaran expired (24 jam belum bayar) → Midtrans kirim "expire"
 //
 // YANG DILAKUKAN WEBHOOK INI:
 //   1. Verifikasi signature (pencegahan fake webhook / fraud)
 //   2. Cari payment record di database
-//   3. Mapping status Midtrans â†’ status internal kita
+//   3. Mapping status Midtrans → status internal kita
 //   4. Update payment record
-//   5. Kalau "paid" â†’ aktifkan subscription
-//   6. Kalau "failed/expired" â†’ set subscription ke "past_due"
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//   5. Kalau "paid" → aktifkan subscription
+//   6. Kalau "failed/expired" → set subscription ke "past_due"
+// ═══════════════════════════════════════════════════════════════════════
 payments.post("/webhook", async (c) => {
   try {
     // Parse body notification dari Midtrans
@@ -660,7 +660,7 @@ payments.post("/webhook", async (c) => {
     //              status_code, gross_amount, signature_key, dll
     const notification = await c.req.json();
 
-    // Log notifikasi buat debugging â€” penting banget buat troubleshoot
+    // Log notifikasi buat debugging — penting banget buat troubleshoot
     // masalah webhook di production nanti
     console.log("[Midtrans Webhook] Received:", {
       order_id: notification.order_id, // ID transaksi
@@ -669,10 +669,10 @@ payments.post("/webhook", async (c) => {
       payment_type: notification.payment_type, // Metode pembayaran
     });
 
-    // â”€â”€â”€ Verifikasi signature keamanan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Verifikasi signature keamanan ────────────────────────────────
     // Ini PENTING BANGET buat mencegah orang nakal yang kirim fake webhook
     // Signature = SHA512(order_id + status_code + gross_amount + server_key)
-    // Kalau signature gak cocok, berarti webhook ini PALSU â†’ tolak!
+    // Kalau signature gak cocok, berarti webhook ini PALSU → tolak!
     const isValid = verifySignature(
       notification.order_id, // Order ID transaksi
       notification.status_code, // Status code dari Midtrans (200, 201, dll)
@@ -681,13 +681,13 @@ payments.post("/webhook", async (c) => {
       notification.signature_key, // Signature yang dikirim Midtrans
     );
 
-    // Kalau signature gak valid, tolak webhook â€” ini kemungkinan serangan
+    // Kalau signature gak valid, tolak webhook — ini kemungkinan serangan
     if (!isValid) {
       console.error("[Midtrans Webhook] Invalid signature!");
       return c.json({ error: "Invalid signature" }, 403);
     }
 
-    // â”€â”€â”€ Cari payment record di database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Cari payment record di database ──────────────────────────────
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
       .select("*, subscriptions(id, user_id, plan_id, billing_cycle)") // Join subscription
@@ -703,15 +703,15 @@ payments.post("/webhook", async (c) => {
       return c.json({ error: "Payment not found" }, 404);
     }
 
-    // â”€â”€â”€ Mapping status Midtrans â†’ status internal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Mapping status Midtrans → status internal ────────────────────
     // Midtrans punya beberapa status transaksi:
-    //   - capture    â†’ Kartu kredit di-capture (butuh fraud check)
-    //   - settlement â†’ Pembayaran sukses, uang udah masuk
-    //   - pending    â†’ Menunggu pembayaran
-    //   - cancel     â†’ Dibatalkan
-    //   - deny       â†’ Ditolak (fraud, saldo kurang, dll)
-    //   - expire     â†’ Kadaluarsa (24 jam belum bayar)
-    //   - refund     â†’ Uang dikembalikan
+    //   - capture    → Kartu kredit di-capture (butuh fraud check)
+    //   - settlement → Pembayaran sukses, uang udah masuk
+    //   - pending    → Menunggu pembayaran
+    //   - cancel     → Dibatalkan
+    //   - deny       → Ditolak (fraud, saldo kurang, dll)
+    //   - expire     → Kadaluarsa (24 jam belum bayar)
+    //   - refund     → Uang dikembalikan
     const transactionStatus = notification.transaction_status; // Status dari Midtrans
     const fraudStatus = notification.fraud_status; // Status fraud (hanya untuk CC)
     let paymentStatus: string; // Status internal kita (paid/pending/failed/expired/refunded)
@@ -719,16 +719,16 @@ payments.post("/webhook", async (c) => {
     // Mapping logic:
     if (transactionStatus === "capture") {
       // Capture = kartu kredit di-capture
-      // Kalau fraud_status "accept" â†’ pembayaran aman, dianggap paid
-      // Kalau fraud_status bukan "accept" â†’ kemungkinan fraud, dianggap failed
+      // Kalau fraud_status "accept" → pembayaran aman, dianggap paid
+      // Kalau fraud_status bukan "accept" → kemungkinan fraud, dianggap failed
       paymentStatus = fraudStatus === "accept" ? "paid" : "failed";
     } else if (transactionStatus === "settlement") {
       // Settlement = pembayaran sukses, uang udah settlement
       // Ini status yang paling umum buat pembayaran yang berhasil
       paymentStatus = "paid";
     } else if (["cancel", "deny", "expire"].includes(transactionStatus)) {
-      // Cancel/Deny/Expire â†’ pembayaran gagal
-      // Kita bedain: "expire" â†’ status "expired", lainnya â†’ "failed"
+      // Cancel/Deny/Expire → pembayaran gagal
+      // Kita bedain: "expire" → status "expired", lainnya → "failed"
       // Kenapa dibedain? Biar frontend bisa tampilin pesan yang beda
       // "Pembayaran kadaluarsa" vs "Pembayaran gagal/ditolak"
       paymentStatus = transactionStatus === "expire" ? "expired" : "failed";
@@ -737,23 +737,23 @@ payments.post("/webhook", async (c) => {
         transactionStatus,
       )
     ) {
-      // Refund/chargeback = uang dikembalikan ke customer â†’ cabut akses
+      // Refund/chargeback = uang dikembalikan ke customer → cabut akses
       paymentStatus = "refunded";
     } else {
-      // Status lain (pending, dll) â†’ tetap pending
+      // Status lain (pending, dll) → tetap pending
       // Ini biasanya terjadi kalau webhook pertama kali datang saat
       // user baru buka halaman pembayaran tapi belum bayar
       paymentStatus = "pending";
     }
 
-    // â”€â”€â”€ Idempotensi & anti out-of-order â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Idempotensi & anti out-of-order ──────────────────────────────
     // Midtrans bisa mengirim webhook yang sama berkali-kali (retry) dan
     // kadang tidak berurutan. Tanpa guard ini, "paid" duplikat akan
     // meng-extend periode berulang, dan "pending" yang telat bisa menimpa
     // status "paid".
     const currentStatus = payment.status;
 
-    // Status tidak berubah â†’ cukup ack, jangan proses ulang
+    // Status tidak berubah → cukup ack, jangan proses ulang
     if (currentStatus === paymentStatus) {
       console.log(
         `[Midtrans Webhook] Duplicate ${paymentStatus} for ${notification.order_id}, ignored`,
@@ -769,7 +769,7 @@ payments.post("/webhook", async (c) => {
       return c.json({ status: "ok", note: "stale pending ignored" });
     }
 
-    // â”€â”€â”€ Rekonsiliasi nominal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Rekonsiliasi nominal ─────────────────────────────────────────
     // Pastikan jumlah yang dibayar sama dengan yang kita tagih SEBELUM
     // mengaktifkan subscription (defense-in-depth di atas verifikasi signature).
     const paidAmount = Number(notification.gross_amount);
@@ -793,7 +793,7 @@ payments.post("/webhook", async (c) => {
       return c.json({ status: "ok", note: "amount mismatch" });
     }
 
-    // â”€â”€â”€ Update payment record di database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Update payment record di database ────────────────────────────
     // Update status pembayaran & simpan semua info dari Midtrans
     await supabase
       .from("payments")
@@ -807,12 +807,12 @@ payments.post("/webhook", async (c) => {
       })
       .eq("order_id", notification.order_id); // Filter by order ID
 
-    // â”€â”€â”€ Kalau payment PAID â†’ aktifkan subscription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Kalau payment PAID → aktifkan subscription ───────────────────
     if (paymentStatus === "paid") {
       const sub = payment.subscriptions; // Data subscription dari join tadi
 
       // Ambil plan & billing cycle yang disimpan saat subscribe
-      // Ini PENTING â€” karena saat subscribe kita gak langsung update plan
+      // Ini PENTING — karena saat subscribe kita gak langsung update plan
       // Plan di-update SETELAH pembayaran berhasil (di sini)
       const pendingPlanId =
         payment.midtrans_response?.pending_plan_id || sub.plan_id; // Plan yang dibeli
@@ -827,8 +827,8 @@ payments.post("/webhook", async (c) => {
 
       // Data yang di-update di subscription:
       const updateData: Record<string, any> = {
-        status: "active", // Dari "trialing" â†’ "active" (sudah berbayar)
-        plan_id: pendingPlanId, // Update plan (misal free â†’ pro)
+        status: "active", // Dari "trialing" → "active" (sudah berbayar)
+        plan_id: pendingPlanId, // Update plan (misal free → pro)
         billing_cycle: pendingBillingCycle, // Set billing cycle
         current_period_start: new Date().toISOString(), // Periode mulai
         current_period_end: periodEnd, // Periode berakhir
@@ -849,7 +849,7 @@ payments.post("/webhook", async (c) => {
         `[Midtrans Webhook] Subscription activated for user ${sub.user_id}`,
       );
 
-      // â”€â”€â”€ Kalau payment FAILED/EXPIRED â†’ set subscription ke "past_due" â”€
+      // ─── Kalau payment FAILED/EXPIRED → set subscription ke "past_due" ─
       // "past_due" artinya subscription bermasalah (pembayaran gagal)
       // Frontend bisa tampilin pesan "Pembayaran gagal, silakan coba lagi"
     } else if (paymentStatus === "failed" || paymentStatus === "expired") {
@@ -858,7 +858,7 @@ payments.post("/webhook", async (c) => {
         .update({ status: "past_due", updated_at: new Date().toISOString() })
         .eq("id", payment.subscription_id); // Filter by subscription ID
 
-      // â”€â”€â”€ Kalau REFUNDED/CHARGEBACK â†’ cabut akses, balikin ke free â”€â”€â”€â”€â”€
+      // ─── Kalau REFUNDED/CHARGEBACK → cabut akses, balikin ke free ─────
       // Uang sudah dikembalikan, jadi user tidak boleh lagi menikmati plan
       // berbayar. Downgrade subscription ke plan free dan set canceled.
     } else if (paymentStatus === "refunded") {
@@ -886,10 +886,10 @@ payments.post("/webhook", async (c) => {
 
     // Log final status
     console.log(
-      `[Midtrans Webhook] Order ${notification.order_id} â†’ ${paymentStatus}`,
+      `[Midtrans Webhook] Order ${notification.order_id} → ${paymentStatus}`,
     );
 
-    // Return "ok" ke Midtrans â€” ini PENTING!
+    // Return "ok" ke Midtrans — ini PENTING!
     // Kalau kita gak return 200, Midtrans bakal retry kirim webhook
     // sampai 5x dalam 24 jam (automatic retry mechanism)
     return c.json({ status: "ok" });
@@ -901,20 +901,20 @@ payments.post("/webhook", async (c) => {
   }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET /history â€” Ambil riwayat pembayaran user
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// GET /history — Ambil riwayat pembayaran user
+// ═══════════════════════════════════════════════════════════════════════
 // Dipake frontend buat nampilin halaman "Riwayat Pembayaran"
 // Menampilkan 20 pembayaran terakhir user, diurutin dari yang terbaru
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 payments.get("/history", authMiddleware, async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
 
   // Query ke tabel "payments":
-  //   - eq("user_id", userId)                  â†’ cuma payment milik user ini
-  //   - order("created_at", { ascending: false }) â†’ urutin dari terbaru ke terlama
-  //   - limit(20)                              â†’ cuma ambil 20 terakhir (biar gak berat)
+  //   - eq("user_id", userId)                  → cuma payment milik user ini
+  //   - order("created_at", { ascending: false }) → urutin dari terbaru ke terlama
+  //   - limit(20)                              → cuma ambil 20 terakhir (biar gak berat)
   const { data, error } = await supabase
     .from("payments")
     .select("*")
@@ -929,26 +929,26 @@ payments.get("/history", authMiddleware, async (c) => {
   return c.json(data);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// POST /cancel â€” Cancel subscription user
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// POST /cancel — Cancel subscription user
+// ═══════════════════════════════════════════════════════════════════════
 // Dipake pas user klik "Cancel Subscription" di halaman settings
 // Setelah cancel:
 //   - Plan dikembalikan ke "free"
 //   - Status jadi "canceled"
 //   - User gak bisa akses fitur premium lagi
 //   - Tapi data user tetap tersimpan (gak dihapus)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 payments.post("/cancel", authMiddleware, async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
 
-  // Parse body â€” boleh ada reason kenapa cancel (opsional)
+  // Parse body — boleh ada reason kenapa cancel (opsional)
   // Contoh body: { "reason": "Terlalu mahal" }
   const body = await c.req.json();
   const { reason } = body;
 
-  // Cari plan "free" di database â€” kita butuh ID-nya buat downgrade
+  // Cari plan "free" di database — kita butuh ID-nya buat downgrade
   const { data: freePlan } = await supabase
     .from("plans")
     .select("id")
@@ -959,10 +959,10 @@ payments.post("/cancel", authMiddleware, async (c) => {
   if (!freePlan) return c.json({ error: "Free plan not found" }, 500);
 
   // Update subscription user:
-  //   - plan_id â†’ kembali ke free (downgrade)
-  //   - status â†’ "canceled"
-  //   - canceled_at â†’ timestamp kapan cancel
-  //   - cancel_reason â†’ alasan cancel (kalau ada)
+  //   - plan_id → kembali ke free (downgrade)
+  //   - status → "canceled"
+  //   - canceled_at → timestamp kapan cancel
+  //   - cancel_reason → alasan cancel (kalau ada)
   const { error } = await supabase
     .from("subscriptions")
     .update({
@@ -984,15 +984,15 @@ payments.post("/cancel", authMiddleware, async (c) => {
   return c.json({ message: "Subscription canceled successfully" });
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET /check-access â€” Cek apakah user bisa akses fitur tertentu
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
+// GET /check-access — Cek apakah user bisa akses fitur tertentu
+// ═══════════════════════════════════════════════════════════════════════
 // Dipake frontend buat FeatureGate / Paywall component
 // Contoh: user coba buka halaman "Laporan Laba Rugi"
-//   â†’ Frontend panggil /check-access?feature=income_statement
-//   â†’ Backend cek: user free plan, fitur butuh pro â†’ return has_access: false
-//   â†’ Frontend tampilin Paywall "Upgrade ke Pro buat akses fitur ini"
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//   → Frontend panggil /check-access?feature=income_statement
+//   → Backend cek: user free plan, fitur butuh pro → return has_access: false
+//   → Frontend tampilin Paywall "Upgrade ke Pro buat akses fitur ini"
+// ═══════════════════════════════════════════════════════════════════════
 payments.get("/check-access", authMiddleware, async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
@@ -1008,7 +1008,7 @@ payments.get("/check-access", authMiddleware, async (c) => {
     .eq("user_id", userId)
     .maybeSingle(); // Bisa null kalau user belum punya subscription
 
-  // Kalau user belum punya subscription â†’ gak bisa akses apapun
+  // Kalau user belum punya subscription → gak bisa akses apapun
   if (!sub) {
     return c.json({ has_access: false, reason: "no_subscription" });
   }
@@ -1024,7 +1024,7 @@ payments.get("/check-access", authMiddleware, async (c) => {
     sub.current_period_end &&
     new Date(sub.current_period_end) > now;
 
-  // Kalau keduanya gak aktif â†’ subscription expired
+  // Kalau keduanya gak aktif → subscription expired
   if (!isTrialActive && !isSubActive) {
     return c.json({
       has_access: false, // Gak bisa akses
@@ -1036,18 +1036,18 @@ payments.get("/check-access", authMiddleware, async (c) => {
   // Ambil nama plan user sekarang
   const planName = sub.plans?.name;
 
-  // Mapping fitur â†’ plan yang bisa akses fitur tersebut
+  // Mapping fitur → plan yang bisa akses fitur tersebut
   // Contoh: "export_pdf" bisa diakses oleh plan "pro" dan "enterprise"
   const featureAccess: Record<string, string[]> = {
-    export_pdf: ["pro", "enterprise"], // Export PDF â†’ Pro & Enterprise
-    export_csv: ["enterprise"], // Export CSV â†’ Enterprise aja
-    unlimited_journals: ["pro", "enterprise"], // Unlimited journals â†’ Pro & Enterprise
-    multi_company: ["pro", "enterprise"], // Multi-company â†’ Pro & Enterprise
-    multi_user: ["enterprise"], // Multi-user â†’ Enterprise aja
-    api_access: ["enterprise"], // API access â†’ Enterprise aja
-    income_statement: ["pro", "enterprise"], // Laporan Laba Rugi â†’ Pro & Enterprise
-    balance_sheet: ["pro", "enterprise"], // Neraca â†’ Pro & Enterprise
-    cash_flow: ["pro", "enterprise"], // Arus Kas â†’ Pro & Enterprise
+    export_pdf: ["pro", "enterprise"], // Export PDF → Pro & Enterprise
+    export_csv: ["enterprise"], // Export CSV → Enterprise aja
+    unlimited_journals: ["pro", "enterprise"], // Unlimited journals → Pro & Enterprise
+    multi_company: ["pro", "enterprise"], // Multi-company → Pro & Enterprise
+    multi_user: ["enterprise"], // Multi-user → Enterprise aja
+    api_access: ["enterprise"], // API access → Enterprise aja
+    income_statement: ["pro", "enterprise"], // Laporan Laba Rugi → Pro & Enterprise
+    balance_sheet: ["pro", "enterprise"], // Neraca → Pro & Enterprise
+    cash_flow: ["pro", "enterprise"], // Arus Kas → Pro & Enterprise
   };
 
   // Kalau ada query parameter "feature", cek akses spesifik
