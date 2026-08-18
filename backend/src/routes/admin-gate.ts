@@ -215,6 +215,89 @@ adminGate.get("/companies", requireAdminGate, async (c) => {
   return c.json(data ?? []);
 });
 
+// GET /api/admin-gate/overview — ringkasan statistik global untuk tab
+// "Overview" dashboard admin (view-only, tidak ada mutasi):
+//   - total_users / total_companies: jumlah seluruh user & company
+//   - users_growth_30d: user baru dalam 30 hari terakhir
+//   - churn_30d: subscription yang dibatalkan dalam 30 hari terakhir
+//   - mrr: Monthly Recurring Revenue (sub aktif bulanan = price_monthly;
+//     sub aktif tahunan dihitung price_yearly/12 agar sebanding per bulan)
+//   - plan_distribution: jumlah user per plan (dari sub aktif)
+adminGate.get("/overview", requireAdminGate, async (c) => {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const [userCount, companyCount, growthCount, churnCount, activeSubs] =
+      await Promise.all([
+        supabase
+          .from("users")
+          .select("id", { count: "exact", head: true }),
+        supabase
+          .from("companies")
+          .select("id", { count: "exact", head: true }),
+        supabase
+          .from("users")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", thirtyDaysAgo),
+        supabase
+          .from("subscriptions")
+          .select("id", { count: "exact", head: true })
+          .gte("canceled_at", thirtyDaysAgo),
+        supabase
+          .from("subscriptions")
+          .select("user_id, billing_cycle, plans(name, price_monthly, price_yearly)")
+          .eq("status", "active")
+          .limit(10000),
+      ]);
+
+    if (
+      userCount.error ||
+      companyCount.error ||
+      growthCount.error ||
+      churnCount.error ||
+      activeSubs.error
+    ) {
+      console.error("[admin-gate] overview error:", {
+        user: userCount.error,
+        company: companyCount.error,
+        growth: growthCount.error,
+        churn: churnCount.error,
+        subs: activeSubs.error,
+      });
+      return c.json({ error: "Gagal memuat ringkasan dashboard" }, 500);
+    }
+
+    // Hitung MRR & distribusi plan dari data sub aktif yang sama.
+    let mrr = 0;
+    const planDist: Record<string, number> = {};
+    for (const sub of activeSubs.data ?? []) {
+      const plan = sub.plans as unknown as
+        | { name: string | null; price_monthly: number; price_yearly: number }
+        | null;
+      const monthly = plan?.price_monthly ?? 0;
+      const yearly = plan?.price_yearly ?? 0;
+      mrr += sub.billing_cycle === "yearly" ? yearly / 12 : monthly;
+      const planName = plan?.name ?? "Tanpa plan";
+      planDist[planName] = (planDist[planName] ?? 0) + 1;
+    }
+
+    return c.json({
+      total_users: userCount.count ?? 0,
+      total_companies: companyCount.count ?? 0,
+      users_growth_30d: growthCount.count ?? 0,
+      churn_30d: churnCount.count ?? 0,
+      mrr: Math.round(mrr),
+      plan_distribution: Object.entries(planDist).map(([name, users]) => ({
+        name,
+        users,
+      })),
+    });
+  } catch (err) {
+    console.error("[admin-gate] overview error:", err);
+    return c.json({ error: "Gagal memuat ringkasan dashboard" }, 500);
+  }
+});
+
 // ── Moderasi (satu-satunya aksi mutasi admin) ──────────────────────────
 
 // DELETE /api/admin-gate/users/:id — hapus user bermasalah.

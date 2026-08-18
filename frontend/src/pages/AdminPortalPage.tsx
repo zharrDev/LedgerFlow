@@ -15,17 +15,24 @@ import {
   ScrollText,
   AlertTriangle,
   X,
+  LayoutDashboard,
+  TrendingUp,
+  UserMinus,
+  Wallet,
 } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
   fetchAdminGateLogs,
   fetchAdminGateUsers,
   fetchAdminGateCompanies,
+  fetchAdminGateOverview,
   deleteAdminGateUser,
   deleteAdminGateCompany,
   logoutAdminGate,
   type AdminGateLog,
   type AdminGateUser,
   type AdminGateCompany,
+  type AdminGateOverview,
 } from "../services/adminGateService";
 import { getAdminGateToken } from "../lib/session";
 import { useToast } from "../context/ToastContext";
@@ -33,7 +40,7 @@ import { usePagination } from "../hooks/usePagination";
 import { TablePagination } from "../components/TablePagination";
 import logo from "../assets/ledgerflow.png";
 
-type Tab = "log" | "users" | "companies";
+type Tab = "overview" | "log" | "users" | "companies";
 
 type ConfirmState = {
   type: "user" | "company";
@@ -54,11 +61,12 @@ const PAGE_SIZE = 5;
 export default function AdminPortalPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [tab, setTab] = useState<Tab>("log");
+  const [tab, setTab] = useState<Tab>("overview");
 
   const [logs, setLogs] = useState<AdminGateLog[]>([]);
   const [users, setUsers] = useState<AdminGateUser[]>([]);
   const [companies, setCompanies] = useState<AdminGateCompany[]>([]);
+  const [overview, setOverview] = useState<AdminGateOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -82,14 +90,16 @@ export default function AdminPortalPage() {
     setRefreshing(true);
     setError("");
     try {
-      const [logData, userData, companyData] = await Promise.all([
+      const [logData, userData, companyData, overviewData] = await Promise.all([
         fetchAdminGateLogs(),
         fetchAdminGateUsers(),
         fetchAdminGateCompanies(),
+        fetchAdminGateOverview(),
       ]);
       setLogs(logData);
       setUsers(userData);
       setCompanies(companyData);
+      setOverview(overviewData);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         // Token admin-gate expired/ditolak → kembali ke gerbang.
@@ -243,6 +253,12 @@ export default function AdminPortalPage() {
         {/* Tabs */}
         <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 pb-0 overflow-x-auto">
           <TabButton
+            active={tab === "overview"}
+            onClick={() => setTab("overview")}
+            icon={<LayoutDashboard size={14} />}
+            label="Overview"
+          />
+          <TabButton
             active={tab === "log"}
             onClick={() => setTab("log")}
             icon={<ScrollText size={14} />}
@@ -269,6 +285,8 @@ export default function AdminPortalPage() {
           <div className="py-20 flex justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
           </div>
+        ) : tab === "overview" ? (
+          <OverviewView overview={overview} error={error} />
         ) : tab === "log" ? (
           <AuditLogView logs={logs} statusBadge={statusBadge} stats={stats} error={error} />
         ) : tab === "users" ? (
@@ -310,7 +328,7 @@ function TabButton({
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
-  count: number;
+  count?: number;
 }) {
   return (
     <button
@@ -323,16 +341,188 @@ function TabButton({
     >
       {icon}
       {label}
-      <span
-        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-          active
-            ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-            : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
-        }`}
-      >
-        {count}
-      </span>
+      {count !== undefined && (
+        <span
+          className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+            active
+              ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+              : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
+          }`}
+        >
+          {count}
+        </span>
+      )}
     </button>
+  );
+}
+
+// ── Overview view (ringkasan statistik global) ────────────────────────
+function OverviewView({
+  overview,
+  error,
+}: {
+  overview: AdminGateOverview | null;
+  error: string;
+}) {
+  if (!overview) {
+    return <EmptyState error={error} text="Belum ada data ringkasan." />;
+  }
+
+  const totalActives = overview.plan_distribution.reduce(
+    (s, p) => s + p.users,
+    0,
+  );
+  const formatRp = (v: number) =>
+    v.toLocaleString("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    });
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          icon={<Users size={15} />}
+          label="Total User"
+          value={overview.total_users}
+        />
+        <StatCard
+          icon={<Building2 size={15} />}
+          label="Total Company"
+          value={overview.total_companies}
+        />
+        <StatCard
+          icon={<TrendingUp size={15} />}
+          label="User Baru 30 Hari"
+          value={overview.users_growth_30d}
+          accent="emerald"
+        />
+        <StatCard
+          icon={<UserMinus size={15} />}
+          label="Churn 30 Hari"
+          value={overview.churn_30d}
+          accent="rose"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* MRR */}
+        <Card>
+          <div className="p-6">
+            <div className="flex items-center gap-1.5 mb-1 text-primary-500">
+              <Wallet size={15} />
+              <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">
+                MRR · Pendapatan Berulang Bulanan
+              </p>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">
+              {formatRp(overview.mrr)}
+            </p>
+            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              Dari {totalActives} subscription aktif (tahunan dihitung per
+              bulan)
+            </p>
+          </div>
+        </Card>
+
+        {/* Distribusi plan */}
+        <PlanDistributionChart data={overview.plan_distribution} />
+      </div>
+    </div>
+  );
+}
+
+// ── Chart distribusi user per plan (recharts, selaras tema gelap) ─────
+const PLAN_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#f43f5e"];
+
+// Hook kecil untuk menyesuaikan warna chart saat mode gelap (gaya sama
+// seperti CashFlowChart).
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    const check = () => setIsDark(el.classList.contains("dark"));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+}
+
+function PlanDistributionChart({
+  data,
+}: {
+  data: { name: string; users: number }[];
+}) {
+  const isDark = useIsDark();
+  const textColor = isDark ? "#94a3b8" : "#64748b";
+
+  return (
+    <Card>
+      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Distribusi User per Plan
+        </span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">
+          Berdasarkan subscription aktif
+        </span>
+      </div>
+      <div className="p-4">
+        {data.length === 0 ? (
+          <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+            Belum ada subscription aktif.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="users"
+                nameKey="name"
+                innerRadius={55}
+                outerRadius={90}
+                paddingAngle={3}
+                strokeWidth={2}
+                stroke={isDark ? "#111827" : "#ffffff"}
+              >
+                {data.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={PLAN_COLORS[i % PLAN_COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: any, name: any) => [
+                  `${value} user`,
+                  name as string,
+                ]}
+                contentStyle={{
+                  background: isDark
+                    ? "rgba(15,23,42,0.92)"
+                    : "rgba(255,255,255,0.95)",
+                  border: isDark
+                    ? "1px solid rgba(99,102,241,0.25)"
+                    : "1px solid rgba(99,102,241,0.15)",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+              />
+              <Legend
+                iconType="circle"
+                formatter={(value: any) => (
+                  <span style={{ color: textColor, fontSize: 12 }}>
+                    {value}
+                  </span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </Card>
   );
 }
 

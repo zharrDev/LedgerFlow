@@ -79,6 +79,24 @@ export async function fetchAdminGateCompanies(): Promise<AdminGateCompany[]> {
   return Array.isArray(res.data) ? (res.data as AdminGateCompany[]) : [];
 }
 
+// ── Ringkasan global untuk tab Overview ────────────────────────────────
+
+export type AdminGateOverview = {
+  total_users: number;
+  total_companies: number;
+  users_growth_30d: number;
+  churn_30d: number;
+  mrr: number;
+  plan_distribution: { name: string; users: number }[];
+};
+
+export async function fetchAdminGateOverview(): Promise<AdminGateOverview> {
+  const res = await api.get("/api/admin-gate/overview", {
+    headers: authHeaders(),
+  });
+  return res.data as AdminGateOverview;
+}
+
 // ── Moderasi (satu-satunya aksi mutasi admin — hapus user/company) ─────
 
 export async function deleteAdminGateUser(id: string): Promise<void> {
