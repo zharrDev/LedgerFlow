@@ -6,7 +6,7 @@ import Footer from "../components/Footer";
 import { FaqAccordion } from "../components/help/FaqAccordion";
 import { ContactCards } from "../components/help/ContactCards";
 import { helpFaqs, helpContactCards } from "../data/helpCenterContent";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 
 export default function PublicHelpPage() {
   return (

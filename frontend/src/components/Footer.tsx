@@ -1,6 +1,6 @@
 // src/components/Footer.tsx
 import { Link } from "react-router-dom";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 
 const Footer = () => {
   return (

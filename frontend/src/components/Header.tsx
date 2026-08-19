@@ -10,7 +10,7 @@ import {
 } from "./HeaderSearchResults";
 import { accountsService } from "../services/accountsService";
 import { journalService } from "../services/journalService";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 import {
   Menu,
   X,

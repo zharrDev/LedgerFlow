@@ -1,6 +1,6 @@
 // src/components/InfoPanel.tsx - VERSI CYAN (TERBARU)
 import { Check, BarChart3, Shield, TrendingUp, Activity } from "lucide-react";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 
 const stats = [
   { value: "10K+", label: "Transaksi Tercatat", icon: Activity },

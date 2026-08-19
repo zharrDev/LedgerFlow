@@ -43,18 +43,24 @@ import {
   Download,
 } from "lucide-react";
 import ThemeSwitcher from "../components/ThemeSwitcher";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
-import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.png";
-import fintechBgMobile from "../assets/hero/fintech-bgmobile.png";
-import heroBgAnim from "../assets/hero/hero-bg-anim.mp4";
+import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
+import fintechBgMobile from "../assets/hero/fintech-bgmobile.webp";
+import heroBgAnim from "../assets/hero/hero-bg-anim.webm";
+import heroBgAnimFallback from "../assets/hero/hero-bg-anim.mp4";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
+let dashboardDemoFallback = "";
 try {
   dashboardDemo = new URL(
+    "../assets/dashboard-demo.webm",
+    import.meta.url,
+  ).href;
+  dashboardDemoFallback = new URL(
     "../assets/dashboard-demo-D7bRiZnr.mp4",
     import.meta.url,
   ).href;
@@ -527,7 +533,8 @@ export default function HomePage() {
             onError={() => setHeroVideoError(true)}
             className="absolute inset-0 w-full h-full object-cover"
           >
-            <source src={heroBgAnim} type="video/mp4" />
+            <source src={heroBgAnim} type="video/webm" />
+            <source src={heroBgAnimFallback} type="video/mp4" />
           </video>
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/25 via-darkBg/35 to-transparent pointer-events-none" />
@@ -742,7 +749,8 @@ export default function HomePage() {
                   preload="auto"
                   className="w-full min-h-[100px] md:min-h-[300px] lg:min-h-[450px] object-cover"
                 >
-                  <source src={dashboardDemo} type="video/mp4" />
+                  <source src={dashboardDemo} type="video/webm" />
+                  <source src={dashboardDemoFallback} type="video/mp4" />
                 </video>
                 {/* Overlay Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />

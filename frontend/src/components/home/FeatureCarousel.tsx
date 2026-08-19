@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import automaticReconciliation from "../../assets/hero/Automatic-Reconsiliation.png";
-import realtimeAnalytics from "../../assets/hero/Realtimeanalityc.png";
-import auditTrail from "../../assets/hero/AuditTrail.png";
-import smartBudgeting from "../../assets/hero/Smartbudgetting.png";
-import multiEntitySupport from "../../assets/hero/multyEntitySupport.png";
-import multiCurrency from "../../assets/hero/MultyCurrency.png";
+import automaticReconciliation from "../../assets/hero/Automatic-Reconsiliation.webp";
+import realtimeAnalytics from "../../assets/hero/Realtimeanalityc.webp";
+import auditTrail from "../../assets/hero/AuditTrail.webp";
+import smartBudgeting from "../../assets/hero/Smartbudgetting.webp";
+import multiEntitySupport from "../../assets/hero/multyEntitySupport.webp";
+import multiCurrency from "../../assets/hero/MultyCurrency.webp";
 
 interface FeatureSlide {
   title: string;

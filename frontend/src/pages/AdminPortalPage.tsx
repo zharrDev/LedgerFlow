@@ -53,7 +53,7 @@ import { useToast } from "../context/ToastContext";
 import { usePagination } from "../hooks/usePagination";
 import { getErrorMessage } from "../lib/errorMessage";
 import { TablePagination } from "../components/TablePagination";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 
 type Tab = "overview" | "billing" | "log" | "users" | "companies";
 

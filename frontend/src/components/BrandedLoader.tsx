@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import logo from "../assets/ledgerflow.png";
+import logo from "../assets/ledgerflow.webp";
 
 export default function BrandedLoader() {
   return (

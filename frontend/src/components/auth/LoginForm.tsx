@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import GoogleAuthButton from "./GoogleAuthButton";
-import logo from "../../assets/ledgerflow.png";
+import logo from "../../assets/ledgerflow.webp";
 
 const PHONE_RE = /^(\+62|62|0)8\d{8,11}$/;
 const RESEND_SECONDS = 60;
