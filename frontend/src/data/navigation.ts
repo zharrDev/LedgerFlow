@@ -263,6 +263,13 @@ export function getDesktopSidebarMenuItems(role?: string): FlatNavItem[] {
   );
 }
 
+/** Link akun di bawah Sidebar desktop (Profile, Settings, Help). */
+export function getDesktopSidebarAccountItems(role?: string): FlatNavItem[] {
+  return flattenNavItems().filter(
+    (item) => item.section === "account" && canAccessItem(item, role),
+  );
+}
+
 /**
  * Item drawer mobile (hamburger) — hanya yang TIDAK ada di Bottom Navigation,
  * supaya tidak duplikat dengan tab bawah.

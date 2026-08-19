@@ -19,7 +19,6 @@ import {
   User,
   LogOut,
   Settings,
-  HelpCircle,
   ChevronDown,
   Command,
   CheckCircle2,
@@ -337,9 +336,9 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
-              className="w-full pl-10 pr-16 py-2.5 text-sm rounded-full bg-gray-100/80 dark:bg-darkCard/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50 text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500/50 transition-all"
+              className="w-full pl-10 pr-16 py-2.5 text-sm rounded-xl bg-gray-100/80 dark:bg-darkCard/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50 text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500/50 transition-all"
             />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-1 text-[10px] font-mono text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 rounded-full border border-gray-300/50 dark:border-gray-600/50">
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 rounded-md border border-gray-300/50 dark:border-gray-600/50">
               <Command size={10} />K
             </kbd>
             <AnimatePresence>
@@ -577,14 +576,6 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
                     >
                       <Settings size={16} className="text-gray-400" /> Settings
-                    </Link>
-                    <Link
-                      to="/help-center"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
-                    >
-                      <HelpCircle size={16} className="text-gray-400" /> Help &
-                      Support
                     </Link>
                   </div>
                   <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">

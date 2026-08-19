@@ -1,4 +1,4 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import React, { useRef } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -7,14 +7,12 @@ import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import {
   Building2,
   ChevronRight,
-  Sparkles,
-  ArrowRight,
 } from "lucide-react";
 import {
   getDesktopSidebarMenuItems,
+  getDesktopSidebarAccountItems,
   getMobileDrawerItems,
 } from "../data/navigation";
-import { useSubscription } from "../hooks/useSubscription";
 
 interface SidebarProps {
   mobileMenuOpen: boolean;
@@ -73,7 +71,6 @@ const SidebarContent = ({
   onLinkClick?: () => void;
 }) => {
   const { user, updateUser } = useAuth();
-  const { isFree } = useSubscription();
   const [companyName, setCompanyName] = React.useState(
     user?.company_name || "",
   );
@@ -86,6 +83,9 @@ const SidebarContent = ({
     mode === "desktop"
       ? getDesktopSidebarMenuItems(role)
       : getMobileDrawerItems(role);
+
+  const accountItems =
+    mode === "desktop" ? getDesktopSidebarAccountItems(role) : [];
 
   React.useEffect(() => {
     if (!user?.company_id || user?.company_name) return;
@@ -187,33 +187,22 @@ const SidebarContent = ({
         )}
       </nav>
 
-      {/* Promo card upgrade — hanya untuk user plan free, biar sidebar tidak perlu scroll */}
-      {isFree && (
-        <div className="px-3 pt-1 pb-2 shrink-0">
-          <Link
-            to="/pricing"
-            className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 dark:from-primary-700 dark:via-primary-800 dark:to-darkBg p-4 border border-primary-500/30 shadow-lg transition-all duration-300 hover:shadow-primary-500/20 hover:-translate-y-0.5"
-          >
-            <div className="absolute -top-8 -right-8 w-24 h-24 bg-primary-400/30 rounded-full blur-2xl group-hover:bg-primary-400/40 transition-colors"></div>
-            <div className="relative">
-              <div className="flex items-center gap-1.5 text-primary-100">
-                <Sparkles size={13} className="text-primary-300" />
-                <p className="text-[11px] font-semibold uppercase tracking-wider">
-                  LedgerFlow Pro
-                </p>
-              </div>
-              <p className="mt-1.5 text-sm font-semibold text-white leading-snug">
-                Upgrade untuk fitur penuh & kuota tanpa batas
-              </p>
-              <span className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 shadow-sm transition-all group-hover:bg-primary-50">
-                Lihat Paket
-                <ArrowRight
-                  size={12}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </span>
-            </div>
-          </Link>
+      {accountItems.length > 0 && (
+        <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
+          {accountItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={onLinkClick}
+                className={({ isActive }) => navLinkClass(isActive, true)}
+              >
+                <Icon size={16} className="shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </NavLink>
+            );
+          })}
         </div>
       )}
     </div>
