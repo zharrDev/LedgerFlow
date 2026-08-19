@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Cell,
 } from "recharts";
 
 // ─────────────────────────────────────────────
@@ -245,33 +246,6 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
 }
 
 // ─────────────────────────────────────────────
-// Custom Dot untuk Area Line
-// ─────────────────────────────────────────────
-function CustomDot(props: any) {
-  const { cx, cy, value, stroke } = props;
-  if (cx == null || cy == null) return null;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={5} fill={stroke} opacity={0.25} />
-      <circle cx={cx} cy={cy} r={3} fill={stroke} />
-      <circle cx={cx} cy={cy} r={1.5} fill="#fff" />
-    </g>
-  );
-}
-
-function CustomActiveDot(props: any) {
-  const { cx, cy, stroke } = props;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={10} fill={stroke} opacity={0.15} />
-      <circle cx={cx} cy={cy} r={6} fill={stroke} opacity={0.35} />
-      <circle cx={cx} cy={cy} r={3.5} fill={stroke} />
-      <circle cx={cx} cy={cy} r={1.5} fill="#fff" />
-    </g>
-  );
-}
-
-// ─────────────────────────────────────────────
 // Main Chart
 // ─────────────────────────────────────────────
 export function CashFlowChart({
@@ -339,54 +313,43 @@ export function CashFlowChart({
         />
 
         <ResponsiveContainer width="100%" height={height}>
-          <AreaChart
+          <BarChart
             data={data}
             margin={{ top: 20, right: 16, left: -8, bottom: 0 }}
+            barGap={4}
           >
             <defs>
-              {/* ── Masuk: Cyan → Indigo ── */}
+              {/* ── Masuk: Cyan solid ── */}
               <linearGradient id="gradMasuk" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.cyan} stopOpacity={0.5} />
-                <stop offset="60%" stopColor={P.cyanLight} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={P.cyan} stopOpacity={0.02} />
+                <stop offset="0%" stopColor={P.cyan} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={P.cyanLight} stopOpacity={0.75} />
+              </linearGradient>
+              {/* ── Masuk highlight (kategori Bersih): Cyan terang + glow ── */}
+              <linearGradient id="gradMasukHi" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.cyanLight} stopOpacity={1} />
+                <stop offset="100%" stopColor={P.cyan} stopOpacity={0.7} />
               </linearGradient>
 
-              {/* ── Keluar: Rose → Violet ── */}
+              {/* ── Keluar: Rose solid ── */}
               <linearGradient id="gradKeluar" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.rose} stopOpacity={0} />
-                <stop offset="40%" stopColor={P.rose} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={P.rose} stopOpacity={0.45} />
+                <stop offset="0%" stopColor={P.rose} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={P.rose} stopOpacity={0.6} />
+              </linearGradient>
+              {/* ── Keluar highlight (kategori Bersih) ── */}
+              <linearGradient id="gradKeluarHi" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fb7185" stopOpacity={1} />
+                <stop offset="100%" stopColor={P.rose} stopOpacity={0.7} />
               </linearGradient>
 
-              {/* ── Net: Indigo → Violet ── */}
-              <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.4} />
-                <stop offset="55%" stopColor={P.violet} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={P.violet} stopOpacity={0} />
-              </linearGradient>
-
-              {/* Glow filter untuk stroke */}
+              {/* Glow filter untuk kategori highlight */}
               <filter
-                id="glowCyan"
+                id="glowBar"
                 x="-20%"
                 y="-40%"
                 width="140%"
                 height="180%"
               >
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <filter
-                id="glowIndigo"
-                x="-20%"
-                y="-40%"
-                width="140%"
-                height="180%"
-              >
-                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
                   <feMergeNode in="SourceGraphic" />
@@ -423,61 +386,51 @@ export function CashFlowChart({
 
             <Tooltip
               cursor={{
-                stroke: isDark
-                  ? "rgba(99,102,241,0.3)"
-                  : "rgba(99,102,241,0.15)",
-                strokeWidth: 1.5,
-                strokeDasharray: "4 3",
+                fill: isDark
+                  ? "rgba(99,102,241,0.08)"
+                  : "rgba(99,102,241,0.06)",
               }}
               content={
                 <CustomTooltip formatValue={formatValue} isDark={isDark} />
               }
             />
 
-            {/* ── Area Masuk ── */}
-            <Area
-              type="monotone"
+            {/* ── Bar Masuk (rounded-top) ── */}
+            <Bar
               dataKey="masuk"
               name="Arus Masuk"
-              stroke={P.cyan}
-              strokeWidth={2.5}
-              fill="url(#gradMasuk)"
-              dot={<CustomDot stroke={P.cyan} />}
-              activeDot={<CustomActiveDot stroke={P.cyan} />}
-              filter="url(#glowCyan)"
-              animationDuration={1200}
-              animationEasing="ease-out"
-            />
-
-            {/* ── Area Keluar (mirror ke bawah) ── */}
-            <Area
-              type="monotone"
-              dataKey="keluar"
-              name="Arus Keluar"
-              stroke={P.rose}
-              strokeWidth={2.5}
-              fill="url(#gradKeluar)"
-              dot={<CustomDot stroke={P.rose} />}
-              activeDot={<CustomActiveDot stroke={P.rose} />}
-              animationDuration={1400}
-              animationEasing="ease-out"
-            />
-
-            {/* ── Area Net ── */}
-            <Area
-              type="monotone"
-              dataKey="net"
-              name="Saldo Bersih"
-              stroke={P.indigo}
-              strokeWidth={3}
-              fill="url(#gradNet)"
-              dot={<CustomDot stroke={P.indigo} />}
-              activeDot={<CustomActiveDot stroke={P.indigo} />}
-              filter="url(#glowIndigo)"
+              radius={[8, 8, 0, 0]}
+              maxBarSize={26}
               animationDuration={1000}
               animationEasing="ease-out"
-            />
-          </AreaChart>
+            >
+              {data.map((d) => (
+                <Cell
+                  key={`m-${d.name}`}
+                  fill={d.name === "Bersih" ? "url(#gradMasukHi)" : "url(#gradMasuk)"}
+                  filter={d.name === "Bersih" ? "url(#glowBar)" : undefined}
+                />
+              ))}
+            </Bar>
+
+            {/* ── Bar Keluar (rounded-top, terbalik saat negatif) ── */}
+            <Bar
+              dataKey="keluar"
+              name="Arus Keluar"
+              radius={[8, 8, 0, 0]}
+              maxBarSize={26}
+              animationDuration={1100}
+              animationEasing="ease-out"
+            >
+              {data.map((d) => (
+                <Cell
+                  key={`k-${d.name}`}
+                  fill={d.name === "Bersih" ? "url(#gradKeluarHi)" : "url(#gradKeluar)"}
+                  filter={d.name === "Bersih" ? "url(#glowBar)" : undefined}
+                />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
 

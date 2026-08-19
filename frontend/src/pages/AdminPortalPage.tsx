@@ -25,6 +25,8 @@ import {
   Eye,
   ListTree,
   UserCheck,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
@@ -72,6 +74,18 @@ const roleBadge: Record<string, string> = {
   owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
 };
+
+// Gradient avatar bulat per role (fallback: primary cyan)
+const ROLE_AVATAR: Record<string, string> = {
+  owner: "from-purple-500 to-indigo-500",
+  akuntan: "from-green-500 to-emerald-600",
+};
+
+// Inisial nama (maks 2 huruf) untuk avatar bulat
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+}
 
 const PAGE_SIZE = 5;
 
@@ -510,23 +524,39 @@ function OverviewView({
           icon={<Users size={15} />}
           label="Total User"
           value={overview.total_users}
+          trend={
+            <>
+              <ArrowUpRight size={11} /> +{overview.users_growth_30d}
+            </>
+          }
+          trendCls="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          compare="+user baru dalam 30 hari"
         />
         <StatCard
           icon={<Building2 size={15} />}
           label="Total Company"
           value={overview.total_companies}
+          compare="Terdaftar lintas sistem"
         />
         <StatCard
           icon={<TrendingUp size={15} />}
           label="User Baru 30 Hari"
           value={overview.users_growth_30d}
           accent="emerald"
+          compare="Periode 30 hari terakhir"
         />
         <StatCard
           icon={<UserMinus size={15} />}
           label="Churn 30 Hari"
           value={overview.churn_30d}
           accent="rose"
+          trend={
+            <>
+              <ArrowDownRight size={11} /> -{overview.churn_30d}
+            </>
+          }
+          trendCls="bg-rose-500/10 text-rose-600 dark:text-rose-400"
+          compare="Hilang dalam 30 hari"
         />
       </div>
 
@@ -534,18 +564,22 @@ function OverviewView({
         {/* MRR */}
         <Card>
           <div className="p-6">
-            <div className="flex items-center gap-1.5 mb-1 text-primary-500">
-              <Wallet size={15} />
-              <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">
-                MRR · Pendapatan Berulang Bulanan
-              </p>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-primary-500">
+                <Wallet size={15} />
+                <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">
+                  MRR · Pendapatan Berulang Bulanan
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-primary-500/10 text-primary-600 dark:text-primary-400">
+                <Activity size={11} /> {totalActives} aktif
+              </span>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tabular-nums mt-2">
               {formatRp(overview.mrr)}
             </p>
             <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-              Dari {totalActives} subscription aktif (tahunan dihitung per
-              bulan)
+              Pendapatan berulang bulanan — tahunan dihitung per bulan
             </p>
           </div>
         </Card>
@@ -1112,74 +1146,65 @@ function UsersView({
         <EmptyState error={error} text="Belum ada user." />
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30">
-                <tr>
-                  {["Nama", "Email / No. HP", "Company", "Role", "Status", "Aksi"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-                {pagination.pageItems.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+            {pagination.pageItems.map((u) => (
+              <div
+                key={u.id}
+                className="flex items-center gap-3.5 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              >
+                {/* Avatar inisial + badge role */}
+                <div
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                    ROLE_AVATAR[u.role] || "from-primary-500 to-primary-600"
+                  } flex items-center justify-center text-white text-xs font-bold shrink-0`}
+                >
+                  {initialsOf(u.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                       {u.name}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
-                      {u.email || u.phone || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">
-                      {u.companies?.name || "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadge[u.role] || ""}`}
-                      >
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5">{entityStatusBadge(u.status)}</td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1">
-                        {u.status === "suspended" ? (
-                          <button
-                            onClick={() => onUnsuspend(u)}
-                            title="Aktifkan kembali (unsuspend)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
-                          >
-                            <RotateCcw size={14} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => onSuspend(u)}
-                            title="Suspend (soft delete — data aman)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
-                          >
-                            <Ban size={14} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => onDelete(u)}
-                          title="Hapus permanen (moderasi)"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </p>
+                    <span
+                      className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium capitalize shrink-0 ${roleBadge[u.role] || ""}`}
+                    >
+                      {u.role}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                    {u.email || u.phone || "—"}
+                    {u.companies?.name ? ` · ${u.companies.name}` : ""}
+                  </p>
+                </div>
+                <div className="shrink-0">{entityStatusBadge(u.status)}</div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {u.status === "suspended" ? (
+                    <button
+                      onClick={() => onUnsuspend(u)}
+                      title="Aktifkan kembali (unsuspend)"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
+                    >
+                      <RotateCcw size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onSuspend(u)}
+                      title="Suspend (soft delete — data aman)"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                    >
+                      <Ban size={14} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onDelete(u)}
+                    title="Hapus permanen (moderasi)"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
           <TablePagination
             page={pagination.page}
@@ -1232,72 +1257,61 @@ function CompaniesView({
         <EmptyState error={error} text="Belum ada company." />
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30">
-                <tr>
-                  {["Nama", "Mata Uang", "Dibuat", "Status", "Aksi"].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+          <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+            {pagination.pageItems.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center gap-3.5 px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              >
+                {/* Avatar inisial company */}
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 via-cyan-600 to-primary-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {initialsOf(c.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                    {c.name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {c.currency} · dibuat{" "}
+                    {new Date(c.created_at).toLocaleDateString("id-ID")}
+                  </p>
+                </div>
+                <div className="shrink-0">{entityStatusBadge(c.status)}</div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => onView(c)}
+                    title="Lihat detail company"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  {c.status === "suspended" ? (
+                    <button
+                      onClick={() => onUnsuspend(c)}
+                      title="Aktifkan kembali (unsuspend)"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
                     >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-                {pagination.pageItems.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">
-                      {c.name}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
-                      {c.currency}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString("id-ID")}
-                    </td>
-                    <td className="px-4 py-2.5">{entityStatusBadge(c.status)}</td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => onView(c)}
-                          title="Lihat detail company"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        {c.status === "suspended" ? (
-                          <button
-                            onClick={() => onUnsuspend(c)}
-                            title="Aktifkan kembali (unsuspend)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
-                          >
-                            <RotateCcw size={14} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => onSuspend(c)}
-                            title="Suspend (soft delete — data aman)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
-                          >
-                            <Ban size={14} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => onDelete(c)}
-                          title="Hapus permanen (data ikut terhapus)"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <RotateCcw size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onSuspend(c)}
+                      title="Suspend (soft delete — data aman)"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                    >
+                      <Ban size={14} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onDelete(c)}
+                    title="Hapus permanen (data ikut terhapus)"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
           <TablePagination
             page={pagination.page}
@@ -1750,11 +1764,17 @@ function StatCard({
   label,
   value,
   accent,
+  trend,
+  trendCls,
+  compare,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   accent?: "emerald" | "rose" | "amber";
+  trend?: React.ReactNode;
+  trendCls?: string;
+  compare?: string;
 }) {
   const accentCls =
     accent === "emerald"
@@ -1765,16 +1785,30 @@ function StatCard({
           ? "text-amber-500"
           : "text-primary-500";
   return (
-    <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3.5">
-      <div className={`flex items-center gap-1.5 mb-1 ${accentCls}`}>
-        {icon}
-        <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">
-          {label}
-        </p>
+    <div className="relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md px-4 py-4 overflow-hidden">
+      <div className="flex items-center justify-between gap-2">
+        <div className={`flex items-center gap-1.5 ${accentCls}`}>
+          {icon}
+          <p className="text-[11px] font-medium uppercase tracking-wider opacity-80 truncate">
+            {label}
+          </p>
+        </div>
+        {trend && (
+          <span
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${trendCls}`}
+          >
+            {trend}
+          </span>
+        )}
       </div>
-      <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
+      <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-white tabular-nums">
         {value}
       </p>
+      {compare && (
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+          {compare}
+        </p>
+      )}
     </div>
   );
 }
