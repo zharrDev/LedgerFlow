@@ -508,11 +508,11 @@ export default function HomePage() {
   const opacityHero = useTransform(scrollY, [0, 300], [1, 0]);
 
   return (
-    <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-gray-100 dark:bg-gray-950">
+    <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
-      <section className="relative min-h-[calc(100dvh-5rem)] flex items-center justify-center text-center px-6 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
         {!heroVideoError && (
