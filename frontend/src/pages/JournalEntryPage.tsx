@@ -125,7 +125,6 @@ export default function JournalEntryPage() {
   } = useJournal();
 
   const { user } = useAuth();
-  const { toast } = useToast();
   const myRole = user?.role || "";
   // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus = owner only.
   // Disembunyikan di frontend agar tidak muncul tombol yang pasti ditolak 403.
@@ -203,13 +202,6 @@ export default function JournalEntryPage() {
     payload: CreateJournalPayload,
   ): Promise<boolean> => {
     const result = await createEntry(payload);
-    if (result) {
-      toast({
-        variant: "success",
-        title: "Entry berhasil dibuat",
-        amount: result.totalDebit,
-      });
-    }
     return result !== null;
   };
 
@@ -226,13 +218,6 @@ export default function JournalEntryPage() {
       if (confirmMode === "post") {
         const ok = await postEntry(confirmEntry.id);
         if (ok) {
-          toast({
-            variant: "success",
-            title: "Entry berhasil diposting",
-            amount: confirmEntry.totalDebit,
-            actionLabel: "Lihat di Buku Besar",
-            actionHref: "/buku-besar",
-          });
           setView((v) =>
             v.mode === "detail" && v.entry.id === confirmEntry.id
               ? {
