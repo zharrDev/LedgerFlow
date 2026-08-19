@@ -39,9 +39,14 @@ body {
   font-family: "Dancing Script", cursive;
 }
 
-/* ───────── Scrollbar kustom (selaras homepage: gelap + cyan) ───────── */
+/* ───────── Scrollbar kustom (ngikut tema: terang = track putih, gelap = darkCard) ───────── */
 * {
   scrollbar-width: thin;
+  scrollbar-color: rgb(34 211 238 / 0.75) #f1f5f9;
+}
+
+.dark,
+.dark * {
   scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
 
@@ -51,6 +56,11 @@ body {
 }
 
 *::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.dark::-webkit-scrollbar-track,
+.dark *::-webkit-scrollbar-track {
   background: #1e293b;
 }
 
@@ -70,6 +80,10 @@ body {
 /* Panel kecil (dropdown, notifikasi, chat): scrollbar 6px */
 .scrollbar-thin {
   scrollbar-width: thin;
+  scrollbar-color: rgb(34 211 238 / 0.75) #f1f5f9;
+}
+
+.dark .scrollbar-thin {
   scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
 
@@ -79,6 +93,10 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-track {
   background: #1e293b;
 }
 
@@ -104,9 +122,13 @@ body {
 }
 
 /* Halaman homepage (root pakai h-screen + overflow-y-auto):
-   scrollbar SELALU gelap senada darkCard, independen dari toggle tema */
+   scrollbar ikut toggle tema — terang track putih, gelap senada darkCard */
 .homepage-scroll {
   scrollbar-width: thin;
+  scrollbar-color: rgb(34 211 238 / 0.75) #f1f5f9;
+}
+
+.dark .homepage-scroll {
   scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
 
@@ -116,6 +138,10 @@ body {
 }
 
 .homepage-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.dark .homepage-scroll::-webkit-scrollbar-track {
   background: #1e293b;
 }
 
