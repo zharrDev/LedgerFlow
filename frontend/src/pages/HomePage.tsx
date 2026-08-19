@@ -46,8 +46,10 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import logo from "../assets/ledgerflow.png";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
+import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.png";
 import fintechBgMobile from "../assets/hero/fintech-bgmobile.png";
+import heroBgAnim from "../assets/hero/hero-bg-anim.mp4";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -500,18 +502,34 @@ const staggerContainer = {
 // ─── Main Page ───────────────────────────────────────────────────────
 export default function HomePage() {
   const { user } = useAuth();
+  const [heroVideoError, setHeroVideoError] = useState(false);
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const opacityHero = useTransform(scrollY, [0, 300], [1, 0]);
 
   return (
-    <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
+    <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-gray-100 dark:bg-gray-950">
       <Navbar />
-
+      <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
-      <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
+      <section className="relative min-h-[calc(100dvh-5rem)] flex items-center justify-center text-center px-6 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
+        {!heroVideoError && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden
+            poster={fintechBgDesktop}
+            onError={() => setHeroVideoError(true)}
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src={heroBgAnim} type="video/mp4" />
+          </video>
+        )}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/25 via-darkBg/35 to-transparent pointer-events-none" />
 
         <motion.div
@@ -863,6 +881,7 @@ export default function HomePage() {
       </motion.section>
 
       <Footer />
+      </ScrollCardWrapper>
     </div>
   );
 }
