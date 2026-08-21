@@ -157,3 +157,24 @@ body {
 .homepage-scroll::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ── BorderBeamBadge ─────────────────────────────────────────────────
+   Beam cahaya berputar mengitari border badge. Dipakai oleh komponen
+   components/home/BorderBeamBadge.tsx. Didefinisikan di sini (bukan
+   lewat utility Tailwind) agar animasi tetap jalan walau tidak ada
+   elemen lain yang memakai animate-spin. */
+@keyframes border-beam-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hormati preferensi pengguna yang sensitif terhadap gerakan */
+@media (prefers-reduced-motion: reduce) {
+  .border-beam-layer {
+    animation: none !important;
+  }
+}
