@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import ThemeSwitcher from "./ThemeSwitcher";
+import LanguageSwitcher from "./LanguageSwitcher";
 import {
   HeaderSearchResults,
   type AccountHit,
@@ -494,6 +495,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
             </AnimatePresence>
           </div>
 
+          <LanguageSwitcher />
           <ThemeSwitcher />
 
           {/* ── User Dropdown (click) ── */}
