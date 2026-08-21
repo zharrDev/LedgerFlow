@@ -130,9 +130,13 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
-  const notifCloseTimer = useRef<ReturnType<typeof setTimeout>>();
+  const notifCloseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

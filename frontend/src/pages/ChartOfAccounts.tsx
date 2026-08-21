@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { useAccounts } from "../hooks/useAccounts";
 import { usePagination } from "../hooks/usePagination";
 import { AppShell } from "../components/AppShell";
@@ -39,17 +38,17 @@ import {
 } from "../utils/exportPDF";
 import { ExportMenu } from "../components/ExportMenu";
 
-import type { AccountType } from "../types/account";
+import type { AccountType, NormalBalance } from "../types/account";
 import { ACCOUNT_TYPES } from "../types/constants";
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.05, delayChildren: 0.1 },
   },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -57,13 +56,13 @@ const itemVariants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants = {
+const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.04, delayChildren: 0.3 },
   },
 };
-const letterVariants = {
+const letterVariants: Variants = {
   hidden: { y: 40, opacity: 0, rotateX: -90 },
   visible: {
     y: 0,
@@ -74,7 +73,6 @@ const letterVariants = {
 };
 
 export default function ChartOfAccounts() {
-  const { user } = useAuth();
   const {
     accounts,
     loading,
@@ -278,8 +276,9 @@ export default function ChartOfAccounts() {
         const ok = await saveAccount({
           code: acc.code,
           name: acc.name,
-          type: acc.type.toLowerCase(),
-          normalBalance: acc.normalBalance,
+          type: acc.type.toLowerCase() as AccountType,
+          normalBalance: acc.normalBalance as NormalBalance,
+          isActive: true,
         });
         if (ok) {
           success++;

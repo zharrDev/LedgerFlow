@@ -5,7 +5,6 @@ import type {
   Account,
   AccountFormData,
   FormErrors,
-  AccountType,
 } from "../types/account";
 import {
   ACCOUNT_TYPES,
@@ -27,7 +26,7 @@ export function AccountModal({
   open: boolean;
   onClose: () => void;
   editAccount: Account | null;
-  onSave: (data: AccountFormData, id?: number) => Promise<boolean>;
+  onSave: (data: AccountFormData, id?: string) => Promise<boolean>;
   saving: boolean;
   /** Daftar code akun yang sudah ada — untuk cek duplikat sebelum submit */
   existingCodes?: string[];

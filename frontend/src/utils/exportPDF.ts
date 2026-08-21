@@ -323,7 +323,7 @@ export function exportIncomeStatementWord(
 
 // ─── Balance Sheet ───────────────────────────────────────────────────
 
-type BalanceSheetData = {
+export type BalanceSheetData = {
   assets: { accountCode: string; accountName: string; balance: number }[];
   liabilities: {
     accountCode: string;

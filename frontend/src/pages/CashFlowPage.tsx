@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   Wallet,
   TrendingUp,
@@ -30,7 +30,7 @@ import type { Period, CashFlowSection } from "../types/reports";
 // ─── Helpers ────────────────────────────────────────────────────────
 const formatIDR = (amount: number) => formatCurrency(amount);
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -38,7 +38,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -47,13 +47,13 @@ const itemVariants = {
   },
 };
 
-const letterContainerVariants = {
+const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.04, delayChildren: 0.3 },
   },
 };
-const letterVariants = {
+const letterVariants: Variants = {
   hidden: { y: 40, opacity: 0, rotateX: -90 },
   visible: {
     y: 0,
@@ -392,7 +392,7 @@ export default function CashFlowPage() {
                   minWidth={200}
                   options={[
                     { value: "", label: "Semua Periode" },
-                    ...periods.map((p) => ({ value: p.id, label: p.name })),
+                    ...periods.map((p) => ({ value: p.id, label: p.name ?? "" })),
                   ]}
                 />
               </div>

@@ -22,7 +22,6 @@ import {
 } from "./JournalShared";
 import { useAccounts } from "../../hooks/useAccounts";
 import type { Account } from "../../types/account";
-import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface JournalFormProps {

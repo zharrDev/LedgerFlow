@@ -23,7 +23,27 @@ import {
   exportBalanceSheetPDF,
   exportBalanceSheetExcel,
   exportBalanceSheetWord,
+  type BalanceSheetData,
 } from "../utils/exportPDF";
+
+// Adapter: BalanceSheetResponse (snake_case dari API) → BalanceSheetData (camelCase untuk export)
+function toExportData(bs: BalanceSheetResponse): BalanceSheetData {
+  const map = (items: BalanceSheetResponse["assets"]) =>
+    items.map((a) => ({
+      accountCode: a.account_code,
+      accountName: a.account_name,
+      balance: a.balance,
+    }));
+  return {
+    assets: map(bs.assets),
+    liabilities: map(bs.liabilities),
+    equity: map(bs.equity),
+    total_assets: bs.total_assets,
+    total_liabilities: bs.total_liabilities,
+    total_equity: bs.total_equity,
+    is_balanced: bs.is_balanced,
+  };
+}
 
 export default function BalanceSheet() {
   const { user } = useAuth();
@@ -112,9 +132,10 @@ export default function BalanceSheet() {
     const periodLabel = selectedPeriod
       ? getPeriodLabel(selectedPeriod)
       : "Semua Periode";
-    if (format === "excel") exportBalanceSheetExcel(balanceSheet, periodLabel);
-    else if (format === "word") exportBalanceSheetWord(balanceSheet, periodLabel);
-    else exportBalanceSheetPDF(balanceSheet, periodLabel);
+    const exportData = toExportData(balanceSheet);
+    if (format === "excel") exportBalanceSheetExcel(exportData, periodLabel);
+    else if (format === "word") exportBalanceSheetWord(exportData, periodLabel);
+    else exportBalanceSheetPDF(exportData, periodLabel);
   };
 
   if (isLoadingPeriods) {

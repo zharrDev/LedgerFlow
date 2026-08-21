@@ -42,6 +42,8 @@ export interface Period {
   month: number;
   status: "open" | "closed";
   closed_at?: string | null;
+  /** Label periode (mis. "Januari 2026") — diisi backend /api/reports/periods */
+  name?: string;
 }
 
 export interface CashFlowItem {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { AppShell } from "../components/AppShell";
 import { periodsService } from "../services/periodsService";
 import { getErrorMessage } from "../lib/errorMessage";
@@ -18,14 +18,14 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.06, delayChildren: 0.1 },
   },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -33,13 +33,13 @@ const itemVariants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants = {
+const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.04, delayChildren: 0.3 },
   },
 };
-const letterVariants = {
+const letterVariants: Variants = {
   hidden: { y: 40, opacity: 0, rotateX: -90 },
   visible: {
     y: 0,
