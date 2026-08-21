@@ -758,16 +758,15 @@ adminGate.get("/health/smtp", requireAdminGate, async (c) => {
 
 // GET /api/admin-gate/health/whatsapp — tes koneksi WhatsApp/Fonnte
 adminGate.get("/health/whatsapp", requireAdminGate, async (c) => {
-  const token = process.env.FONNTE_API_TOKEN;
-  const url = process.env.FONNTE_API_URL || "https://api.fonnte.com/send";
+  const token = process.env.FONNTE_TOKEN;
   if (!token) {
-    return c.json({ ok: false, message: "FONNTE_API_TOKEN belum dikonfigurasi" });
+    return c.json({ ok: false, status: "not_configured", message: "FONNTE_TOKEN belum di-set di environment" });
   }
   try {
     // Fonnte API: cek status device via /device/status
     const res = await fetch("https://api.fonnte.com/device/status", {
       method: "GET",
-      headers: { Authorization: token },
+      headers: { Authorization: token.trim() },
       signal: AbortSignal.timeout(10000),
     });
     const data = await res.json();
