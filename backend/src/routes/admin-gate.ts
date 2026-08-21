@@ -736,14 +736,23 @@ adminGate.delete("/plans/:id", requireAdminGate, async (c) => {
 // Endpoint untuk memeriksa status komponen sistem (SMTP, WA, Database).
 // Menggunakan probe sederhana — semua memakai requireAdminGate.
 
-// GET /api/admin-gate/health/smtp — tes koneksi SMTP
+// GET /api/admin-gate/health/smtp — cek konfigurasi SMTP (ringan, tanpa kirim email)
 adminGate.get("/health/smtp", requireAdminGate, async (c) => {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const secure = process.env.SMTP_SECURE === "true";
+  if (!user || !pass) {
+    return c.json({ ok: false, status: "not_configured", message: "SMTP_USER / SMTP_PASS belum di-set" });
+  }
   try {
-    const { probeSmtp } = await import("../lib/email.js");
-    const result = await probeSmtp();
-    return c.json({ ok: result.ok, message: result.error || "SMTP OK", details: result });
+    const { createTransport } = await import("nodemailer");
+    const t = createTransport({ host, port, secure, auth: { user, pass } });
+    await t.verify();
+    return c.json({ ok: true, status: "connected", message: `SMTP OK — ${host}:${port}` });
   } catch (err: any) {
-    return c.json({ ok: false, message: err?.message || "SMTP probe gagal" });
+    return c.json({ ok: false, status: "error", message: err?.message || "SMTP koneksi gagal" });
   }
 });
 
