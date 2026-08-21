@@ -96,8 +96,8 @@ const ACCENT = {
 };
 
 const roleBadge: Record<string, string> = {
-  owner: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-  akuntan: "bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-400",
+  owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
 };
 
 const PAGE_SIZE = 5;
@@ -300,20 +300,20 @@ export default function AdminPortalPage() {
                   onClick={() => setTab(t.key)}
                   className={`group relative flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
                     tab === t.key
-                      ? "bg-gradient-to-r from-gray-500/10 to-gray-500/5 text-gray-800 dark:text-gray-200 font-medium shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-darkCard/50"
+                      ? "bg-gradient-to-r from-indigo-500/10 to-indigo-500/5 text-indigo-600 dark:text-indigo-400 font-medium shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-darkCard/50"
                   }`}
                 >
                   <span
                     className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                      tab === t.key ? "h-5 bg-gray-500" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-gray-300 dark:group-hover:bg-gray-600"
+                      tab === t.key ? "h-5 bg-indigo-500" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-300 dark:group-hover:bg-indigo-700"
                     }`}
                   />
                   {t.icon}
                   <span className="truncate">{t.label}</span>
                   {t.count !== undefined && (
                     <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                      tab === t.key ? "bg-gray-500/15 text-gray-700 dark:text-gray-300" : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
+                      tab === t.key ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
                     }`}>
                       {t.count}
                     </span>
@@ -420,8 +420,9 @@ export default function AdminPortalPage() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${                    tab === t.key
-                    ? "bg-gray-500/10 text-gray-700 dark:text-gray-300"
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+                  tab === t.key
+                    ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
@@ -429,7 +430,7 @@ export default function AdminPortalPage() {
                 {t.label}
                 {t.count !== undefined && (
                   <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold ${
-                    tab === t.key ? "bg-gray-500/15 text-gray-700 dark:text-gray-300" : "bg-gray-100 dark:bg-white/5 text-gray-400"
+                    tab === t.key ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" : "bg-gray-100 dark:bg-white/5 text-gray-400"
                   }`}>
                     {t.count}
                   </span>
@@ -622,7 +623,7 @@ function subBadge(status: string) {
 }
 
 function payBadge(status: string) {
-  const map: Record<string, string> = { paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", pending: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400", failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400", expired: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400", refunded: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400" };
+  const map: Record<string, string> = { paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", pending: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400", failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400", expired: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400", refunded: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400" };
   const label: Record<string, string> = { paid: "Lunas", pending: "Menunggu", failed: "Gagal", expired: "Kedaluwarsa", refunded: "Refund" };
   return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.expired}`}>{label[status] || status}</span>;
 }
@@ -669,9 +670,9 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
         <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[160px]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari IP..." className="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari IP..." className="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition" />
           </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition">
             <option value="">Semua Status</option>
             <option value="success">Berhasil</option>
             <option value="failed">Gagal</option>
@@ -778,7 +779,7 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
                     <td className="px-4 py-2.5">{entityStatusBadge(c.status)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => onView(c)} title="Lihat detail" className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/30 transition"><Eye size={14} /></button>
+                        <button onClick={() => onView(c)} title="Lihat detail" className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"><Eye size={14} /></button>
                         {c.status === "suspended" ? (
                           <button onClick={() => onUnsuspend(c)} title="Aktifkan" className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
                         ) : (
@@ -889,7 +890,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => openEdit(p)} title="Edit" className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/30 transition"><Pencil size={14} /></button>
+                          <button onClick={() => openEdit(p)} title="Edit" className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"><Pencil size={14} /></button>
                           {p.is_active && (
                             <button onClick={() => handleDeactivate(p)} title="Nonaktifkan" className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><PowerOff size={14} /></button>
                           )}
@@ -917,30 +918,30 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
               <div className="px-6 py-4 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Internal Name *</label>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. pro, enterprise" className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition" />
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. pro, enterprise" className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Display Name</label>
-                  <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} placeholder="e.g. Pro Plan" className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition" />
+                  <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} placeholder="e.g. Pro Plan" className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga Bulanan (IDR)</label>
-                    <input type="number" value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition tabular-nums" />
+                    <input type="number" value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga Tahunan (IDR)</label>
-                    <input type="number" value={form.price_yearly} onChange={(e) => setForm({ ...form, price_yearly: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition tabular-nums" />
+                    <input type="number" value={form.price_yearly} onChange={(e) => setForm({ ...form, price_yearly: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max Perusahaan</label>
-                    <input type="number" value={form.max_companies} onChange={(e) => setForm({ ...form, max_companies: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition tabular-nums" />
+                    <input type="number" value={form.max_companies} onChange={(e) => setForm({ ...form, max_companies: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max Jurnal</label>
-                    <input type="number" value={form.max_journals} onChange={(e) => setForm({ ...form, max_journals: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition tabular-nums" />
+                    <input type="number" value={form.max_journals} onChange={(e) => setForm({ ...form, max_journals: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
                   </div>
                 </div>
               </div>
@@ -1124,7 +1125,7 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
                     {data.subscription ? (
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
-                          <CreditCard size={15} className="text-gray-400" />
+                          <CreditCard size={15} className="text-indigo-500" />
                           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{data.subscription.plan_name || "—"}</span>
                           {subBadge(data.subscription.status)}
                         </div>
@@ -1162,7 +1163,7 @@ function EmptyState({ error, text }: { error: string; text: string }) {
 }
 
 function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent?: "emerald" | "rose" | "amber" }) {
-  const accentCls = accent === "emerald" ? "text-emerald-500" : accent === "rose" ? "text-rose-500" : accent === "amber" ? "text-amber-500" : "text-gray-500";
+  const accentCls = accent === "emerald" ? "text-emerald-500" : accent === "rose" ? "text-rose-500" : accent === "amber" ? "text-amber-500" : "text-indigo-500";
   return (
     <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3.5">
       <div className={`flex items-center gap-1.5 mb-1 ${accentCls}`}>
