@@ -37,6 +37,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    // JSON parse error (mis. response HTML "Cannot GET ..." dari Hono 404)
+    // tidak punya err.config — langsung tolak tanpa toast agar komponen
+    // pemanggil (safeHealthCheck dll) bisa handle sendiri secara graceful.
+    if (!err.config) return Promise.reject(err);
+
     const url = err.config?.url || "";
     const isPaymentRoute = url.includes("/api/payments/");
     const isAuthRoute =
