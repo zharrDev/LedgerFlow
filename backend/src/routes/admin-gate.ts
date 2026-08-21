@@ -757,21 +757,34 @@ adminGate.get("/health/smtp", requireAdminGate, async (c) => {
 });
 
 // GET /api/admin-gate/health/whatsapp — tes koneksi WhatsApp/Fonnte
+// Docs: https://docs.fonnte.com/api-device/ — POST https://api.fonnte.com/device
 adminGate.get("/health/whatsapp", requireAdminGate, async (c) => {
   const token = process.env.FONNTE_TOKEN;
   if (!token) {
     return c.json({ ok: false, status: "not_configured", message: "FONNTE_TOKEN belum di-set di environment" });
   }
   try {
-    // Fonnte API: cek status device via /device/status
-    const res = await fetch("https://api.fonnte.com/device/status", {
-      method: "GET",
+    const res = await fetch("https://api.fonnte.com/device", {
+      method: "POST",
       headers: { Authorization: token.trim() },
       signal: AbortSignal.timeout(10000),
     });
-    const data = await res.json();
-    const connected = data?.status === true || data?.connected === true;
-    return c.json({ ok: connected, message: connected ? "WhatsApp terhubung" : "WhatsApp terputus", details: data });
+    // Baca text dulu, lalu JSON.parse — Fonnte bisa return plain-text error
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch {
+      return c.json({ ok: false, message: "Fonnte response bukan JSON: " + text.slice(0, 200) });
+    }
+    if (data.status === false) {
+      return c.json({ ok: false, message: data.reason || "Token Fonnte tidak valid", details: { name: data.name, package: data.package } });
+    }
+    // status === true → token valid; cek device_status untuk konektivitas
+    const connected = data.device_status === "connect";
+    return c.json({
+      ok: connected,
+      message: connected ? "WhatsApp terhubung" : "Device WhatsApp terputus — scan ulang QR di dashboard Fonnte",
+      details: { name: data.name, package: data.package, quota: data.quota, expired: data.expired, messages: data.messages, device_status: data.device_status },
+    });
   } catch (err: any) {
     return c.json({ ok: false, message: err?.message || "WhatsApp probe gagal" });
   }

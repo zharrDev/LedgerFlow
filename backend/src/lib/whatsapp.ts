@@ -67,7 +67,7 @@ function buildPayload(target: string, message: string): FormData {
   // offline (dikirim belakangan) — tidak bisa dianggap "terkirim". Dengan
   // connectOnly, pesan ke device offline langsung ditolak (status false),
   // sehingga kegagalan terdeteksi saat itu juga (OTP tidak tertinggal).
-  fd.append("connectOnly", "1");
+  fd.append("connectOnly", "true");
   return fd;
 }
 
