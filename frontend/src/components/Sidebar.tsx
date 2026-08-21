@@ -184,9 +184,24 @@ const SidebarContent = ({
             })}
           </div>
         )}
+
+        {/* Promo banner — inside scroll, always at bottom of menu items */}
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/50">
+          <div className="rounded-xl bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent dark:from-primary-500/15 dark:via-primary-500/5 border border-primary-200/40 dark:border-primary-500/15 p-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles size={14} className="text-primary-500" />
+              <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-300">
+                Upgrade ke Pro
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              Akses AI CFO, laporan lanjutan, dan fitur premium lainnya.
+            </p>
+          </div>
+        </div>
       </nav>
 
-      {/* Account items (Help & Support) — below menu */}
+      {/* Account items (Help & Support) — below menu, outside scroll */}
       {accountItems.length > 0 && (
         <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
           {accountItems.map((item) => {
@@ -205,21 +220,6 @@ const SidebarContent = ({
           })}
         </div>
       )}
-
-      {/* Promo banner — inside scroll area, bottom of nav */}
-      <div className="px-3 pb-3 pt-1">
-        <div className="rounded-xl bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent dark:from-primary-500/15 dark:via-primary-500/5 border border-primary-200/40 dark:border-primary-500/15 p-3">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Sparkles size={14} className="text-primary-500" />
-            <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-300">
-              Upgrade ke Pro
-            </span>
-          </div>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-            Akses AI CFO, laporan lanjutan, dan fitur premium lainnya.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };
