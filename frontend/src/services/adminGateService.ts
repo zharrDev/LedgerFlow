@@ -293,23 +293,26 @@ export type HealthStatus = {
   details?: any;
 };
 
-export async function checkSmtpHealth(): Promise<HealthStatus> {
-  const res = await api.get("/api/admin-gate/health/smtp", {
-    headers: authHeaders(), skipErrorToast: true,
-  });
-  return res.data as HealthStatus;
+async function safeHealthCheck(path: string): Promise<HealthStatus> {
+  try {
+    const res = await api.get(path, {
+      headers: authHeaders(), skipErrorToast: true,
+    });
+    return res.data as HealthStatus;
+  } catch (err: any) {
+    // axios melempar saat response bukan JSON (mis. 404 HTML "Cannot GET ...")
+    return { ok: false, message: err?.response?.data?.message || err?.message || "Endpoint belum tersedia di server" };
+  }
 }
 
-export async function checkWhatsAppHealth(): Promise<HealthStatus> {
-  const res = await api.get("/api/admin-gate/health/whatsapp", {
-    headers: authHeaders(), skipErrorToast: true,
-  });
-  return res.data as HealthStatus;
+export function checkSmtpHealth(): Promise<HealthStatus> {
+  return safeHealthCheck("/api/admin-gate/health/smtp");
 }
 
-export async function checkDatabaseHealth(): Promise<HealthStatus> {
-  const res = await api.get("/api/admin-gate/health/database", {
-    headers: authHeaders(), skipErrorToast: true,
-  });
-  return res.data as HealthStatus;
+export function checkWhatsAppHealth(): Promise<HealthStatus> {
+  return safeHealthCheck("/api/admin-gate/health/whatsapp");
+}
+
+export function checkDatabaseHealth(): Promise<HealthStatus> {
+  return safeHealthCheck("/api/admin-gate/health/database");
 }
