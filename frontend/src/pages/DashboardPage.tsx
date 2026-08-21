@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAccounts } from "../hooks/useAccounts";
@@ -28,25 +28,23 @@ import {
   ArrowDownRight,
   CircleDollarSign,
   BarChart3,
-  MoreHorizontal,
   Zap,
   Landmark,
   CreditCard,
   Briefcase,
-  RefreshCw,
 } from "lucide-react";
 import type { Period } from "../types/reports";
 import { formatAbsCurrency, getCurrency } from "../utils/currency";
 
 // ─── Animation variants ─────────────────────────────────────────────
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.05, delayChildren: 0.1 },
   },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -108,7 +106,7 @@ export default function DashboardPage() {
   const periodOptions = useMemo(
     () => [
       { value: "", label: "Semua Periode (YTD)" },
-      ...periods.map((p) => ({ value: p.id, label: p.name })),
+      ...periods.map((p) => ({ value: p.id, label: p.name ?? "" })),
     ],
     [periods],
   );
@@ -130,16 +128,6 @@ export default function DashboardPage() {
       net: r.value,
     }));
   }, [summary]);
-
-  const stats = useMemo(() => {
-    if (!accounts.length) return { total: 0, active: 0, byType: {} };
-    const activeCount = accounts.filter((a) => a.isActive).length;
-    const byType = accounts.reduce((acc, a) => {
-      acc[a.type] = (acc[a.type] || 0) + 1;
-      return acc;
-    }, {});
-    return { total: accounts.length, active: activeCount, byType };
-  }, [accounts]);
 
   const quickActions = [
     { label: "Jurnal Baru", icon: PlusCircle, href: "/journal-entries" },
@@ -169,12 +157,7 @@ export default function DashboardPage() {
       : healthScore >= 40
         ? "Cukup Baik"
         : "Perlu Perhatian";
-  const healthColor =
-    healthScore >= 70
-      ? "from-emerald-500 to-cyan-500"
-      : healthScore >= 40
-        ? "from-amber-500 to-orange-500"
-        : "from-rose-500 to-red-500";
+
 
   // SkeletonRow untuk tabel loading
   const SkeletonRow = () => (
@@ -307,7 +290,7 @@ export default function DashboardPage() {
                     <Calendar size="14" /> {formattedDate}
                   </span>
                   <span className="hidden sm:flex items-center gap-1.5">
-                    <Building2 size="14" /> {user?.company || "LedgerFlow Corp"}
+                    <Building2 size="14" /> {user?.company_name || "LedgerFlow Corp"}
                   </span>
                   <span className="hidden sm:flex items-center gap-1.5">
                     <Zap size="14" /> Real-time Sync

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { getErrorMessage } from "../lib/errorMessage";
@@ -140,11 +140,7 @@ const FEATURE_COMPARISON = [
 export default function PricingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const {
-    subscription,
-    planName: currentPlan,
-    isLoading: subLoading,
-  } = useSubscription();
+  const { planName: currentPlan } = useSubscription();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
@@ -175,9 +171,9 @@ export default function PricingPage() {
       const sandboxMode = await isSandboxMode();
 
       openSnapPayment(result.snap_token, {
-        onSuccess: (res) =>
+        onSuccess: () =>
           navigate("/payment/success?order_id=" + result.order_id),
-        onPending: async (res) => {
+        onPending: async () => {
           // ─── SANDBOX: Auto-force complete payment ──────────────────
           // In sandbox, VA/bank transfer stays "pending" forever because
           // the webhook never fires. So we auto-complete it so the user
@@ -201,7 +197,7 @@ export default function PricingPage() {
           // Production: normal flow — wait for webhook
           navigate("/payment/pending?order_id=" + result.order_id);
         },
-        onError: (res) =>
+        onError: () =>
           navigate("/payment/failed?order_id=" + result.order_id),
         onClose: () => setSubscribing(null),
         // Fallback kalau popup Snap gagal dibuka → redirect langsung ke Midtrans

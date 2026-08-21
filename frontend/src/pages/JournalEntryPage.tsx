@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import type {
   JournalEntry,
@@ -13,8 +13,7 @@ import { JournalList } from "../components/journal/JournalList";
 import { JournalForm } from "../components/journal/JournalForm";
 import { JournalDetail } from "../components/journal/JournalDetail";
 import { ConfirmDialog } from "../components/journal/ConfirmDialog";
-import { IconJournal, IconPlus } from "../components/journal/JournalShared";
-import { useToast } from "../context/ToastContext";
+import { IconJournal } from "../components/journal/JournalShared";
 import { useAuth } from "../context/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -36,14 +35,14 @@ type ViewState =
   | { mode: "detail"; entry: JournalEntry };
 
 // ─── Animation variants ─────────────────────────────────────────────
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.06, delayChildren: 0.1 },
   },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -51,13 +50,13 @@ const itemVariants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants = {
+const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.04, delayChildren: 0.3 },
   },
 };
-const letterVariants = {
+const letterVariants: Variants = {
   hidden: { y: 40, opacity: 0, rotateX: -90 },
   visible: {
     y: 0,

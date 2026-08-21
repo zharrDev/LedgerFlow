@@ -27,8 +27,6 @@ import {
   UserCheck,
   Database,
   Terminal,
-  Wifi,
-  WifiOff,
   Plus,
   Pencil,
   Power,
@@ -961,7 +959,6 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
 
 // ── System Health Monitor ──────────────────────────────────────────
 function SystemHealthView() {
-  const { toast } = useToast();
   const [smtp, setSmtp] = useState<HealthStatus | null>(null);
   const [whatsapp, setWhatsapp] = useState<HealthStatus | null>(null);
   const [database, setDatabase] = useState<HealthStatus | null>(null);

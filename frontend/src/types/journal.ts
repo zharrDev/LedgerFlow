@@ -1,9 +1,12 @@
+// src/types/journal.ts
+export type JournalStatus = "draft" | "posted";
+
 export interface JournalEntry {
   id: string;
   number: string;
   date: string;
   description: string;
-  status: "draft" | "posted";
+  status: JournalStatus;
   createdAt: string;
   lines: JournalLine[];
   totalDebit: number;
@@ -56,3 +59,10 @@ export interface JournalFormErrors {
 }
 
 export type FilterStatus = "all" | "active" | "inactive";
+
+// Tipe toast lokal sederhana (sama seperti di types/account.ts & types/ledger.ts)
+export interface Toast {
+  id: number;
+  msg: string;
+  type: "success" | "error";
+}

@@ -5,7 +5,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   getSubscription,
-  checkFeatureAccess,
   type Subscription,
 } from "../services/paymentService";
 import { getErrorMessage } from "../lib/errorMessage";

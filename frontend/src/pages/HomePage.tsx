@@ -1,6 +1,7 @@
 // src/pages/HomePage.tsx
 import { useEffect, useState } from "react";
 import {
+  type Variants,
   motion,
   useScroll,
   useTransform,
@@ -485,11 +486,11 @@ function CursorGlow() {
 }
 
 // ─── Animations ──────────────────────────────────────────────────────
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
