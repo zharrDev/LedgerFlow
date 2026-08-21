@@ -47,6 +47,7 @@ import logo from "../assets/ledgerflow.webp";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
+import BorderBeamBadge from "../components/home/BorderBeamBadge";
 import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
 import fintechBgMobile from "../assets/hero/fintech-bgmobile.webp";
 import heroBgAnim from "../assets/hero/hero-bg-anim.webm";
@@ -707,7 +708,7 @@ export default function HomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative py-32 px-6 overflow-hidden"
+          className="relative py-24 px-6 overflow-hidden"
         >
           {/* Background Glow */}
           <div className="absolute inset-0 pointer-events-none">
@@ -717,10 +718,7 @@ export default function HomePage() {
           <div className="relative max-w-[1500px] mx-auto">
             {/* Heading */}
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary-500/20 bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-medium text-sm">
-                <Sparkles size={16} />
-                Product Demo
-              </div>
+              <BorderBeamBadge text="Product Demo" icon={<Sparkles size={16} />} />
               <h2 className="mt-6 text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                 See LedgerFlow
                 <span className="block bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 bg-clip-text text-transparent">
