@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -95,7 +95,7 @@ const RESULT_CONFIG: Record<
 
 // ─── Animation Variants ─────────────────────────────────────────────
 // Stagger container — children muncul satu per satu dengan delay
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -104,7 +104,7 @@ const containerVariants = {
 };
 
 // Setiap child element slide-up + fade-in
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 16, filter: "blur(4px)" },
   visible: {
     opacity: 1,

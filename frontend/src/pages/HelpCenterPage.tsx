@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { AppShell } from "../components/AppShell";
 import {
   HelpCircle,
@@ -10,14 +10,14 @@ import { FaqAccordion } from "../components/help/FaqAccordion";
 import { ContactCards } from "../components/help/ContactCards";
 import { helpFaqs, helpContactCards } from "../data/helpCenterContent";
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.07, delayChildren: 0.1 },
   },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,

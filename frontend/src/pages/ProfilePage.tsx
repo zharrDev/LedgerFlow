@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
@@ -23,14 +23,14 @@ import {
 import { pushNotification } from "../components/Header";
 import { validateName } from "../utils/validation";
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.06, delayChildren: 0.1 },
   },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -38,13 +38,13 @@ const itemVariants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants = {
+const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.045, delayChildren: 0.3 },
   },
 };
-const letterVariants = {
+const letterVariants: Variants = {
   hidden: { y: 40, opacity: 0, rotateX: -90 },
   visible: {
     y: 0,

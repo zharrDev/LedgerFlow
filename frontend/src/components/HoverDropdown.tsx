@@ -60,7 +60,9 @@ export function HoverDropdown({
 }: HoverDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [panelPos, setPanelPos] = useState<PanelPos | null>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 

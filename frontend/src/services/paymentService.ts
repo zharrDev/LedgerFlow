@@ -322,6 +322,7 @@ export function openSnapPayment(
     onError?: (result: any) => void; // Dipanggil kalau pembayaran error
     onClose?: () => void; // Dipanggil kalau user tutup popup
   },
+  redirectUrl?: string, // URL alternatif (dari response subscribe) kalau popup gagal
 ): void {
   // Cast window ke any biar bisa akses window.snap (Snap.js nambahin properti ini)
   const win = window as any;
@@ -332,46 +333,69 @@ export function openSnapPayment(
     console.error(
       "[Payment] Snap.js not loaded! Add the script tag to your HTML.",
     );
-    // Gak bisa buka popup kalau Snap.js gak ada
-    // Alternatif: bisa redirect ke redirect_url, tapi buat sekarang gak dilakuin
+    // ─── FALLBACK: Kalau Snap.js gak ada, coba redirect langsung ─────
+    // Pakai redirect_url dari response subscribe() (dari backend).
+    // Midtrans bakal buka halaman pembayarannya di tab baru,
+    // dan setelah selesai bakal diarahkan ke Finish URL yang dikonfigurasi.
+    if (redirectUrl) {
+      console.log("[Payment] Falling back to redirect URL:", redirectUrl);
+      window.open(redirectUrl, "_blank", "noopener,noreferrer");
+    } else {
+      console.error(
+        "[Payment] No redirect_url provided — payment cannot be opened.",
+      );
+    }
     return;
   }
 
   // Panggil Midtrans Snap API: snap.pay(token, options)
   // Ini yang bikin popup pembayaran muncul di layar user
-  win.snap.pay(snapToken, {
-    // Callback: pembayaran BERHASIL
-    // Dipanggil kalau transaksi langsung settle (contoh: credit card yang langsung approve)
-    // result berisi: order_id, transaction_status, payment_type, dll
-    onSuccess: (result: any) => {
-      console.log("[Payment] Success:", result); // Log buat debugging
-      callbacks?.onSuccess?.(result); // Panggil callback dari caller (PricingPage)
-    },
+  try {
+    win.snap.pay(snapToken, {
+      // Callback: pembayaran BERHASIL
+      // Dipanggil kalau transaksi langsung settle (contoh: credit card yang langsung approve)
+      // result berisi: order_id, transaction_status, payment_type, dll
+      onSuccess: (result: any) => {
+        console.log("[Payment] Success:", result); // Log buat debugging
+        callbacks?.onSuccess?.(result); // Panggil callback dari caller (PricingPage)
+      },
 
-    // Callback: pembayaran PENDING
-    // Dipanggil kalau transaksi belum settle (contoh: VA yang belum dibayar,
-    // e-wallet yang belum dikonfirmasi, dll)
-    // result berisi info cara bayar (nomor VA, dll)
-    onPending: (result: any) => {
-      console.log("[Payment] Pending:", result); // Log buat debugging
-      callbacks?.onPending?.(result); // Panggil callback dari caller
-    },
+      // Callback: pembayaran PENDING
+      // Dipanggil kalau transaksi belum settle (contoh: VA yang belum dibayar,
+      // e-wallet yang belum dikonfirmasi, dll)
+      // result berisi info cara bayar (nomor VA, dll)
+      onPending: (result: any) => {
+        console.log("[Payment] Pending:", result); // Log buat debugging
+        callbacks?.onPending?.(result); // Panggil callback dari caller
+      },
 
-    // Callback: pembayaran ERROR/GAGAL
-    // Dipanggil kalau transaksi gagal (contoh: kartu ditolak, saldo kurang, dll)
-    onError: (result: any) => {
-      console.error("[Payment] Error:", result); // Log error buat debugging
-      callbacks?.onError?.(result); // Panggil callback dari caller
-    },
+      // Callback: pembayaran ERROR/GAGAL
+      // Dipanggil kalau transaksi gagal (contoh: kartu ditolak, saldo kurang, dll)
+      onError: (result: any) => {
+        console.error("[Payment] Error:", result); // Log error buat debugging
+        callbacks?.onError?.(result); // Panggil callback dari caller
+      },
 
-    // Callback: user TUTUP POPUP
-    // Dipanggil kalau user klik tombol close (X) di popup Midtrans
-    // ATAU kalau popup di-close otomatis karena timeout
-    onClose: () => {
-      console.log("[Payment] Popup closed"); // Log buat debugging
-      callbacks?.onClose?.(); // Panggil callback dari caller
-    },
-  });
+      // Callback: user TUTUP POPUP
+      // Dipanggil kalau user klik tombol close (X) di popup Midtrans
+      // ATAU kalau popup di-close otomatis karena timeout
+      onClose: () => {
+        console.log("[Payment] Popup closed"); // Log buat debugging
+        callbacks?.onClose?.(); // Panggil callback dari caller
+      },
+    });
+  } catch (err) {
+    // ─── FALLBACK: Kalau snap.pay() throw (misal popup diblokir / CSP) ─
+    // Popup gagal dibuka → redirect langsung ke halaman pembayaran Midtrans
+    console.error("[Payment] snap.pay failed, falling back to redirect:", err);
+    callbacks?.onClose?.();
+    if (redirectUrl) {
+      console.log("[Payment] Falling back to redirect URL:", redirectUrl);
+      window.open(redirectUrl, "_blank", "noopener,noreferrer");
+    } else {
+      callbacks?.onError?.(err);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════

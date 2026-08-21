@@ -128,7 +128,6 @@ function SummaryCard({
       />
       <div
         className="absolute inset-0 rounded-2xl ring-1 ring-inset"
-        style={{ ringColor: `${gradFrom}30` }}
       />
       <span className="text-xs font-medium text-slate-500 dark:text-slate-400 relative z-10">
         {label}
@@ -248,7 +247,7 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
 // Custom Dot untuk Area Line
 // ─────────────────────────────────────────────
 function CustomDot(props: any) {
-  const { cx, cy, value, stroke } = props;
+  const { cx, cy, stroke } = props;
   if (cx == null || cy == null) return null;
   return (
     <g>
