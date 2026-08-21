@@ -4,6 +4,8 @@ import {
   motion,
   useScroll,
   useTransform,
+  useMotionValue,
+  useSpring,
   AnimatePresence,
 } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
@@ -43,6 +45,8 @@ import {
   Download,
 } from "lucide-react";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useLanguage } from "../hooks/useLanguage";
 import logo from "../assets/ledgerflow.webp";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
@@ -193,23 +197,36 @@ const featureCards: Array<{
   },
 ];
 
+const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
 // ─── Navbar ──────────────────────────────────────────────────────────
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSection, setMobileSection] = useState<string | null>(null);
   const { user, logout } = useAuth();
+  const { language } = useLanguage();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, []);
+
   const menuItems = [
-    { name: "Solutions", key: "solutions", items: solutionItems },
-    { name: "Products", key: "products", items: productItems },
-    { name: "Resources", key: "resources", items: resourceItems },
+    { name: language === "id" ? "Solusi" : "Solutions", key: "solutions", items: solutionItems },
+    { name: language === "id" ? "Produk" : "Products", key: "products", items: productItems },
+    { name: language === "id" ? "Sumber daya" : "Resources", key: "resources", items: resourceItems },
   ];
 
   return (
@@ -244,7 +261,7 @@ function Navbar() {
               onMouseEnter={() => setOpenDropdown(item.key)}
               onMouseLeave={() => setOpenDropdown(null)}
             >
-              <button className="relative text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10">
+              <button onClick={() => navigate(`/${item.key}`)} className="relative text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10">
                 {item.name}
                 <ChevronDown
                   size={14}
@@ -289,9 +306,9 @@ function Navbar() {
                       );
                     }
                     return (
-                      <a key={sub.title} href="#" className={className}>
+                      <Link key={sub.title} to={`/${item.key}/${toSlug(sub.title)}`} className={className}>
                         {content}
-                      </a>
+                      </Link>
                     );
                   })}
                 </div>
@@ -300,7 +317,7 @@ function Navbar() {
           ))}
 
           <Link
-            to="/login"
+            to="/pricing"
             className="text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-primary-500/10"
           >
             Pricing
@@ -316,6 +333,7 @@ function Navbar() {
 
         {/* Right Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
           <ThemeSwitcher />
 
           {user ? (
@@ -346,9 +364,11 @@ function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-500/50"
-            aria-label="Toggle mobile menu"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="lg:hidden relative h-11 w-11 rounded-xl border border-primary-500/15 bg-primary-500/5 text-gray-700 dark:text-gray-100 hover:bg-primary-500/10 active:scale-95 transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+            aria-label={mobileMenuOpen ? "Close mobile menu" : "Open mobile menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             <motion.div
               initial={false}
@@ -368,100 +388,55 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — ringkas dengan accordion agar nyaman di layar kecil */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden border-t border-gray-200 dark:border-white/10 bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl overflow-hidden rounded-b-2xl shadow-2xl"
+            id="mobile-navigation"
+            initial={{ opacity: 0, y: -12, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -12, height: 0 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:hidden border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-darkCard/95 backdrop-blur-2xl overflow-hidden rounded-b-2xl shadow-2xl"
           >
-            <div className="px-6 py-6 space-y-6 max-h-[82vh] overflow-y-auto scrollbar-thin">
-              <div className="space-y-6">
-                {menuItems.map((item) => (
-                  <div key={item.key} className="space-y-2.5">
-                    <p className="text-xs font-extrabold text-primary-600 dark:text-primary-400 uppercase tracking-wider px-1">
-                      {item.name}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-50 dark:bg-[#111827]/70 p-3 rounded-2xl border border-gray-200 dark:border-white/10">
-                      {item.items.map((sub) => {
-                        const className =
-                          "flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-darkCard text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all group/mob shadow-sm hover:shadow";
-                        const content = (
-                          <>
-                            <div className="p-2 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 group-hover/mob:scale-110 transition-transform flex-shrink-0 mt-0.5">
-                              <sub.icon size={18} />
+            <nav className="px-3 py-3 max-h-[calc(100vh-5.5rem)] overflow-y-auto scrollbar-thin" aria-label="Mobile navigation">
+              <div className="space-y-2">
+                {menuItems.map((item) => {
+                  const isOpen = mobileSection === item.key;
+                  return (
+                    <div key={item.key} className="rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.03] overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setMobileSection(isOpen ? null : item.key)}
+                        aria-expanded={isOpen}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-bold text-gray-800 dark:text-gray-100"
+                      >
+                        {item.name}
+                        <ChevronDown size={18} className={`text-primary-500 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} className="overflow-hidden">
+                            <div className="px-2 pb-2 grid gap-1">
+                              {item.items.map((sub) => {
+                                const className = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 dark:text-gray-200 hover:bg-white dark:hover:bg-white/10 hover:text-primary-600 transition-colors";
+                                const content = <><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400"><sub.icon size={16} /></span><span className="min-w-0"><span className="block text-sm font-semibold">{sub.title}</span><span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{sub.desc}</span></span></>;
+                                return "href" in sub && sub.href ? <Link key={sub.title} to={sub.href} className={className} onClick={() => setMobileMenuOpen(false)}>{content}</Link> : <Link key={sub.title} to={`/${item.key}/${toSlug(sub.title)}`} className={className} onClick={() => setMobileMenuOpen(false)}>{content}</Link>;
+                              })}
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-bold leading-snug">
-                                {sub.title}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                                {sub.desc}
-                              </p>
-                            </div>
-                          </>
-                        );
-                        if ("href" in sub && sub.href) {
-                          return (
-                            <Link
-                              key={sub.title}
-                              to={sub.href}
-                              className={className}
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              {content}
-                            </Link>
-                          );
-                        }
-                        return (
-                          <a key={sub.title} href="#" className={className}>
-                            {content}
-                          </a>
-                        );
-                      })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-
-              {/* Action Links in Mobile Menu */}
-              <div className="border-t border-gray-200 dark:border-white/10 pt-6 flex flex-col sm:flex-row gap-3">
-                <Link
-                  to="/pricing"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 dark:border-white/20 text-sm font-semibold text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-all shadow-sm"
-                >
-                  Pricing
-                </Link>
-                {user ? (
-                  <>
-                    <Link
-                      to="/dashboard"
-                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
-                    >
-                      <span>Dashboard</span> <ArrowRight size={16} />
-                    </Link>
-                    <button
-                      onClick={logout}
-                      className="w-full sm:w-auto px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-500 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
-                    >
-                      <span>Sign in</span> <ArrowRight size={16} />
-                    </Link>
-                  </>
-                )}
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-gray-200 dark:border-white/10 pt-3">
+                <Link to="/pricing" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center rounded-xl border border-gray-200 dark:border-white/15 px-3 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Pricing</Link>
+                <Link to={user ? "/dashboard" : "/login"} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-3 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/20">{user ? "Dashboard" : "Sign in"}<ArrowRight size={16} /></Link>
               </div>
-            </div>
+              {user && <button onClick={logout} className="mt-2 w-full rounded-xl py-2 text-sm font-semibold text-rose-600 dark:text-rose-400">Logout</button>}
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
@@ -493,6 +468,22 @@ function AnimateDropdown({
   );
 }
 
+// A soft spotlight that trails the pointer only on devices with a real cursor.
+function CursorGlow() {
+  const x = useMotionValue(-200);
+  const y = useMotionValue(-200);
+  const springX = useSpring(x, { stiffness: 180, damping: 28, mass: 0.45 });
+  const springY = useSpring(y, { stiffness: 180, damping: 28, mass: 0.45 });
+
+  useEffect(() => {
+    const pointerMove = (event: PointerEvent) => { x.set(event.clientX); y.set(event.clientY); };
+    window.addEventListener("pointermove", pointerMove, { passive: true });
+    return () => window.removeEventListener("pointermove", pointerMove);
+  }, [x, y]);
+
+  return <motion.div aria-hidden className="cursor-glow" style={{ left: springX, top: springY }} />;
+}
+
 // ─── Animations ──────────────────────────────────────────────────────
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -516,6 +507,7 @@ export default function HomePage() {
 
   return (
     <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
+      <CursorGlow />
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
@@ -550,15 +542,14 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-[2.25rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
-              Manage Your Financial <br />
-              Future <br />
+              {language === "id" ? "Kelola Masa Depan" : "Manage Your Financial"} <br />
+              {language === "id" ? "Keuangan Anda" : "Future"} <br />
               <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
-                With Confidence
+                {language === "id" ? "Dengan Percaya Diri" : "With Confidence"}
               </span>
             </h2>
             <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
-              LedgerFlow eliminates manual bookkeeping, speeds up month-end
-              close, and gives you real-time financials.
+              {language === "id" ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time." : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
             </p>
             <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 w-full px-4">
               {user ? (
@@ -574,13 +565,13 @@ export default function HomePage() {
                     to="/register"
                     className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
                   >
-                    15-day free trial <ChevronRight size={18} />
+                    {language === "id" ? "Coba gratis 15 hari" : "15-day free trial"} <ChevronRight size={18} />
                   </Link>
                   <Link
                     to="/login"
                     className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
                   >
-                    See how it works
+                    {language === "id" ? "Lihat cara kerjanya" : "See how it works"}
                   </Link>
                 </>
               )}
@@ -615,10 +606,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <motion.div variants={fadeUp} className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              Trusted by modern businesses
+              {language === "id" ? "Dipercaya bisnis modern" : "Trusted by modern businesses"}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Bank-grade security & enterprise compliance
+              {language === "id" ? "Keamanan setingkat bank & kepatuhan perusahaan" : "Bank-grade security & enterprise compliance"}
             </p>
           </motion.div>
           <div className="grid gap-5 sm:gap-8 md:grid-cols-2">
@@ -794,10 +785,10 @@ export default function HomePage() {
         className="text-center max-w-2xl mx-auto px-6 mb-10"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-          Explore What's Inside
+          {language === "id" ? "Jelajahi Fitur di Dalamnya" : "Explore What's Inside"}
         </h2>
         <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
-          Every tool you need, built into one platform.
+          {language === "id" ? "Semua alat yang Anda perlukan, dalam satu platform." : "Every tool you need, built into one platform."}
         </p>
       </motion.div>
       <FeatureCarousel />
@@ -812,20 +803,20 @@ export default function HomePage() {
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-              Everything you need to scale
+              {language === "id" ? "Semua yang Anda butuhkan untuk berkembang" : "Everything you need to scale"}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-3">
-              Powerful features built for modern finance teams
+              {language === "id" ? "Fitur andal yang dibuat untuk tim keuangan modern" : "Powerful features built for modern finance teams"}
             </p>
           </motion.div>
           <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {featureCards.map((feat, idx) => (
               <motion.div
                 key={feat.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.08 }}
+                initial={{ opacity: 0, x: idx % 3 === 0 ? -56 : idx % 3 === 1 ? 56 : 0, y: idx % 3 === 2 ? 56 : 16 }}
+                whileInView={{ opacity: 1, x: 0, y: 0 }}
+                viewport={{ once: true, amount: 0.22 }}
+                transition={{ duration: 0.62, delay: idx * 0.09, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ y: -6, transition: { type: "tween", duration: 0.15 } }}
                 className="relative group bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all duration-150"
               >

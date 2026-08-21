@@ -178,3 +178,25 @@ body {
     animation: none !important;
   }
 }
+/* Smooth navigation and the homepage pointer spotlight. */
+html { scroll-behavior: smooth; }
+.cursor-glow {
+  position: fixed;
+  z-index: 40;
+  width: 34rem;
+  height: 34rem;
+  margin: -17rem 0 0 -17rem;
+  pointer-events: none;
+  border-radius: 9999px;
+  opacity: .42;
+  background: radial-gradient(circle, rgb(34 211 238 / .20) 0%, rgb(59 130 246 / .10) 25%, transparent 67%);
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  will-change: left, top;
+}
+.dark .cursor-glow { opacity: .58; }
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .cursor-glow { display: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}

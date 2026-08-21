@@ -25,6 +25,8 @@ import SettingsPage from "./pages/SettingsPage";
 import HelpCenterPage from "./pages/HelpCenterPage";
 import PublicHelpPage from "./pages/PublicHelpPage";
 import PricingPage from "./pages/PricingPage";
+import MarketingPage from "./pages/MarketingPage";
+import MarketingDetailPage from "./pages/MarketingDetailPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -177,6 +179,8 @@ function AnimatedRoutes() {
     <>
       <Routes location={location}>
       <Route path="/" element={<HomePage />} />
+      <Route path="/:section/:item" element={<MarketingDetailPage />} />
+      <Route path="/:section" element={<MarketingPage />} />
       <Route
         path="/login"
         element={
