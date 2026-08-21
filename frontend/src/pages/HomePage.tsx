@@ -500,6 +500,7 @@ const staggerContainer = {
 // ─── Main Page ───────────────────────────────────────────────────────
 export default function HomePage() {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const [heroVideoError, setHeroVideoError] = useState(false);
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);

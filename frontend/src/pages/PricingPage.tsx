@@ -204,7 +204,8 @@ export default function PricingPage() {
         onError: (res) =>
           navigate("/payment/failed?order_id=" + result.order_id),
         onClose: () => setSubscribing(null),
-      });
+        // Fallback kalau popup Snap gagal dibuka → redirect langsung ke Midtrans
+      }, result.redirect_url);
     } catch (err: any) {
       console.error("Subscribe error:", err);
       alert(getErrorMessage(err));

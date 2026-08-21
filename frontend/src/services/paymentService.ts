@@ -322,6 +322,7 @@ export function openSnapPayment(
     onError?: (result: any) => void; // Dipanggil kalau pembayaran error
     onClose?: () => void; // Dipanggil kalau user tutup popup
   },
+  redirectUrl?: string, // URL alternatif (dari response subscribe) kalau popup gagal
 ): void {
   // Cast window ke any biar bisa akses window.snap (Snap.js nambahin properti ini)
   const win = window as any;
@@ -332,8 +333,18 @@ export function openSnapPayment(
     console.error(
       "[Payment] Snap.js not loaded! Add the script tag to your HTML.",
     );
-    // Gak bisa buka popup kalau Snap.js gak ada
-    // Alternatif: bisa redirect ke redirect_url, tapi buat sekarang gak dilakuin
+    // ─── FALLBACK: Kalau Snap.js gak ada, coba redirect langsung ─────
+    // Pakai redirect_url dari response subscribe() (dari backend).
+    // Midtrans bakal buka halaman pembayarannya di tab baru,
+    // dan setelah selesai bakal diarahkan ke Finish URL yang dikonfigurasi.
+    if (redirectUrl) {
+      console.log("[Payment] Falling back to redirect URL:", redirectUrl);
+      window.open(redirectUrl, "_blank", "noopener,noreferrer");
+    } else {
+      console.error(
+        "[Payment] No redirect_url provided — payment cannot be opened.",
+      );
+    }
     return;
   }
 
