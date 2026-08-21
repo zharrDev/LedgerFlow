@@ -1,167 +1,24 @@
-// src/components/Footer.tsx
 import { Link } from "react-router-dom";
+import { ArrowUpRight, Mail, ShieldCheck } from "lucide-react";
 import logo from "../assets/ledgerflow.webp";
+import { useLanguage } from "../hooks/useLanguage";
 
 const Footer = () => {
-  return (
-    <footer className="bg-gray-900 text-gray-300 border-t border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-5 gap-x-3 gap-y-8 sm:gap-x-6">
-          {/* Brand Column */}
-          <div className="col-span-5 md:col-span-1">
-            <div className="flex items-center gap-2 mb-3">
-              <img
-                src={logo}
-                alt="LedgerFlow"
-                className="w-8 h-8 object-contain flex-shrink-0"
-              />
-              <span className="text-white font-bold text-lg">LedgerFlow</span>
-            </div>
-            <p className="text-sm text-gray-400">
-              AI-powered accounting platform that automates bookkeeping,
-              reconciliation, and financial reporting for modern businesses.
-            </p>
-            <div className="mt-3 flex items-center gap-1 text-yellow-400">
-              {"★★★★★"} <span className="text-white text-sm ml-1">5.0</span>
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-xs text-gray-400 mt-3">
-                "Cut our month-end close from 5 days to 8 hours" — Sarah C. CFO
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                "Automated reconciliation is a game-changer" — Michael R. Owner
-              </p>
-            </div>
-          </div>
-
-          {/* Solutions */}
-          <div className="col-span-1 min-w-0">
-            <h4 className="font-semibold text-white mb-3 text-sm sm:text-base">
-              Solutions
-            </h4>
-            <ul className="space-y-2 text-[11px] sm:text-sm">
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Small Businesses
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Mid-Market
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Enterprises
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Accountants
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Product */}
-          <div className="col-span-1 min-w-0">
-            <h4 className="font-semibold text-white mb-3 text-sm sm:text-base">
-              Product
-            </h4>
-            <ul className="space-y-2 text-[11px] sm:text-sm">
-              <li>
-                <Link to="/pricing" className="hover:text-primary-400">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  How It Works
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Integrations
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Security
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Tools */}
-          <div className="col-span-1 min-w-0">
-            <h4 className="font-semibold text-white mb-3 text-sm sm:text-base">
-              Tools
-            </h4>
-            <ul className="space-y-2 text-[11px] sm:text-sm">
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  ROI Calculator
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Tax Strategist
-                </a>
-              </li>
-              <li>
-                <Link to="/help" className="hover:text-primary-400">
-                  Contact Support
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources & Company */}
-          <div className="col-span-1 min-w-0">
-            <h4 className="font-semibold text-white mb-3 text-sm sm:text-base">
-              Resources
-            </h4>
-            <ul className="space-y-2 text-[11px] sm:text-sm mb-4">
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  Blog
-                </a>
-              </li>
-              <li>
-                <Link to="/help" className="hover:text-primary-400">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link to="/help" className="hover:text-primary-400">
-                  Help Center
-                </Link>
-              </li>
-            </ul>
-            <h4 className="font-semibold text-white mb-3 text-sm sm:text-base">
-              Company
-            </h4>
-            <ul className="space-y-2 text-[11px] sm:text-sm">
-              <li>
-                <a href="#" className="hover:text-primary-400">
-                  About Us
-                </a>
-              </li>
-              <li>
-                <Link to="/help" className="hover:text-primary-400">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 mt-8 pt-5 text-center text-sm text-gray-500">
-          <p>© 2026 LedgerFlow. All rights reserved.</p>
-        </div>
+  const { language } = useLanguage();
+  const id = language === "id";
+  const groups = [
+    { title: id ? "Solusi" : "Solutions", links: [[id ? "Usaha kecil" : "Small businesses", "/solutions/small-businesses"], [id ? "Perusahaan berkembang" : "Mid-market companies", "/solutions/mid-market-companies"], [id ? "Akuntan & firma" : "Accountants & firms", "/solutions/accountants-firms"]] },
+    { title: id ? "Produk" : "Product", links: [[id ? "Chart akun" : "Chart of accounts", "/products/chart-of-accounts"], [id ? "Jurnal" : "Journal entries", "/products/journal-entries"], [id ? "Laporan keuangan" : "Financial reports", "/products/financial-reports"], [id ? "Keamanan" : "Security", "/products/security-compliance"]] },
+    { title: id ? "Sumber daya" : "Resources", links: [["Blog", "/resources/blog"], [id ? "Panduan" : "Guides", "/resources/guides-tutorials"], [id ? "Pusat bantuan" : "Help center", "/help"], [id ? "Komunitas" : "Community", "/resources/community"]] },
+  ];
+  return <footer className="border-t border-gray-800 bg-gray-950 text-gray-300">
+    <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6">
+      <div className="grid gap-10 md:grid-cols-[1.45fr_repeat(3,1fr)]">
+        <div><Link to="/" className="inline-flex items-center gap-2"><img src={logo} alt="LedgerFlow" className="h-10 w-10" /><span className="text-xl font-bold text-white">LedgerFlow</span></Link><p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-400">{id ? "Platform akuntansi modern untuk pembukuan rapi, laporan real-time, dan keputusan bisnis yang lebih percaya diri." : "A modern accounting platform for organized books, real-time reports, and more confident business decisions."}</p><Link to="/help" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-400 hover:text-cyan-300"><Mail size={16}/>{id ? "Hubungi dukungan" : "Contact support"}<ArrowUpRight size={15}/></Link></div>
+        {groups.map(group => <div key={group.title}><h4 className="text-sm font-bold text-white">{group.title}</h4><ul className="mt-4 space-y-3">{group.links.map(([label, path]) => <li key={path}><Link to={path} className="text-sm text-gray-400 transition hover:text-cyan-300">{label}</Link></li>)}</ul></div>)}
       </div>
-    </footer>
-  );
+      <div className="mt-12 flex flex-col gap-3 border-t border-gray-800 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between"><span>© 2026 LedgerFlow. {id ? "Seluruh hak cipta dilindungi." : "All rights reserved."}</span><span className="inline-flex items-center gap-2"><ShieldCheck size={15} className="text-cyan-400" />{id ? "Data terlindungi dengan enkripsi" : "Your data is protected with encryption"}</span></div>
+    </div>
+  </footer>;
 };
-
 export default Footer;
