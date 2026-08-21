@@ -609,4 +609,179 @@ adminGate.patch("/companies/:id/status", requireAdminGate, async (c) => {
   });
 });
 
+// ── Plan Management (CRUD) ────────────────────────────────────────────
+// Mengelola daftar plan langganan. Endpoint ini menggunakan
+// requireAdminGate (token admin portal, bukan token user biasa).
+
+// GET /api/admin-gate/plans — daftar semua plan
+adminGate.get("/plans", requireAdminGate, async (c) => {
+  const { data, error } = await supabase
+    .from("plans")
+    .select("*")
+    .order("price_monthly", { ascending: true });
+
+  if (error) {
+    console.error("[admin-gate] plans list error:", error);
+    return c.json({ error: "Gagal memuat daftar plan" }, 500);
+  }
+  return c.json(data ?? []);
+});
+
+// POST /api/admin-gate/plans — tambah plan baru
+adminGate.post("/plans", requireAdminGate, async (c) => {
+  let body: any;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Body JSON tidak valid" }, 400);
+  }
+
+  const { name, display_name, price_monthly, price_yearly, max_companies, max_journals, features } = body;
+  if (!name || typeof name !== "string") {
+    return c.json({ error: "Field 'name' wajib diisi" }, 400);
+  }
+
+  const { data, error } = await supabase
+    .from("plans")
+    .insert({
+      name,
+      display_name: display_name || name,
+      price_monthly: price_monthly ?? 0,
+      price_yearly: price_yearly ?? 0,
+      max_companies: max_companies ?? 1,
+      max_journals: max_journals ?? 50,
+      features: features ?? {},
+      is_active: true,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[admin-gate] plans create error:", error);
+    return c.json({ error: "Gagal membuat plan: " + error.message }, 500);
+  }
+  return c.json(data, 201);
+});
+
+// PUT /api/admin-gate/plans/:id — update plan
+adminGate.put("/plans/:id", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+  let body: any;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Body JSON tidak valid" }, 400);
+  }
+
+  const update: Record<string, any> = {};
+  for (const key of ["name", "display_name", "price_monthly", "price_yearly", "max_companies", "max_journals", "features", "is_active"]) {
+    if (body[key] !== undefined) update[key] = body[key];
+  }
+
+  if (Object.keys(update).length === 0) {
+    return c.json({ error: "Tidak ada field yang diubah" }, 400);
+  }
+
+  const { data, error } = await supabase
+    .from("plans")
+    .update(update)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[admin-gate] plans update error:", error);
+    return c.json({ error: "Gagal mengubah plan" }, 500);
+  }
+  return c.json(data);
+});
+
+// DELETE /api/admin-gate/plans/:id — soft delete (nonaktifkan plan)
+// Tidak hard delete karena mungkin ada subscription aktif yang masih
+// memakai plan ini. Cukup set is_active = false.
+adminGate.delete("/plans/:id", requireAdminGate, async (c) => {
+  const id = c.req.param("id");
+
+  // Cek apakah ada subscription aktif yang masih memakai plan ini
+  const { count, error: subErr } = await supabase
+    .from("subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("plan_id", id)
+    .eq("status", "active");
+
+  if (subErr) {
+    console.error("[admin-gate] plans delete check error:", subErr);
+    return c.json({ error: "Gagal mengecek subscription" }, 500);
+  }
+
+  const { error } = await supabase
+    .from("plans")
+    .update({ is_active: false })
+    .eq("id", id);
+
+  if (error) {
+    console.error("[admin-gate] plans delete error:", error);
+    return c.json({ error: "Gagal menonaktifkan plan" }, 500);
+  }
+
+  const activeCount = count ?? 0;
+  return c.json({
+    message: activeCount > 0
+      ? `Plan dinonaktifkan (${activeCount} subscription aktif masih memakainya).`
+      : "Plan berhasil dinonaktifkan.",
+  });
+});
+
+// ── System Health Monitor ─────────────────────────────────────────────
+// Endpoint untuk memeriksa status komponen sistem (SMTP, WA, Database).
+// Menggunakan probe sederhana — semua memakai requireAdminGate.
+
+// GET /api/admin-gate/health/smtp — tes koneksi SMTP
+adminGate.get("/health/smtp", requireAdminGate, async (c) => {
+  try {
+    const { probeSmtp } = await import("../lib/email.js");
+    const result = await probeSmtp();
+    return c.json({ ok: result.ok, message: result.error || "SMTP OK", details: result });
+  } catch (err: any) {
+    return c.json({ ok: false, message: err?.message || "SMTP probe gagal" });
+  }
+});
+
+// GET /api/admin-gate/health/whatsapp — tes koneksi WhatsApp/Fonnte
+adminGate.get("/health/whatsapp", requireAdminGate, async (c) => {
+  const token = process.env.FONNTE_API_TOKEN;
+  const url = process.env.FONNTE_API_URL || "https://api.fonnte.com/send";
+  if (!token) {
+    return c.json({ ok: false, message: "FONNTE_API_TOKEN belum dikonfigurasi" });
+  }
+  try {
+    // Fonnte API: cek status device via /device/status
+    const res = await fetch("https://api.fonnte.com/device/status", {
+      method: "GET",
+      headers: { Authorization: token },
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    const connected = data?.status === true || data?.connected === true;
+    return c.json({ ok: connected, message: connected ? "WhatsApp terhubung" : "WhatsApp terputus", details: data });
+  } catch (err: any) {
+    return c.json({ ok: false, message: err?.message || "WhatsApp probe gagal" });
+  }
+});
+
+// GET /api/admin-gate/health/database — tes koneksi database Supabase
+adminGate.get("/health/database", requireAdminGate, async (c) => {
+  try {
+    const start = Date.now();
+    const { error } = await supabase.from("plans").select("id", { count: "exact", head: true });
+    const latencyMs = Date.now() - start;
+    if (error) {
+      return c.json({ ok: false, message: "Database error: " + error.message, latency_ms: latencyMs });
+    }
+    return c.json({ ok: true, message: `Database OK (${latencyMs}ms)`, latency_ms: latencyMs });
+  } catch (err: any) {
+    return c.json({ ok: false, message: err?.message || "Database probe gagal" });
+  }
+});
+
 export default adminGate;

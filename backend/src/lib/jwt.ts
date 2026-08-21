@@ -16,7 +16,7 @@ export interface JWTPayload {
   sub: string; // user id
   // Opsional: user WhatsApp tidak punya email.
   email?: string;
-  role: "admin" | "akuntan" | "owner";
+  role: "akuntan" | "owner";
   company_id: string;
 }
 

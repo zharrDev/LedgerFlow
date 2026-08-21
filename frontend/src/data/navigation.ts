@@ -144,30 +144,12 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["user", "users", "management", "member", "role"],
   },
   {
-    id: "profile",
-    label: "Profile",
-    path: "/profile",
-    icon: User,
-    section: "account",
-    desktopOrder: 10,
-    keywords: ["profile", "profil", "akun saya"],
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    path: "/settings",
-    icon: Settings,
-    section: "account",
-    desktopOrder: 11,
-    keywords: ["settings", "pengaturan", "tema"],
-  },
-  {
     id: "help-center",
     label: "Help & Support",
     path: "/help-center",
     icon: HelpCircle,
     section: "account",
-    desktopOrder: 12,
+    desktopOrder: 10,
     keywords: ["help", "bantuan", "faq", "support"],
   },
   {
@@ -179,6 +161,28 @@ export const NAV_ITEMS: NavItem[] = [
     searchOnly: true,
     desktopOrder: 99,
     keywords: ["ai", "cfo", "assistant", "analisis"],
+  },
+  // Profile & Settings tidak ada di sidebar — ada di dropdown avatar Header.
+  // Tetap diikutsertakan di search-only supaya muncul di pencarian cepat.
+  {
+    id: "profile",
+    label: "Profile",
+    path: "/profile",
+    icon: User,
+    section: "search",
+    searchOnly: true,
+    desktopOrder: 100,
+    keywords: ["profile", "profil", "akun saya"],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    path: "/settings",
+    icon: Settings,
+    section: "search",
+    searchOnly: true,
+    desktopOrder: 101,
+    keywords: ["settings", "pengaturan", "tema"],
   },
 ];
 

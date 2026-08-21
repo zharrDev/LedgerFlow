@@ -7,6 +7,7 @@ import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import {
   Building2,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import {
   getDesktopSidebarMenuItems,
@@ -15,51 +16,47 @@ import {
 } from "../data/navigation";
 
 interface SidebarProps {
-  mobileMenuOpen: boolean;
+  mobileMenuOpen?: boolean;
   onLinkClick?: () => void;
+  /** desktop = content only (wrapper card di AppShell); mobile-drawer = drawer overlay */
+  mode?: "desktop" | "mobile-drawer";
 }
 
-export const Sidebar = React.memo(
-  ({ mobileMenuOpen, onLinkClick }: SidebarProps) => {
-    const [isDesktop, setIsDesktop] = React.useState(false);
-    const asideRef = useRef<HTMLElement>(null);
-    useScrollIsolation(asideRef);
+export function Sidebar({ mobileMenuOpen, onLinkClick, mode }: SidebarProps) {
+  const [isDesktop, setIsDesktop] = React.useState(false);
+  const asideRef = useRef<HTMLElement>(null);
+  useScrollIsolation(asideRef);
 
-    React.useEffect(() => {
-      const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
-      checkDesktop();
-      window.addEventListener("resize", checkDesktop);
-      return () => window.removeEventListener("resize", checkDesktop);
-    }, []);
+  React.useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
 
-    if (isDesktop) {
-      return (
-        <aside
-          ref={asideRef}
-          className="fixed top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]
-                   bg-white/90 dark:bg-darkBg/90 backdrop-blur-xl
-                   border-r border-primary-500/20 overflow-y-auto overscroll-contain scrollbar-thin shadow-lg lg:shadow-none"
-        >
-          <SidebarContent mode="desktop" onLinkClick={onLinkClick} />
-        </aside>
-      );
-    }
+  // If mode is explicitly passed, use it; otherwise fallback to isDesktop
+  const effectiveMode = mode || (isDesktop ? "desktop" : "mobile-drawer");
 
+  if (effectiveMode === "desktop") {
     return (
-      <motion.aside
-        ref={asideRef}
-        initial={{ x: "-100%" }}
-        animate={{ x: mobileMenuOpen ? 0 : "-100%" }}
-        transition={{ type: "spring", damping: 25 }}
-        className="fixed top-16 left-0 z-50 w-64 h-[calc(100vh-4rem)]
-                 bg-white/95 dark:bg-darkBg/95 backdrop-blur-2xl shadow-2xl
-                 border-r border-primary-500/20 overflow-y-auto overscroll-contain scrollbar-thin"
-      >
-        <SidebarContent mode="mobile-drawer" onLinkClick={onLinkClick} />
-      </motion.aside>
+      <SidebarContent mode="desktop" onLinkClick={onLinkClick} />
     );
-  },
-);
+  }
+
+  return (
+    <motion.aside
+      ref={asideRef}
+      initial={{ x: "-100%" }}
+      animate={{ x: mobileMenuOpen ? 0 : "-100%" }}
+      transition={{ type: "spring", damping: 25 }}
+      className="fixed top-16 left-0 z-50 w-64 h-[calc(100vh-4rem)]
+               bg-white/95 dark:bg-darkBg/95 backdrop-blur-2xl shadow-2xl
+               border-r border-primary-500/20 overflow-y-auto overscroll-contain scrollbar-thin"
+    >
+      <SidebarContent mode="mobile-drawer" onLinkClick={onLinkClick} />
+    </motion.aside>
+  );
+}
 
 type SidebarMode = "desktop" | "mobile-drawer";
 
@@ -113,8 +110,9 @@ const SidebarContent = ({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Company badge */}
       {user && (
-        <div className="px-3 pt-2 pb-2">
+        <div className="px-3 pt-3 pb-2">
           <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-primary-50 to-primary-50/50 dark:from-primary-900/20 dark:to-primary-900/10 border border-primary-200/50 dark:border-primary-800/30">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
               {initials}
@@ -132,6 +130,7 @@ const SidebarContent = ({
         </div>
       )}
 
+      {/* Menu navigation — scrollable */}
       <nav className="flex-1 flex flex-col px-3 pt-2 pb-1 overflow-y-auto scrollbar-thin">
         <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
           {mode === "mobile-drawer" ? "Lainnya" : "Menu"}
@@ -187,6 +186,7 @@ const SidebarContent = ({
         )}
       </nav>
 
+      {/* Account items (Help & Support) — below menu */}
       {accountItems.length > 0 && (
         <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
           {accountItems.map((item) => {
@@ -205,6 +205,21 @@ const SidebarContent = ({
           })}
         </div>
       )}
+
+      {/* Promo banner — inside scroll area, bottom of nav */}
+      <div className="px-3 pb-3 pt-1">
+        <div className="rounded-xl bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent dark:from-primary-500/15 dark:via-primary-500/5 border border-primary-200/40 dark:border-primary-500/15 p-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Sparkles size={14} className="text-primary-500" />
+            <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-300">
+              Upgrade ke Pro
+            </span>
+          </div>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+            Akses AI CFO, laporan lanjutan, dan fitur premium lainnya.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

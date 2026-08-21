@@ -22,7 +22,7 @@ interface JournalListProps {
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
   pagination?: TablePaginationProps;
-  /** Izin sesuai role (backend): post/edit = owner/akuntan, delete = admin/owner. */
+  /** Izin sesuai role (backend): post/edit = owner/akuntan, delete = owner. */
   canPost?: boolean;
   canDelete?: boolean;
 }

@@ -60,7 +60,7 @@ export type AdminGateUser = {
   name: string;
   email: string | null;
   phone: string | null;
-  role: "admin" | "akuntan" | "owner";
+  role: "akuntan" | "owner";
   company_id: string;
   status?: "active" | "suspended";
   created_at: string;
@@ -229,4 +229,87 @@ export async function setAdminGateCompanyStatus(
     { suspended },
     { headers: authHeaders(), skipErrorToast: true },
   );
+}
+
+// ── Plan Management (CRUD) ───────────────────────────────────────────
+
+export type AdminGatePlan = {
+  id: string;
+  name: string;
+  display_name: string | null;
+  price_monthly: number;
+  price_yearly: number;
+  max_companies: number;
+  max_journals: number;
+  features: Record<string, any> | null;
+  is_active: boolean;
+  created_at?: string;
+};
+
+export async function fetchAdminGatePlans(): Promise<AdminGatePlan[]> {
+  const res = await api.get("/api/admin-gate/plans", {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+  return Array.isArray(res.data) ? (res.data as AdminGatePlan[]) : [];
+}
+
+export async function createAdminGatePlan(plan: {
+  name: string;
+  display_name?: string;
+  price_monthly?: number;
+  price_yearly?: number;
+  max_companies?: number;
+  max_journals?: number;
+  features?: Record<string, any>;
+}): Promise<AdminGatePlan> {
+  const res = await api.post("/api/admin-gate/plans", plan, {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+  return res.data as AdminGatePlan;
+}
+
+export async function updateAdminGatePlan(
+  id: string,
+  plan: Partial<AdminGatePlan>,
+): Promise<AdminGatePlan> {
+  const res = await api.put(`/api/admin-gate/plans/${id}`, plan, {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+  return res.data as AdminGatePlan;
+}
+
+export async function deactivateAdminGatePlan(id: string): Promise<void> {
+  await api.delete(`/api/admin-gate/plans/${id}`, {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+}
+
+// ── System Health Monitor ─────────────────────────────────────────────
+
+export type HealthStatus = {
+  ok: boolean;
+  message: string;
+  latency_ms?: number;
+  details?: any;
+};
+
+export async function checkSmtpHealth(): Promise<HealthStatus> {
+  const res = await api.get("/api/admin-gate/health/smtp", {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+  return res.data as HealthStatus;
+}
+
+export async function checkWhatsAppHealth(): Promise<HealthStatus> {
+  const res = await api.get("/api/admin-gate/health/whatsapp", {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+  return res.data as HealthStatus;
+}
+
+export async function checkDatabaseHealth(): Promise<HealthStatus> {
+  const res = await api.get("/api/admin-gate/health/database", {
+    headers: authHeaders(), skipErrorToast: true,
+  });
+  return res.data as HealthStatus;
 }

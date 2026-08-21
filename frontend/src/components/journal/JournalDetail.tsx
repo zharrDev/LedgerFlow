@@ -17,7 +17,7 @@ interface JournalDetailProps {
   onBack: () => void;
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
-  /** Izin sesuai role (backend): post = owner/akuntan, delete = admin/owner. */
+  /** Izin sesuai role (backend): post = owner/akuntan, delete = owner. */
   canPost?: boolean;
   canDelete?: boolean;
 }

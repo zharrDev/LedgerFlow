@@ -25,6 +25,14 @@ import {
   Eye,
   ListTree,
   UserCheck,
+  Database,
+  Terminal,
+  Wifi,
+  WifiOff,
+  Plus,
+  Pencil,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
@@ -35,6 +43,13 @@ import {
   fetchAdminGateSubscriptions,
   fetchAdminGatePayments,
   fetchAdminGateCompanyDetail,
+  fetchAdminGatePlans,
+  createAdminGatePlan,
+  updateAdminGatePlan,
+  deactivateAdminGatePlan,
+  checkSmtpHealth,
+  checkWhatsAppHealth,
+  checkDatabaseHealth,
   deleteAdminGateUser,
   deleteAdminGateCompany,
   setAdminGateUserStatus,
@@ -47,15 +62,16 @@ import {
   type AdminGateOverview,
   type AdminGateSubscription,
   type AdminGatePayment,
+  type AdminGatePlan,
+  type HealthStatus,
 } from "../services/adminGateService";
 import { getAdminGateToken } from "../lib/session";
 import { useToast } from "../context/ToastContext";
 import { usePagination } from "../hooks/usePagination";
 import { getErrorMessage } from "../lib/errorMessage";
 import { TablePagination } from "../components/TablePagination";
-import logo from "../assets/ledgerflow.webp";
 
-type Tab = "overview" | "billing" | "log" | "users" | "companies";
+type Tab = "overview" | "billing" | "log" | "users" | "companies" | "plans" | "health";
 
 type ConfirmState = {
   type:
@@ -68,6 +84,17 @@ type ConfirmState = {
   item: AdminGateUser | AdminGateCompany;
 } | null;
 
+// Neutral indigo/violet palette — BUKAN cyan (customer) supaya jelas beda dunia
+const ACCENT = {
+  badge: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
+  icon: "text-indigo-500",
+  active: "border-indigo-500 text-indigo-600 dark:text-indigo-400",
+  activeBg: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+  ring: "focus:ring-indigo-500/40",
+  btn: "bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/25",
+  spinner: "border-indigo-500",
+};
+
 const roleBadge: Record<string, string> = {
   owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
@@ -75,10 +102,6 @@ const roleBadge: Record<string, string> = {
 
 const PAGE_SIZE = 5;
 
-// Dashboard admin khusus — hanya bisa diakses dengan token admin-gate
-// (token user biasa ditolak oleh backend). Terpisah total dari aplikasi
-// utama user biasa. Menyediakan: audit log gerbang, daftar user global
-// (read-only + moderasi), dan daftar company.
 export default function AdminPortalPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -90,6 +113,7 @@ export default function AdminPortalPage() {
   const [overview, setOverview] = useState<AdminGateOverview | null>(null);
   const [subscriptions, setSubscriptions] = useState<AdminGateSubscription[]>([]);
   const [payments, setPayments] = useState<AdminGatePayment[]>([]);
+  const [plans, setPlans] = useState<AdminGatePlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -107,9 +131,7 @@ export default function AdminPortalPage() {
     meta.name = "robots";
     meta.content = "noindex";
     document.head.appendChild(meta);
-    return () => {
-      document.head.removeChild(meta);
-    };
+    return () => { document.head.removeChild(meta); };
   }, []);
 
   const load = useCallback(async () => {
@@ -117,7 +139,7 @@ export default function AdminPortalPage() {
     setRefreshing(true);
     setError("");
     try {
-      const [logData, userData, companyData, overviewData, subData, payData] =
+      const [logData, userData, companyData, overviewData, subData, payData, planData] =
         await Promise.all([
           fetchAdminGateLogs(),
           fetchAdminGateUsers(),
@@ -125,6 +147,7 @@ export default function AdminPortalPage() {
           fetchAdminGateOverview(),
           fetchAdminGateSubscriptions(),
           fetchAdminGatePayments(),
+          fetchAdminGatePlans(),
         ]);
       setLogs(logData);
       setUsers(userData);
@@ -132,68 +155,46 @@ export default function AdminPortalPage() {
       setOverview(overviewData);
       setSubscriptions(subData);
       setPayments(payData);
+      setPlans(planData);
     } catch (err: any) {
       if (err?.response?.status === 401) {
-        // Token admin-gate expired/ditolak → kembali ke gerbang.
         logoutAdminGate();
         navigate("/portal-akses", { replace: true });
         return;
       }
       setError("Gagal memuat data dashboard.");
-      toast({
-        variant: "error",
-        title: "Gagal memuat data",
-        message: "Tidak bisa mengambil data dashboard. Coba muat ulang.",
-      });
+      toast({ variant: "error", title: "Gagal memuat data", message: "Tidak bisa mengambil data dashboard. Coba muat ulang." });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, [hasToken, navigate, toast]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const handleLogout = () => {
     logoutAdminGate();
     navigate("/login", { replace: true });
   };
 
-  // ── Lihat detail company (modal) ──
   const openDetail = async (c: AdminGateCompany) => {
     setDetailOpen(c);
     setDetailData(null);
     setDetailLoading(true);
     setDetailError("");
-    try {
-      setDetailData(await fetchAdminGateCompanyDetail(c.id));
-    } catch (err: any) {
-      setDetailError(getErrorMessage(err));
-    } finally {
-      setDetailLoading(false);
-    }
+    try { setDetailData(await fetchAdminGateCompanyDetail(c.id)); }
+    catch (err: any) { setDetailError(getErrorMessage(err)); }
+    finally { setDetailLoading(false); }
   };
 
-  const closeDetail = () => {
-    setDetailOpen(null);
-    setDetailData(null);
-    setDetailError("");
-  };
+  const closeDetail = () => { setDetailOpen(null); setDetailData(null); setDetailError(""); };
 
-  // ── Moderasi: buka modal konfirmasi dulu, baru eksekusi ──
-  const requestDeleteUser = (u: AdminGateUser) =>
-    setConfirm({ type: "deleteUser", item: u });
-  const requestDeleteCompany = (c: AdminGateCompany) =>
-    setConfirm({ type: "deleteCompany", item: c });
-  const requestSuspendUser = (u: AdminGateUser) =>
-    setConfirm({ type: "suspendUser", item: u });
-  const requestUnsuspendUser = (u: AdminGateUser) =>
-    setConfirm({ type: "unsuspendUser", item: u });
-  const requestSuspendCompany = (c: AdminGateCompany) =>
-    setConfirm({ type: "suspendCompany", item: c });
-  const requestUnsuspendCompany = (c: AdminGateCompany) =>
-    setConfirm({ type: "unsuspendCompany", item: c });
+  const requestDeleteUser = (u: AdminGateUser) => setConfirm({ type: "deleteUser", item: u });
+  const requestDeleteCompany = (c: AdminGateCompany) => setConfirm({ type: "deleteCompany", item: c });
+  const requestSuspendUser = (u: AdminGateUser) => setConfirm({ type: "suspendUser", item: u });
+  const requestUnsuspendUser = (u: AdminGateUser) => setConfirm({ type: "unsuspendUser", item: u });
+  const requestSuspendCompany = (c: AdminGateCompany) => setConfirm({ type: "suspendCompany", item: c });
+  const requestUnsuspendCompany = (c: AdminGateCompany) => setConfirm({ type: "unsuspendCompany", item: c });
 
   const handleConfirmAction = async () => {
     if (!confirm) return;
@@ -203,75 +204,34 @@ export default function AdminPortalPage() {
         const u = confirm.item as AdminGateUser;
         await deleteAdminGateUser(u.id);
         setUsers((prev) => prev.filter((x) => x.id !== u.id));
-        toast({
-          variant: "success",
-          title: "User dihapus",
-          message: `${u.name} (${u.email || u.phone || "-"}) berhasil dihapus.`,
-        });
+        toast({ variant: "success", title: "User dihapus", message: `${u.name} berhasil dihapus.` });
       } else if (confirm.type === "deleteCompany") {
         const c = confirm.item as AdminGateCompany;
         await deleteAdminGateCompany(c.id);
         setCompanies((prev) => prev.filter((x) => x.id !== c.id));
-        toast({
-          variant: "success",
-          title: "Company dihapus",
-          message: `${c.name} beserta seluruh datanya berhasil dihapus.`,
-        });
-      } else if (
-        confirm.type === "suspendUser" ||
-        confirm.type === "unsuspendUser"
-      ) {
+        toast({ variant: "success", title: "Company dihapus", message: `${c.name} berhasil dihapus.` });
+      } else if (confirm.type === "suspendUser" || confirm.type === "unsuspendUser") {
         const u = confirm.item as AdminGateUser;
         const suspended = confirm.type === "suspendUser";
         await setAdminGateUserStatus(u.id, suspended);
-        setUsers((prev) =>
-          prev.map((x) =>
-            x.id === u.id
-              ? { ...x, status: suspended ? "suspended" : "active" }
-              : x,
-          ),
-        );
-        toast({
-          variant: "success",
-          title: suspended ? "User disuspend" : "User diaktifkan",
-          message: suspended
-            ? `${u.name} dinonaktifkan sementara.`
-            : `${u.name} diaktifkan kembali.`,
-        });
+        setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: suspended ? "suspended" : "active" } : x));
+        toast({ variant: "success", title: suspended ? "User disuspend" : "User diaktifkan", message: suspended ? `${u.name} dinonaktifkan.` : `${u.name} diaktifkan kembali.` });
       } else {
         const c = confirm.item as AdminGateCompany;
         const suspended = confirm.type === "suspendCompany";
         await setAdminGateCompanyStatus(c.id, suspended);
-        setCompanies((prev) =>
-          prev.map((x) =>
-            x.id === c.id
-              ? { ...x, status: suspended ? "suspended" : "active" }
-              : x,
-          ),
-        );
-        toast({
-          variant: "success",
-          title: suspended ? "Company disuspend" : "Company diaktifkan",
-          message: suspended
-            ? `${c.name} dinonaktifkan sementara (semua anggota kehilangan akses).`
-            : `${c.name} diaktifkan kembali.`,
-        });
+        setCompanies((prev) => prev.map((x) => x.id === c.id ? { ...x, status: suspended ? "suspended" : "active" } : x));
+        toast({ variant: "success", title: suspended ? "Company disuspend" : "Company diaktifkan", message: suspended ? `${c.name} dinonaktifkan.` : `${c.name} diaktifkan kembali.` });
       }
       setConfirm(null);
     } catch (err: any) {
-      toast({
-        variant: "error",
-        title: "Gagal",
-        message: getErrorMessage(err),
-      });
+      toast({ variant: "error", title: "Gagal", message: getErrorMessage(err) });
     } finally {
       setConfirming(false);
     }
   };
 
-  if (!hasToken) {
-    return <Navigate to="/portal-akses" replace />;
-  }
+  if (!hasToken) return <Navigate to="/portal-akses" replace />;
 
   const stats = {
     total: logs.length,
@@ -282,286 +242,267 @@ export default function AdminPortalPage() {
 
   const statusBadge = (status: AdminGateLog["status"]) => {
     const map = {
-      success:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+      success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
       failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-      blocked:
-        "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
+      blocked: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
     } as const;
-    const label = {
-      success: "Berhasil",
-      failed: "Gagal",
-      blocked: "Diblokir",
-    } as const;
+    const label = { success: "Berhasil", failed: "Gagal", blocked: "Diblokir" } as const;
     return (
-      <span
-        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status]}`}
-      >
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status]}`}>
         {label[status]}
       </span>
     );
   };
 
+  const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number }[] = [
+    { key: "overview", icon: <LayoutDashboard size={16} />, label: "Overview" },
+    { key: "billing", icon: <CreditCard size={16} />, label: "Billing", count: subscriptions.length },
+    { key: "log", icon: <ScrollText size={16} />, label: "Audit Log", count: logs.length },
+    { key: "users", icon: <Users size={16} />, label: "Users", count: users.length },
+    { key: "companies", icon: <Building2 size={16} />, label: "Companies", count: companies.length },
+    { key: "plans", icon: <Wallet size={16} />, label: "Plans", count: plans.length },
+    { key: "health", icon: <Activity size={16} />, label: "System Health" },
+  ];
+
   return (
-    <div className="min-h-screen bg-white dark:bg-darkBg">
-      {/* Header */}
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src={logo} alt="LedgerFlow" className="w-7 h-7" />
-            <span className="font-semibold text-gray-900 dark:text-white text-sm">
-              Admin Portal
-            </span>
-            <span className="text-[11px] font-medium text-primary-600 dark:text-primary-400 bg-primary-500/10 border border-primary-500/20 px-2 py-0.5 rounded-full">
-              Khusus Admin
-            </span>
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+      {/* Desktop: 2 floating cards */}
+      <div className="hidden lg:flex h-screen p-4 gap-4">
+        {/* Sidebar card */}
+        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col">
+          {/* Sidebar header */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50/50 dark:from-indigo-900/20 dark:to-violet-900/10 border border-indigo-200/50 dark:border-indigo-800/30">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
+                <Terminal size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                  LedgerFlow Ops
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5">
+                  Internal Console
+                </p>
+              </div>
+              <ShieldCheck size={14} className="text-indigo-400 shrink-0" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Navigation */}
+          <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-y-auto scrollbar-thin">
+            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
+              Panel
+            </p>
+            <div className="space-y-1.5">
+              {sidebarTabs.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`group relative flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
+                    tab === t.key
+                      ? "bg-gradient-to-r from-indigo-500/10 to-indigo-500/5 text-indigo-600 dark:text-indigo-400 font-medium shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-darkCard/50"
+                  }`}
+                >
+                  <span
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
+                      tab === t.key ? "h-5 bg-indigo-500" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-300 dark:group-hover:bg-indigo-700"
+                    }`}
+                  />
+                  {t.icon}
+                  <span className="truncate">{t.label}</span>
+                  {t.count !== undefined && (
+                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                      tab === t.key ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
+                    }`}>
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* Sidebar footer: refresh + logout */}
+          <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
             <button
               onClick={load}
               disabled={refreshing}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-darkCard/50 transition-colors"
             >
-              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-              Muat Ulang
+              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+              <span>Muat Ulang</span>
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
             >
-              <LogOut size={14} />
-              Keluar
+              <LogOut size={16} />
+              <span>Keluar</span>
             </button>
           </div>
+        </aside>
+
+        {/* Content card */}
+        <div className="flex-1 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
+          {/* Content header strip */}
+          <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-darkCard/80 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Admin Portal
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {sidebarTabs.find((t) => t.key === tab)?.label || "Dashboard"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                <ShieldCheck size={12} />
+                Khusus Admin
+              </span>
+            </div>
+          </header>
+
+          {/* Main scrollable area */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
+            {loading ? (
+              <div className="py-20 flex justify-center">
+                <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${ACCENT.spinner}`} />
+              </div>
+            ) : tab === "overview" ? (
+              <OverviewView overview={overview} error={error} />
+            ) : tab === "billing" ? (
+              <BillingView subscriptions={subscriptions} payments={payments} error={error} />
+            ) : tab === "log" ? (
+              <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
+            ) : tab === "users" ? (
+              <UsersView users={users} roleBadge={roleBadge} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
+            ) : tab === "companies" ? (
+              <CompaniesView companies={companies} error={error} onDelete={requestDeleteCompany} onSuspend={requestSuspendCompany} onUnsuspend={requestUnsuspendCompany} onView={openDetail} />
+            ) : tab === "plans" ? (
+              <PlansView plans={plans} setPlans={setPlans} error={error} />
+            ) : (
+              <SystemHealthView />
+            )}
+          </main>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25">
-            <ShieldCheck size={22} />
+      {/* Mobile: simple layout */}
+      <div className="lg:hidden min-h-screen flex flex-col">
+        <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+                <ShieldCheck size={18} />
+              </div>
+              <span className="font-semibold text-gray-900 dark:text-white text-sm">Admin Portal</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                Muat Ulang
+              </button>
+              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                <LogOut size={14} />
+                Keluar
+              </button>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              Dashboard Admin
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Pantau seluruh sistem + moderasi (hapus user/company bermasalah)
-            </p>
+          {/* Mobile tabs */}
+          <div className="flex gap-1 px-4 pb-3 overflow-x-auto scrollbar-thin">
+            {sidebarTabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+                  tab === t.key
+                    ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                {t.icon}
+                {t.label}
+                {t.count !== undefined && (
+                  <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold ${
+                    tab === t.key ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" : "bg-gray-100 dark:bg-white/5 text-gray-400"
+                  }`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
-        </div>
+        </header>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 pb-0 overflow-x-auto">
-          <TabButton
-            active={tab === "overview"}
-            onClick={() => setTab("overview")}
-            icon={<LayoutDashboard size={14} />}
-            label="Overview"
-          />
-          <TabButton
-            active={tab === "billing"}
-            onClick={() => setTab("billing")}
-            icon={<CreditCard size={14} />}
-            label="Billing"
-            count={subscriptions.length}
-          />
-          <TabButton
-            active={tab === "log"}
-            onClick={() => setTab("log")}
-            icon={<ScrollText size={14} />}
-            label="Audit Log Gerbang"
-            count={logs.length}
-          />
-          <TabButton
-            active={tab === "users"}
-            onClick={() => setTab("users")}
-            icon={<Users size={14} />}
-            label="User"
-            count={users.length}
-          />
-          <TabButton
-            active={tab === "companies"}
-            onClick={() => setTab("companies")}
-            icon={<Building2 size={14} />}
-            label="Company"
-            count={companies.length}
-          />
-        </div>
+        <main className="flex-1 p-4 sm:p-6 space-y-6">
+          {loading ? (
+            <div className="py-20 flex justify-center">
+              <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${ACCENT.spinner}`} />
+            </div>
+          ) : tab === "overview" ? (
+            <OverviewView overview={overview} error={error} />
+          ) : tab === "billing" ? (
+            <BillingView subscriptions={subscriptions} payments={payments} error={error} />
+          ) : tab === "log" ? (
+            <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
+          ) : tab === "users" ? (
+            <UsersView users={users} roleBadge={roleBadge} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
+          ) : tab === "companies" ? (
+            <CompaniesView companies={companies} error={error} onDelete={requestDeleteCompany} onSuspend={requestSuspendCompany} onUnsuspend={requestUnsuspendCompany} onView={openDetail} />
+          ) : tab === "plans" ? (
+            <PlansView plans={plans} setPlans={setPlans} error={error} />
+          ) : (
+            <SystemHealthView />
+          )}
+        </main>
+      </div>
 
-        {loading ? (
-          <div className="py-20 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
-          </div>
-        ) : tab === "overview" ? (
-          <OverviewView overview={overview} error={error} />
-        ) : tab === "billing" ? (
-          <BillingView subscriptions={subscriptions} payments={payments} error={error} />
-        ) : tab === "log" ? (
-          <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
-        ) : tab === "users" ? (
-          <UsersView
-            users={users}
-            roleBadge={roleBadge}
-            error={error}
-            onDelete={requestDeleteUser}
-            onSuspend={requestSuspendUser}
-            onUnsuspend={requestUnsuspendUser}
-          />
-        ) : (
-          <CompaniesView
-            companies={companies}
-            error={error}
-            onDelete={requestDeleteCompany}
-            onSuspend={requestSuspendCompany}
-            onUnsuspend={requestUnsuspendCompany}
-            onView={openDetail}
-          />
-        )}
-      </main>
-
-      {/* Modal konfirmasi aksi moderasi (hapus permanen / suspend / aktifkan) */}
-      <ConfirmActionModal
-        confirm={confirm}
-        confirming={confirming}
-        onCancel={() => !confirming && setConfirm(null)}
-        onConfirm={handleConfirmAction}
-      />
-
-      {/* Modal detail company */}
-      <CompanyDetailModal
-        company={detailOpen}
-        data={detailData}
-        loading={detailLoading}
-        error={detailError}
-        onClose={closeDetail}
-      />
+      {/* Modals */}
+      <ConfirmActionModal confirm={confirm} confirming={confirming} onCancel={() => !confirming && setConfirm(null)} onConfirm={handleConfirmAction} />
+      <CompanyDetailModal company={detailOpen} data={detailData} loading={detailLoading} error={detailError} onClose={closeDetail} />
     </div>
   );
 }
 
-// ── Tab button ────────────────────────────────────────────────────────
-function TabButton({
-  active,
-  onClick,
-  icon,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-        active
-          ? "border-primary-500 text-primary-600 dark:text-primary-400"
-          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-      }`}
-    >
-      {icon}
-      {label}
-      {count !== undefined && (
-        <span
-          className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-            active
-              ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-              : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
-          }`}
-        >
-          {count}
-        </span>
-      )}
-    </button>
-  );
-}
-
-// ── Overview view (ringkasan statistik global) ────────────────────────
-function OverviewView({
-  overview,
-  error,
-}: {
-  overview: AdminGateOverview | null;
-  error: string;
-}) {
-  if (!overview) {
-    return <EmptyState error={error} text="Belum ada data ringkasan." />;
-  }
-
-  const totalActives = overview.plan_distribution.reduce(
-    (s, p) => s + p.users,
-    0,
-  );
-  const formatRp = (v: number) =>
-    v.toLocaleString("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    });
+// ── Overview ────────────────────────────────────────────────────────
+function OverviewView({ overview, error }: { overview: AdminGateOverview | null; error: string }) {
+  if (!overview) return <EmptyState error={error} text="Belum ada data ringkasan." />;
+  const totalActives = overview.plan_distribution.reduce((s, p) => s + p.users, 0);
+  const formatRp = (v: number) => v.toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
-          icon={<Users size={15} />}
-          label="Total User"
-          value={overview.total_users}
-        />
-        <StatCard
-          icon={<Building2 size={15} />}
-          label="Total Company"
-          value={overview.total_companies}
-        />
-        <StatCard
-          icon={<TrendingUp size={15} />}
-          label="User Baru 30 Hari"
-          value={overview.users_growth_30d}
-          accent="emerald"
-        />
-        <StatCard
-          icon={<UserMinus size={15} />}
-          label="Churn 30 Hari"
-          value={overview.churn_30d}
-          accent="rose"
-        />
+        <StatCard icon={<Users size={15} />} label="Total User" value={overview.total_users} />
+        <StatCard icon={<Building2 size={15} />} label="Total Company" value={overview.total_companies} />
+        <StatCard icon={<TrendingUp size={15} />} label="User Baru 30 Hari" value={overview.users_growth_30d} accent="emerald" />
+        <StatCard icon={<UserMinus size={15} />} label="Churn 30 Hari" value={overview.churn_30d} accent="rose" />
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* MRR */}
         <Card>
           <div className="p-6">
-            <div className="flex items-center gap-1.5 mb-1 text-primary-500">
+            <div className="flex items-center gap-1.5 mb-1 text-indigo-500">
               <Wallet size={15} />
-              <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">
-                MRR · Pendapatan Berulang Bulanan
-              </p>
+              <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">MRR</p>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">
-              {formatRp(overview.mrr)}
-            </p>
-            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-              Dari {totalActives} subscription aktif (tahunan dihitung per
-              bulan)
-            </p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">{formatRp(overview.mrr)}</p>
+            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Dari {totalActives} subscription aktif</p>
           </div>
         </Card>
-
-        {/* Distribusi plan */}
         <PlanDistributionChart data={overview.plan_distribution} />
       </div>
     </div>
   );
 }
 
-// ── Chart distribusi user per plan (recharts, selaras tema gelap) ─────
 const PLAN_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#f43f5e"];
 
-// Hook kecil untuk menyesuaikan warna chart saat mode gelap (gaya sama
-// seperti CashFlowChart).
 function useIsDark() {
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
@@ -575,73 +516,26 @@ function useIsDark() {
   return isDark;
 }
 
-function PlanDistributionChart({
-  data,
-}: {
-  data: { name: string; users: number }[];
-}) {
+function PlanDistributionChart({ data }: { data: { name: string; users: number }[] }) {
   const isDark = useIsDark();
   const textColor = isDark ? "#94a3b8" : "#64748b";
-
   return (
     <Card>
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Distribusi User per Plan
-        </span>
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          Berdasarkan subscription aktif
-        </span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Distribusi User per Plan</span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">Berdasarkan subscription aktif</span>
       </div>
       <div className="p-4">
         {data.length === 0 ? (
-          <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-            Belum ada subscription aktif.
-          </div>
+          <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">Belum ada subscription aktif.</div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie
-                data={data}
-                dataKey="users"
-                nameKey="name"
-                innerRadius={55}
-                outerRadius={90}
-                paddingAngle={3}
-                strokeWidth={2}
-                stroke={isDark ? "#111827" : "#ffffff"}
-              >
-                {data.map((_, i) => (
-                  <Cell
-                    key={i}
-                    fill={PLAN_COLORS[i % PLAN_COLORS.length]}
-                  />
-                ))}
+              <Pie data={data} dataKey="users" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={3} strokeWidth={2} stroke={isDark ? "#111827" : "#ffffff"}>
+                {data.map((_, i) => <Cell key={i} fill={PLAN_COLORS[i % PLAN_COLORS.length]} />)}
               </Pie>
-              <Tooltip
-                formatter={(value: any, name: any) => [
-                  `${value} user`,
-                  name as string,
-                ]}
-                contentStyle={{
-                  background: isDark
-                    ? "rgba(15,23,42,0.92)"
-                    : "rgba(255,255,255,0.95)",
-                  border: isDark
-                    ? "1px solid rgba(99,102,241,0.25)"
-                    : "1px solid rgba(99,102,241,0.15)",
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
-              <Legend
-                iconType="circle"
-                formatter={(value: any) => (
-                  <span style={{ color: textColor, fontSize: 12 }}>
-                    {value}
-                  </span>
-                )}
-              />
+              <Tooltip formatter={(value: any, name: any) => [`${value} user`, name as string]} contentStyle={{ background: isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.95)", border: isDark ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(99,102,241,0.15)", borderRadius: 12, fontSize: 12 }} />
+              <Legend iconType="circle" formatter={(value: any) => <span style={{ color: textColor, fontSize: 12 }}>{value}</span>} />
             </PieChart>
           </ResponsiveContainer>
         )}
@@ -650,188 +544,71 @@ function PlanDistributionChart({
   );
 }
 
-// ── Billing view (subscription & riwayat pembayaran global) ───────────
-function BillingView({
-  subscriptions,
-  payments,
-  error,
-}: {
-  subscriptions: AdminGateSubscription[];
-  payments: AdminGatePayment[];
-  error: string;
-}) {
+// ── Billing ────────────────────────────────────────────────────────
+function BillingView({ subscriptions, payments, error }: { subscriptions: AdminGateSubscription[]; payments: AdminGatePayment[]; error: string }) {
   const [subTab, setSubTab] = useState<"subs" | "payments">("subs");
   const subPagination = usePagination(subscriptions, PAGE_SIZE);
   const payPagination = usePagination(payments, PAGE_SIZE);
-
-  const formatRp = (v: number, currency: string) =>
-    v.toLocaleString("id-ID", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    });
+  const formatRp = (v: number, currency: string) => v.toLocaleString("id-ID", { style: "currency", currency, maximumFractionDigits: 0 });
 
   return (
     <div className="space-y-6">
       <Card>
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between flex-wrap gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Data Pembayaran & Langganan
-          </span>
-          {/* Sub-tab di dalam tab Billing */}
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Data Pembayaran & Langganan</span>
           <div className="flex gap-1">
-            {(
-              [
-                { key: "subs", label: "Subscriptions" },
-                { key: "payments", label: "Riwayat Pembayaran" },
-              ] as const
-            ).map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setSubTab(t.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  subTab === t.key
-                    ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5"
-                }`}
-              >
+            {[{ key: "subs" as const, label: "Subscriptions" }, { key: "payments" as const, label: "Riwayat Pembayaran" }].map((t) => (
+              <button key={t.key} onClick={() => setSubTab(t.key)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subTab === t.key ? ACCENT.activeBg : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5"}`}>
                 {t.label}
               </button>
             ))}
           </div>
         </div>
-
         {subTab === "subs" ? (
-          subscriptions.length === 0 ? (
-            <EmptyState error={error} text="Belum ada subscription." />
-          ) : (
+          subscriptions.length === 0 ? <EmptyState error={error} text="Belum ada subscription." /> : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800/30">
-                    <tr>
-                      {["User", "Plan", "Siklus", "Status", "Periode Berakhir"].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
-                    </tr>
+                    <tr>{["User", "Plan", "Siklus", "Status", "Periode Berakhir"].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                     {subPagination.pageItems.map((s) => (
-                      <tr
-                        key={s.id}
-                        className="hover:bg-gray-50 dark:hover:bg-white/5"
-                      >
-                        <td className="px-4 py-2.5">
-                          <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
-                            {s.users?.name || "—"}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {s.users?.email || s.users?.phone || ""}
-                          </p>
-                        </td>
-                        <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                          {s.plans?.display_name || s.plans?.name || "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                          {s.billing_cycle === "yearly" ? "Tahunan" : "Bulanan"}
-                        </td>
+                      <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                        <td className="px-4 py-2.5"><p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{s.users?.name || "—"}</p><p className="text-xs text-gray-400 dark:text-gray-500">{s.users?.email || s.users?.phone || ""}</p></td>
+                        <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">{s.plans?.display_name || s.plans?.name || "—"}</td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{s.billing_cycle === "yearly" ? "Tahunan" : "Bulanan"}</td>
                         <td className="px-4 py-2.5">{subBadge(s.status)}</td>
-                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                          {s.current_period_end
-                            ? new Date(s.current_period_end).toLocaleDateString(
-                                "id-ID",
-                              )
-                            : "—"}
-                        </td>
+                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{s.current_period_end ? new Date(s.current_period_end).toLocaleDateString("id-ID") : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <TablePagination
-                page={subPagination.page}
-                totalPages={subPagination.totalPages}
-                totalItems={subPagination.totalItems}
-                startIndex={subPagination.startIndex}
-                endIndex={subPagination.endIndex}
-                canPrev={subPagination.canPrev}
-                canNext={subPagination.canNext}
-                onPrev={subPagination.prev}
-                onNext={subPagination.next}
-                onGoTo={subPagination.goTo}
-                itemLabel="subscription"
-              />
+              <TablePagination page={subPagination.page} totalPages={subPagination.totalPages} totalItems={subPagination.totalItems} startIndex={subPagination.startIndex} endIndex={subPagination.endIndex} canPrev={subPagination.canPrev} canNext={subPagination.canNext} onPrev={subPagination.prev} onNext={subPagination.next} onGoTo={subPagination.goTo} itemLabel="subscription" />
             </>
           )
-        ) : payments.length === 0 ? (
-          <EmptyState error={error} text="Belum ada pembayaran." />
-        ) : (
+        ) : payments.length === 0 ? <EmptyState error={error} text="Belum ada pembayaran." /> : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/30">
-                  <tr>
-                    {["Order ID", "User", "Jumlah", "Status", "Waktu"].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
+                  <tr>{["Order ID", "User", "Jumlah", "Status", "Waktu"].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                   {payPagination.pageItems.map((p) => (
-                    <tr
-                      key={p.id}
-                      className="hover:bg-gray-50 dark:hover:bg-white/5"
-                    >
-                      <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {p.order_id}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
-                          {p.users?.name || "—"}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {p.users?.email || p.users?.phone || ""}
-                        </p>
-                      </td>
-                      <td className="px-4 py-2.5 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap tabular-nums">
-                        {formatRp(p.amount, p.currency)}
-                      </td>
+                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                      <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{p.order_id}</td>
+                      <td className="px-4 py-2.5"><p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{p.users?.name || "—"}</p><p className="text-xs text-gray-400 dark:text-gray-500">{p.users?.email || p.users?.phone || ""}</p></td>
+                      <td className="px-4 py-2.5 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap tabular-nums">{formatRp(p.amount, p.currency)}</td>
                       <td className="px-4 py-2.5">{payBadge(p.status)}</td>
-                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {new Date(p.paid_at || p.created_at).toLocaleString(
-                          "id-ID",
-                        )}
-                      </td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{new Date(p.paid_at || p.created_at).toLocaleString("id-ID")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <TablePagination
-              page={payPagination.page}
-              totalPages={payPagination.totalPages}
-              totalItems={payPagination.totalItems}
-              startIndex={payPagination.startIndex}
-              endIndex={payPagination.endIndex}
-              canPrev={payPagination.canPrev}
-              canNext={payPagination.canNext}
-              onPrev={payPagination.prev}
-              onNext={payPagination.next}
-              onGoTo={payPagination.goTo}
-              itemLabel="pembayaran"
-            />
+            <TablePagination page={payPagination.page} totalPages={payPagination.totalPages} totalItems={payPagination.totalItems} startIndex={payPagination.startIndex} endIndex={payPagination.endIndex} canPrev={payPagination.canPrev} canNext={payPagination.canNext} onPrev={payPagination.prev} onNext={payPagination.next} onGoTo={payPagination.goTo} itemLabel="pembayaran" />
           </>
         )}
       </Card>
@@ -839,73 +616,20 @@ function BillingView({
   );
 }
 
-// Badge status subscription — warna mengikuti arti status.
 function subBadge(status: string) {
-  const map: Record<string, string> = {
-    active:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    trialing: "bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
-    past_due:
-      "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-    canceled:
-      "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400",
-    expired:
-      "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400",
-  };
-  const label: Record<string, string> = {
-    active: "Aktif",
-    trialing: "Trial",
-    past_due: "Tunggakan",
-    canceled: "Dibatalkan",
-    expired: "Kedaluwarsa",
-  };
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.canceled}`}
-    >
-      {label[status] || status}
-    </span>
-  );
+  const map: Record<string, string> = { active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", trialing: "bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400", past_due: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400", canceled: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400", expired: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400" };
+  const label: Record<string, string> = { active: "Aktif", trialing: "Trial", past_due: "Tunggakan", canceled: "Dibatalkan", expired: "Kedaluwarsa" };
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.canceled}`}>{label[status] || status}</span>;
 }
 
-// Badge status pembayaran.
 function payBadge(status: string) {
-  const map: Record<string, string> = {
-    paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    pending:
-      "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-    expired:
-      "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400",
-    refunded:
-      "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400",
-  };
-  const label: Record<string, string> = {
-    paid: "Lunas",
-    pending: "Menunggu",
-    failed: "Gagal",
-    expired: "Kedaluwarsa",
-    refunded: "Refund",
-  };
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.expired}`}
-    >
-      {label[status] || status}
-    </span>
-  );
+  const map: Record<string, string> = { paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", pending: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400", failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400", expired: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400", refunded: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400" };
+  const label: Record<string, string> = { paid: "Lunas", pending: "Menunggu", failed: "Gagal", expired: "Kedaluwarsa", refunded: "Refund" };
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.expired}`}>{label[status] || status}</span>;
 }
 
-// ── Audit Log view (filter status + cari IP, fetch di sisi server) ────
-function AuditLogView({
-  statusBadge,
-  stats,
-  error,
-}: {
-  statusBadge: (s: AdminGateLog["status"]) => React.ReactNode;
-  stats: { total: number; success: number; failed: number; blocked: number };
-  error: string;
-}) {
+// ── Audit Log ──────────────────────────────────────────────────────
+function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGateLog["status"]) => React.ReactNode; stats: { total: number; success: number; failed: number; blocked: number }; error: string }) {
   const [logs, setLogs] = useState<AdminGateLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -913,166 +637,74 @@ function AuditLogView({
   const [statusFilter, setStatusFilter] = useState("");
   const pagination = usePagination(logs, PAGE_SIZE);
 
-  // Debounce pencarian: tunggu 400ms setelah berhenti mengetik sebelum
-  // fetch ulang ke server dengan filter status & IP.
   useEffect(() => {
     setLoading(true);
     const t = setTimeout(() => {
       (async () => {
         try {
-          const data = await fetchAdminGateLogs({
-            status: statusFilter || undefined,
-            ip: query.trim() || undefined,
-          });
+          const data = await fetchAdminGateLogs({ status: statusFilter || undefined, ip: query.trim() || undefined });
           setLogs(data);
           setFetchError("");
-        } catch {
-          setFetchError("Gagal memuat log.");
-        } finally {
-          setLoading(false);
-        }
+        } catch { setFetchError("Gagal memuat log."); }
+        finally { setLoading(false); }
       })();
     }, 400);
     return () => clearTimeout(t);
   }, [query, statusFilter]);
 
-  const resetFilters = () => {
-    setQuery("");
-    setStatusFilter("");
-  };
+  const resetFilters = () => { setQuery(""); setStatusFilter(""); };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
-          icon={<Activity size={15} />}
-          label="Total Percobaan"
-          value={stats.total}
-        />
-        <StatCard
-          icon={<CheckCircle2 size={15} />}
-          label="Berhasil"
-          value={stats.success}
-          accent="emerald"
-        />
-        <StatCard
-          icon={<XCircle size={15} />}
-          label="Gagal"
-          value={stats.failed}
-          accent="rose"
-        />
-        <StatCard
-          icon={<Ban size={15} />}
-          label="Diblokir"
-          value={stats.blocked}
-          accent="amber"
-        />
+        <StatCard icon={<Activity size={15} />} label="Total Percobaan" value={stats.total} />
+        <StatCard icon={<CheckCircle2 size={15} />} label="Berhasil" value={stats.success} accent="emerald" />
+        <StatCard icon={<XCircle size={15} />} label="Gagal" value={stats.failed} accent="rose" />
+        <StatCard icon={<Ban size={15} />} label="Diblokir" value={stats.blocked} accent="amber" />
       </div>
-
       <Card>
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Riwayat Percobaan Login Gerbang
-          </span>
-          {!loading && logs.length > 0 && (
-            <span className="text-[11px] text-gray-400 dark:text-gray-500">
-              {logs.length} catatan
-            </span>
-          )}
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Riwayat Percobaan Login Gerbang</span>
+          {!loading && logs.length > 0 && <span className="text-[11px] text-gray-400 dark:text-gray-500">{logs.length} catatan</span>}
         </div>
-
-        {/* Filter bar: cari IP + dropdown status */}
         <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[160px]">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari IP... (mis. 182.16.1.25)"
-              className="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 transition"
-            />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari IP..." className="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition" />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/40 transition"
-          >
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition">
             <option value="">Semua Status</option>
             <option value="success">Berhasil</option>
             <option value="failed">Gagal</option>
             <option value="blocked">Diblokir</option>
           </select>
           {(query || statusFilter) && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 transition"
-            >
-              <X size={14} />
-              Reset
+            <button onClick={resetFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+              <X size={14} /> Reset
             </button>
           )}
         </div>
-
         {loading ? (
-          <div className="py-12 flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500" />
-          </div>
+          <div className="py-12 flex justify-center"><div className={`animate-spin rounded-full h-6 w-6 border-b-2 ${ACCENT.spinner}`} /></div>
         ) : logs.length === 0 ? (
-          <EmptyState
-            error={fetchError || error}
-            text={
-              query || statusFilter
-                ? "Tidak ada catatan yang cocok dengan filter."
-                : "Belum ada percobaan tercatat."
-            }
-          />
+          <EmptyState error={fetchError || error} text={query || statusFilter ? "Tidak ada catatan yang cocok." : "Belum ada percobaan tercatat."} />
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/30">
-                  <tr>
-                    {["Waktu", "IP", "Status"].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
+                <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{["Waktu", "IP", "Status"].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                   {pagination.pageItems.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                        {new Date(log.created_at).toLocaleString("id-ID")}
-                      </td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400">
-                        {log.ip}
-                      </td>
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">{new Date(log.created_at).toLocaleString("id-ID")}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400">{log.ip}</td>
                       <td className="px-4 py-2.5">{statusBadge(log.status)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <TablePagination
-              page={pagination.page}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.totalItems}
-              startIndex={pagination.startIndex}
-              endIndex={pagination.endIndex}
-              canPrev={pagination.canPrev}
-              canNext={pagination.canNext}
-              onPrev={pagination.prev}
-              onNext={pagination.next}
-              onGoTo={pagination.goTo}
-              itemLabel="percobaan"
-            />
+            <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="percobaan" />
           </>
         )}
       </Card>
@@ -1080,100 +712,36 @@ function AuditLogView({
   );
 }
 
-// ── Users view (read-only + moderasi: suspend & hapus permanen) ────────
-function UsersView({
-  users,
-  roleBadge,
-  error,
-  onDelete,
-  onSuspend,
-  onUnsuspend,
-}: {
-  users: AdminGateUser[];
-  roleBadge: Record<string, string>;
-  error: string;
-  onDelete: (u: AdminGateUser) => void;
-  onSuspend: (u: AdminGateUser) => void;
-  onUnsuspend: (u: AdminGateUser) => void;
-}) {
+// ── Users ──────────────────────────────────────────────────────────
+function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }: { users: AdminGateUser[]; roleBadge: Record<string, string>; error: string; onDelete: (u: AdminGateUser) => void; onSuspend: (u: AdminGateUser) => void; onUnsuspend: (u: AdminGateUser) => void }) {
   const pagination = usePagination(users, PAGE_SIZE);
-
   return (
     <Card>
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Semua User (lintas company)
-        </span>
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          Hanya tampilan · moderasi: suspend atau hapus permanen
-        </span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Semua User (lintas company)</span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">Moderasi: suspend atau hapus</span>
       </div>
-      {users.length === 0 ? (
-        <EmptyState error={error} text="Belum ada user." />
-      ) : (
+      {users.length === 0 ? <EmptyState error={error} text="Belum ada user." /> : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30">
-                <tr>
-                  {["Nama", "Email / No. HP", "Company", "Role", "Status", "Aksi"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
+              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{["Nama", "Email / No. HP", "Company", "Role", "Status", "Aksi"].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                 {pagination.pageItems.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
-                      {u.name}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
-                      {u.email || u.phone || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">
-                      {u.companies?.name || "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadge[u.role] || ""}`}
-                      >
-                        {u.role}
-                      </span>
-                    </td>
+                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{u.name}</td>
+                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{u.email || u.phone || "—"}</td>
+                    <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">{u.companies?.name || "—"}</td>
+                    <td className="px-4 py-2.5"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadge[u.role] || ""}`}>{u.role}</span></td>
                     <td className="px-4 py-2.5">{entityStatusBadge(u.status)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
                         {u.status === "suspended" ? (
-                          <button
-                            onClick={() => onUnsuspend(u)}
-                            title="Aktifkan kembali (unsuspend)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
-                          >
-                            <RotateCcw size={14} />
-                          </button>
+                          <button onClick={() => onUnsuspend(u)} title="Aktifkan kembali" className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
                         ) : (
-                          <button
-                            onClick={() => onSuspend(u)}
-                            title="Suspend (soft delete — data aman)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
-                          >
-                            <Ban size={14} />
-                          </button>
+                          <button onClick={() => onSuspend(u)} title="Suspend" className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
                         )}
-                        <button
-                          onClick={() => onDelete(u)}
-                          title="Hapus permanen (moderasi)"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <button onClick={() => onDelete(u)} title="Hapus permanen" className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -1181,117 +749,43 @@ function UsersView({
               </tbody>
             </table>
           </div>
-          <TablePagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.totalItems}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            canPrev={pagination.canPrev}
-            canNext={pagination.canNext}
-            onPrev={pagination.prev}
-            onNext={pagination.next}
-            onGoTo={pagination.goTo}
-            itemLabel="user"
-          />
+          <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="user" />
         </>
       )}
     </Card>
   );
 }
 
-// ── Companies view (read-only + moderasi: suspend & hapus permanen) ────
-function CompaniesView({
-  companies,
-  error,
-  onDelete,
-  onSuspend,
-  onUnsuspend,
-  onView,
-}: {
-  companies: AdminGateCompany[];
-  error: string;
-  onDelete: (c: AdminGateCompany) => void;
-  onSuspend: (c: AdminGateCompany) => void;
-  onUnsuspend: (c: AdminGateCompany) => void;
-  onView: (c: AdminGateCompany) => void;
-}) {
+// ── Companies ──────────────────────────────────────────────────────
+function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onView }: { companies: AdminGateCompany[]; error: string; onDelete: (c: AdminGateCompany) => void; onSuspend: (c: AdminGateCompany) => void; onUnsuspend: (c: AdminGateCompany) => void; onView: (c: AdminGateCompany) => void }) {
   const pagination = usePagination(companies, PAGE_SIZE);
-
   return (
     <Card>
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Semua Company
-        </span>
-        <span className="text-[11px] text-gray-400 dark:text-gray-500">
-          Hanya tampilan · moderasi: suspend atau hapus permanen
-        </span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Semua Company</span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">Moderasi: suspend atau hapus</span>
       </div>
-      {companies.length === 0 ? (
-        <EmptyState error={error} text="Belum ada company." />
-      ) : (
+      {companies.length === 0 ? <EmptyState error={error} text="Belum ada company." /> : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30">
-                <tr>
-                  {["Nama", "Mata Uang", "Dibuat", "Status", "Aksi"].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{["Nama", "Mata Uang", "Dibuat", "Status", "Aksi"].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                 {pagination.pageItems.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">
-                      {c.name}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
-                      {c.currency}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString("id-ID")}
-                    </td>
+                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{c.name}</td>
+                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{c.currency}</td>
+                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString("id-ID")}</td>
                     <td className="px-4 py-2.5">{entityStatusBadge(c.status)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => onView(c)}
-                          title="Lihat detail company"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
-                        >
-                          <Eye size={14} />
-                        </button>
+                        <button onClick={() => onView(c)} title="Lihat detail" className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"><Eye size={14} /></button>
                         {c.status === "suspended" ? (
-                          <button
-                            onClick={() => onUnsuspend(c)}
-                            title="Aktifkan kembali (unsuspend)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
-                          >
-                            <RotateCcw size={14} />
-                          </button>
+                          <button onClick={() => onUnsuspend(c)} title="Aktifkan" className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
                         ) : (
-                          <button
-                            onClick={() => onSuspend(c)}
-                            title="Suspend (soft delete — data aman)"
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
-                          >
-                            <Ban size={14} />
-                          </button>
+                          <button onClick={() => onSuspend(c)} title="Suspend" className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
                         )}
-                        <button
-                          onClick={() => onDelete(c)}
-                          title="Hapus permanen (data ikut terhapus)"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <button onClick={() => onDelete(c)} title="Hapus permanen" className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -1299,224 +793,288 @@ function CompaniesView({
               </tbody>
             </table>
           </div>
-          <TablePagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.totalItems}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            canPrev={pagination.canPrev}
-            canNext={pagination.canNext}
-            onPrev={pagination.prev}
-            onNext={pagination.next}
-            onGoTo={pagination.goTo}
-            itemLabel="company"
-          />
+          <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="company" />
         </>
       )}
     </Card>
   );
 }
 
-// ── Modal konfirmasi aksi moderasi (hapus permanen / suspend / aktifkan) ─
-function ConfirmActionModal({
-  confirm,
-  confirming,
-  onCancel,
-  onConfirm,
-}: {
-  confirm: ConfirmState;
-  confirming: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
+// ── Plans Management (CRUD) ────────────────────────────────────────
+function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlans: React.Dispatch<React.SetStateAction<AdminGatePlan[]>>; error: string }) {
+  const { toast } = useToast();
+  const [showModal, setShowModal] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<AdminGatePlan | null>(null);
+  const [form, setForm] = useState({ name: "", display_name: "", price_monthly: 0, price_yearly: 0, max_companies: 1, max_journals: 50 });
+  const [submitting, setSubmitting] = useState(false);
+  const pagination = usePagination(plans, PAGE_SIZE);
+
+  const openCreate = () => {
+    setEditingPlan(null);
+    setForm({ name: "", display_name: "", price_monthly: 0, price_yearly: 0, max_companies: 1, max_journals: 50 });
+    setShowModal(true);
+  };
+
+  const openEdit = (p: AdminGatePlan) => {
+    setEditingPlan(p);
+    setForm({ name: p.name, display_name: p.display_name || "", price_monthly: p.price_monthly, price_yearly: p.price_yearly, max_companies: p.max_companies, max_journals: p.max_journals });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) { toast({ variant: "error", title: "Error", message: "Nama plan wajib diisi" }); return; }
+    setSubmitting(true);
+    try {
+      if (editingPlan) {
+        const updated = await updateAdminGatePlan(editingPlan.id, form);
+        setPlans((prev) => prev.map((p) => p.id === editingPlan.id ? { ...p, ...updated } : p));
+        toast({ variant: "success", title: "Plan diperbarui", message: `${form.name} berhasil diubah.` });
+      } else {
+        const created = await createAdminGatePlan(form);
+        setPlans((prev) => [...prev, created]);
+        toast({ variant: "success", title: "Plan dibuat", message: `${form.name} berhasil ditambahkan.` });
+      }
+      setShowModal(false);
+    } catch (err: any) {
+      toast({ variant: "error", title: "Gagal", message: getErrorMessage(err) });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeactivate = async (p: AdminGatePlan) => {
+    try {
+      await deactivateAdminGatePlan(p.id);
+      setPlans((prev) => prev.map((x) => x.id === p.id ? { ...x, is_active: false } : x));
+      toast({ variant: "success", title: "Plan dinonaktifkan", message: `${p.name} berhasil dinonaktifkan.` });
+    } catch (err: any) {
+      toast({ variant: "error", title: "Gagal", message: getErrorMessage(err) });
+    }
+  };
+
+  const formatRp = (v: number) => v.toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Daftar Plan Langganan</span>
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm">
+            <Plus size={14} /> Tambah Plan
+          </button>
+        </div>
+        {plans.length === 0 ? <EmptyState error={error} text="Belum ada plan." /> : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800/30">
+                  <tr>{["Nama", "Harga Bulanan", "Harga Tahunan", "Max perusahaan", "Max jurnal", "Status", "Aksi"].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  {pagination.pageItems.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-gray-800 dark:text-gray-200">{p.display_name || p.name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">{p.name}</p>
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 tabular-nums">{formatRp(p.price_monthly)}</td>
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 tabular-nums">{formatRp(p.price_yearly)}</td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-center">{p.max_companies}</td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-center">{p.max_journals}</td>
+                      <td className="px-4 py-2.5">
+                        {p.is_active ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"><Power size={10} /> Aktif</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400"><PowerOff size={10} /> Nonaktif</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEdit(p)} title="Edit" className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"><Pencil size={14} /></button>
+                          {p.is_active && (
+                            <button onClick={() => handleDeactivate(p)} title="Nonaktifkan" className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><PowerOff size={14} /></button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="plan" />
+          </>
+        )}
+      </Card>
+
+      {/* Modal create/edit plan */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !submitting && setShowModal(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-6 pt-6 pb-2">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingPlan ? "Edit Plan" : "Tambah Plan Baru"}</h3>
+                <button onClick={() => setShowModal(false)} disabled={submitting} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition"><X size={16} /></button>
+              </div>
+              <div className="px-6 py-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Internal Name *</label>
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. pro, enterprise" className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Display Name</label>
+                  <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} placeholder="e.g. Pro Plan" className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga Bulanan (IDR)</label>
+                    <input type="number" value={form.price_monthly} onChange={(e) => setForm({ ...form, price_monthly: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Harga Tahunan (IDR)</label>
+                    <input type="number" value={form.price_yearly} onChange={(e) => setForm({ ...form, price_yearly: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max Perusahaan</label>
+                    <input type="number" value={form.max_companies} onChange={(e) => setForm({ ...form, max_companies: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max Jurnal</label>
+                    <input type="number" value={form.max_journals} onChange={(e) => setForm({ ...form, max_journals: Number(e.target.value) })} className="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition tabular-nums" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 px-6 py-5 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
+                <button onClick={() => setShowModal(false)} disabled={submitting} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40">Batal</button>
+                <button onClick={handleSubmit} disabled={submitting} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${ACCENT.btn}`}>
+                  {submitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Menyimpan...</> : editingPlan ? "Simpan Perubahan" : "Buat Plan"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── System Health Monitor ──────────────────────────────────────────
+function SystemHealthView() {
+  const { toast } = useToast();
+  const [smtp, setSmtp] = useState<HealthStatus | null>(null);
+  const [whatsapp, setWhatsapp] = useState<HealthStatus | null>(null);
+  const [database, setDatabase] = useState<HealthStatus | null>(null);
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+
+  const checkAll = useCallback(async () => {
+    setLoading({ smtp: true, whatsapp: true, database: true });
+    const [s, w, d] = await Promise.allSettled([checkSmtpHealth(), checkWhatsAppHealth(), checkDatabaseHealth()]);
+    setSmtp(s.status === "fulfilled" ? s.value : { ok: false, message: "Probe gagal" });
+    setWhatsapp(w.status === "fulfilled" ? w.value : { ok: false, message: "Probe gagal" });
+    setDatabase(d.status === "fulfilled" ? d.value : { ok: false, message: "Probe gagal" });
+    setLoading({});
+  }, []);
+
+  useEffect(() => { checkAll(); }, [checkAll]);
+
+  const checkOne = async (name: string, fn: () => Promise<HealthStatus>, setter: (s: HealthStatus) => void) => {
+    setLoading((prev) => ({ ...prev, [name]: true }));
+    try { setter(await fn()); }
+    catch { setter({ ok: false, message: "Probe gagal" }); }
+    setLoading((prev) => ({ ...prev, [name]: false }));
+  };
+
+  const items: { key: string; label: string; icon: React.ReactNode; status: HealthStatus | null; loading: boolean; check: () => void }[] = [
+    { key: "smtp", label: "SMTP (Email)", icon: <Mail size={18} />, status: smtp, loading: !!loading.smtp, check: () => checkOne("smtp", checkSmtpHealth, setSmtp) },
+    { key: "whatsapp", label: "WhatsApp / Fonnte", icon: <MessageSquare size={18} />, status: whatsapp, loading: !!loading.whatsapp, check: () => checkOne("whatsapp", checkWhatsAppHealth, setWhatsapp) },
+    { key: "database", label: "Database (Supabase)", icon: <Database size={18} />, status: database, loading: !!loading.database, check: () => checkOne("database", checkDatabaseHealth, setDatabase) },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">System Health</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Status komponen sistem secara real-time</p>
+        </div>
+        <button onClick={checkAll} disabled={Object.values(loading).some(Boolean)} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+          <RefreshCw size={14} className={Object.values(loading).some(Boolean) ? "animate-spin" : ""} /> Test Ulang Semua
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {items.map((item) => (
+          <Card key={item.key}>
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl ${item.status?.ok ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : item.status === null ? "bg-gray-100 dark:bg-gray-800 text-gray-400" : "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"}`}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.label}</p>
+                    <p className={`text-xs font-medium ${item.status?.ok ? "text-emerald-600 dark:text-emerald-400" : item.status === null ? "text-gray-400" : "text-rose-600 dark:text-rose-400"}`}>
+                      {item.loading ? "Menguji..." : item.status?.ok ? "Online" : "Offline"}
+                    </p>
+                  </div>
+                </div>
+                {item.status !== null && (
+                  <span className={`w-3 h-3 rounded-full ${item.status.ok ? "bg-emerald-500" : "bg-rose-500"}`} />
+                )}
+              </div>
+              {item.status && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{item.status.message}</p>
+              )}
+              <button onClick={item.check} disabled={item.loading} className="w-full px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+                {item.loading ? "Menguji..." : "Test Ulang"}
+              </button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Lazy icon imports for SystemHealthView
+import { Mail, MessageSquare } from "lucide-react";
+
+// ── Confirm Action Modal ───────────────────────────────────────────
+function ConfirmActionModal({ confirm, confirming, onCancel, onConfirm }: { confirm: ConfirmState; confirming: boolean; onCancel: () => void; onConfirm: () => void }) {
   const type = confirm?.type;
   const isUser = type?.endsWith("User") ?? false;
   const isDelete = type?.startsWith("delete") ?? false;
   const isSuspend = type?.startsWith("suspend") ?? false;
   const isUnsuspend = type?.startsWith("unsuspend") ?? false;
+  const name = confirm ? (isUser ? (confirm.item as AdminGateUser).name : (confirm.item as AdminGateCompany).name) : "";
+  const detail = confirm && isUser ? (confirm.item as AdminGateUser).email || (confirm.item as AdminGateUser).phone || "" : "";
 
-  const name = confirm
-    ? isUser
-      ? (confirm.item as AdminGateUser).name
-      : (confirm.item as AdminGateCompany).name
-    : "";
-  const detail =
-    confirm && isUser
-      ? (confirm.item as AdminGateUser).email ||
-        (confirm.item as AdminGateUser).phone ||
-        ""
-      : "";
-
-  // Meta per varian aksi: warna, judul, ikon, dan teks tombol.
   const meta = isDelete
-    ? {
-        icon: <AlertTriangle size={22} />,
-        iconBox:
-          "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
-        title: `Hapus ${isUser ? "User" : "Company"}?`,
-        body: isUser ? (
-          <>
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {name}
-            </span>
-            {detail && (
-              <span className="text-gray-400 dark:text-gray-500">
-                {" "}
-                ({detail})
-              </span>
-            )}{" "}
-            akan dihapus <span className="font-semibold text-rose-600 dark:text-rose-400">permanen</span> beserta
-            seluruh datanya. Tindakan ini tidak bisa dibatalkan.
-          </>
-        ) : (
-          <>
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {name}
-            </span>{" "}
-            akan dihapus <span className="font-semibold text-rose-600 dark:text-rose-400">permanen</span> beserta
-            seluruh datanya (user, akun, periode, jurnal, dll.). Tindakan ini
-            tidak bisa dibatalkan.
-          </>
-        ),
-        button: "Ya, Hapus",
-        buttonCls:
-          "bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-500/25",
-      }
+    ? { icon: <AlertTriangle size={22} />, iconBox: "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400", title: `Hapus ${isUser ? "User" : "Company"}?`, body: isUser ? <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span>{detail && <span className="text-gray-400 dark:text-gray-500"> ({detail})</span>} akan dihapus <span className="font-semibold text-rose-600 dark:text-rose-400">permanen</span>.</> : <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> akan dihapus <span className="font-semibold text-rose-600 dark:text-rose-400">permanen</span> beserta datanya.</>, button: "Ya, Hapus", buttonCls: "bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-500/25" }
     : isSuspend
-      ? {
-          icon: <Ban size={22} />,
-          iconBox:
-            "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
-          title: `Suspend ${isUser ? "User" : "Company"}?`,
-          body: isUser ? (
-            <>
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                {name}
-              </span>
-              {detail && (
-                <span className="text-gray-400 dark:text-gray-500">
-                  {" "}
-                  ({detail})
-                </span>
-              )}{" "}
-              akan dinonaktifkan sementara — tidak bisa login & semua akses
-              ditolak. <span className="font-semibold text-amber-600 dark:text-amber-400">Data tidak dihapus</span> dan
-              bisa diaktifkan kembali.
-            </>
-          ) : (
-            <>
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                {name}
-              </span>{" "}
-              akan dinonaktifkan sementara — seluruh anggotanya kehilangan
-              akses. <span className="font-semibold text-amber-600 dark:text-amber-400">Data tidak dihapus</span> dan
-              bisa diaktifkan kembali.
-            </>
-          ),
-          button: "Ya, Suspend",
-          buttonCls:
-            "bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-500/25",
-        }
+      ? { icon: <Ban size={22} />, iconBox: "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400", title: `Suspend ${isUser ? "User" : "Company"}?`, body: <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> akan dinonaktifkan sementara. <span className="font-semibold text-amber-600 dark:text-amber-400">Data tidak dihapus.</span></>, button: "Ya, Suspend", buttonCls: "bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-500/25" }
       : isUnsuspend
-        ? {
-            icon: <CheckCircle2 size={22} />,
-            iconBox:
-              "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-            title: `Aktifkan Kembali ${isUser ? "User" : "Company"}?`,
-            body: isUser ? (
-              <>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {name}
-                </span>
-                {detail && (
-                  <span className="text-gray-400 dark:text-gray-500">
-                    {" "}
-                    ({detail})
-                  </span>
-                )}{" "}
-                akan diaktifkan kembali — bisa login seperti biasa.
-              </>
-            ) : (
-              <>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {name}
-                </span>{" "}
-                akan diaktifkan kembali — seluruh anggotanya bisa mengakses
-                seperti biasa.
-              </>
-            ),
-            button: "Ya, Aktifkan",
-            buttonCls:
-              "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/25",
-          }
+        ? { icon: <CheckCircle2 size={22} />, iconBox: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", title: `Aktifkan Kembali ${isUser ? "User" : "Company"}?`, body: <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> akan diaktifkan kembali.</>, button: "Ya, Aktifkan", buttonCls: "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/25" }
         : null;
 
   return (
     <AnimatePresence>
       {confirm && meta && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={onCancel}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden"
-          >
-            {/* Header sesuai varian */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onCancel}>
+          <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden">
             <div className="flex items-start gap-4 px-6 pt-6">
-              <div className={`shrink-0 p-3 rounded-2xl ${meta.iconBox}`}>
-                {meta.icon}
-              </div>
+              <div className={`shrink-0 p-3 rounded-2xl ${meta.iconBox}`}>{meta.icon}</div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {meta.title}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-words">
-                  {meta.body}
-                </p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{meta.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-words">{meta.body}</p>
               </div>
-              <button
-                onClick={onCancel}
-                disabled={confirming}
-                className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition disabled:opacity-40"
-              >
-                <X size={16} />
-              </button>
+              <button onClick={onCancel} disabled={confirming} className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition disabled:opacity-40"><X size={16} /></button>
             </div>
-
-            {/* Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-5 mt-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
-              <button
-                onClick={onCancel}
-                disabled={confirming}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40"
-              >
-                Batal
-              </button>
-              <button
-                onClick={onConfirm}
-                disabled={confirming}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${meta.buttonCls}`}
-              >
-                {confirming ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Memproses...
-                  </>
-                ) : (
-                  <>
-                    {meta.icon}
-                    {meta.button}
-                  </>
-                )}
+              <button onClick={onCancel} disabled={confirming} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40">Batal</button>
+              <button onClick={onConfirm} disabled={confirming} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${meta.buttonCls}`}>
+                {confirming ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Memproses...</> : <>{meta.icon} {meta.button}</>}
               </button>
             </div>
           </motion.div>
@@ -1526,161 +1084,63 @@ function ConfirmActionModal({
   );
 }
 
-// ── Modal detail company (info + ringkasan data + subscription) ────────
-function CompanyDetailModal({
-  company,
-  data,
-  loading,
-  error,
-  onClose,
-}: {
-  company: AdminGateCompany | null;
-  data: AdminGateCompanyDetail | null;
-  loading: boolean;
-  error: string;
-  onClose: () => void;
-}) {
+// ── Company Detail Modal ───────────────────────────────────────────
+function CompanyDetailModal({ company, data, loading, error, onClose }: { company: AdminGateCompany | null; data: AdminGateCompanyDetail | null; loading: boolean; error: string; onClose: () => void }) {
   const formatDate = (d: string) => new Date(d).toLocaleDateString("id-ID");
-
   return (
     <AnimatePresence>
       {company && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden"
-          >
-            {/* Header */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+          <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden">
             <div className="flex items-start gap-4 px-6 pt-6">
-              <div className="shrink-0 p-3 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25">
-                <Building2 size={22} />
-              </div>
+              <div className="shrink-0 p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25"><Building2 size={22} /></div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">
-                  {company.name}
-                </h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">{company.name}</h3>
                 <div className="mt-1 flex items-center gap-2 flex-wrap">
                   {entityStatusBadge(company.status)}
-                  {data?.code && (
-                    <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500">
-                      Kode: {data.code}
-                    </span>
-                  )}
+                  {data?.code && <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500">Kode: {data.code}</span>}
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition"
-              >
-                <X size={16} />
-              </button>
+              <button onClick={onClose} className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition"><X size={16} /></button>
             </div>
-
-            {/* Body */}
             <div className="px-6 pt-5">
               {loading ? (
-                <div className="py-14 flex justify-center">
-                  <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-primary-500" />
-                </div>
+                <div className="py-14 flex justify-center"><div className={`animate-spin rounded-full h-7 w-7 border-b-2 ${ACCENT.spinner}`} /></div>
               ) : error ? (
-                <div className="py-14 text-center">
-                  <XCircle size={36} className="mx-auto mb-3 opacity-40 text-rose-400" />
-                  <p className="text-sm text-gray-400 dark:text-gray-500">{error}</p>
-                </div>
+                <div className="py-14 text-center"><XCircle size={36} className="mx-auto mb-3 opacity-40 text-rose-400" /><p className="text-sm text-gray-400 dark:text-gray-500">{error}</p></div>
               ) : data ? (
                 <div className="space-y-5">
-                  {/* Info dasar */}
                   <div className="grid grid-cols-2 gap-3">
                     <InfoCell label="Mata Uang" value={data.currency} />
-                    <InfoCell
-                      label="Dibuat"
-                      value={formatDate(data.created_at)}
-                    />
+                    <InfoCell label="Dibuat" value={formatDate(data.created_at)} />
                   </div>
-
-                  {/* Ringkasan data */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <StatCard
-                      icon={<Users size={15} />}
-                      label="User"
-                      value={data.total_users}
-                    />
-                    <StatCard
-                      icon={<UserCheck size={15} />}
-                      label="Member"
-                      value={data.total_members}
-                    />
-                    <StatCard
-                      icon={<ListTree size={15} />}
-                      label="Akun"
-                      value={data.total_accounts}
-                    />
-                    <StatCard
-                      icon={<ScrollText size={15} />}
-                      label="Jurnal"
-                      value={data.total_journals}
-                    />
+                    <StatCard icon={<Users size={15} />} label="User" value={data.total_users} />
+                    <StatCard icon={<UserCheck size={15} />} label="Member" value={data.total_members} />
+                    <StatCard icon={<ListTree size={15} />} label="Akun" value={data.total_accounts} />
+                    <StatCard icon={<ScrollText size={15} />} label="Jurnal" value={data.total_journals} />
                   </div>
-
-                  {/* Subscription aktif */}
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gray-50/70 dark:bg-white/[0.03] px-4 py-3.5">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-                      Subscription Aktif
-                    </p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Subscription Aktif</p>
                     {data.subscription ? (
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
-                          <CreditCard size={15} className="text-primary-500" />
-                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                            {data.subscription.plan_name || "—"}
-                          </span>
+                          <CreditCard size={15} className="text-indigo-500" />
+                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{data.subscription.plan_name || "—"}</span>
                           {subBadge(data.subscription.status)}
                         </div>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {data.subscription.billing_cycle === "yearly"
-                            ? "Tahunan"
-                            : "Bulanan"}
-                          {data.subscription.current_period_end
-                            ? ` · berakhir ${formatDate(
-                                data.subscription.current_period_end,
-                              )}`
-                            : ""}
+                          {data.subscription.billing_cycle === "yearly" ? "Tahunan" : "Bulanan"}
+                          {data.subscription.current_period_end ? ` · berakhir ${formatDate(data.subscription.current_period_end)}` : ""}
                         </span>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
-                        Belum ada subscription.
-                      </p>
-                    )}
+                    ) : <p className="text-sm text-gray-400 dark:text-gray-500">Belum ada subscription.</p>}
                   </div>
                 </div>
-              ) : (
-                <div className="py-14 text-center">
-                  <p className="text-sm text-gray-400 dark:text-gray-500">
-                    Tidak ada data.
-                  </p>
-                </div>
-              )}
+              ) : <div className="py-14 text-center"><p className="text-sm text-gray-400 dark:text-gray-500">Tidak ada data.</p></div>}
             </div>
-
-            {/* Footer */}
             <div className="flex items-center justify-end px-6 py-5 mt-5 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition"
-              >
-                Tutup
-              </button>
+              <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition">Tutup</button>
             </div>
           </motion.div>
         </motion.div>
@@ -1689,92 +1149,42 @@ function CompanyDetailModal({
   );
 }
 
-// Sel kecil untuk info dasar company.
-function InfoCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gray-50/70 dark:bg-white/[0.03] px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
-        {label}
-      </p>
-      <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-// ── Badge status entitas (user/company): active / suspended ───────────
-function entityStatusBadge(status?: "active" | "suspended") {
-  if (status === "suspended") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
-        <Ban size={10} />
-        Suspend
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-      <CheckCircle2 size={10} />
-      Aktif
-    </span>
-  );
-}
-
-// ── Shared UI ─────────────────────────────────────────────────────────
+// ── Shared UI ──────────────────────────────────────────────────────
 function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
-      {children}
-    </div>
-  );
+  return <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">{children}</div>;
 }
 
 function EmptyState({ error, text }: { error: string; text: string }) {
   return (
     <div className="py-16 text-center">
-      {error ? (
-        <>
-          <XCircle size={40} className="mx-auto mb-3 opacity-40 text-rose-400" />
-          <p className="text-gray-400 dark:text-gray-500 text-sm">{error}</p>
-        </>
-      ) : (
-        <p className="text-gray-400 dark:text-gray-500 text-sm">{text}</p>
-      )}
+      {error ? <><XCircle size={40} className="mx-auto mb-3 opacity-40 text-rose-400" /><p className="text-gray-400 dark:text-gray-500 text-sm">{error}</p></> : <p className="text-gray-400 dark:text-gray-500 text-sm">{text}</p>}
     </div>
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  accent?: "emerald" | "rose" | "amber";
-}) {
-  const accentCls =
-    accent === "emerald"
-      ? "text-emerald-500"
-      : accent === "rose"
-        ? "text-rose-500"
-        : accent === "amber"
-          ? "text-amber-500"
-          : "text-primary-500";
+function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent?: "emerald" | "rose" | "amber" }) {
+  const accentCls = accent === "emerald" ? "text-emerald-500" : accent === "rose" ? "text-rose-500" : accent === "amber" ? "text-amber-500" : "text-indigo-500";
   return (
     <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3.5">
       <div className={`flex items-center gap-1.5 mb-1 ${accentCls}`}>
         {icon}
-        <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">
-          {label}
-        </p>
+        <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">{label}</p>
       </div>
-      <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
-        {value}
-      </p>
+      <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{value}</p>
     </div>
   );
+}
+
+function InfoCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gray-50/70 dark:bg-white/[0.03] px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</p>
+    </div>
+  );
+}
+
+function entityStatusBadge(status?: "active" | "suspended") {
+  if (status === "suspended") return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"><Ban size={10} /> Suspend</span>;
+  return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"><CheckCircle2 size={10} /> Aktif</span>;
 }

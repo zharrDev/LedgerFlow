@@ -35,8 +35,6 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
   }, []);
 
   // Sinkronkan mata uang dari database (per-company) ke localStorage.
-  // Jadi pilihan mata uang yang disimpan company berlaku di semua perangkat
-  // anggota, bukan hanya browser yang dipakai saat mengubahnya.
   useEffect(() => {
     let cancelled = false;
     getMyCompany()
@@ -46,13 +44,8 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
           setCurrency(company.currency);
         }
       })
-      .catch(() => {
-        // Gagal mengambil company (mis. token belum siap) — biarkan
-        // localStorage memakai nilai yang sudah ada.
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const toggleMobileMenu = useCallback(
@@ -62,33 +55,71 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
-      {/* Background orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-300/20 dark:bg-primary-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 -left-40 w-96 h-96 bg-emerald-300/20 dark:bg-emerald-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+      {/* Desktop: 2 floating cards */}
+      <div className="hidden lg:flex h-screen p-4 gap-4">
+        {/* Sidebar card */}
+        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col">
+          <Sidebar mode="desktop" onLinkClick={closeMobileMenu} />
+        </aside>
+
+        {/* Content card */}
+        <div className="flex-1 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
+          {/* Header strip — inside content card */}
+          <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
+
+          {/* Main scrollable area */}
+          <main
+            className={`flex-1 overflow-x-hidden ${
+              fullHeight
+                ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
+                : "overflow-y-auto p-4 sm:p-6 lg:p-8 pb-8"
+            }`}
+          >
+            {!hideTitle && (title || description) && (
+              <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>
+                {title && (
+                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                    {title}
+                  </h1>
+                )}
+                {description && (
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                    {description}
+                  </p>
+                )}
+              </div>
+            )}
+            {fullHeight ? (
+              <div className="flex-1 min-h-0 flex flex-col">{children}</div>
+            ) : (
+              children
+            )}
+          </main>
+        </div>
       </div>
 
-      <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
+      {/* Mobile / Tablet: drawer + content */}
+      <div className="lg:hidden min-h-screen flex flex-col">
+        <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
 
-      <div className="flex relative">
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 top-16 bg-black/60 backdrop-blur-sm z-30 animate-fade-in"
+            onClick={closeMobileMenu}
+          />
+        )}
+
         <Sidebar
           mobileMenuOpen={mobileMenuOpen}
           onLinkClick={closeMobileMenu}
         />
 
-        {mobileMenuOpen && (
-          <div
-            className="fixed inset-0 top-16 bg-black/60 backdrop-blur-sm z-30 lg:hidden animate-fade-in"
-            onClick={closeMobileMenu}
-          />
-        )}
-
         <main
-          className={`flex-1 lg:ml-64 ${
+          className={`flex-1 ${
             fullHeight
-              ? "h-[calc(100dvh-4rem)] overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-6"
-              : "overflow-x-hidden p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8"
+              ? "h-[calc(100dvh-4rem)] overflow-hidden flex flex-col p-3 sm:p-4"
+              : "overflow-x-hidden p-4 sm:p-6 pb-24 lg:pb-8"
           }`}
         >
           {!hideTitle && (title || description) && (
@@ -111,9 +142,9 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
             children
           )}
         </main>
-      </div>
 
-      <AppNav />
+        <AppNav />
+      </div>
     </div>
   );
 }
