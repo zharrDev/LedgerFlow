@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../hooks/useLanguage";
 import GoogleAuthButton from "./GoogleAuthButton";
 import logo from "../../assets/ledgerflow.webp";
 
@@ -22,6 +23,8 @@ export default function LoginForm({
   const [showUI, setShowUI] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const { requestWaOtp, verifyWaOtp, loginWithGoogle } = useAuth();
+  const { language } = useLanguage();
+  const id = language === "id";
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,7 +41,11 @@ export default function LoginForm({
     if (e) e.preventDefault();
     setError("");
     if (!PHONE_RE.test(phone.trim())) {
-      setError("Nomor WhatsApp tidak valid. Contoh: 081234567890");
+      setError(
+        id
+          ? "Nomor WhatsApp tidak valid. Contoh: 081234567890"
+          : "Invalid WhatsApp number. Example: 081234567890",
+      );
       return;
     }
     setLoading(true);
@@ -47,7 +54,7 @@ export default function LoginForm({
       setStep("otp");
       setCountdown(RESEND_SECONDS);
     } catch (err: any) {
-      setError(err.message || "Gagal mengirim kode OTP.");
+      setError(err.message || (id ? "Gagal mengirim kode OTP." : "Failed to send OTP code."));
     } finally {
       setLoading(false);
     }
@@ -57,7 +64,11 @@ export default function LoginForm({
     e.preventDefault();
     setError("");
     if (!/^\d{6}$/.test(code.trim())) {
-      setError("Masukkan kode OTP 6 digit.");
+      setError(
+        id
+          ? "Masukkan kode OTP 6 digit."
+          : "Enter the 6-digit OTP code.",
+      );
       return;
     }
     setLoading(true);
@@ -65,7 +76,10 @@ export default function LoginForm({
       await verifyWaOtp({ phone: phone.trim(), code: code.trim(), mode: "login" });
       navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Kode OTP salah atau kedaluwarsa.");
+      setError(
+        err.message ||
+          (id ? "Kode OTP salah atau kedaluwarsa." : "OTP code is invalid or expired."),
+      );
       setCode("");
     } finally {
       setLoading(false);
@@ -110,7 +124,7 @@ export default function LoginForm({
         className="text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent flex items-center justify-center flex-wrap"
         style={{ perspective: "600px" }}
       >
-        {"Welcome Back".split("").map((char, i) => (
+        {(id ? "Selamat Datang Kembali" : "Welcome Back").split("").map((char, i) => (
           <motion.span
             key={i}
             variants={{
@@ -135,8 +149,12 @@ export default function LoginForm({
       </motion.h1>
       <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">
         {step === "phone"
-          ? "Masuk dengan nomor WhatsApp"
-          : `Masukkan kode yang dikirim ke ${phone}`}
+          ? id
+            ? "Masuk dengan nomor WhatsApp"
+            : "Sign in with your WhatsApp number"
+          : id
+            ? `Masukkan kode yang dikirim ke ${phone}`
+            : `Enter the code sent to ${phone}`}
       </p>
 
       {error && (
@@ -151,7 +169,9 @@ export default function LoginForm({
             <input
               type="tel"
               inputMode="numeric"
-              placeholder="No. WhatsApp (08xxxxxxxxxx)"
+              placeholder={
+                id ? "No. WhatsApp (08xxxxxxxxxx)" : "WhatsApp number (08xxxxxxxxxx)"
+              }
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className={`w-full px-4 py-3 rounded-xl
@@ -184,14 +204,20 @@ export default function LoginForm({
       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
     "
           >
-            {loading ? "Mengirim kode..." : "Kirim Kode via WhatsApp"}
+            {loading
+              ? id
+                ? "Mengirim kode..."
+                : "Sending code..."
+              : id
+                ? "Kirim Kode via WhatsApp"
+                : "Send Code via WhatsApp"}
           </button>
           <div className="text-center">
             <Link
               to="/forgot-password"
               className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
             >
-              Lupa Password (akun email)?
+              {id ? "Lupa Password (akun email)?" : "Forgot password (email account)?"}
             </Link>
           </div>
         </form>
@@ -202,7 +228,7 @@ export default function LoginForm({
               type="text"
               inputMode="numeric"
               maxLength={6}
-              placeholder="Kode OTP 6 digit"
+              placeholder={id ? "Kode OTP 6 digit" : "6-digit OTP code"}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               className={`w-full px-4 py-3 rounded-xl text-center text-xl tracking-[0.5em] font-semibold
@@ -235,7 +261,7 @@ export default function LoginForm({
       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
     "
           >
-            {loading ? "Memverifikasi..." : "Masuk"}
+            {loading ? (id ? "Memverifikasi..." : "Verifying...") : id ? "Masuk" : "Sign In"}
           </button>
 
           <div className="flex items-center justify-between text-sm">
@@ -248,7 +274,7 @@ export default function LoginForm({
               }}
               className="text-gray-500 dark:text-gray-400 hover:text-primary-600 transition"
             >
-              Ganti nomor
+              {id ? "Ganti nomor" : "Change number"}
             </button>
             <button
               type="button"
@@ -256,7 +282,13 @@ export default function LoginForm({
               disabled={countdown > 0}
               className="text-primary-600 dark:text-primary-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {countdown > 0 ? `Kirim ulang (${countdown}s)` : "Kirim ulang kode"}
+              {countdown > 0
+                ? id
+                  ? `Kirim ulang (${countdown}s)`
+                  : `Resend (${countdown}s)`
+                : id
+                  ? "Kirim ulang kode"
+                  : "Resend code"}
             </button>
           </div>
         </form>
@@ -265,7 +297,7 @@ export default function LoginForm({
       <div className="mt-6 flex items-center">
         <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
         <span className="px-3 text-sm text-gray-500 dark:text-gray-400">
-          Or
+          {id ? "atau" : "Or"}
         </span>
         <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
       </div>
@@ -273,18 +305,18 @@ export default function LoginForm({
       {/* Google Login Button — CUSTOM (bukan @react-oauth/google) */}
       <GoogleAuthButton
         loading={googleLoading}
-        label="Sign in with Google"
+        label={id ? "Masuk dengan Google" : "Sign in with Google"}
         onClick={handleGoogleLogin}
       />
 
       <p className="text-center text-sm mt-6 text-gray-700 dark:text-gray-300">
-        Don't have an account?{" "}
+        {id ? "Belum punya akun?" : "Don't have an account?"}{" "}
         <button
           type="button"
           onClick={() => onModeChange("register")}
           className="text-primary-600 font-medium hover:underline"
         >
-          Sign up
+          {id ? "Daftar" : "Sign up"}
         </button>
       </p>
     </div>

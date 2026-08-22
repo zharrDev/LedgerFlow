@@ -178,25 +178,53 @@ body {
     animation: none !important;
   }
 }
-/* Smooth navigation and the homepage pointer spotlight. */
+/* Smooth navigation and the homepage pointer dot + elastic tail. */
 html { scroll-behavior: smooth; }
-.cursor-glow {
+
+/* Titik kecil tepat di ujung kursor */
+.cursor-dot {
   position: fixed;
   z-index: 40;
-  width: 34rem;
-  height: 34rem;
-  margin: -17rem 0 0 -17rem;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
   pointer-events: none;
   border-radius: 9999px;
-  opacity: .42;
-  background: radial-gradient(circle, rgb(34 211 238 / .20) 0%, rgb(59 130 246 / .10) 25%, transparent 67%);
-  filter: blur(2px);
+  background: radial-gradient(circle, rgb(165 243 252 / 1) 0%, rgb(34 211 238 / .85) 55%, transparent 100%);
+  box-shadow: 0 0 10px rgb(34 211 238 / .6), 0 0 3px rgb(165 243 252 / .9);
   mix-blend-mode: screen;
-  will-change: left, top;
 }
-.dark .cursor-glow { opacity: .58; }
+
+/* Ekor elastis: segmen makin kecil & transparan, mengikuti dengan spring berantai */
+.cursor-tail {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: 9999px;
+  mix-blend-mode: screen;
+}
+.cursor-tail-1 {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  background: rgb(34 211 238 / .45);
+}
+.cursor-tail-2 {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: rgb(34 211 238 / .26);
+}
+.cursor-tail-3 {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  background: rgb(34 211 238 / .14);
+}
+
 @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .cursor-glow { display: none; }
+  .cursor-dot,
+  .cursor-tail { display: none; }
   *, *::before, *::after { scroll-behavior: auto !important; }
 }

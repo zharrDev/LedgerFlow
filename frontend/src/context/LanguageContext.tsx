@@ -11,7 +11,7 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(() =>
-    localStorage.getItem("ledgerflow-language") === "en" ? "en" : "id",
+    localStorage.getItem("ledgerflow-language") === "id" ? "id" : "en",
   );
 
   useEffect(() => {

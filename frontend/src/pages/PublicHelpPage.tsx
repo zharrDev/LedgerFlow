@@ -2,13 +2,17 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HelpCircle } from "lucide-react";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import Footer from "../components/Footer";
 import { FaqAccordion } from "../components/help/FaqAccordion";
 import { ContactCards } from "../components/help/ContactCards";
 import { helpFaqs, helpContactCards } from "../data/helpCenterContent";
+import { useLanguage } from "../hooks/useLanguage";
 import logo from "../assets/ledgerflow.webp";
 
 export default function PublicHelpPage() {
+  const { language } = useLanguage();
+  const id = language === "id";
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
       {/* Public header (konsisten dengan landing) */}
@@ -25,18 +29,19 @@ export default function PublicHelpPage() {
             </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher />
             <ThemeSwitcher />
             <Link
               to="/login"
               className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary-500 px-3 py-2 rounded-lg transition-colors"
             >
-              Login
+              {id ? "Masuk" : "Login"}
             </Link>
             <Link
               to="/register"
               className="text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 px-4 py-2 rounded-xl shadow-sm transition-colors"
             >
-              Daftar
+              {id ? "Daftar" : "Sign up"}
             </Link>
           </div>
         </div>
@@ -52,10 +57,12 @@ export default function PublicHelpPage() {
             <HelpCircle className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Help Center
+            {id ? "Pusat Bantuan" : "Help Center"}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto">
-            FAQ & kontak support LedgerFlow — bisa diakses tanpa login
+            {id
+              ? "FAQ & kontak support LedgerFlow — bisa diakses tanpa login"
+              : "LedgerFlow FAQ & support contacts — accessible without login"}
           </p>
         </motion.div>
 
@@ -69,7 +76,9 @@ export default function PublicHelpPage() {
               <HelpCircle size={18} />
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Pertanyaan yang Sering Ditanyakan
+              {id
+                ? "Pertanyaan yang Sering Ditanyakan"
+                : "Frequently Asked Questions"}
             </h2>
           </div>
           <FaqAccordion faqs={helpFaqs} />

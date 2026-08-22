@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../hooks/useLanguage";
 import GoogleAuthButton from "./GoogleAuthButton";
 import logo from "../../assets/ledgerflow.webp";
 
@@ -26,6 +27,8 @@ export default function RegisterForm({
   const [showUI, setShowUI] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const { requestWaOtp, verifyWaOtp, loginWithGoogle } = useAuth();
+  const { language } = useLanguage();
+  const id = language === "id";
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,11 +43,20 @@ export default function RegisterForm({
 
   const validateForm = () => {
     const errs: Record<string, string> = {};
-    if (!fullName.trim()) errs.fullName = "Nama wajib diisi.";
-    if (!companyName.trim()) errs.companyName = "Nama perusahaan wajib diisi.";
+    if (!fullName.trim())
+      errs.fullName = id ? "Nama wajib diisi." : "Name is required.";
+    if (!companyName.trim())
+      errs.companyName = id
+        ? "Nama perusahaan wajib diisi."
+        : "Company name is required.";
     if (!PHONE_RE.test(phone.trim()))
-      errs.phone = "Nomor WhatsApp tidak valid. Contoh: 081234567890";
-    if (!agreed) errs.agreed = "Anda harus menyetujui Syarat & Ketentuan.";
+      errs.phone = id
+        ? "Nomor WhatsApp tidak valid. Contoh: 081234567890"
+        : "Invalid WhatsApp number. Example: 081234567890";
+    if (!agreed)
+      errs.agreed = id
+        ? "Anda harus menyetujui Syarat & Ketentuan."
+        : "You must agree to the Terms & Conditions.";
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -64,7 +76,7 @@ export default function RegisterForm({
       setStep("otp");
       setCountdown(RESEND_SECONDS);
     } catch (err: any) {
-      setApiError(err.message || "Gagal mengirim kode OTP.");
+      setApiError(err.message || (id ? "Gagal mengirim kode OTP." : "Failed to send OTP code."));
     } finally {
       setLoading(false);
     }
@@ -74,7 +86,7 @@ export default function RegisterForm({
     e.preventDefault();
     setApiError("");
     if (!/^\d{6}$/.test(code.trim())) {
-      setApiError("Masukkan kode OTP 6 digit.");
+      setApiError(id ? "Masukkan kode OTP 6 digit." : "Enter the 6-digit OTP code.");
       return;
     }
     setLoading(true);
@@ -88,7 +100,10 @@ export default function RegisterForm({
       });
       navigate("/dashboard");
     } catch (err: any) {
-      setApiError(err.message || "Kode OTP salah atau kedaluwarsa.");
+      setApiError(
+        err.message ||
+          (id ? "Kode OTP salah atau kedaluwarsa." : "OTP code is invalid or expired."),
+      );
       setCode("");
     } finally {
       setLoading(false);
@@ -148,7 +163,7 @@ export default function RegisterForm({
         className="text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent flex items-center justify-center flex-wrap"
         style={{ perspective: "600px" }}
       >
-        {"Create Account".split("").map((char, i) => (
+        {(id ? "Buat Akun" : "Create Account").split("").map((char, i) => (
           <motion.span
             key={i}
             variants={{
@@ -173,8 +188,12 @@ export default function RegisterForm({
       </motion.h1>
       <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">
         {step === "form"
-          ? "Start your 30‑day free trial"
-          : `Masukkan kode yang dikirim ke ${phone}`}
+          ? id
+            ? "Mulai uji coba gratis 15 hari"
+            : "Start your 15-day free trial"
+          : id
+            ? `Masukkan kode yang dikirim ke ${phone}`
+            : `Enter the code sent to ${phone}`}
       </p>
 
       {(apiError || fieldErrors.agreed) && (
@@ -188,7 +207,7 @@ export default function RegisterForm({
           <div>
             <input
               name="fullName"
-              placeholder="Full Name"
+              placeholder={id ? "Nama Lengkap" : "Full Name"}
               value={fullName}
               onChange={(e) => {
                 setFullName(e.target.value);
@@ -208,7 +227,7 @@ export default function RegisterForm({
           <div>
             <input
               name="companyName"
-              placeholder="Company Name"
+              placeholder={id ? "Nama Perusahaan" : "Company Name"}
               value={companyName}
               onChange={(e) => {
                 setCompanyName(e.target.value);
@@ -230,7 +249,9 @@ export default function RegisterForm({
               name="phone"
               type="tel"
               inputMode="numeric"
-              placeholder="No. WhatsApp (08xxxxxxxxxx)"
+              placeholder={
+                id ? "No. WhatsApp (08xxxxxxxxxx)" : "WhatsApp number (08xxxxxxxxxx)"
+              }
               value={phone}
               onChange={(e) => {
                 setPhone(e.target.value);
@@ -270,12 +291,12 @@ export default function RegisterForm({
       "
             />
             <span>
-              I agree to the{" "}
+              {id ? "Saya menyetujui " : "I agree to the "}{" "}
               <Link
                 to="/terms"
                 className="text-primary-600 dark:text-primary-400 hover:underline"
               >
-                Terms &amp; Conditions
+                {id ? "Syarat & Ketentuan" : "Terms & Conditions"}
               </Link>
             </span>
           </label>
@@ -294,7 +315,13 @@ export default function RegisterForm({
       disabled:hover:scale-100
     "
           >
-            {loading ? "Mengirim kode..." : "Get Started"}
+            {loading
+              ? id
+                ? "Mengirim kode..."
+                : "Sending code..."
+              : id
+                ? "Mulai Sekarang"
+                : "Get Started"}
           </button>
         </form>
       ) : (
@@ -304,7 +331,7 @@ export default function RegisterForm({
               type="text"
               inputMode="numeric"
               maxLength={6}
-              placeholder="Kode OTP 6 digit"
+              placeholder={id ? "Kode OTP 6 digit" : "6-digit OTP code"}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               className={`${inputClass()} text-center text-xl tracking-[0.5em] font-semibold`}
@@ -326,7 +353,13 @@ export default function RegisterForm({
       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
     "
           >
-            {loading ? "Membuat akun..." : "Buat Akun & Masuk"}
+            {loading
+              ? id
+                ? "Membuat akun..."
+                : "Creating account..."
+              : id
+                ? "Buat Akun & Masuk"
+                : "Create Account & Sign In"}
           </button>
 
           <div className="flex items-center justify-between text-sm">
@@ -339,7 +372,7 @@ export default function RegisterForm({
               }}
               className="text-gray-500 dark:text-gray-400 hover:text-primary-600 transition"
             >
-              Ubah data
+              {id ? "Ubah data" : "Edit details"}
             </button>
             <button
               type="button"
@@ -347,7 +380,13 @@ export default function RegisterForm({
               disabled={countdown > 0}
               className="text-primary-600 dark:text-primary-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {countdown > 0 ? `Kirim ulang (${countdown}s)` : "Kirim ulang kode"}
+              {countdown > 0
+                ? id
+                  ? `Kirim ulang (${countdown}s)`
+                  : `Resend (${countdown}s)`
+                : id
+                  ? "Kirim ulang kode"
+                  : "Resend code"}
             </button>
           </div>
         </form>
@@ -356,7 +395,7 @@ export default function RegisterForm({
       <div className="mt-6 flex items-center">
         <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
         <span className="px-3 text-sm text-gray-500 dark:text-gray-400">
-          Or
+          {id ? "atau" : "Or"}
         </span>
         <div className="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
       </div>
@@ -364,18 +403,18 @@ export default function RegisterForm({
       {/* Google Sign Up Button — CUSTOM */}
       <GoogleAuthButton
         loading={googleLoading}
-        label="Sign up with Google"
+        label={id ? "Daftar dengan Google" : "Sign up with Google"}
         onClick={handleGoogleSignUp}
       />
 
       <p className="text-center text-sm mt-6 text-gray-700 dark:text-gray-300">
-        Already have an account?{" "}
+        {id ? "Sudah punya akun?" : "Already have an account?"}{" "}
         <button
           type="button"
           onClick={() => onModeChange("login")}
           className="text-primary-600 font-medium hover:underline"
         >
-          Sign in
+          {id ? "Masuk" : "Sign in"}
         </button>
       </p>
     </div>

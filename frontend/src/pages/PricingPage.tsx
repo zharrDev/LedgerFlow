@@ -18,6 +18,7 @@ import {
   type Plan,
 } from "../services/paymentService";
 import { AppShell } from "../components/AppShell";
+import { useLanguage } from "../hooks/useLanguage";
 import {
   Check,
   X,
@@ -30,6 +31,8 @@ import {
   Lock,
 } from "lucide-react";
 
+type L = { en: string; id: string };
+
 // ─── Plan Icon & Color Config ───────────────────────────────────────
 const PLAN_CONFIG: Record<
   string,
@@ -37,7 +40,7 @@ const PLAN_CONFIG: Record<
     icon: typeof Crown;
     gradient: string;
     border: string;
-    badge?: string;
+    badge?: L;
     iconBg: string;
   }
 > = {
@@ -51,7 +54,7 @@ const PLAN_CONFIG: Record<
     icon: Crown,
     gradient: "from-blue-600 to-cyan-500",
     border: "border-blue-500/50",
-    badge: "Paling Populer",
+    badge: { en: "Most Popular", id: "Paling Populer" },
     iconBg: "bg-blue-100 dark:bg-blue-900/30",
   },
   enterprise: {
@@ -63,69 +66,72 @@ const PLAN_CONFIG: Record<
 };
 
 // ─── Feature Comparison ─────────────────────────────────────────────
-const FEATURE_COMPARISON = [
+const FEATURE_COMPARISON: Array<{
+  category: L;
+  items: Array<{ name: L; free: boolean | string; pro: boolean | string; enterprise: boolean | string }>;
+}> = [
   {
-    category: "Fitur Dasar",
+    category: { en: "Basic Features", id: "Fitur Dasar" },
     items: [
-      { name: "Chart of Accounts", free: true, pro: true, enterprise: true },
-      { name: "Dashboard Analytics", free: true, pro: true, enterprise: true },
-      { name: "Buku Besar", free: true, pro: true, enterprise: true },
+      { name: { en: "Chart of Accounts", id: "Chart of Accounts" }, free: true, pro: true, enterprise: true },
+      { name: { en: "Dashboard Analytics", id: "Analitik Dashboard" }, free: true, pro: true, enterprise: true },
+      { name: { en: "General Ledger", id: "Buku Besar" }, free: true, pro: true, enterprise: true },
     ],
   },
   {
-    category: "Journal Entries",
+    category: { en: "Journal Entries", id: "Jurnal Umum" },
     items: [
       {
-        name: "Jurnal Manual",
+        name: { en: "Manual Journals", id: "Jurnal Manual" },
         free: "50/bulan",
         pro: "Unlimited",
         enterprise: "Unlimited",
       },
-      { name: "Auto-Balance", free: true, pro: true, enterprise: true },
+      { name: { en: "Auto-Balance", id: "Auto-Balance" }, free: true, pro: true, enterprise: true },
     ],
   },
   {
-    category: "Laporan Keuangan",
+    category: { en: "Financial Reports", id: "Laporan Keuangan" },
     items: [
-      { name: "Laporan Laba Rugi", free: false, pro: true, enterprise: true },
+      { name: { en: "Income Statement", id: "Laporan Laba Rugi" }, free: false, pro: true, enterprise: true },
       {
-        name: "Neraca (Balance Sheet)",
+        name: { en: "Balance Sheet", id: "Neraca (Balance Sheet)" },
         free: false,
         pro: true,
         enterprise: true,
       },
-      { name: "Laporan Arus Kas", free: false, pro: true, enterprise: true },
-      { name: "Custom Reports", free: false, pro: false, enterprise: true },
+      { name: { en: "Cash Flow Report", id: "Laporan Arus Kas" }, free: false, pro: true, enterprise: true },
+      { name: { en: "Custom Reports", id: "Laporan Kustom" }, free: false, pro: false, enterprise: true },
     ],
   },
   {
-    category: "Export & Integration",
+    category: { en: "Export & Integration", id: "Ekspor & Integrasi" },
     items: [
-      { name: "Export PDF", free: false, pro: true, enterprise: true },
-      { name: "Export CSV", free: false, pro: false, enterprise: true },
-      { name: "API Access", free: false, pro: false, enterprise: true },
+      { name: { en: "PDF Export", id: "Ekspor PDF" }, free: false, pro: true, enterprise: true },
+      { name: { en: "CSV Export", id: "Ekspor CSV" }, free: false, pro: false, enterprise: true },
+      { name: { en: "API Access", id: "Akses API" }, free: false, pro: false, enterprise: true },
     ],
   },
   {
-    category: "Manajemen",
+    category: { en: "Management", id: "Manajemen" },
     items: [
       {
-        name: "Jumlah Perusahaan",
+        name: { en: "Number of Companies", id: "Jumlah Perusahaan" },
         free: "1",
         pro: "3",
         enterprise: "Unlimited",
       },
-      { name: "Multi-User & Roles", free: false, pro: false, enterprise: true },
-      { name: "Audit Trail", free: false, pro: false, enterprise: true },
+      { name: { en: "Multi-User & Roles", id: "Multi-Pengguna & Peran" }, free: false, pro: false, enterprise: true },
+      { name: { en: "Audit Trail", id: "Jejak Audit" }, free: false, pro: false, enterprise: true },
     ],
   },
   {
-    category: "Support",
+    category: { en: "Support", id: "Dukungan" },
     items: [
-      { name: "Community Support", free: true, pro: true, enterprise: true },
-      { name: "Priority Support", free: false, pro: true, enterprise: true },
+      { name: { en: "Community Support", id: "Dukungan Komunitas" }, free: true, pro: true, enterprise: true },
+      { name: { en: "Priority Support", id: "Dukungan Prioritas" }, free: false, pro: true, enterprise: true },
       {
-        name: "Dedicated Account Manager",
+        name: { en: "Dedicated Account Manager", id: "Account Manager Khusus" },
         free: false,
         pro: false,
         enterprise: true,
@@ -141,6 +147,7 @@ export default function PricingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { planName: currentPlan } = useSubscription();
+  const { language } = useLanguage();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
@@ -211,10 +218,12 @@ export default function PricingPage() {
   };
 
   const getButtonLabel = (planName: string) => {
-    if (!user) return "Mulai Free Trial";
-    if (planName === currentPlan) return "Plan Saat Ini";
-    if (planName === "free") return "Downgrade";
-    return "Upgrade Sekarang";
+    if (!user)
+      return language === "id" ? "Mulai Free Trial" : "Start Free Trial";
+    if (planName === currentPlan)
+      return language === "id" ? "Plan Saat Ini" : "Current Plan";
+    if (planName === "free") return language === "id" ? "Turun Paket" : "Downgrade";
+    return language === "id" ? "Upgrade Sekarang" : "Upgrade Now";
   };
 
   const getButtonDisabled = (planName: string) => {
@@ -250,7 +259,7 @@ export default function PricingPage() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 text-primary-600 text-sm font-medium mb-4">
             <Sparkles size={16} />
-            Pricing yang Transparan
+            {language === "id" ? "Harga yang Transparan" : "Transparent Pricing"}
           </div>
           <motion.h1
             initial="hidden"
@@ -265,7 +274,7 @@ export default function PricingPage() {
           >
             {/* Baris 1 */}
             <span className="block text-gray-900 dark:text-white">
-              {"Pilih Plan yang Tepat".split("").map((char, i) => (
+              {(language === "id" ? "Pilih Plan yang Tepat" : "Choose the Right Plan").split("").map((char, i) => (
                 <motion.span
                   key={`a-${i}`}
                   variants={{
@@ -291,7 +300,7 @@ export default function PricingPage() {
 
             {/* Baris 2 — gradient */}
             <span className="block mt-2 bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent">
-              {"untuk Bisnis Anda".split("").map((char, i) => (
+              {(language === "id" ? "untuk Bisnis Anda" : "for Your Business").split("").map((char, i) => (
                 <motion.span
                   key={`b-${i}`}
                   variants={{
@@ -316,8 +325,9 @@ export default function PricingPage() {
             </span>
           </motion.h1>{" "}
           <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Mulai gratis, upgrade kapan saja. Semua plan termasuk 15 hari free
-            trial untuk fitur premium.
+            {language === "id"
+              ? "Mulai gratis, upgrade kapan saja. Semua plan termasuk 15 hari free trial untuk fitur premium."
+              : "Start free, upgrade anytime. Every plan includes a 15-day free trial of premium features."}
           </p>
         </motion.div>
 
@@ -337,7 +347,7 @@ export default function PricingPage() {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
-              Bulanan
+              {language === "id" ? "Bulanan" : "Monthly"}
             </button>
             <button
               onClick={() => setBillingCycle("yearly")}
@@ -347,9 +357,9 @@ export default function PricingPage() {
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
-              Tahunan
+              {language === "id" ? "Tahunan" : "Yearly"}
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
-                Hemat 15%
+                {language === "id" ? "Hemat 15%" : "Save 15%"}
               </span>
             </button>
           </div>
@@ -389,7 +399,7 @@ export default function PricingPage() {
                     className={`absolute top-0 left-0 right-0 py-2.5 bg-gradient-to-r ${config.gradient} text-white text-center text-xs font-bold tracking-wider uppercase`}
                   >
                     <Star size={12} className="inline mr-1" />
-                    {config.badge}
+                    {config.badge?.[language]}
                   </div>
                 )}
 
@@ -414,7 +424,7 @@ export default function PricingPage() {
                       </h3>
                       {isCurrentPlan && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium">
-                          Plan Anda
+                          {language === "id" ? "Plan Anda" : "Your Plan"}
                         </span>
                       )}
                     </div>
@@ -423,7 +433,7 @@ export default function PricingPage() {
                   <div className="mb-6">
                     {price === 0 ? (
                       <span className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-                        Gratis
+                        {language === "id" ? "Gratis" : "Free"}
                       </span>
                     ) : (
                       <>
@@ -432,13 +442,14 @@ export default function PricingPage() {
                             {formatPrice(price)}
                           </span>
                           <span className="text-gray-500 dark:text-gray-400 text-sm">
-                            /{billingCycle === "yearly" ? "tahun" : "bulan"}
+                            /{billingCycle === "yearly" ? (language === "id" ? "tahun" : "year") : language === "id" ? "bulan" : "month"}
                           </span>
                         </div>
                         {billingCycle === "yearly" && savings > 0 && (
                           <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
-                            Hemat {savings}% — setara{" "}
-                            {formatPrice(monthlyPrice)}/bulan
+                            {language === "id"
+                              ? `Hemat ${savings}% — setara ${formatPrice(monthlyPrice)}/bulan`
+                              : `Save ${savings}% — equivalent to ${formatPrice(monthlyPrice)}/mo`}
                           </p>
                         )}
                       </>
@@ -459,7 +470,7 @@ export default function PricingPage() {
                     {subscribing === plan.name ? (
                       <span className="flex items-center justify-center gap-2">
                         <Loader2 size={16} className="animate-spin" />
-                        Memproses...
+                        {language === "id" ? "Memproses..." : "Processing..."}
                       </span>
                     ) : (
                       getButtonLabel(plan.name)
@@ -496,7 +507,13 @@ export default function PricingPage() {
             onClick={() => setShowComparison(!showComparison)}
             className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition"
           >
-            {showComparison ? "Sembunyikan" : "Lihat"} Perbandingan Lengkap
+            {showComparison
+              ? language === "id"
+                ? "Sembunyikan Perbandingan Lengkap"
+                : "Hide Full Comparison"
+              : language === "id"
+                ? "Lihat Perbandingan Lengkap"
+                : "View Full Comparison"}
             <motion.span
               animate={{ rotate: showComparison ? 180 : 0 }}
               className="inline-block"
@@ -518,7 +535,7 @@ export default function PricingPage() {
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-800/50">
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Fitur
+                      {language === "id" ? "Fitur" : "Feature"}
                     </th>
                     <th className="text-center py-4 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Free
@@ -533,22 +550,22 @@ export default function PricingPage() {
                 </thead>
                 <tbody>
                   {FEATURE_COMPARISON.map((group) => (
-                    <React.Fragment key={group.category}>
+                    <React.Fragment key={group.category.en}>
                       <tr>
                         <td
                           colSpan={4}
                           className="py-3 px-6 bg-gray-50/50 dark:bg-gray-800/30 text-xs font-bold text-gray-500 uppercase tracking-wider"
                         >
-                          {group.category}
+                          {group.category[language]}
                         </td>
                       </tr>
                       {group.items.map((item) => (
                         <tr
-                          key={item.name}
+                          key={item.name.en}
                           className="border-t border-gray-100 dark:border-gray-800"
                         >
                           <td className="py-3 px-6 text-sm text-gray-700 dark:text-gray-300">
-                            {item.name}
+                            {item.name[language]}
                           </td>
                           {(["free", "pro", "enterprise"] as const).map((p) => (
                             <td key={p} className="py-3 px-4 text-center">
@@ -589,7 +606,9 @@ export default function PricingPage() {
           className="text-center mt-8"
         >
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Metode Pembayaran yang Didukung
+            {language === "id"
+              ? "Metode Pembayaran yang Didukung"
+              : "Supported Payment Methods"}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {[
@@ -599,7 +618,7 @@ export default function PricingPage() {
               { name: "BCA VA", icon: "🏦" },
               { name: "BNI VA", icon: "🏦" },
               { name: "Mandiri VA", icon: "🏦" },
-              { name: "Credit Card", icon: "💳" },
+              { name: language === "id" ? "Kartu Kredit" : "Credit Card", icon: "💳" },
             ].map((method) => (
               <div
                 key={method.name}
@@ -612,7 +631,11 @@ export default function PricingPage() {
           </div>
           <div className="flex items-center justify-center gap-2 mt-4 text-xs text-gray-500">
             <Lock size={12} />
-            <span>Pembayaran aman diproses oleh Midtrans</span>
+            <span>
+              {language === "id"
+                ? "Pembayaran aman diproses oleh Midtrans"
+                : "Payments securely processed by Midtrans"}
+            </span>
             <Shield size={12} />
             <span>PCI-DSS Level 1</span>
           </div>
@@ -626,27 +649,47 @@ export default function PricingPage() {
           className="max-w-3xl mx-auto pb-8"
         >
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white text-center mb-6 sm:mb-8">
-            Pertanyaan Umum
+            {language === "id" ? "Pertanyaan Umum" : "Frequently Asked Questions"}
           </h2>
           <div className="space-y-4">
-            {[
-              {
-                q: "Apa itu Free Trial 15 hari?",
-                a: "Setiap akun baru mendapat akses ke semua fitur premium selama 15 hari secara gratis. Setelah trial berakhir, Anda bisa upgrade atau tetap di plan Free dengan fitur terbatas.",
-              },
-              {
-                q: "Bisakah saya cancel kapan saja?",
-                a: "Ya! Tidak ada kontrak jangka panjang. Anda bisa cancel subscription kapan saja dari halaman Settings. Akses premium tetap berlaku sampai akhir periode yang sudah dibayar.",
-              },
-              {
-                q: "Metode pembayaran apa yang diterima?",
-                a: "Kami mendukung GoPay, OVO, QRIS, Virtual Account (BCA, BNI, Mandiri, BRI), dan Kartu Kredit/Debit (Visa, Mastercard). Semua diproses aman oleh Midtrans.",
-              },
-              {
-                q: "Apakah data saya aman kalau downgrade?",
-                a: "Tentu! Data Anda tetap tersimpan aman. Hanya akses ke fitur premium yang dibatasi. Anda bisa upgrade kembali kapan saja untuk mengakses semua data.",
-              },
-            ].map((faq, i) => (
+            {(language === "id"
+              ? [
+                  {
+                    q: "Apa itu Free Trial 15 hari?",
+                    a: "Setiap akun baru mendapat akses ke semua fitur premium selama 15 hari secara gratis. Setelah trial berakhir, Anda bisa upgrade atau tetap di plan Free dengan fitur terbatas.",
+                  },
+                  {
+                    q: "Bisakah saya cancel kapan saja?",
+                    a: "Ya! Tidak ada kontrak jangka panjang. Anda bisa cancel subscription kapan saja dari halaman Settings. Akses premium tetap berlaku sampai akhir periode yang sudah dibayar.",
+                  },
+                  {
+                    q: "Metode pembayaran apa yang diterima?",
+                    a: "Kami mendukung GoPay, OVO, QRIS, Virtual Account (BCA, BNI, Mandiri, BRI), dan Kartu Kredit/Debit (Visa, Mastercard). Semua diproses aman oleh Midtrans.",
+                  },
+                  {
+                    q: "Apakah data saya aman kalau downgrade?",
+                    a: "Tentu! Data Anda tetap tersimpan aman. Hanya akses ke fitur premium yang dibatasi. Anda bisa upgrade kembali kapan saja untuk mengakses semua data.",
+                  },
+                ]
+              : [
+                  {
+                    q: "What is the 15-day free trial?",
+                    a: "Every new account gets access to all premium features free for 15 days. When the trial ends, you can upgrade or stay on the Free plan with limited features.",
+                  },
+                  {
+                    q: "Can I cancel anytime?",
+                    a: "Yes! There are no long-term contracts. You can cancel your subscription anytime from the Settings page. Premium access remains active until the end of the period you already paid for.",
+                  },
+                  {
+                    q: "Which payment methods are accepted?",
+                    a: "We support GoPay, OVO, QRIS, Virtual Accounts (BCA, BNI, Mandiri, BRI), and Credit/Debit Cards (Visa, Mastercard). Everything is securely processed by Midtrans.",
+                  },
+                  {
+                    q: "Is my data safe if I downgrade?",
+                    a: "Absolutely! Your data stays safely stored. Only access to premium features is limited. You can upgrade again anytime to regain full access to your data.",
+                  },
+                ]
+            ).map((faq, i) => (
               <div
                 key={i}
                 className="rounded-xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 p-5"

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Mail, MessageCircle, Clock, ExternalLink } from "lucide-react";
 import type { HelpContactCard } from "../../data/helpCenterContent";
+import { useLanguage } from "../../hooks/useLanguage";
 
 const ICONS = {
   email: Mail,
@@ -9,13 +10,14 @@ const ICONS = {
 } as const;
 
 export function ContactCards({ cards }: { cards: HelpContactCard[] }) {
+  const { language } = useLanguage();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {cards.map((card) => {
         const Icon = ICONS[card.type] ?? Mail;
         return (
           <motion.div
-            key={card.label}
+            key={card.label.en}
             whileHover={{ y: -4, scale: 1.02 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="group rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm hover:shadow-md p-5 transition-all"
@@ -34,7 +36,7 @@ export function ContactCards({ cards }: { cards: HelpContactCard[] }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {card.label}
+                  {card.label[language]}
                 </p>
                 {card.href ? (
                   <a
@@ -43,12 +45,12 @@ export function ContactCards({ cards }: { cards: HelpContactCard[] }) {
                     rel="noopener noreferrer"
                     className="text-sm font-semibold text-gray-800 dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors flex items-center gap-1 mt-0.5 break-all"
                   >
-                    {card.value}
+                    {card.value[language]}
                     <ExternalLink size={12} className="opacity-50 shrink-0" />
                   </a>
                 ) : (
                   <p className="text-sm font-semibold text-gray-800 dark:text-white mt-0.5">
-                    {card.value}
+                    {card.value[language]}
                   </p>
                 )}
               </div>

@@ -6,42 +6,61 @@ import auditTrail from "../../assets/hero/AuditTrail.webp";
 import smartBudgeting from "../../assets/hero/Smartbudgetting.webp";
 import multiEntitySupport from "../../assets/hero/multyEntitySupport.webp";
 import multiCurrency from "../../assets/hero/MultyCurrency.webp";
+import { useLanguage } from "../../hooks/useLanguage";
 
 interface FeatureSlide {
-  title: string;
-  desc: string;
+  title: { en: string; id: string };
+  desc: { en: string; id: string };
   image: string;
 }
 
 const SLIDES: FeatureSlide[] = [
   {
-    title: "Automated Reconciliation",
-    desc: "Match transactions automatically with bank feeds",
+    title: { en: "Automated Reconciliation", id: "Rekonsiliasi Otomatis" },
+    desc: {
+      en: "Match transactions automatically with bank feeds",
+      id: "Cocokkan transaksi otomatis dengan rekening bank",
+    },
     image: automaticReconciliation,
   },
   {
-    title: "Real-time Analytics",
-    desc: "Live dashboard with key financial metrics",
+    title: { en: "Real-time Analytics", id: "Analitik Real-time" },
+    desc: {
+      en: "Live dashboard with key financial metrics",
+      id: "Dashboard langsung dengan metrik keuangan utama",
+    },
     image: realtimeAnalytics,
   },
   {
-    title: "Audit Trail",
-    desc: "Complete history of every change and access",
+    title: { en: "Audit Trail", id: "Jejak Audit" },
+    desc: {
+      en: "Complete history of every change and access",
+      id: "Riwayat lengkap setiap perubahan dan akses",
+    },
     image: auditTrail,
   },
   {
-    title: "Smart Budgeting",
-    desc: "AI-powered budget forecasting and alerts",
+    title: { en: "Smart Budgeting", id: "Anggaran Pintar" },
+    desc: {
+      en: "AI-powered budget forecasting and alerts",
+      id: "Forecast anggaran berbasis AI dengan peringatan",
+    },
     image: smartBudgeting,
   },
   {
-    title: "Multi-entity Support",
-    desc: "Manage multiple companies from one account",
+    title: { en: "Multi-entity Support", id: "Dukungan Multi-entitas" },
+    desc: {
+      en: "Manage multiple companies from one account",
+      id: "Kelola beberapa perusahaan dari satu akun",
+    },
     image: multiEntitySupport,
   },
   {
-    title: "Multi-currency",
-    desc: "Handle transactions in 150+ currencies",
+    title: { en: "Multi-currency", id: "Multi-mata Uang" },
+    desc: {
+      en: "Handle transactions in 150+ currencies",
+      id: "Proses transaksi dalam 150+ mata uang",
+    },
     image: multiCurrency,
   },
 ];
@@ -56,6 +75,7 @@ const TOTAL = SLIDES.length;
 export default function FeatureCarousel() {
   // Counter tak-terbatas: arah selalu maju, autoplay terus-menerus (tanpa pause)
   const [n, setN] = useState(0);
+  const { language } = useLanguage();
 
   const index = ((n % TOTAL) + TOTAL) % TOTAL;
   const slide = SLIDES[index];
@@ -94,7 +114,7 @@ export default function FeatureCarousel() {
             >
               <img
                 src={slide.image}
-                alt={slide.title}
+                alt={slide.title[language]}
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"
                 className="w-full h-full object-cover"
@@ -115,7 +135,7 @@ export default function FeatureCarousel() {
               <div className="group relative max-w-[90%] sm:max-w-[80%] bg-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-md overflow-hidden">
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] aspect-square rounded-full bg-primary-400 scale-0 transition-transform duration-500 ease-out group-hover:scale-100" />
                 <h3 className="relative z-10 text-base sm:text-2xl lg:text-3xl font-poppins font-medium text-gray-900 text-center leading-tight truncate">
-                  {slide.title}
+                  {slide.title[language]}
                 </h3>
               </div>
             </motion.div>
@@ -127,14 +147,14 @@ export default function FeatureCarousel() {
         <button
           type="button"
           onClick={prev}
-          aria-label="Slide sebelumnya (intip)"
+          aria-label={language === "id" ? "Slide sebelumnya" : "Previous slide"}
           className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden cursor-pointer group"
         >
           <div className="absolute inset-0 rounded-full border-2 border-white/80 dark:border-white/30 transition-colors group-hover:border-primary-400">
             <motion.img
               key={`peek-prev-${n}`}
               src={SLIDES[prevIdx].image}
-              alt={SLIDES[prevIdx].title}
+              alt={SLIDES[prevIdx].title[language]}
               initial={{ opacity: 0.7, scale: 1.08 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
@@ -145,14 +165,14 @@ export default function FeatureCarousel() {
         <button
           type="button"
           onClick={next}
-          aria-label="Slide berikutnya (intip)"
+          aria-label={language === "id" ? "Slide berikutnya" : "Next slide"}
           className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[80%] z-10 w-[130px] sm:w-[170px] lg:w-[240px] h-16 sm:h-24 lg:h-36 overflow-hidden cursor-pointer group"
         >
           <div className="absolute inset-0 rounded-full border-2 border-white/80 dark:border-white/30 transition-colors group-hover:border-primary-400">
             <motion.img
               key={`peek-next-${n}`}
               src={SLIDES[nextIdx].image}
-              alt={SLIDES[nextIdx].title}
+              alt={SLIDES[nextIdx].title[language]}
               initial={{ opacity: 0.7, scale: 1.08 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
@@ -166,10 +186,10 @@ export default function FeatureCarousel() {
       <div className="mt-8 flex items-center justify-center gap-2.5 sm:gap-3">
         {SLIDES.map((s, i) => (
           <button
-            key={s.title}
+            key={s.title.en}
             type="button"
             onClick={() => goTo(i)}
-            aria-label={`Lompat ke slide ${i + 1}`}
+            aria-label={language === "id" ? `Lompat ke slide ${i + 1}` : `Go to slide ${i + 1}`}
             className={`h-2.5 rounded-full transition-all duration-300 ${
               i === index
                 ? "w-8 bg-primary-400 shadow"

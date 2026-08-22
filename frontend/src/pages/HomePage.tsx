@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   type Variants,
   motion,
@@ -18,7 +18,6 @@ import {
   Sparkles,
   PlayCircle,
   Lock,
-  Server,
   Globe,
   CreditCard,
   Building,
@@ -44,6 +43,8 @@ import {
   ShieldCheck,
   Bot,
   Download,
+  FileBarChart,
+  UsersRound,
 } from "lucide-react";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -75,126 +76,205 @@ try {
 }
 
 // ─── Dropdown Data ──────────────────────────────────────────────────
-const solutionItems = [
+type L = { en: string; id: string };
+
+const solutionItems: Array<{
+  icon: typeof Building;
+  title: L;
+  desc: L;
+  href?: string;
+}> = [
   {
     icon: Building,
-    title: "Small Businesses",
-    desc: "Simplified bookkeeping & tax prep",
+    title: { en: "Small Businesses", id: "Usaha Kecil" },
+    desc: {
+      en: "Simplified bookkeeping & tax prep",
+      id: "Pembukuan sederhana & siap pajak",
+    },
+    href: "/solutions/small-businesses",
   },
   {
     icon: Landmark,
-    title: "Mid-Market Companies",
-    desc: "Multi-entity & advanced reporting",
+    title: { en: "Mid-Market Companies", id: "Perusahaan Berkembang" },
+    desc: {
+      en: "Multi-entity & advanced reporting",
+      id: "Multi-entitas & laporan lanjutan",
+    },
+    href: "/solutions/mid-market-companies",
   },
   {
     icon: Users,
-    title: "Accountants & Firms",
-    desc: "Manage multiple clients in one place",
+    title: { en: "Accountants & Firms", id: "Akuntan & Firma" },
+    desc: {
+      en: "Manage multiple clients in one place",
+      id: "Kelola banyak klien dalam satu tempat",
+    },
+    href: "/solutions/accountants-firms",
   },
   {
     icon: Receipt,
-    title: "Startups",
-    desc: "From day-one to Series A",
+    title: { en: "Startups", id: "Startup" },
+    desc: { en: "From day-one to Series A", id: "Dari hari pertama ke Series A" },
+    href: "/solutions/startups",
   },
 ];
 
-const productItems = [
+const productItems: Array<{
+  icon: typeof Building;
+  title: L;
+  desc: L;
+  href?: string;
+}> = [
   {
     icon: BookOpen,
-    title: "Chart of Accounts",
-    desc: "Customizable account structure",
+    title: { en: "Chart of Accounts", id: "Chart of Accounts" },
+    desc: {
+      en: "Customizable account structure",
+      id: "Struktur akun yang bisa disesuaikan",
+    },
+    href: "/products/chart-of-accounts",
   },
   {
     icon: FileText,
-    title: "Journal Entries",
-    desc: "Double-entry with auto-balance",
+    title: { en: "Journal Entries", id: "Jurnal Umum" },
+    desc: {
+      en: "Double-entry with auto-balance",
+      id: "Double-entry dengan saldo otomatis",
+    },
+    href: "/products/journal-entries",
   },
   {
     icon: TrendingUp,
-    title: "Financial Reports",
-    desc: "Income, Balance Sheet, Cash Flow",
+    title: { en: "Financial Reports", id: "Laporan Keuangan" },
+    desc: {
+      en: "Income, Balance Sheet, Cash Flow",
+      id: "Laba rugi, neraca, arus kas",
+    },
+    href: "/products/financial-reports",
   },
   {
     icon: Calculator,
-    title: "Budget & Forecast",
-    desc: "AI-powered financial planning",
+    title: { en: "Budget & Forecast", id: "Anggaran & Forecast" },
+    desc: {
+      en: "AI-powered financial planning",
+      id: "Perencanaan keuangan berbasis AI",
+    },
+    href: "/products/budget-forecast",
   },
   {
     icon: Layers,
-    title: "Integrations",
-    desc: "Connect banks, ERPs, & more",
+    title: { en: "Integrations", id: "Integrasi" },
+    desc: { en: "Connect banks, ERPs, & more", id: "Hubungkan bank, ERP, & lainnya" },
+    href: "/products/integrations",
   },
   {
     icon: Shield,
-    title: "Security & Compliance",
-    desc: "SOC 2, GDPR, 256-bit encryption",
+    title: { en: "Security & Compliance", id: "Keamanan & Kepatuhan" },
+    desc: {
+      en: "SOC 2, GDPR, 256-bit encryption",
+      id: "SOC 2, GDPR, enkripsi 256-bit",
+    },
+    href: "/products/security-compliance",
   },
 ];
 
-const resourceItems = [
+const resourceItems: Array<{
+  icon: typeof Building;
+  title: L;
+  desc: L;
+  href?: string;
+}> = [
   {
     icon: Newspaper,
-    title: "Blog",
-    desc: "Tips & industry insights",
+    title: { en: "Blog", id: "Blog" },
+    desc: { en: "Tips & industry insights", id: "Tips & insight industri" },
+    href: "/resources/blog",
   },
   {
     icon: GraduationCap,
-    title: "Guides & Tutorials",
-    desc: "Step-by-step learning",
+    title: { en: "Guides & Tutorials", id: "Panduan & Tutorial" },
+    desc: { en: "Step-by-step learning", id: "Belajar bertahap" },
+    href: "/resources/guides-tutorials",
   },
   {
     icon: HelpCircle,
-    title: "Help Center",
-    desc: "FAQ & documentation",
-    href: "/help",
+    title: { en: "Help Center", id: "Pusat Bantuan" },
+    desc: { en: "FAQ & documentation", id: "FAQ & dokumentasi" },
+    href: "/help-center",
   },
   {
     icon: MessageSquare,
-    title: "Community",
-    desc: "Join 5,000+ finance pros",
+    title: { en: "Community", id: "Komunitas" },
+    desc: {
+      en: "Join 5,000+ finance pros",
+      id: "Gabung 5.000+ praktisi keuangan",
+    },
+    href: "/resources/community",
   },
   {
     icon: FileSpreadsheet,
-    title: "Templates",
-    desc: "Free Excel & spreadsheet kits",
+    title: { en: "Templates", id: "Template" },
+    desc: {
+      en: "Free Excel & spreadsheet kits",
+      id: "Kit Excel & spreadsheet gratis",
+    },
+    href: "/resources/templates",
   },
 ];
 
 // ─── Fitur Utama (card ikon sederhana) ────────────────────────────────
 const featureCards: Array<{
   icon: typeof Zap;
-  title: string;
-  desc: string;
+  title: L;
+  desc: L;
 }> = [
   {
     icon: KeyRound,
-    title: "Role-Based Access",
-    desc: "Owner and Accountant roles with tailored permissions",
+    title: { en: "Role-Based Access", id: "Akses Berbasis Peran" },
+    desc: {
+      en: "Owner and Accountant roles with tailored permissions",
+      id: "Peran Owner dan Akuntan dengan izin yang disesuaikan",
+    },
   },
   {
     icon: ShieldCheck,
-    title: "Bank-Grade Security",
-    desc: "Encrypted data with WhatsApp OTP and Google sign-in",
+    title: { en: "Bank-Grade Security", id: "Keamanan Kelas Bank" },
+    desc: {
+      en: "Encrypted data with WhatsApp OTP and Google sign-in",
+      id: "Data terenkripsi dengan OTP WhatsApp dan login Google",
+    },
   },
   {
-    icon: FileText,
-    title: "Instant Financial Reports",
-    desc: "Balance sheet, income statement, and cash flow, always current",
+    icon: FileBarChart,
+    title: { en: "Instant Financial Reports", id: "Laporan Keuangan Instan" },
+    desc: {
+      en: "Balance sheet, income statement, and cash flow, always current",
+      id: "Neraca, laba rugi, dan arus kas, selalu terkini",
+    },
   },
   {
     icon: Bot,
-    title: "AI CFO Assistant",
-    desc: "Ask about your finances and get insights instantly",
+    title: { en: "AI CFO Assistant", id: "Asisten AI CFO" },
+    desc: {
+      en: "Ask about your finances and get insights instantly",
+      id: "Tanya soal keuanganmu, dapat insight seketika",
+    },
   },
   {
-    icon: Users,
-    title: "Team Collaboration",
-    desc: "Invite your team to work together on one shared ledger",
+    icon: UsersRound,
+    title: { en: "Team Collaboration", id: "Kolaborasi Tim" },
+    desc: {
+      en: "Invite your team to work together on one shared ledger",
+      id: "Undang tim untuk bekerja dalam satu buku bersama",
+    },
   },
   {
     icon: Download,
-    title: "Export & Integration",
-    desc: "Export reports anytime, fits right into your existing workflow",
+    title: { en: "Export & Integration", id: "Ekspor & Integrasi" },
+    desc: {
+      en: "Export reports anytime, fits right into your existing workflow",
+      id: "Ekspor laporan kapan saja, menyatu dengan alur kerja Anda",
+    },
   },
 ];
 
@@ -223,6 +303,24 @@ function Navbar() {
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, []);
+
+  // Dropdown desktop: tutup dengan jeda 250ms supaya ada waktu menyeberang
+  // gap antara tombol dan panel (dan tetap nyaman mengklik item di dalamnya).
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const openMenu = (key: string) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpenDropdown(key);
+  };
+  const scheduleCloseMenu = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpenDropdown(null), 250);
+  };
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
 
   const menuItems = [
     { name: language === "id" ? "Solusi" : "Solutions", key: "solutions", items: solutionItems },
@@ -259,8 +357,8 @@ function Navbar() {
             <div
               key={item.key}
               className="relative group"
-              onMouseEnter={() => setOpenDropdown(item.key)}
-              onMouseLeave={() => setOpenDropdown(null)}
+              onMouseEnter={() => openMenu(item.key)}
+              onMouseLeave={scheduleCloseMenu}
             >
               <button onClick={() => navigate(`/${item.key}`)} className="relative text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10">
                 {item.name}
@@ -291,23 +389,23 @@ function Navbar() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">
-                            {sub.title}
+                            {sub.title[language]}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
-                            {sub.desc}
+                            {sub.desc[language]}
                           </p>
                         </div>
                       </>
                     );
                     if ("href" in sub && sub.href) {
                       return (
-                        <Link key={sub.title} to={sub.href} className={className}>
+                        <Link key={sub.title.en} to={sub.href} className={className}>
                           {content}
                         </Link>
                       );
                     }
                     return (
-                      <Link key={sub.title} to={`/${item.key}/${toSlug(sub.title)}`} className={className}>
+                      <Link key={sub.title.en} to={`/${item.key}/${toSlug(sub.title.en)}`} className={className}>
                         {content}
                       </Link>
                     );
@@ -321,14 +419,14 @@ function Navbar() {
             to="/pricing"
             className="text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-primary-500/10"
           >
-            Pricing
+            {language === "id" ? "Harga" : "Pricing"}
           </Link>
 
           <Link
             to="/login"
             className="text-sm font-medium text-primary-600 dark:text-primary-400 border-l border-gray-200 dark:border-white/20 pl-4 ml-2 hover:text-primary-500 dark:hover:text-primary-300 transition"
           >
-            See it in action
+            {language === "id" ? "Lihat Demonya" : "See it in action"}
           </Link>
         </div>
 
@@ -343,13 +441,13 @@ function Navbar() {
                 to="/dashboard"
                 className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl shadow-md hover:shadow-lg transition"
               >
-                Dashboard
+                {language === "id" ? "Dashboard" : "Dashboard"}
               </Link>
               <button
                 onClick={logout}
                 className="hidden sm:inline-flex text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400"
               >
-                Logout
+                {language === "id" ? "Keluar" : "Logout"}
               </button>
             </>
           ) : (
@@ -358,7 +456,7 @@ function Navbar() {
                 to="/login"
                 className="hidden sm:inline-flex text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400"
               >
-                Sign in
+                {language === "id" ? "Masuk" : "Sign in"}
               </Link>
             </>
           )}
@@ -421,8 +519,8 @@ function Navbar() {
                             <div className="px-2 pb-2 grid gap-1">
                               {item.items.map((sub) => {
                                 const className = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 dark:text-gray-200 hover:bg-white dark:hover:bg-white/10 hover:text-primary-600 transition-colors";
-                                const content = <><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400"><sub.icon size={16} /></span><span className="min-w-0"><span className="block text-sm font-semibold">{sub.title}</span><span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{sub.desc}</span></span></>;
-                                return "href" in sub && sub.href ? <Link key={sub.title} to={sub.href} className={className} onClick={() => setMobileMenuOpen(false)}>{content}</Link> : <Link key={sub.title} to={`/${item.key}/${toSlug(sub.title)}`} className={className} onClick={() => setMobileMenuOpen(false)}>{content}</Link>;
+                                const content = <><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400"><sub.icon size={16} /></span><span className="min-w-0"><span className="block text-sm font-semibold">{sub.title[language]}</span><span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{sub.desc[language]}</span></span></>;
+                                return <Link key={sub.title.en} to={sub.href ?? `/${item.key}/${toSlug(sub.title.en)}`} className={className} onClick={() => setMobileMenuOpen(false)}>{content}</Link>;
                               })}
                             </div>
                           </motion.div>
@@ -433,10 +531,10 @@ function Navbar() {
                 })}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 border-t border-gray-200 dark:border-white/10 pt-3">
-                <Link to="/pricing" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center rounded-xl border border-gray-200 dark:border-white/15 px-3 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Pricing</Link>
-                <Link to={user ? "/dashboard" : "/login"} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-3 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/20">{user ? "Dashboard" : "Sign in"}<ArrowRight size={16} /></Link>
+                <Link to="/pricing" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center rounded-xl border border-gray-200 dark:border-white/15 px-3 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{language === "id" ? "Harga" : "Pricing"}</Link>
+                <Link to={user ? "/dashboard" : "/login"} onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-3 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/20">{user ? "Dashboard" : language === "id" ? "Masuk" : "Sign in"}<ArrowRight size={16} /></Link>
               </div>
-              {user && <button onClick={logout} className="mt-2 w-full rounded-xl py-2 text-sm font-semibold text-rose-600 dark:text-rose-400">Logout</button>}
+              {user && <button onClick={logout} className="mt-2 w-full rounded-xl py-2 text-sm font-semibold text-rose-600 dark:text-rose-400">{language === "id" ? "Keluar" : "Logout"}</button>}
             </nav>
           </motion.div>
         )}
@@ -469,20 +567,37 @@ function AnimateDropdown({
   );
 }
 
-// A soft spotlight that trails the pointer only on devices with a real cursor.
+// Titik kecil di ujung kursor + ekor elastis (spring berantai) — hanya device ber-kursor.
 function CursorGlow() {
-  const x = useMotionValue(-200);
-  const y = useMotionValue(-200);
-  const springX = useSpring(x, { stiffness: 180, damping: 28, mass: 0.45 });
-  const springY = useSpring(y, { stiffness: 180, damping: 28, mass: 0.45 });
+  const x = useMotionValue(-100);
+  const y = useMotionValue(-100);
+
+  // Rantai spring: tiap segmen mengikuti segmen sebelumnya dengan kelentingan
+  // makin besar, sehingga saat kursor digerakin ekornya "ketarik" mengikuti.
+  const tail1X = useSpring(x, { stiffness: 550, damping: 38, mass: 0.5 });
+  const tail1Y = useSpring(y, { stiffness: 550, damping: 38, mass: 0.5 });
+  const tail2X = useSpring(tail1X, { stiffness: 320, damping: 30, mass: 0.7 });
+  const tail2Y = useSpring(tail1Y, { stiffness: 320, damping: 30, mass: 0.7 });
+  const tail3X = useSpring(tail2X, { stiffness: 170, damping: 24, mass: 0.9 });
+  const tail3Y = useSpring(tail2Y, { stiffness: 170, damping: 24, mass: 0.9 });
 
   useEffect(() => {
-    const pointerMove = (event: PointerEvent) => { x.set(event.clientX); y.set(event.clientY); };
+    const pointerMove = (event: PointerEvent) => {
+      x.set(event.clientX);
+      y.set(event.clientY);
+    };
     window.addEventListener("pointermove", pointerMove, { passive: true });
     return () => window.removeEventListener("pointermove", pointerMove);
   }, [x, y]);
 
-  return <motion.div aria-hidden className="cursor-glow" style={{ left: springX, top: springY }} />;
+  return (
+    <>
+      <motion.div aria-hidden className="cursor-tail cursor-tail-3" style={{ left: tail3X, top: tail3Y }} />
+      <motion.div aria-hidden className="cursor-tail cursor-tail-2" style={{ left: tail2X, top: tail2Y }} />
+      <motion.div aria-hidden className="cursor-tail cursor-tail-1" style={{ left: tail1X, top: tail1Y }} />
+      <motion.div aria-hidden className="cursor-dot" style={{ left: x, top: y }} />
+    </>
+  );
 }
 
 // ─── Animations ──────────────────────────────────────────────────────
@@ -559,7 +674,7 @@ export default function HomePage() {
                   to="/dashboard"
                   className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
                 >
-                  Go to Dashboard <ChevronRight size={18} />
+                  {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ChevronRight size={18} />
                 </Link>
               ) : (
                 <>
@@ -579,8 +694,10 @@ export default function HomePage() {
               )}
             </div>
             <p className="mt-6 text-xs sm:text-sm text-gray-300 flex flex-wrap items-center justify-center gap-2 px-4 text-center">
-              <Lock size={14} className="flex-shrink-0" /> Enterprise-grade
-              security · SOC 2 Type II · GDPR
+              <Lock size={14} className="flex-shrink-0" />
+              {language === "id"
+                ? "Keamanan kelas enterprise dengan enkripsi penuh"
+                : "Enterprise-grade security with full encryption"}
             </p>
           </motion.div>
         </motion.div>
@@ -625,10 +742,12 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-white text-lg">
-                    Bank Data via Plaid
+                    {language === "id" ? "Data Bank via Plaid" : "Bank Data via Plaid"}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Credentials never stored on our servers
+                    {language === "id"
+                      ? "Kredensial tidak pernah disimpan di server kami"
+                      : "Credentials never stored on our servers"}
                   </p>
                 </div>
               </div>
@@ -653,10 +772,12 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-white text-lg">
-                    Payments via Stripe
+                    {language === "id" ? "Pembayaran via Stripe" : "Payments via Stripe"}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Trusted by millions of businesses
+                    {language === "id"
+                      ? "Dipercaya jutaan bisnis di seluruh dunia"
+                      : "Trusted by millions of businesses"}
                   </p>
                 </div>
               </div>
@@ -677,10 +798,10 @@ export default function HomePage() {
             className="flex flex-wrap justify-center gap-6 mt-10 pt-4 border-t border-gray-200 dark:border-gray-800"
           >
             {[
-              { icon: Shield, label: "256-bit AES" },
-              { icon: Server, label: "SOC 2 Type II" },
-              { icon: Globe, label: "GDPR Compliant" },
-              { icon: Cloud, label: "99.9% Uptime" },
+              { icon: Shield, label: language === "id" ? "Enkripsi 256-bit AES" : "256-bit AES Encryption" },
+              { icon: Globe, label: language === "id" ? "Multi-mata uang" : "Multi-currency" },
+              { icon: Cloud, label: language === "id" ? "Uptime 99,9%" : "99.9% Uptime" },
+              { icon: Lock, label: language === "id" ? "Login OTP WhatsApp" : "WhatsApp OTP Login" },
             ].map((item) => (
               <div
                 key={item.label}
@@ -711,17 +832,17 @@ export default function HomePage() {
           <div className="relative max-w-[1500px] mx-auto">
             {/* Heading */}
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <BorderBeamBadge text="Product Demo" icon={<Sparkles size={16} />} />
+              <BorderBeamBadge text={language === "id" ? "Demo Produk" : "Product Demo"} icon={<Sparkles size={16} />} />
               <h2 className="mt-6 text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
-                See LedgerFlow
+                {language === "id" ? "Lihat LedgerFlow" : "See LedgerFlow"}
                 <span className="block bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 bg-clip-text text-transparent">
-                  In Real-Time
+                  {language === "id" ? "Secara Real-Time" : "In Real-Time"}
                 </span>
               </h2>
               <p className="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-400">
-                Manage transactions, monitor cash flow, track expenses, and gain
-                actionable insights through a beautifully designed financial
-                dashboard.
+                {language === "id"
+                  ? "Kelola transaksi, pantau arus kas, lacak pengeluaran, dan dapatkan insight yang bisa ditindaklanjuti lewat dashboard keuangan yang dirancang dengan indah."
+                  : "Manage transactions, monitor cash flow, track expenses, and gain actionable insights through a beautifully designed financial dashboard."}
               </p>
             </div>
 
@@ -755,9 +876,13 @@ export default function HomePage() {
               >
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                 <div>
-                  <p className="text-xs text-gray-500">System Status</p>
+                  <p className="text-xs text-gray-500">
+                    {language === "id" ? "Status Sistem" : "System Status"}
+                  </p>
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    All Systems Operational
+                    {language === "id"
+                      ? "Semua Sistem Beroperasi"
+                      : "All Systems Operational"}
                   </p>
                 </div>
               </motion.div>
@@ -770,7 +895,9 @@ export default function HomePage() {
               >
                 <PlayCircle className="text-primary-500" />
                 <div>
-                  <p className="text-xs text-gray-500">Monthly Growth</p>
+                  <p className="text-xs text-gray-500">
+                    {language === "id" ? "Pertumbuhan Bulanan" : "Monthly Growth"}
+                  </p>
                   <p className="font-semibold text-green-500">+24.6%</p>
                 </div>
               </motion.div>
@@ -814,7 +941,7 @@ export default function HomePage() {
           <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {featureCards.map((feat, idx) => (
               <motion.div
-                key={feat.title}
+                key={feat.title.en}
                 initial={{ opacity: 0, x: idx % 3 === 0 ? -56 : idx % 3 === 1 ? 56 : 0, y: idx % 3 === 2 ? 56 : 16 }}
                 whileInView={{ opacity: 1, x: 0, y: 0 }}
                 viewport={{ once: true, amount: 0.22 }}
@@ -826,10 +953,10 @@ export default function HomePage() {
                   <feat.icon size={22} />
                 </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  {feat.title}
+                  {feat.title[language]}
                 </h3>
                 <p className="mt-2 text-gray-500 dark:text-gray-400">
-                  {feat.desc}
+                  {feat.desc[language]}
                 </p>
               </motion.div>
             ))}
@@ -846,10 +973,14 @@ export default function HomePage() {
       >
         <div className="max-w-5xl mx-auto bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-6 sm:p-10 md:p-16 text-center text-white shadow-2xl">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug">
-            Ready to transform your financial operations?
+            {language === "id"
+              ? "Siap mentransformasi operasi keuangan Anda?"
+              : "Ready to transform your financial operations?"}
           </h2>
           <p className="mt-4 text-primary-100 text-base sm:text-lg">
-            Join thousands of businesses using LedgerFlow
+            {language === "id"
+              ? "Bergabunglah dengan ribuan bisnis yang menggunakan LedgerFlow"
+              : "Join thousands of businesses using LedgerFlow"}
           </p>
           <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4">
             {user ? (
@@ -857,7 +988,7 @@ export default function HomePage() {
                 to="/dashboard"
                 className="w-full sm:w-auto justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center gap-2"
               >
-                Go to Dashboard <ArrowRight size={18} />
+                {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ArrowRight size={18} />
               </Link>
             ) : (
               <>
@@ -865,13 +996,16 @@ export default function HomePage() {
                   to="/register"
                   className="w-full sm:w-auto justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center gap-2 shadow-md"
                 >
-                  Start 15-day free trial <ArrowRight size={18} />
+                  {language === "id"
+                    ? "Mulai uji coba gratis 15 hari"
+                    : "Start 15-day free trial"}{" "}
+                  <ArrowRight size={18} />
                 </Link>
                 <Link
                   to="/login"
                   className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl font-semibold hover:bg-white/10 transition"
                 >
-                  Contact sales
+                  {language === "id" ? "Hubungi Sales" : "Contact sales"}
                 </Link>
               </>
             )}

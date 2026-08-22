@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import type { HelpFaq } from "../../data/helpCenterContent";
+import { useLanguage } from "../../hooks/useLanguage";
 
 function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false);
@@ -49,10 +50,11 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
 }
 
 export function FaqAccordion({ faqs }: { faqs: HelpFaq[] }) {
+  const { language } = useLanguage();
   return (
     <div className="space-y-3">
       {faqs.map((faq, i) => (
-        <FaqItem key={i} q={faq.q} a={faq.a} index={i} />
+        <FaqItem key={i} q={faq.q[language]} a={faq.a[language]} index={i} />
       ))}
     </div>
   );
