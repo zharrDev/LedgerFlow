@@ -1,13 +1,10 @@
 // src/pages/HomePage.tsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   type Variants,
   motion,
   useScroll,
   useTransform,
-  useMotionValue,
-  useSpring,
-  AnimatePresence,
 } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -49,6 +46,7 @@ import {
 import { useLanguage } from "../hooks/useLanguage";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import Navbar from "../components/Navbar";
+import CursorTrail from "../components/home/CursorTrail";
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
@@ -131,7 +129,7 @@ const productItems: Array<{
       en: "Customizable account structure",
       id: "Struktur akun yang bisa disesuaikan",
     },
-    href: "/products/chart-of-accounts",
+    href: "/pricing",
   },
   {
     icon: FileText,
@@ -140,16 +138,7 @@ const productItems: Array<{
       en: "Double-entry with auto-balance",
       id: "Double-entry dengan saldo otomatis",
     },
-    href: "/products/journal-entries",
-  },
-  {
-    icon: TrendingUp,
-    title: { en: "Financial Reports", id: "Laporan Keuangan" },
-    desc: {
-      en: "Income, Balance Sheet, Cash Flow",
-      id: "Laba rugi, neraca, arus kas",
-    },
-    href: "/products/financial-reports",
+    href: "/pricing",
   },
   {
     icon: Calculator,
@@ -158,22 +147,31 @@ const productItems: Array<{
       en: "AI-powered financial planning",
       id: "Perencanaan keuangan berbasis AI",
     },
-    href: "/products/budget-forecast",
+    href: "/pricing",
   },
   {
     icon: Layers,
     title: { en: "Integrations", id: "Integrasi" },
     desc: { en: "Connect banks, ERPs, & more", id: "Hubungkan bank, ERP, & lainnya" },
-    href: "/products/integrations",
+    href: "/pricing",
   },
   {
-    icon: Shield,
-    title: { en: "Security & Compliance", id: "Keamanan & Kepatuhan" },
+    icon: Building,
+    title: { en: "Multi-Company Management", id: "Manajemen Multi-Perusahaan" },
     desc: {
-      en: "SOC 2, GDPR, 256-bit encryption",
-      id: "SOC 2, GDPR, enkripsi 256-bit",
+      en: "Manage multiple entities in one place",
+      id: "Kelola banyak entitas dalam satu tempat",
     },
-    href: "/products/security-compliance",
+    href: "/pricing",
+  },
+  {
+    icon: Cloud,
+    title: { en: "Automated Bank Sync", id: "Sinkronisasi Bank Otomatis" },
+    desc: {
+      en: "Auto-import transactions from your bank",
+      id: "Impor otomatis transaksi dari bank Anda",
+    },
+    href: "/pricing",
   },
 ];
 
@@ -199,7 +197,7 @@ const resourceItems: Array<{
     icon: HelpCircle,
     title: { en: "Help Center", id: "Pusat Bantuan" },
     desc: { en: "FAQ & documentation", id: "FAQ & dokumentasi" },
-    href: "/help-center",
+    href: "/help",
   },
   {
     icon: MessageSquare,
@@ -281,48 +279,6 @@ const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace
 
 
 
-// Titik kecil di ujung kursor + ekor elastis (spring berantai) — hanya device ber-kursor.
-// Skip di perangkat touch / user yang memilih reduced motion.
-function CursorGlow() {
-  const [enabled] = useState(
-    () =>
-      window.matchMedia("(pointer: fine)").matches &&
-      window.matchMedia("(prefers-reduced-motion: no-preference)").matches,
-  );
-  const x = useMotionValue(-100);
-  const y = useMotionValue(-100);
-
-  // Rantai spring: tiap segmen mengikuti segmen sebelumnya dengan kelentingan
-  // makin besar, sehingga saat kursor digerakin ekornya "ketarik" mengikuti.
-  const tail1X = useSpring(x, { stiffness: 550, damping: 38, mass: 0.5 });
-  const tail1Y = useSpring(y, { stiffness: 550, damping: 38, mass: 0.5 });
-  const tail2X = useSpring(tail1X, { stiffness: 320, damping: 30, mass: 0.7 });
-  const tail2Y = useSpring(tail1Y, { stiffness: 320, damping: 30, mass: 0.7 });
-  const tail3X = useSpring(tail2X, { stiffness: 170, damping: 24, mass: 0.9 });
-  const tail3Y = useSpring(tail2Y, { stiffness: 170, damping: 24, mass: 0.9 });
-
-  useEffect(() => {
-    if (!enabled) return;
-    const pointerMove = (event: PointerEvent) => {
-      x.set(event.clientX);
-      y.set(event.clientY);
-    };
-    window.addEventListener("pointermove", pointerMove, { passive: true });
-    return () => window.removeEventListener("pointermove", pointerMove);
-  }, [enabled, x, y]);
-
-  if (!enabled) return null;
-
-  return (
-    <>
-      <motion.div aria-hidden className="cursor-tail cursor-tail-3" style={{ left: tail3X, top: tail3Y }} />
-      <motion.div aria-hidden className="cursor-tail cursor-tail-2" style={{ left: tail2X, top: tail2Y }} />
-      <motion.div aria-hidden className="cursor-tail cursor-tail-1" style={{ left: tail1X, top: tail1Y }} />
-      <motion.div aria-hidden className="cursor-dot" style={{ left: x, top: y }} />
-    </>
-  );
-}
-
 // ─── Animations ──────────────────────────────────────────────────────
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 40 },
@@ -347,7 +303,7 @@ export default function HomePage() {
 
   return (
     <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
-      <CursorGlow />
+      <CursorTrail />
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}

@@ -13,10 +13,9 @@ import {
   Receipt,
   BookOpen,
   FileText,
-  TrendingUp,
   Calculator,
   Layers,
-  Shield,
+  Cloud,
   Newspaper,
   GraduationCap,
   HelpCircle,
@@ -30,7 +29,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import logo from "../assets/ledgerflow.webp";
 
 type L = { en: string; id: string };
-type NavItem = { icon: typeof Building; title: L; desc: L; href?: string };
+type NavItem = { icon: typeof Building; title: L; desc: L; href?: string; comingSoon?: boolean };
 
 const solutionItems: NavItem[] = [
   { icon: Building, title: { en: "Small Businesses", id: "Usaha Kecil" }, desc: { en: "Simplified bookkeeping & tax prep", id: "Pembukuan sederhana & siap pajak" }, href: "/solutions/small-businesses" },
@@ -39,30 +38,32 @@ const solutionItems: NavItem[] = [
   { icon: Receipt, title: { en: "Startups", id: "Startup" }, desc: { en: "From day-one to Series A", id: "Dari hari pertama ke Series A" }, href: "/solutions/startups" },
 ];
 const productItems: NavItem[] = [
-  { icon: BookOpen, title: { en: "Chart of Accounts", id: "Chart of Accounts" }, desc: { en: "Customizable account structure", id: "Struktur akun yang bisa disesuaikan" }, href: "/products/chart-of-accounts" },
-  { icon: FileText, title: { en: "Journal Entries", id: "Jurnal Umum" }, desc: { en: "Double-entry with auto-balance", id: "Double-entry dengan saldo otomatis" }, href: "/products/journal-entries" },
-  { icon: TrendingUp, title: { en: "Financial Reports", id: "Laporan Keuangan" }, desc: { en: "Income, Balance Sheet, Cash Flow", id: "Laba rugi, neraca, arus kas" }, href: "/products/financial-reports" },
-  { icon: Calculator, title: { en: "Budget & Forecast", id: "Anggaran & Forecast" }, desc: { en: "AI-powered financial planning", id: "Perencanaan keuangan berbasis AI" }, href: "/products/budget-forecast" },
-  { icon: Layers, title: { en: "Integrations", id: "Integrasi" }, desc: { en: "Connect banks, ERPs, & more", id: "Hubungkan bank, ERP, & lainnya" }, href: "/products/integrations" },
-  { icon: Shield, title: { en: "Security & Compliance", id: "Keamanan & Kepatuhan" }, desc: { en: "SOC 2, GDPR, 256-bit encryption", id: "SOC 2, GDPR, enkripsi 256-bit" }, href: "/products/security-compliance" },
+  { icon: BookOpen, title: { en: "Chart of Accounts", id: "Chart of Accounts" }, desc: { en: "Customizable account structure", id: "Struktur akun yang bisa disesuaikan" }, href: "/pricing" },
+  { icon: FileText, title: { en: "Journal Entries", id: "Jurnal Umum" }, desc: { en: "Double-entry with auto-balance", id: "Double-entry dengan saldo otomatis" }, href: "/pricing" },
+  { icon: Calculator, title: { en: "Budget & Forecast", id: "Anggaran & Forecast" }, desc: { en: "AI-powered financial planning", id: "Perencanaan keuangan berbasis AI" }, href: "/pricing" },
+  { icon: Layers, title: { en: "Integrations", id: "Integrasi" }, desc: { en: "Connect banks, ERPs, & more", id: "Hubungkan bank, ERP, & lainnya" }, href: "/pricing" },
+  { icon: Building, title: { en: "Multi-Company Management", id: "Manajemen Multi-Perusahaan" }, desc: { en: "Manage multiple entities in one place", id: "Kelola banyak entitas dalam satu tempat" }, href: "/pricing" },
+  { icon: Cloud, title: { en: "Automated Bank Sync", id: "Sinkronisasi Bank Otomatis" }, desc: { en: "Auto-import transactions from your bank", id: "Impor otomatis transaksi dari bank Anda" }, href: "/pricing" },
 ];
 const resourceItems: NavItem[] = [
-  { icon: Newspaper, title: { en: "Blog", id: "Blog" }, desc: { en: "Tips & industry insights", id: "Tips & insight industri" }, href: "/resources/blog" },
-  { icon: GraduationCap, title: { en: "Guides & Tutorials", id: "Panduan & Tutorial" }, desc: { en: "Step-by-step learning", id: "Belajar bertahap" }, href: "/resources/guides-tutorials" },
-  { icon: HelpCircle, title: { en: "Help Center", id: "Pusat Bantuan" }, desc: { en: "FAQ & documentation", id: "FAQ & dokumentasi" }, href: "/help-center" },
-  { icon: MessageSquare, title: { en: "Community", id: "Komunitas" }, desc: { en: "Join 5,000+ finance pros", id: "Gabung 5.000+ praktisi keuangan" }, href: "/resources/community" },
-  { icon: FileSpreadsheet, title: { en: "Templates", id: "Template" }, desc: { en: "Free Excel & spreadsheet kits", id: "Kit Excel & spreadsheet gratis" }, href: "/resources/templates" },
+  { icon: Newspaper, title: { en: "Blog", id: "Blog" }, desc: { en: "Tips & industry insights", id: "Tips & insight industri" }, href: "/resources/blog", comingSoon: true },
+  { icon: GraduationCap, title: { en: "Guides & Tutorials", id: "Panduan & Tutorial" }, desc: { en: "Step-by-step learning", id: "Belajar bertahap" }, href: "/resources/guides-tutorials", comingSoon: true },
+  { icon: HelpCircle, title: { en: "Help Center", id: "Pusat Bantuan" }, desc: { en: "FAQ & documentation", id: "FAQ & dokumentasi" }, href: "/help" },
+  { icon: MessageSquare, title: { en: "Community", id: "Komunitas" }, desc: { en: "Join 5,000+ finance pros", id: "Gabung 5.000+ praktisi keuangan" }, href: "/resources/community", comingSoon: true },
+  { icon: FileSpreadsheet, title: { en: "Templates", id: "Template" }, desc: { en: "Free Excel & spreadsheet kits", id: "Kit Excel & spreadsheet gratis" }, href: "/resources/templates", comingSoon: true },
 ];
 
 const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-function AnimateDropdown({ open, children }: { open: boolean; children: React.ReactNode }) {
+function AnimateDropdown({ open, children, onMouseEnter, onMouseLeave }: { open: boolean; children: React.ReactNode; onMouseEnter?: () => void; onMouseLeave?: () => void }) {
   return (
     <motion.div
       initial={false}
       animate={open ? { opacity: 1, y: 0, scale: 1, pointerEvents: "auto" as const } : { opacity: 0, y: -8, scale: 0.96, pointerEvents: "none" as const }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       style={{ visibility: open ? "visible" : "hidden" }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {children}
     </motion.div>
@@ -116,11 +117,13 @@ const Navbar = () => {
               <button onClick={() => navigate(`/${item.key}`)} className="relative text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10">
                 {item.name} <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === item.key ? "rotate-180" : ""}`} />
               </button>
-              <AnimateDropdown open={openDropdown === item.key}>
+              <AnimateDropdown open={openDropdown === item.key} onMouseEnter={() => openMenu(item.key)} onMouseLeave={scheduleCloseMenu}>
                 <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 py-3 z-50 ${item.items.length > 4 ? "w-[480px] grid grid-cols-2 gap-0.5 px-3" : "w-[280px] px-2"}`}>
                   {item.items.map((sub) => {
-                    const className = "flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-500/10 dark:hover:bg-primary-900/20 transition-colors group/sub";
-                    const content = (<><div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 group-hover/sub:bg-primary-500/20 transition-colors"><sub.icon size={16} /></div><div><p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">{sub.title[language]}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{sub.desc[language]}</p></div></>);
+                    const isComingSoon = (sub as NavItem).comingSoon;
+                    const className = `flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors group/sub ${isComingSoon ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-500/10 dark:hover:bg-primary-900/20"}`;
+                    const content = (<><div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 group-hover/sub:bg-primary-500/20 transition-colors"><sub.icon size={16} /></div><div><p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">{sub.title[language]}{isComingSoon && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-normal">Coming Soon</span>}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{sub.desc[language]}</p></div></>);
+                    if (isComingSoon) return (<div key={sub.title.en} className={className}>{content}</div>);
                     if (sub.href) return (<Link key={sub.title.en} to={sub.href} className={className}>{content}</Link>);
                     return (<Link key={sub.title.en} to={`/${item.key}/${toSlug(sub.title.en)}`} className={className}>{content}</Link>);
                   })}

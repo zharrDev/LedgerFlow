@@ -153,31 +153,13 @@ function RoleRoute({
 
 function ThemeInitializer() {
   useEffect(() => {
-    const storedTheme = localStorage.getItem("theme") || "system";
-    const applyTheme = (theme: string) => {
-      const root = document.documentElement;
-      if (theme === "dark") {
-        root.classList.add("dark");
-      } else if (theme === "light") {
-        root.classList.remove("dark");
-      } else if (theme === "system") {
-        const isDark = window.matchMedia(
-          "(prefers-color-scheme: dark)",
-        ).matches;
-        if (isDark) root.classList.add("dark");
-        else root.classList.remove("dark");
-      }
-    };
-    applyTheme(storedTheme);
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => {
-      if (localStorage.getItem("theme") === "system") {
-        applyTheme("system");
-      }
-    };
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
+    const storedTheme = localStorage.getItem("theme");
+    const root = document.documentElement;
+    if (storedTheme === "dark" || (!storedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
   }, []);
   return null;
 }
