@@ -532,6 +532,8 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                     <img
                       src={user.avatar_url}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   ) : (

@@ -282,7 +282,13 @@ const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace
 
 
 // Titik kecil di ujung kursor + ekor elastis (spring berantai) — hanya device ber-kursor.
+// Skip di perangkat touch / user yang memilih reduced motion.
 function CursorGlow() {
+  const [enabled] = useState(
+    () =>
+      window.matchMedia("(pointer: fine)").matches &&
+      window.matchMedia("(prefers-reduced-motion: no-preference)").matches,
+  );
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
 
@@ -296,13 +302,16 @@ function CursorGlow() {
   const tail3Y = useSpring(tail2Y, { stiffness: 170, damping: 24, mass: 0.9 });
 
   useEffect(() => {
+    if (!enabled) return;
     const pointerMove = (event: PointerEvent) => {
       x.set(event.clientX);
       y.set(event.clientY);
     };
     window.addEventListener("pointermove", pointerMove, { passive: true });
     return () => window.removeEventListener("pointermove", pointerMove);
-  }, [x, y]);
+  }, [enabled, x, y]);
+
+  if (!enabled) return null;
 
   return (
     <>

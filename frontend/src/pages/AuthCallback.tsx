@@ -30,8 +30,6 @@ export default function AuthCallback() {
           return;
         }
 
-        console.log("Supabase session OK, user:", session.user.email);
-
         // 2. Kirim Supabase access token ke backend kita untuk ditukar custom JWT
         const res = await api.post("/api/auth/exchange-token", {
           supabase_token: session.access_token,
