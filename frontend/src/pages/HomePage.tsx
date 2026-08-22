@@ -54,6 +54,7 @@ import Footer from "../components/Footer"; // ← import shared Footer component
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
+import InViewVideo from "../components/home/InViewVideo";
 import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
 import fintechBgMobile from "../assets/hero/fintech-bgmobile.webp";
 import heroBgAnim from "../assets/hero/hero-bg-anim.webm";
@@ -853,17 +854,13 @@ export default function HomePage() {
 
               {/* Main Card */}
               <div className="relative overflow-hidden rounded-[36px] border border-white/20 bg-white/60 dark:bg-darkCard/70 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.18)] transition-all duration-700 group-hover:-translate-y-2">
-                <video
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
+                <InViewVideo
+                  sources={[
+                    { src: dashboardDemo, type: "video/webm" },
+                    { src: dashboardDemoFallback, type: "video/mp4" },
+                  ]}
                   className="w-full min-h-[100px] md:min-h-[300px] lg:min-h-[450px] object-cover"
-                >
-                  <source src={dashboardDemo} type="video/webm" />
-                  <source src={dashboardDemoFallback} type="video/mp4" />
-                </video>
+                />
                 {/* Overlay Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
               </div>

@@ -7,40 +7,61 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
-import ChartOfAccounts from "./pages/ChartOfAccounts";
 import HomePage from "./pages/HomePage";
-import AuthPage from "./pages/AuthPage";
-import DashboardPage from "./pages/DashboardPage";
-import JournalEntryPage from "./pages/JournalEntryPage";
-import BukuBesarPage from "./pages/BukuBesarPage";
-import { IncomeStatementPage } from "./pages/IncomeStatementPage";
-import BalanceSheet from "./pages/BalanceSheet";
-import PeriodManagement from "./pages/PeriodManagement";
-import CashFlowPage from "./pages/CashFlowPage";
-import AuthCallback from "./pages/AuthCallback";
-import ProfilePage from "./pages/ProfilePage";
-import SettingsPage from "./pages/SettingsPage";
-import HelpCenterPage from "./pages/HelpCenterPage";
-import PublicHelpPage from "./pages/PublicHelpPage";
-import PricingPage from "./pages/PricingPage";
-import MarketingPage from "./pages/MarketingPage";
-import MarketingDetailPage from "./pages/MarketingDetailPage";
-import PaymentResultPage from "./pages/PaymentResultPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import AdminGatePage from "./pages/AdminGatePage";
-import AdminPortalPage from "./pages/AdminPortalPage";
-import UserManagementPage from "./pages/UserManagementPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import AiCfoPage from "./pages/AiCfoPage";
-import NotFoundPage from "./pages/NotFoundPage";
-import ErrorPage from "./pages/ErrorPage";
-import { TermsPage } from "./pages/TermsPage";
+import BrandedLoader from "./components/BrandedLoader";
+
+// Route-based code splitting — setiap halaman hanya dimuat saat dibutuhkan.
+const lazyPage = (factory: () => Promise<{ default: React.ComponentType }>) =>
+  lazy(factory);
+const namedLazy = <T extends React.ComponentType>(
+  factory: () => Promise<Record<string, unknown>>,
+  name: string,
+) =>
+  lazy(() =>
+    factory().then((m) => ({ default: m[name] as T })),
+  );
+
+const ChartOfAccounts = lazyPage(() => import("./pages/ChartOfAccounts"));
+const AuthPage = lazyPage(() => import("./pages/AuthPage"));
+const DashboardPage = lazyPage(() => import("./pages/DashboardPage"));
+const JournalEntryPage = lazyPage(() => import("./pages/JournalEntryPage"));
+const BukuBesarPage = lazyPage(() => import("./pages/BukuBesarPage"));
+const IncomeStatementPage = namedLazy(
+  () => import("./pages/IncomeStatementPage"),
+  "IncomeStatementPage",
+);
+const BalanceSheet = lazyPage(() => import("./pages/BalanceSheet"));
+const PeriodManagement = lazyPage(() => import("./pages/PeriodManagement"));
+const CashFlowPage = lazyPage(() => import("./pages/CashFlowPage"));
+const AuthCallback = lazyPage(() => import("./pages/AuthCallback"));
+const ProfilePage = lazyPage(() => import("./pages/ProfilePage"));
+const SettingsPage = lazyPage(() => import("./pages/SettingsPage"));
+const HelpCenterPage = lazyPage(() => import("./pages/HelpCenterPage"));
+const PublicHelpPage = lazyPage(() => import("./pages/PublicHelpPage"));
+const PricingPage = lazyPage(() => import("./pages/PricingPage"));
+const MarketingPage = lazyPage(() => import("./pages/MarketingPage"));
+const MarketingDetailPage = lazyPage(() =>
+  import("./pages/MarketingDetailPage"),
+);
+const PaymentResultPage = lazyPage(() => import("./pages/PaymentResultPage"));
+const ForgotPasswordPage = lazyPage(() =>
+  import("./pages/ForgotPasswordPage"),
+);
+const ResetPasswordPage = lazyPage(() => import("./pages/ResetPasswordPage"));
+const AdminGatePage = lazyPage(() => import("./pages/AdminGatePage"));
+const AdminPortalPage = lazyPage(() => import("./pages/AdminPortalPage"));
+const UserManagementPage = lazyPage(() =>
+  import("./pages/UserManagementPage"),
+);
+const OnboardingPage = lazyPage(() => import("./pages/OnboardingPage"));
+const AiCfoPage = lazyPage(() => import("./pages/AiCfoPage"));
+const NotFoundPage = lazyPage(() => import("./pages/NotFoundPage"));
+const ErrorPage = lazyPage(() => import("./pages/ErrorPage"));
+const TermsPage = namedLazy(() => import("./pages/TermsPage"), "TermsPage");
 import { ProtectedFeature } from "./components/ProtectedFeature";
 import { AICfoFloatingButton } from "./components/AICfoFloatingButton";
-import BrandedLoader from "./components/BrandedLoader";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -176,7 +197,7 @@ function AnimatedRoutes() {
   }, [user, loading, location.pathname]);
 
   return (
-    <>
+    <Suspense fallback={<BrandedLoader />}>
       <Routes location={location}>
       <Route path="/" element={<HomePage />} />
       <Route path="/:section/:item" element={<MarketingDetailPage />} />
@@ -346,7 +367,7 @@ function AnimatedRoutes() {
       <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <AiCfoFabGate />
-    </>
+    </Suspense>
   );
 }
 
