@@ -54,21 +54,21 @@ export const siteLinks = {
   ] satisfies SiteLinkCategory,
 
   tools: [
-    { slug: "roi-calculator", icon: Calculator, title: "ROI Calculator", comingSoon: true },
-    { slug: "tax-strategist", icon: Receipt, title: "Tax Strategist", comingSoon: true },
+    { slug: "roi-calculator", icon: Calculator, title: "ROI Calculator" },
+    { slug: "tax-strategist", icon: Receipt, title: "Tax Strategist" },
     { title: "Contact Support", icon: HelpCircle, href: "/help" },
   ] satisfies SiteLinkCategory,
 
   resources: [
-    { slug: "blog", icon: Newspaper, title: "Blog", comingSoon: true },
-    { slug: "guides", icon: GraduationCap, title: "Guides & Tutorials", comingSoon: true },
+    { slug: "blog", icon: Newspaper, title: "Blog" },
+    { slug: "guides", icon: GraduationCap, title: "Guides & Tutorials" },
     { title: "Help Center", icon: HelpCircle, href: "/help" },
     { slug: "community", icon: MessageSquare, title: "Community", comingSoon: true },
-    { slug: "templates", icon: FileSpreadsheet, title: "Templates", comingSoon: true },
+    { slug: "templates", icon: FileSpreadsheet, title: "Templates" },
   ] satisfies SiteLinkCategory,
 
   company: [
-    { slug: "about", icon: Building, title: "About Us", comingSoon: true },
+    { slug: "about", icon: Building, title: "About Us" },
     { title: "Contact", icon: HelpCircle, href: "/help" },
   ] satisfies SiteLinkCategory,
 } as const;

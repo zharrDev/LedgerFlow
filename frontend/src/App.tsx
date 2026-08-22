@@ -47,6 +47,9 @@ const MarketingDetailPage = lazyPage(() =>
 );
 const SolutionDetailPage = lazyPage(() => import("./pages/SolutionDetailPage"));
 const ProductDetailPage = lazyPage(() => import("./pages/ProductDetailPage"));
+const ToolDetailPage = lazyPage(() => import("./pages/ToolDetailPage"));
+const ResourceDetailPage = lazyPage(() => import("./pages/ResourceDetailPage"));
+const CompanyDetailPage = lazyPage(() => import("./pages/CompanyDetailPage"));
 const PaymentResultPage = lazyPage(() => import("./pages/PaymentResultPage"));
 const ForgotPasswordPage = lazyPage(() =>
   import("./pages/ForgotPasswordPage"),
@@ -123,6 +126,9 @@ function AiCfoFabGate() {
     "/help",
     "/solutions/",
     "/product/",
+    "/tools/",
+    "/resources/",
+    "/company/",
   ];
   if (pathname === "/" || hiddenPrefixes.some((p) => pathname.startsWith(p))) {
     return null;
@@ -203,6 +209,9 @@ function AnimatedRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
       <Route path="/product/:slug" element={<ProductDetailPage />} />
+      <Route path="/tools/:slug" element={<ToolDetailPage />} />
+      <Route path="/resources/:slug" element={<ResourceDetailPage />} />
+      <Route path="/company/:slug" element={<CompanyDetailPage />} />
       <Route path="/:section/:item" element={<MarketingDetailPage />} />
       <Route path="/:section" element={<MarketingPage />} />
       <Route

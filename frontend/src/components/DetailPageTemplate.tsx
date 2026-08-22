@@ -1,5 +1,5 @@
 // frontend/src/components/DetailPageTemplate.tsx
-// Shared visual template for /solutions/:slug and /product/:slug pages.
+// Shared visual template for detail pages — solutions, products, tools, resources, company.
 
 import { Link } from "react-router-dom";
 import { motion, type Variants } from "framer-motion";
@@ -17,8 +17,11 @@ export type DetailPageContent = {
   painPoints?: Array<{ title: L; description: L }>;
   keyCapabilities?: Array<{ title: L; description: L }>;
   ctaText?: L;
+  /** Optional interactive content (e.g. calculator) rendered between capabilities and CTA */
+  interactiveContent?: React.ReactNode;
 };
 
+// ─── Animation Variants ────────────────────────────────────────────────
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
@@ -26,7 +29,25 @@ const fadeUp: Variants = {
 
 const stagger: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.15 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
+};
+
+// Hero element animations (staggered entrance)
+const breadcrumbAnim = {
+  initial: { opacity: 0, y: -10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut", delay: 0 } },
+};
+const badgeAnim = {
+  initial: { opacity: 0, scale: 0.5 },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut", delay: 0.1 } },
+};
+const titleAnim = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.2 } },
+};
+const descAnim = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.3 } },
 };
 
 export default function DetailPageTemplate({
@@ -48,30 +69,40 @@ export default function DetailPageTemplate({
       <main className="flex-1 pt-24 pb-16">
         {/* ═══ Hero ═══ */}
         <section className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
+          {/* Breadcrumb — own row with margin-bottom */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            {...breadcrumbAnim}
+            className="mb-8"
           >
             <Link
               to={backHref}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition mb-6"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition"
             >
               <ArrowLeft size={14} />
               {backLabel ?? (id ? "Kembali" : "Back")}
             </Link>
+          </motion.div>
 
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25 mb-6">
+          {/* Badge icon — centered, normal flow, no overlap */}
+          <motion.div {...badgeAnim} className="flex justify-center mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
               <Icon className="w-8 h-8 text-white" />
             </div>
-
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-              {content.heroTitle[language]}
-            </h1>
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              {content.heroDescription[language]}
-            </p>
           </motion.div>
+
+          {/* Title + Description */}
+          <motion.h1
+            {...titleAnim}
+            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white"
+          >
+            {content.heroTitle[language]}
+          </motion.h1>
+          <motion.p
+            {...descAnim}
+            className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
+          >
+            {content.heroDescription[language]}
+          </motion.p>
         </section>
 
         {/* ═══ Pain Points ═══ */}
@@ -139,6 +170,13 @@ export default function DetailPageTemplate({
               ))}
             </div>
           </motion.section>
+        )}
+
+        {/* ═══ Interactive Content (optional) ═══ */}
+        {content.interactiveContent && (
+          <div className="mt-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+            {content.interactiveContent}
+          </div>
         )}
 
         {/* ═══ CTA ═══ */}
