@@ -19,23 +19,7 @@ import {
   CreditCard,
   Building,
   Cloud,
-  ChevronDown,
-  Menu,
-  X,
-  BookOpen,
-  FileText,
-  TrendingUp,
   Zap,
-  Calculator,
-  Users,
-  Layers,
-  FileSpreadsheet,
-  Receipt,
-  Landmark,
-  HelpCircle,
-  Newspaper,
-  GraduationCap,
-  MessageSquare,
   KeyRound,
   ShieldCheck,
   Bot,
@@ -72,152 +56,8 @@ try {
   dashboardDemo = "";
 }
 
-// ─── Dropdown Data ──────────────────────────────────────────────────
+// ─── Type for featureCards (kept inline since it's homepage-specific) ──
 type L = { en: string; id: string };
-
-const solutionItems: Array<{
-  icon: typeof Building;
-  title: L;
-  desc: L;
-  href?: string;
-}> = [
-  {
-    icon: Building,
-    title: { en: "Small Businesses", id: "Usaha Kecil" },
-    desc: {
-      en: "Simplified bookkeeping & tax prep",
-      id: "Pembukuan sederhana & siap pajak",
-    },
-    href: "/solutions/small-businesses",
-  },
-  {
-    icon: Landmark,
-    title: { en: "Mid-Market Companies", id: "Perusahaan Berkembang" },
-    desc: {
-      en: "Multi-entity & advanced reporting",
-      id: "Multi-entitas & laporan lanjutan",
-    },
-    href: "/solutions/mid-market-companies",
-  },
-  {
-    icon: Users,
-    title: { en: "Accountants & Firms", id: "Akuntan & Firma" },
-    desc: {
-      en: "Manage multiple clients in one place",
-      id: "Kelola banyak klien dalam satu tempat",
-    },
-    href: "/solutions/accountants-firms",
-  },
-  {
-    icon: Receipt,
-    title: { en: "Startups", id: "Startup" },
-    desc: { en: "From day-one to Series A", id: "Dari hari pertama ke Series A" },
-    href: "/solutions/startups",
-  },
-];
-
-const productItems: Array<{
-  icon: typeof Building;
-  title: L;
-  desc: L;
-  href?: string;
-}> = [
-  {
-    icon: BookOpen,
-    title: { en: "Chart of Accounts", id: "Chart of Accounts" },
-    desc: {
-      en: "Customizable account structure",
-      id: "Struktur akun yang bisa disesuaikan",
-    },
-    href: "/pricing",
-  },
-  {
-    icon: FileText,
-    title: { en: "Journal Entries", id: "Jurnal Umum" },
-    desc: {
-      en: "Double-entry with auto-balance",
-      id: "Double-entry dengan saldo otomatis",
-    },
-    href: "/pricing",
-  },
-  {
-    icon: Calculator,
-    title: { en: "Budget & Forecast", id: "Anggaran & Forecast" },
-    desc: {
-      en: "AI-powered financial planning",
-      id: "Perencanaan keuangan berbasis AI",
-    },
-    href: "/pricing",
-  },
-  {
-    icon: Layers,
-    title: { en: "Integrations", id: "Integrasi" },
-    desc: { en: "Connect banks, ERPs, & more", id: "Hubungkan bank, ERP, & lainnya" },
-    href: "/pricing",
-  },
-  {
-    icon: Building,
-    title: { en: "Multi-Company Management", id: "Manajemen Multi-Perusahaan" },
-    desc: {
-      en: "Manage multiple entities in one place",
-      id: "Kelola banyak entitas dalam satu tempat",
-    },
-    href: "/pricing",
-  },
-  {
-    icon: Cloud,
-    title: { en: "Automated Bank Sync", id: "Sinkronisasi Bank Otomatis" },
-    desc: {
-      en: "Auto-import transactions from your bank",
-      id: "Impor otomatis transaksi dari bank Anda",
-    },
-    href: "/pricing",
-  },
-];
-
-const resourceItems: Array<{
-  icon: typeof Building;
-  title: L;
-  desc: L;
-  href?: string;
-}> = [
-  {
-    icon: Newspaper,
-    title: { en: "Blog", id: "Blog" },
-    desc: { en: "Tips & industry insights", id: "Tips & insight industri" },
-    href: "/resources/blog",
-  },
-  {
-    icon: GraduationCap,
-    title: { en: "Guides & Tutorials", id: "Panduan & Tutorial" },
-    desc: { en: "Step-by-step learning", id: "Belajar bertahap" },
-    href: "/resources/guides-tutorials",
-  },
-  {
-    icon: HelpCircle,
-    title: { en: "Help Center", id: "Pusat Bantuan" },
-    desc: { en: "FAQ & documentation", id: "FAQ & dokumentasi" },
-    href: "/help",
-  },
-  {
-    icon: MessageSquare,
-    title: { en: "Community", id: "Komunitas" },
-    desc: {
-      en: "Join 5,000+ finance pros",
-      id: "Gabung 5.000+ praktisi keuangan",
-    },
-    href: "/resources/community",
-  },
-  {
-    icon: FileSpreadsheet,
-    title: { en: "Templates", id: "Template" },
-    desc: {
-      en: "Free Excel & spreadsheet kits",
-      id: "Kit Excel & spreadsheet gratis",
-    },
-    href: "/resources/templates",
-  },
-];
 
 // ─── Fitur Utama (card ikon sederhana) ────────────────────────────────
 const featureCards: Array<{
@@ -395,6 +235,7 @@ export default function HomePage() {
 
       {/* ═══ Security ═══ */}
       <motion.section
+        id="security"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
@@ -497,6 +338,7 @@ export default function HomePage() {
       {/* ═══ Dashboard Showcase (VIDEO!) ═══ */}
       {dashboardDemo && (
         <motion.section
+          id="demo"
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -598,7 +440,7 @@ export default function HomePage() {
       <FeatureCarousel />
 
       {/* ═══ Features ═══ */}
-      <section className="py-20 px-6">
+      <section id="features" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}

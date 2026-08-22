@@ -7,20 +7,6 @@ import {
   Menu,
   X,
   ArrowRight,
-  Building,
-  Landmark,
-  Users,
-  Receipt,
-  BookOpen,
-  FileText,
-  Calculator,
-  Layers,
-  Cloud,
-  Newspaper,
-  GraduationCap,
-  HelpCircle,
-  MessageSquare,
-  FileSpreadsheet,
 } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -28,30 +14,44 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import logo from "../assets/ledgerflow.webp";
 
-type L = { en: string; id: string };
-type NavItem = { icon: typeof Building; title: L; desc: L; href?: string; comingSoon?: boolean };
+import { siteLinks, getLinkHref, type SiteLinkItem } from "../data/siteLinks";
 
-const solutionItems: NavItem[] = [
-  { icon: Building, title: { en: "Small Businesses", id: "Usaha Kecil" }, desc: { en: "Simplified bookkeeping & tax prep", id: "Pembukuan sederhana & siap pajak" }, href: "/solutions/small-businesses" },
-  { icon: Landmark, title: { en: "Mid-Market Companies", id: "Perusahaan Berkembang" }, desc: { en: "Multi-entity & advanced reporting", id: "Multi-entitas & laporan lanjutan" }, href: "/solutions/mid-market-companies" },
-  { icon: Users, title: { en: "Accountants & Firms", id: "Akuntan & Firma" }, desc: { en: "Manage multiple clients in one place", id: "Kelola banyak klien dalam satu tempat" }, href: "/solutions/accountants-firms" },
-  { icon: Receipt, title: { en: "Startups", id: "Startup" }, desc: { en: "From day-one to Series A", id: "Dari hari pertama ke Series A" }, href: "/solutions/startups" },
-];
-const productItems: NavItem[] = [
-  { icon: BookOpen, title: { en: "Chart of Accounts", id: "Chart of Accounts" }, desc: { en: "Customizable account structure", id: "Struktur akun yang bisa disesuaikan" }, href: "/pricing" },
-  { icon: FileText, title: { en: "Journal Entries", id: "Jurnal Umum" }, desc: { en: "Double-entry with auto-balance", id: "Double-entry dengan saldo otomatis" }, href: "/pricing" },
-  { icon: Calculator, title: { en: "Budget & Forecast", id: "Anggaran & Forecast" }, desc: { en: "AI-powered financial planning", id: "Perencanaan keuangan berbasis AI" }, href: "/pricing" },
-  { icon: Layers, title: { en: "Integrations", id: "Integrasi" }, desc: { en: "Connect banks, ERPs, & more", id: "Hubungkan bank, ERP, & lainnya" }, href: "/pricing" },
-  { icon: Building, title: { en: "Multi-Company Management", id: "Manajemen Multi-Perusahaan" }, desc: { en: "Manage multiple entities in one place", id: "Kelola banyak entitas dalam satu tempat" }, href: "/pricing" },
-  { icon: Cloud, title: { en: "Automated Bank Sync", id: "Sinkronisasi Bank Otomatis" }, desc: { en: "Auto-import transactions from your bank", id: "Impor otomatis transaksi dari bank Anda" }, href: "/pricing" },
-];
-const resourceItems: NavItem[] = [
-  { icon: Newspaper, title: { en: "Blog", id: "Blog" }, desc: { en: "Tips & industry insights", id: "Tips & insight industri" }, href: "/resources/blog", comingSoon: true },
-  { icon: GraduationCap, title: { en: "Guides & Tutorials", id: "Panduan & Tutorial" }, desc: { en: "Step-by-step learning", id: "Belajar bertahap" }, href: "/resources/guides-tutorials", comingSoon: true },
-  { icon: HelpCircle, title: { en: "Help Center", id: "Pusat Bantuan" }, desc: { en: "FAQ & documentation", id: "FAQ & dokumentasi" }, href: "/help" },
-  { icon: MessageSquare, title: { en: "Community", id: "Komunitas" }, desc: { en: "Join 5,000+ finance pros", id: "Gabung 5.000+ praktisi keuangan" }, href: "/resources/community", comingSoon: true },
-  { icon: FileSpreadsheet, title: { en: "Templates", id: "Template" }, desc: { en: "Free Excel & spreadsheet kits", id: "Kit Excel & spreadsheet gratis" }, href: "/resources/templates", comingSoon: true },
-];
+// Transform siteLinks items into the format the Navbar dropdown needs
+function toNavItem(item: SiteLinkItem, lang: "en" | "id", category: keyof typeof siteLinks) {
+  const title = lang === "id"
+    ? (item.title === "Small Businesses" ? "Usaha Kecil"
+      : item.title === "Mid-Market Companies" ? "Perusahaan Berkembang"
+      : item.title === "Accountants & Firms" ? "Akuntan & Firma"
+      : item.title === "Startups" ? "Startup"
+      : item.title === "Chart of Accounts" ? "Chart of Accounts"
+      : item.title === "Journal Entries" ? "Jurnal Umum"
+      : item.title === "Financial Reports" ? "Laporan Keuangan"
+      : item.title === "How It Works" ? "Cara Kerja"
+      : item.title === "Integrations" ? "Integrasi"
+      : item.title === "Security & Compliance" ? "Keamanan & Kepatuhan"
+      : item.title === "Budget & Forecast" ? "Anggaran & Forecast"
+      : item.title === "Multi-Company Management" ? "Manajemen Multi-Perusahaan"
+      : item.title === "Automated Bank Sync" ? "Sinkronisasi Bank Otomatis"
+      : item.title === "ROI Calculator" ? "Kalkulator ROI"
+      : item.title === "Tax Strategist" ? "Strategi Pajak"
+      : item.title === "Contact Support" ? "Hubungi Dukungan"
+      : item.title === "Blog" ? "Blog"
+      : item.title === "Guides & Tutorials" ? "Panduan & Tutorial"
+      : item.title === "Help Center" ? "Pusat Bantuan"
+      : item.title === "Community" ? "Komunitas"
+      : item.title === "Templates" ? "Template"
+      : item.title === "About Us" ? "Tentang Kami"
+      : item.title === "Contact" ? "Kontak"
+      : item.title)
+    : item.title;
+  return {
+    icon: item.icon!,
+    title: { en: item.title, id: title } as { en: string; id: string },
+    desc: { en: item.tagline ?? "", id: item.tagline ?? "" } as { en: string; id: string },
+    href: getLinkHref(item, category),
+    comingSoon: item.comingSoon,
+  };
+}
 
 const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -96,9 +96,9 @@ const Navbar = () => {
   useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
   const menuItems = [
-    { name: language === "id" ? "Solusi" : "Solutions", key: "solutions", items: solutionItems },
-    { name: language === "id" ? "Produk" : "Products", key: "products", items: productItems },
-    { name: language === "id" ? "Sumber daya" : "Resources", key: "resources", items: resourceItems },
+    { name: language === "id" ? "Solusi" : "Solutions", key: "solutions" as const, items: siteLinks.solutions.map(i => toNavItem(i, language, "solutions")) },
+    { name: language === "id" ? "Produk" : "Products", key: "products" as const, items: siteLinks.product.map(i => toNavItem(i, language, "product")) },
+    { name: language === "id" ? "Sumber daya" : "Resources", key: "resources" as const, items: siteLinks.resources.map(i => toNavItem(i, language, "resources")) },
   ];
 
   return (

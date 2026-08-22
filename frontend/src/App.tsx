@@ -45,6 +45,8 @@ const MarketingPage = lazyPage(() => import("./pages/MarketingPage"));
 const MarketingDetailPage = lazyPage(() =>
   import("./pages/MarketingDetailPage"),
 );
+const SolutionDetailPage = lazyPage(() => import("./pages/SolutionDetailPage"));
+const ProductDetailPage = lazyPage(() => import("./pages/ProductDetailPage"));
 const PaymentResultPage = lazyPage(() => import("./pages/PaymentResultPage"));
 const ForgotPasswordPage = lazyPage(() =>
   import("./pages/ForgotPasswordPage"),
@@ -119,6 +121,8 @@ function AiCfoFabGate() {
     "/payment/",
     "/pricing",
     "/help",
+    "/solutions/",
+    "/product/",
   ];
   if (pathname === "/" || hiddenPrefixes.some((p) => pathname.startsWith(p))) {
     return null;
@@ -164,6 +168,21 @@ function ThemeInitializer() {
   return null;
 }
 
+/** Scroll to anchor (#demo, #features, #security) after navigation. */
+function AnchorScroller() {
+  const location = useLocation();
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.slice(1);
+      // Small delay to let the target section mount
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [location.hash]);
+  return null;
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -182,6 +201,8 @@ function AnimatedRoutes() {
     <Suspense fallback={<BrandedLoader />}>
       <Routes location={location}>
       <Route path="/" element={<HomePage />} />
+      <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+      <Route path="/product/:slug" element={<ProductDetailPage />} />
       <Route path="/:section/:item" element={<MarketingDetailPage />} />
       <Route path="/:section" element={<MarketingPage />} />
       <Route
@@ -358,6 +379,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeInitializer />
       <BrowserRouter>
+        <AnchorScroller />
         <AnimatedRoutes />
       </BrowserRouter>
     </QueryClientProvider>
