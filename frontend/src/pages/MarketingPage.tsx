@@ -1,10 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowRight, CheckCircle2, Layers, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
 import Footer from "../components/Footer";
-import ThemeSwitcher from "../components/ThemeSwitcher";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import Navbar from "../components/Navbar";
 import { useLanguage } from "../hooks/useLanguage";
-import logo from "../assets/ledgerflow.webp";
 
 type Item = { title: string; description: string; icon: LucideIcon };
 type Copy = { eyebrow: string; title: string; description: string; items: Item[] };
@@ -62,14 +60,8 @@ export default function MarketingPage() {
   const label = language === "id" ? { home: "Beranda", start: "Mulai gratis", explore: "Jelajahi", benefit: "Yang Anda dapatkan" } : { home: "Home", start: "Start free", explore: "Explore", benefit: "What you get" };
 
   return <div className="min-h-screen bg-white text-gray-900 dark:bg-darkBg dark:text-white">
-    <header className="sticky top-0 z-50 border-b border-gray-200/80 dark:border-white/10 bg-white/85 dark:bg-darkBg/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link to="/" className="flex items-center gap-2"><img src={logo} alt="LedgerFlow" className="h-9 w-9" /><span className="font-bold">LedgerFlow</span></Link>
-        <nav className="hidden gap-5 text-sm font-semibold text-gray-600 dark:text-gray-300 md:flex"><Link to="/solutions" className="hover:text-primary-500">{language === "id" ? "Solusi" : "Solutions"}</Link><Link to="/products" className="hover:text-primary-500">{language === "id" ? "Produk" : "Products"}</Link><Link to="/resources" className="hover:text-primary-500">{language === "id" ? "Sumber daya" : "Resources"}</Link></nav>
-        <div className="flex items-center gap-2"><LanguageSwitcher /><ThemeSwitcher /><Link to="/register" className="hidden rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white sm:inline-flex">{label.start}</Link></div>
-      </div>
-    </header>
-    <main>
+    <Navbar />
+    <main className="pt-20">
       <section className="relative overflow-hidden px-5 py-20 sm:py-28"><div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl" /><div className="relative mx-auto max-w-4xl text-center"><p className="text-xs font-extrabold tracking-[.22em] text-primary-500">{page.eyebrow}</p><h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">{page.title}</h1><p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-300">{page.description}</p><Link to="/register" className="mt-9 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-6 py-3 font-bold text-white shadow-lg shadow-primary-500/25">{label.start}<ArrowRight size={18} /></Link></div></section>
       <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-6"><p className="mb-5 text-center text-sm font-bold tracking-widest text-primary-500">{label.explore}</p><div className="grid gap-5 md:grid-cols-3">{page.items.map((item, index) => <Link to={`/${key}/${detailPaths[key][index]}`} key={item.title} className="group relative overflow-hidden rounded-3xl border border-primary-500/15 bg-white p-7 shadow-lg shadow-primary-950/5 transition duration-300 hover:-translate-y-2 hover:border-primary-400/40 hover:shadow-2xl dark:bg-darkCard"><div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 transition group-hover:scale-150" /><item.icon className="relative h-11 w-11 rounded-xl bg-primary-500/10 p-2 text-primary-500 transition group-hover:rotate-3 group-hover:scale-110" /><h2 className="relative mt-5 text-xl font-bold">{item.title}</h2><p className="relative mt-3 leading-relaxed text-gray-600 dark:text-gray-300">{item.description}</p><div className="relative mt-6 flex items-center gap-2 text-sm font-semibold text-primary-500"><CheckCircle2 size={17} /> {label.benefit}<ArrowRight size={16} className="ml-auto transition-transform group-hover:translate-x-1" /></div></Link>)}</div><div className="mt-12 rounded-3xl bg-gray-950 px-7 py-8 text-white sm:flex sm:items-center sm:justify-between sm:px-10"><div><p className="text-sm font-bold text-cyan-300">LedgerFlow</p><h2 className="mt-2 text-2xl font-bold">{language === "id" ? "Siap membuat keuangan lebih sederhana?" : "Ready to make finance simpler?"}</h2></div><Link to="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-950 sm:mt-0">{label.start}<ArrowRight size={16}/></Link></div></section>
     </main><Footer />

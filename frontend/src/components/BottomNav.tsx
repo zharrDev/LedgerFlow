@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, MotionConfig } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../hooks/useLanguage";
 import {
   getBottomNavItems,
   isNavItemActive,
@@ -13,12 +14,19 @@ const SPRING = { type: "spring", stiffness: 420, damping: 30 } as const;
 
 export function BottomNav() {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [sheetItem, setSheetItem] = useState<NavItem | null>(null);
   const sheetOpen = !!sheetItem;
 
   const items = getBottomNavItems(user?.role);
+
+  // Label pendek untuk tab mobile (EN "Journal Entries" terlalu panjang)
+  const shortLabel = (item: NavItem) => {
+    const l = item.label[language];
+    return l === "Journal Entries" ? "Journal" : l;
+  };
 
   // Kunci scroll halaman saat sheet terbuka
   useEffect(() => {
@@ -40,7 +48,9 @@ export function BottomNav() {
   return (
     <MotionConfig reducedMotion="user">
       <nav
-        aria-label="Navigasi utama"
+        aria-label={
+          language === "id" ? "Navigasi utama" : "Main navigation"
+        }
         className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
       >
         <div className="rounded-t-2xl border-t border-primary-500/15 bg-white/75 dark:bg-darkCard/70 shadow-[0_-8px_30px_rgba(2,6,23,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl">
@@ -53,7 +63,9 @@ export function BottomNav() {
                   type="button"
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handlePress(item)}
-                  aria-label={`Buka ${item.label}`}
+                  aria-label={`${
+                    language === "id" ? "Buka" : "Open"
+                  } ${shortLabel(item)}`}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 pt-2 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 transition-colors duration-200 ${
                     active
@@ -84,9 +96,7 @@ export function BottomNav() {
                       active ? "font-semibold" : "font-medium"
                     }`}
                   >
-                    {item.label === "Journal Entries"
-                      ? "Journal"
-                      : item.label}
+                    {shortLabel(item)}
                   </span>
                 </motion.button>
               );

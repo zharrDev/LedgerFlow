@@ -16,8 +16,6 @@ function applyTheme(theme: Theme) {
   } else {
     root.classList.remove("dark");
   }
-
-  console.log("HTML CLASS:", root.className);
 }
 
 export default function ThemeSwitcher() {

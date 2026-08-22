@@ -29,19 +29,20 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useLanguage } from "../hooks/useLanguage";
 
 // ─── Dictionaries ───────────────────────────────────────────────────
-const FEATURE_NAMES: Record<string, string> = {
-  income_statement: "Laporan Laba Rugi",
-  balance_sheet: "Neraca (Balance Sheet)",
-  cash_flow: "Laporan Arus Kas",
-  export_pdf: "Export PDF",
-  export_csv: "Export CSV",
-  unlimited_journals: "Unlimited Journal Entries",
-  multi_company: "Multi-Company",
-  multi_user: "Multi-User & Roles",
-  api_access: "API Access",
-  custom_reports: "Custom Reports",
+const FEATURE_NAMES: Record<string, { en: string; id: string }> = {
+  income_statement: { en: "Income Statement", id: "Laporan Laba Rugi" },
+  balance_sheet: { en: "Balance Sheet", id: "Neraca" },
+  cash_flow: { en: "Cash Flow Report", id: "Laporan Arus Kas" },
+  export_pdf: { en: "Export PDF", id: "Export PDF" },
+  export_csv: { en: "Export CSV", id: "Export CSV" },
+  unlimited_journals: { en: "Unlimited Journal Entries", id: "Jurnal Tanpa Batas" },
+  multi_company: { en: "Multi-Company", id: "Multi-Perusahaan" },
+  multi_user: { en: "Multi-User & Roles", id: "Multi-Pengguna & Role" },
+  api_access: { en: "API Access", id: "Akses API" },
+  custom_reports: { en: "Custom Reports", id: "Laporan Kustom" },
 };
 
 const PLAN_NAMES: Record<string, string> = {
@@ -85,9 +86,24 @@ const spaceVariants: Variants = {
 
 // ─── Default Highlights ─────────────────────────────────────────────
 const DEFAULT_HIGHLIGHTS = [
-  { icon: Zap, label: "Unlimited Journals", desc: "Tanpa batasan" },
-  { icon: Shield, label: "Semua Laporan", desc: "Laba Rugi, Neraca, dll" },
-  { icon: Sparkles, label: "Export PDF", desc: "Download laporan" },
+  {
+    icon: Zap,
+    label: { en: "Unlimited Journals", id: "Jurnal Tanpa Batas" },
+    desc: { en: "No limits", id: "Tanpa batasan" },
+  },
+  {
+    icon: Shield,
+    label: { en: "All Reports", id: "Semua Laporan" },
+    desc: {
+      en: "Income Statement, Balance Sheet, etc.",
+      id: "Laba Rugi, Neraca, dll",
+    },
+  },
+  {
+    icon: Sparkles,
+    label: { en: "Export PDF", id: "Export PDF" },
+    desc: { en: "Download reports", id: "Download laporan" },
+  },
 ];
 
 // ─── Props ──────────────────────────────────────────────────────────
@@ -114,9 +130,12 @@ export function Paywall({
   compact = false,
 }: PaywallProps) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const location = useLocation();
 
-  const featureName = feature ? (FEATURE_NAMES[feature] ?? feature) : "";
+  const featureName = feature
+    ? (FEATURE_NAMES[feature]?.[language] ?? feature)
+    : "";
   const planName = PLAN_NAMES[requiredPlan] ?? requiredPlan;
   const gradientClass =
     PLAN_COLORS[requiredPlan] ?? "from-primary-600 to-primary-500";
@@ -126,7 +145,11 @@ export function Paywall({
     else navigate("/pricing");
   };
 
-  const resolvedTitle = title ?? "Upgrade untuk Membuka Fitur Ini";
+  const resolvedTitle =
+    title ??
+    (language === "id"
+      ? "Upgrade untuk Membuka Fitur Ini"
+      : "Upgrade to Unlock This Feature");
 
   // ─── Compact variant ───────────────────────────────────────────────
   if (compact) {
@@ -138,15 +161,25 @@ export function Paywall({
       >
         <Lock className="w-8 h-8 text-amber-500 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {title ?? `Fitur ${planName}`}
+          {title ??
+            (language === "id" ? `Fitur ${planName}` : `${planName} Feature`)}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           {description ?? (
             <>
               {featureName && <strong>{featureName}</strong>}
               {featureName && " "}
-              {!featureName && "Fitur ini "}
-              memerlukan plan {planName} atau lebih tinggi.
+              {language === "id" ? (
+                <>
+                  {!featureName && "Fitur ini "}
+                  memerlukan plan {planName} atau lebih tinggi.
+                </>
+              ) : (
+                <>
+                  {!featureName && "This feature "}
+                  requires the {planName} plan or higher.
+                </>
+              )}
             </>
           )}
         </p>
@@ -154,7 +187,8 @@ export function Paywall({
           onClick={handleUpgrade}
           className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r ${gradientClass} text-white text-sm font-semibold hover:shadow-lg transition-all`}
         >
-          <Crown size={14} /> Upgrade ke {planName}
+          <Crown size={14} />{" "}
+          {language === "id" ? `Upgrade ke ${planName}` : `Upgrade to ${planName}`}
         </button>
       </motion.div>
     );
@@ -225,9 +259,19 @@ export function Paywall({
             <>
               {featureName && <strong>{featureName}</strong>}
               {featureName && " "}
-              {!featureName && "Fitur ini "}
-              tersedia pada plan {planName}. Upgrade sekarang untuk akses penuh
-              ke semua fitur premium LedgerFlow.
+              {language === "id" ? (
+                <>
+                  {!featureName && "Fitur ini "}
+                  tersedia pada plan {planName}. Upgrade sekarang untuk akses
+                  penuh ke semua fitur premium LedgerFlow.
+                </>
+              ) : (
+                <>
+                  {!featureName && "This feature is "}
+                  available on the {planName} plan. Upgrade now for full access
+                  to all premium LedgerFlow features.
+                </>
+              )}
             </>
           )}
         </motion.p>
@@ -248,9 +292,9 @@ export function Paywall({
               >
                 <Icon className="w-5 h-5 text-primary-500 mx-auto mb-1" />
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {item.label}
+                  {item.label[language]}
                 </p>
-                <p className="text-xs text-gray-500">{item.desc}</p>
+                <p className="text-xs text-gray-500">{item.desc[language]}</p>
               </div>
             );
           })}
@@ -268,14 +312,14 @@ export function Paywall({
             className={`inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r ${gradientClass} text-white font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all`}
           >
             <Crown size={18} />
-            Upgrade ke {planName}
+            {language === "id" ? `Upgrade ke ${planName}` : `Upgrade to ${planName}`}
             <ArrowRight size={16} />
           </button>
           <Link
             to="/pricing"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
           >
-            Lihat Semua Plan
+            {language === "id" ? "Lihat Semua Plan" : "View All Plans"}
             <ChevronRight size={16} />
           </Link>
         </motion.div>
@@ -287,7 +331,7 @@ export function Paywall({
           transition={{ delay: 0.9 }}
           className="mt-6 text-xs text-gray-500 dark:text-gray-400"
         >
-          Plan saat ini:{" "}
+          {language === "id" ? "Plan saat ini:" : "Current plan:"}{" "}
           <span className="font-medium text-gray-700 dark:text-gray-300">
             {PLAN_NAMES[currentPlan] ?? currentPlan}
           </span>
@@ -341,6 +385,8 @@ interface TrialBannerProps {
 
 export function TrialBanner({ daysLeft, onUpgrade }: TrialBannerProps) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const id = language === "id";
 
   if (daysLeft <= 0) return null;
 
@@ -357,17 +403,29 @@ export function TrialBanner({ daysLeft, onUpgrade }: TrialBannerProps) {
     >
       <Sparkles size={16} />
       <span>
-        {isUrgent ? "⚡" : "🎉"} Trial Anda tersisa{" "}
-        <strong>{daysLeft} hari</strong>
+        {isUrgent ? "⚡" : "🎉"}{" "}
+        {id ? (
+          <>
+            Trial Anda tersisa <strong>{daysLeft} hari</strong>
+          </>
+        ) : (
+          <>
+            Your trial has <strong>{daysLeft} days</strong> left
+          </>
+        )}
         {isUrgent
-          ? " lagi! Upgrade sekarang agar tidak kehilangan akses."
-          : ". Nikmati semua fitur premium LedgerFlow!"}
+          ? id
+            ? " lagi! Upgrade sekarang agar tidak kehilangan akses."
+            : "! Upgrade now to keep your access."
+          : id
+          ? ". Nikmati semua fitur premium LedgerFlow!"
+          : ". Enjoy all LedgerFlow premium features!"}
       </span>
       <button
         onClick={() => (onUpgrade ? onUpgrade() : navigate("/pricing"))}
         className="px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 font-semibold text-xs transition-colors"
       >
-        Upgrade Sekarang →
+        {id ? "Upgrade Sekarang →" : "Upgrade Now →"}
       </button>
     </motion.div>
   );

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { formatCurrency } from "../../utils/currency";
+import { useLanguage } from "../../hooks/useLanguage";
 
 interface BalanceSheetStatusProps {
   isBalanced: boolean;
@@ -17,6 +18,8 @@ export const BalanceSheetStatus = ({
   totalAssets,
   totalLiabilitiesEquity,
 }: BalanceSheetStatusProps) => {
+  const { language } = useLanguage();
+  const id = language === "id";
   const difference = Math.abs(totalAssets - totalLiabilitiesEquity);
 
   return (
@@ -43,13 +46,19 @@ export const BalanceSheetStatus = ({
 
         <div className="flex-1">
           <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">
-            {isBalanced ? "Neraca Seimbang" : "Neraca Tidak Seimbang"}
+            {isBalanced
+              ? id
+                ? "Neraca Seimbang"
+                : "Balance Sheet Balanced"
+              : id
+              ? "Neraca Tidak Seimbang"
+              : "Balance Sheet Unbalanced"}
           </h3>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between gap-2">
               <span className="text-gray-500 dark:text-gray-400">
-                Total Aset:
+                {id ? "Total Aset:" : "Total Assets:"}
               </span>
               <span className="font-semibold tabular-nums text-gray-900 dark:text-white">
                 {formatCurrency(totalAssets)}
@@ -58,7 +67,9 @@ export const BalanceSheetStatus = ({
 
             <div className="flex justify-between gap-2">
               <span className="text-gray-500 dark:text-gray-400">
-                Total Liabilitas + Ekuitas:
+                {id
+                  ? "Total Liabilitas + Ekuitas:"
+                  : "Total Liabilities + Equity:"}
               </span>
               <span className="font-semibold tabular-nums text-gray-900 dark:text-white">
                 {formatCurrency(totalLiabilitiesEquity)}
@@ -74,7 +85,7 @@ export const BalanceSheetStatus = ({
                       : "text-rose-600 dark:text-rose-400"
                   }`}
                 >
-                  Selisih:
+                  {id ? "Selisih:" : "Difference:"}
                 </span>
                 <span className="font-bold tabular-nums text-rose-600 dark:text-rose-400">
                   {formatCurrency(difference)}

@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { useScrollIsolation } from "../hooks/useScrollIsolation";
+import { useLanguage } from "../hooks/useLanguage";
 import {
   Building2,
   ChevronRight,
@@ -68,6 +69,7 @@ const SidebarContent = ({
   onLinkClick?: () => void;
 }) => {
   const { user, updateUser } = useAuth();
+  const { language } = useLanguage();
   const [companyName, setCompanyName] = React.useState(
     user?.company_name || "",
   );
@@ -133,13 +135,23 @@ const SidebarContent = ({
       {/* Menu navigation — scrollable */}
       <nav className="flex-1 flex flex-col px-3 pt-2 pb-1 overflow-y-auto scrollbar-thin">
         <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
-          {mode === "mobile-drawer" ? "Lainnya" : "Menu"}
+          {mode === "mobile-drawer"
+            ? language === "id"
+              ? "Lainnya"
+              : "More"
+            : language === "id"
+            ? "Menu"
+            : "Menu"}
         </p>
         {menuItems.length === 0 ? (
           <p className="px-3 py-4 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
             {mode === "mobile-drawer"
-              ? "Menu utama ada di navigasi bawah. Buka tab Profile untuk pengaturan akun."
-              : "Tidak ada menu."}
+              ? language === "id"
+                ? "Menu utama ada di navigasi bawah. Buka tab Profile untuk pengaturan akun."
+                : "Main menu is in the bottom navigation. Open the Profile tab for account settings."
+              : language === "id"
+              ? "Tidak ada menu."
+              : "No menu items."}
           </p>
         ) : (
           <div
@@ -170,7 +182,7 @@ const SidebarContent = ({
                         }`}
                       />
                       <Icon size={16} className="shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate">{item.label[language]}</span>
                       {isActive && (
                         <ChevronRight
                           size={12}
@@ -191,11 +203,13 @@ const SidebarContent = ({
             <div className="flex items-center gap-2 mb-1.5">
               <Sparkles size={14} className="text-primary-500" />
               <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-300">
-                Upgrade ke Pro
+                {language === "id" ? "Upgrade ke Pro" : "Upgrade to Pro"}
               </span>
             </div>
             <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-              Akses AI CFO, laporan lanjutan, dan fitur premium lainnya.
+              {language === "id"
+                ? "Akses AI CFO, laporan lanjutan, dan fitur premium lainnya."
+                : "Access AI CFO, advanced reports, and other premium features."}
             </p>
           </div>
         </div>
@@ -214,7 +228,7 @@ const SidebarContent = ({
                 className={({ isActive }) => navLinkClass(isActive, true)}
               >
                 <Icon size={16} className="shrink-0" />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{item.label[language]}</span>
               </NavLink>
             );
           })}

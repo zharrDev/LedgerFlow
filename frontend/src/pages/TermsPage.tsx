@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { useLanguage } from "../hooks/useLanguage";
 
 export function TermsPage() {
@@ -46,8 +48,9 @@ export function TermsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
+      <Navbar />
+      <div className="mx-auto max-w-2xl w-full px-4 pt-24 pb-10 sm:pt-28 sm:pb-16 flex-1">
         <Link
           to="/register"
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 mb-6 transition"
@@ -90,6 +93,7 @@ export function TermsPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

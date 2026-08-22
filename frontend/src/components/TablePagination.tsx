@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
+import { useLanguage } from "../hooks/useLanguage";
 
 export interface TablePaginationProps {
   page: number;
@@ -30,8 +31,11 @@ export function TablePagination({
   onNext,
   onGoTo,
   summary,
-  itemLabel = "data",
+  itemLabel,
 }: TablePaginationProps) {
+  const { language } = useLanguage();
+  const id = language === "id";
+  const resolvedItemLabel = itemLabel ?? (id ? "data" : "items");
   if (totalItems === 0) return null;
 
   // Buat daftar nomor halaman ringkas (maks 5 tombol di sekitar halaman aktif)
@@ -47,15 +51,15 @@ export function TablePagination({
       <span className="text-xs text-gray-500 dark:text-gray-400 order-2 sm:order-1">
         {summary ?? (
           <>
-            Menampilkan{" "}
+            {id ? "Menampilkan" : "Showing"}{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
               {startIndex}–{endIndex}
             </span>{" "}
-            dari{" "}
+            {id ? "dari" : "of"}{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
               {totalItems}
             </span>{" "}
-            {itemLabel}
+            {resolvedItemLabel}
           </>
         )}
       </span>
@@ -66,7 +70,7 @@ export function TablePagination({
             type="button"
             onClick={onPrev}
             disabled={!canPrev}
-            aria-label="Halaman sebelumnya"
+            aria-label={id ? "Halaman sebelumnya" : "Previous page"}
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft size={15} />
@@ -92,7 +96,7 @@ export function TablePagination({
             type="button"
             onClick={onNext}
             disabled={!canNext}
-            aria-label="Halaman berikutnya"
+            aria-label={id ? "Halaman berikutnya" : "Next page"}
             className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight size={15} />

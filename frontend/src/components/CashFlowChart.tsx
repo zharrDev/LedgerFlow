@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { useLanguage } from "../hooks/useLanguage";
 
 // ─────────────────────────────────────────────
 // Types
@@ -151,26 +152,27 @@ function SummaryCard({
 // Custom Tooltip
 // ─────────────────────────────────────────────
 function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
+  const { language } = useLanguage();
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload as CashFlowDatum;
 
   const rows = [
     {
       key: "masuk",
-      label: "Arus Masuk",
+      label: language === "id" ? "Arus Masuk" : "Inflow",
       color: P.cyan,
       sign: "+"
     },
     {
       key: "keluar",
-      label: "Arus Keluar",
+      label: language === "id" ? "Arus Keluar" : "Outflow",
       color: P.rose,
       sign: "-",
       abs: true,
     },
     {
       key: "net",
-      label: "Saldo Bersih",
+      label: language === "id" ? "Saldo Bersih" : "Net Balance",
       color: d.net >= 0 ? P.indigo : P.rose,
       sign: d.net >= 0 ? "+" : "-",
       bold: true,
@@ -279,6 +281,8 @@ export function CashFlowChart({
   height = 300,
 }: CashFlowChartProps) {
   const isDark = useIsDark();
+  const { language } = useLanguage();
+  const id = language === "id";
 
   // Derived totals untuk summary cards
   const totMasuk = data.reduce((s, d) => s + d.masuk, 0);
@@ -293,7 +297,7 @@ export function CashFlowChart({
       {/* ── Summary Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <SummaryCard
-          label="Total Masuk"
+          label={id ? "Total Masuk" : "Total Inflow"}
           value={totMasuk}
           format={formatValue}
           colorClass="text-cyan-500 dark:text-cyan-400"
@@ -302,7 +306,7 @@ export function CashFlowChart({
           gradTo={P.cyanLight}
         />
         <SummaryCard
-          label="Total Keluar"
+          label={id ? "Total Keluar" : "Total Outflow"}
           value={totKeluar}
           format={formatValue}
           colorClass="text-rose-500 dark:text-rose-400"
@@ -311,7 +315,7 @@ export function CashFlowChart({
           gradTo="#fb923c"
         />
         <SummaryCard
-          label="Saldo Bersih"
+          label={id ? "Saldo Bersih" : "Net Balance"}
           value={totNet}
           format={formatValue}
           colorClass={
@@ -437,7 +441,7 @@ export function CashFlowChart({
             <Area
               type="monotone"
               dataKey="masuk"
-              name="Arus Masuk"
+              name={id ? "Arus Masuk" : "Inflow"}
               stroke={P.cyan}
               strokeWidth={2.5}
               fill="url(#gradMasuk)"
@@ -452,7 +456,7 @@ export function CashFlowChart({
             <Area
               type="monotone"
               dataKey="keluar"
-              name="Arus Keluar"
+              name={id ? "Arus Keluar" : "Outflow"}
               stroke={P.rose}
               strokeWidth={2.5}
               fill="url(#gradKeluar)"
@@ -466,7 +470,7 @@ export function CashFlowChart({
             <Area
               type="monotone"
               dataKey="net"
-              name="Saldo Bersih"
+              name={id ? "Saldo Bersih" : "Net Balance"}
               stroke={P.indigo}
               strokeWidth={3}
               fill="url(#gradNet)"
@@ -483,9 +487,9 @@ export function CashFlowChart({
       {/* ── Legend ── */}
       <div className="flex items-center justify-center gap-6 flex-wrap">
         {[
-          { color: P.cyan, label: "Arus Masuk" },
-          { color: P.rose, label: "Arus Keluar" },
-          { color: P.indigo, label: "Saldo Bersih" },
+          { color: P.cyan, label: id ? "Arus Masuk" : "Inflow" },
+          { color: P.rose, label: id ? "Arus Keluar" : "Outflow" },
+          { color: P.indigo, label: id ? "Saldo Bersih" : "Net Balance" },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
             <span

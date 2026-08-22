@@ -1,23 +1,15 @@
 import { Link } from "react-router-dom";
-import {
-  ArrowUpRight,
-  Mail,
-  ShieldCheck,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Youtube,
-  Facebook,
-} from "lucide-react";
+import { ArrowUpRight, Mail, ShieldCheck } from "lucide-react";
+import { FacebookIcon, InstagramIcon, LinkedinIcon, XIcon, YoutubeIcon } from "./icons/SocialIcons";
 import logo from "../assets/ledgerflow.webp";
 import { useLanguage } from "../hooks/useLanguage";
 
 const socials = [
-  { name: "Instagram", href: "https://instagram.com/ledgerflow", Icon: Instagram },
-  { name: "X (Twitter)", href: "https://x.com/ledgerflow", Icon: Twitter },
-  { name: "LinkedIn", href: "https://linkedin.com/company/ledgerflow", Icon: Linkedin },
-  { name: "YouTube", href: "https://youtube.com/@ledgerflow", Icon: Youtube },
-  { name: "Facebook", href: "https://facebook.com/ledgerflow", Icon: Facebook },
+  { name: "Instagram", href: "https://instagram.com/ledgerflow", Icon: InstagramIcon },
+  { name: "X (Twitter)", href: "https://x.com/ledgerflow", Icon: XIcon },
+  { name: "LinkedIn", href: "https://linkedin.com/company/ledgerflow", Icon: LinkedinIcon },
+  { name: "YouTube", href: "https://youtube.com/@ledgerflow", Icon: YoutubeIcon },
+  { name: "Facebook", href: "https://facebook.com/ledgerflow", Icon: FacebookIcon },
 ];
 
 const Footer = () => {

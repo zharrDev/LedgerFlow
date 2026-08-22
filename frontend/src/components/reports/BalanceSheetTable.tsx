@@ -4,6 +4,7 @@ import type { BalanceSheetAccount } from "../../types/reports";
 import { usePagination } from "../../hooks/usePagination";
 import { TablePagination } from "../TablePagination";
 import { FileText } from "lucide-react";
+import { useLanguage } from "../../hooks/useLanguage";
 
 interface BalanceSheetTableProps {
   title: string;
@@ -15,15 +16,16 @@ interface BalanceSheetTableProps {
 /**
  * Blok section neraca — dipakai di dalam SATU panel glass besar (parent).
  * Header seragam (tint primary), divider tipis antar baris, hover row.
- * ─── ✅ Fix A2 done: 1 root <div> (bukan fragment) agar grid 2 kolom
- * tidak me-flatten header/table/total jadi item grid terpisah.
  */
 export const BalanceSheetTable = ({
   title,
   accounts,
   total,
-  emptyMessage = "Tidak ada data",
+  emptyMessage,
 }: BalanceSheetTableProps) => {
+  const { language } = useLanguage();
+  const id = language === "id";
+  const resolvedEmptyMessage = emptyMessage ?? (id ? "Tidak ada data" : "No data");
   const {
     page,
     setPage,
@@ -52,7 +54,7 @@ export const BalanceSheetTable = ({
       {/* Tampilan Desktop (table) — area konten flex-1, Total jadi footer menempel bawah */}
       {accounts.length === 0 ? (
         <div className="hidden sm:flex flex-1 min-h-0 items-center justify-center px-6 py-10 text-center text-gray-400">
-          {emptyMessage}
+          {resolvedEmptyMessage}
         </div>
       ) : (
         <div className="hidden sm:flex flex-col flex-1 min-h-0">
@@ -61,13 +63,13 @@ export const BalanceSheetTable = ({
               <thead>
                 <tr className="bg-gray-50/70 dark:bg-white/[0.03] border-b border-white/10 dark:border-white/5">
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                    Kode
+                    {id ? "Kode" : "Code"}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                    Nama Akun
+                    {id ? "Nama Akun" : "Account Name"}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                    Saldo
+                    {id ? "Saldo" : "Balance"}
                   </th>
                 </tr>
               </thead>
@@ -106,7 +108,7 @@ export const BalanceSheetTable = ({
       <div className="sm:hidden p-4 space-y-3 flex flex-col flex-1 min-h-0">
         {accounts.length === 0 ? (
           <div className="flex-1 flex items-center justify-center py-8 text-center text-gray-400 text-sm">
-            {emptyMessage}
+            {resolvedEmptyMessage}
           </div>
         ) : (
           <>
@@ -136,7 +138,13 @@ export const BalanceSheetTable = ({
                 onClick={() => setExpanded(!expanded)}
                 className="w-full py-2 text-center text-xs text-gray-500 dark:text-slate-400 hover:text-primary-500 transition-colors"
               >
-                {expanded ? "Tampilkan lebih sedikit" : "Tampilkan semua"}
+                {expanded
+                  ? id
+                    ? "Tampilkan lebih sedikit"
+                    : "Show less"
+                  : id
+                  ? "Tampilkan semua"
+                  : "Show all"}
               </button>
             )}
           </>
@@ -167,7 +175,7 @@ export const BalanceSheetTable = ({
           onPrev={prev}
           onNext={next}
           onGoTo={setPage}
-          itemLabel="akun"
+          itemLabel={id ? "akun" : "accounts"}
         />
       )}
     </div>

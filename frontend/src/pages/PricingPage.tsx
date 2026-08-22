@@ -17,7 +17,8 @@ import {
   formatPrice,
   type Plan,
 } from "../services/paymentService";
-import { AppShell } from "../components/AppShell";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { useLanguage } from "../hooks/useLanguage";
 import {
   Check,
@@ -240,17 +241,19 @@ export default function PricingPage() {
 
   if (isLoading) {
     return (
-      <AppShell>
-        <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="min-h-screen bg-white dark:bg-darkBg">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh] pt-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
         </div>
-      </AppShell>
+      </div>
     );
   }
 
   return (
-    <AppShell>
-      <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-darkBg">
+      <Navbar />
+      <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 pt-24 pb-8">
         {/* ═══ Hero ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -705,6 +708,7 @@ export default function PricingPage() {
           </div>
         </motion.div>
       </div>
-    </AppShell>
+      <Footer />
+    </div>
   );
 }

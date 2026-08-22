@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Check, X } from "lucide-react";
 import type { NavItem } from "../data/navigation";
+import { useLanguage } from "../hooks/useLanguage";
 
 interface BottomNavSheetProps {
   item: NavItem | null;
@@ -12,6 +13,7 @@ interface BottomNavSheetProps {
 /** Sheet kategori (Accounts / Reports) — muncul tepat di atas Bottom Navigation. */
 export function BottomNavSheet({ item, onClose }: BottomNavSheetProps) {
   const location = useLocation();
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!item) return;
@@ -31,7 +33,7 @@ export function BottomNavSheet({ item, onClose }: BottomNavSheetProps) {
             className="fixed inset-0 z-50 lg:hidden"
             role="dialog"
             aria-modal="true"
-            aria-label={`Menu ${item.label}`}
+            aria-label={`${language === "id" ? "Menu" : "Menu"} ${item.label[language]}`}
           >
             {/* Backdrop */}
             <motion.div
@@ -57,12 +59,14 @@ export function BottomNavSheet({ item, onClose }: BottomNavSheetProps) {
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-3 pb-1">
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">
-                  {item.label}
+                  {item.label[language]}
                 </h2>
                 <button
                   type="button"
                   onClick={onClose}
-                  aria-label="Tutup menu"
+                  aria-label={
+                    language === "id" ? "Tutup menu" : "Close menu"
+                  }
                   className="rounded-lg p-1.5 text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary-500/60 focus:outline-none"
                 >
                   <X size={18} />
@@ -98,13 +102,15 @@ export function BottomNavSheet({ item, onClose }: BottomNavSheetProps) {
                             : "font-medium text-gray-700 dark:text-gray-300"
                         }`}
                       >
-                        {child.label}
+                        {child.label[language]}
                       </span>
                       {active && (
                         <Check
                           size={16}
                           className="text-primary-500"
-                          aria-label="Halaman aktif"
+                          aria-label={
+                            language === "id" ? "Halaman aktif" : "Current page"
+                          }
                         />
                       )}
                     </Link>

@@ -1,29 +1,7 @@
 // src/components/InfoPanel.tsx - VERSI CYAN (TERBARU)
 import { Check, BarChart3, Shield, TrendingUp, Activity } from "lucide-react";
 import logo from "../assets/ledgerflow.webp";
-
-const stats = [
-  { value: "10K+", label: "Transaksi Tercatat", icon: Activity },
-  { value: "Real-Time", label: "Dashboard Monitoring", icon: BarChart3 },
-  { value: "Smart", label: "Financial Analytics", icon: TrendingUp },
-  { value: "Secure", label: "Data Management", icon: Shield },
-];
-
-const compactFeatures = [
-  "Laporan laba rugi & neraca otomatis",
-  "Integrasi bank & e-wallet",
-  "Multi-entity & multi-currency",
-  "Audit trail yang lengkap & aman",
-];
-
-const expandedFeatures = [
-  "Pemasukan & Pengeluaran",
-  "Laporan Laba Rugi & Neraca Otomatis",
-  "Dashboard & Analisis Real-Time",
-  "Integrasi Bank & E-Wallet",
-  "Multi-entity & Multi-currency",
-  "Audit Trail Lengkap & Aman",
-];
+import { useLanguage } from "../hooks/useLanguage";
 
 export default function InfoPanel({
   isExpanded,
@@ -32,6 +10,64 @@ export default function InfoPanel({
   isExpanded: boolean;
   onToggle?: () => void;
 }) {
+  const { language } = useLanguage();
+  const id = language === "id";
+
+  const stats = [
+    {
+      value: "10K+",
+      label: id ? "Transaksi Tercatat" : "Transactions Recorded",
+      icon: Activity,
+    },
+    {
+      value: "Real-Time",
+      label: id ? "Dashboard Monitoring" : "Dashboard Monitoring",
+      icon: BarChart3,
+    },
+    {
+      value: "Smart",
+      label: id ? "Analisis Keuangan" : "Financial Analytics",
+      icon: TrendingUp,
+    },
+    {
+      value: "Secure",
+      label: id ? "Pengelolaan Data" : "Data Management",
+      icon: Shield,
+    },
+  ];
+
+  const compactFeatures = id
+    ? [
+        "Laporan laba rugi & neraca otomatis",
+        "Integrasi bank & e-wallet",
+        "Multi-entity & multi-currency",
+        "Audit trail yang lengkap & aman",
+      ]
+    : [
+        "Automatic income statement & balance sheet",
+        "Bank & e-wallet integration",
+        "Multi-entity & multi-currency",
+        "Complete & secure audit trail",
+      ];
+
+  const expandedFeatures = id
+    ? [
+        "Pemasukan & Pengeluaran",
+        "Laporan Laba Rugi & Neraca Otomatis",
+        "Dashboard & Analisis Real-Time",
+        "Integrasi Bank & E-Wallet",
+        "Multi-entity & Multi-currency",
+        "Audit Trail Lengkap & Aman",
+      ]
+    : [
+        "Income & Expenses",
+        "Automatic Income Statement & Balance Sheet",
+        "Real-Time Dashboard & Analytics",
+        "Bank & E-Wallet Integration",
+        "Multi-entity & Multi-currency",
+        "Complete & Secure Audit Trail",
+      ];
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 mb-10">
@@ -42,12 +78,18 @@ export default function InfoPanel({
       </div>
       <div className="transition-all duration-500">
         <h2 className="text-3xl font-bold text-white leading-tight mb-3">
-          Kelola keuangan bisnis Anda dengan lebih cerdas.
+          {id
+            ? "Kelola keuangan bisnis Anda dengan lebih cerdas."
+            : "Manage your business finances smarter."}
         </h2>
         <p className="text-sm text-white/65 leading-relaxed mb-8">
           {isExpanded
-            ? "Platform manajemen keuangan modern yang membantu pengguna mengelola pemasukan, pengeluaran, dan aktivitas harian dalam satu dashboard terintegrasi."
-            : "Bergabung dengan ribuan perusahaan yang menggunakan LedgerFlow untuk laporan keuangan real-time dan rekonsiliasi otomatis."}
+            ? id
+              ? "Platform manajemen keuangan modern yang membantu pengguna mengelola pemasukan, pengeluaran, dan aktivitas harian dalam satu dashboard terintegrasi."
+              : "A modern financial management platform that helps users manage income, expenses, and daily activity in one integrated dashboard."
+            : id
+            ? "Bergabung dengan ribuan perusahaan yang menggunakan LedgerFlow untuk laporan keuangan real-time dan rekonsiliasi otomatis."
+            : "Join thousands of companies using LedgerFlow for real-time financial reports and automatic reconciliation."}
         </p>
       </div>
       {!isExpanded && (
@@ -85,7 +127,7 @@ export default function InfoPanel({
           </div>
           <div>
             <p className="text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-3">
-              Fitur Unggulan
+              {id ? "Fitur Unggulan" : "Key Features"}
             </p>
             <ul className="grid grid-cols-2 gap-x-3 gap-y-2">
               {expandedFeatures.map((item) => (
@@ -109,7 +151,13 @@ export default function InfoPanel({
           onClick={onToggle}
           className="mt-6 w-full py-2.5 text-sm font-medium text-white/80 border border-white/20 rounded-xl hover:bg-white/10 lg:hidden"
         >
-          {isExpanded ? "Tutup Info" : "Pelajari LedgerFlow"}
+          {isExpanded
+            ? id
+              ? "Tutup Info"
+              : "Close Info"
+            : id
+            ? "Pelajari LedgerFlow"
+            : "Learn about LedgerFlow"}
         </button>
       )}
     </div>

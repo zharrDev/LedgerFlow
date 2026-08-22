@@ -12,6 +12,7 @@ import {
 import { accountsService } from "../services/accountsService";
 import { journalService } from "../services/journalService";
 import logo from "../assets/ledgerflow.webp";
+import { useLanguage } from "../hooks/useLanguage";
 import {
   Menu,
   X,
@@ -89,19 +90,22 @@ export function markAllRead() {
 }
 
 /* ───────── Helpers ───────── */
-function timeAgo(ts: number): string {
+function timeAgo(ts: number, language: "en" | "id"): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Baru saja";
-  if (mins < 60) return `${mins}m lalu`;
+  if (mins < 1) return language === "id" ? "Baru saja" : "Just now";
+  if (mins < 60) return `${mins}${language === "id" ? "m lalu" : "m ago"}`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}j lalu`;
+  if (hrs < 24) return `${hrs}${language === "id" ? "j lalu" : "h ago"}`;
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}h lalu`;
-  return new Date(ts).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-  });
+  if (days < 7) return `${days}${language === "id" ? "h lalu" : "d ago"}`;
+  return new Date(ts).toLocaleDateString(
+    language === "id" ? "id-ID" : "en-US",
+    {
+      day: "numeric",
+      month: "short",
+    },
+  );
 }
 
 const NOTIF_ICON: Record<string, { icon: typeof CheckCircle2; color: string }> =
@@ -118,6 +122,7 @@ const NOTIF_ICON: Record<string, { icon: typeof CheckCircle2; color: string }> =
 /* ───────── Header Component ───────── */
 export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -337,7 +342,11 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
             />
             <input
               type="text"
-              placeholder="Cari halaman, akun, jurnal..."
+              placeholder={
+                language === "id"
+                  ? "Cari halaman, akun, jurnal..."
+                  : "Search pages, accounts, journals..."
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -418,14 +427,16 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
-                      Notifikasi
+                      {language === "id" ? "Notifikasi" : "Notifications"}
                     </h3>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllRead}
                         className="text-[11px] text-primary-600 dark:text-primary-400 hover:underline font-medium"
                       >
-                        Tandai semua dibaca
+                        {language === "id"
+                          ? "Tandai semua dibaca"
+                          : "Mark all as read"}
                       </button>
                     )}
                   </div>
@@ -438,7 +449,11 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                           size={32}
                           className="text-gray-300 dark:text-gray-600"
                         />
-                        <p className="text-sm">Belum ada notifikasi</p>
+                        <p className="text-sm">
+                          {language === "id"
+                            ? "Belum ada notifikasi"
+                            : "No notifications yet"}
+                        </p>
                       </div>
                     ) : (
                       <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -472,7 +487,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                                   {notif.message}
                                 </p>
                                 <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">
-                                  {timeAgo(notif.time)}
+                                  {timeAgo(notif.time, language)}
                                 </p>
                               </div>
                               {!notif.read && (
@@ -489,8 +504,10 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                   {notifications.length > 0 && (
                     <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
                       <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
-                        {notifications.length} notifikasi · {unreadCount} belum
-                        dibaca
+                        {notifications.length}{" "}
+                        {language === "id" ? "notifikasi" : "notifications"} ·{" "}
+                        {unreadCount}{" "}
+                        {language === "id" ? "belum dibaca" : "unread"}
                       </p>
                     </div>
                   )}
@@ -574,14 +591,16 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
                     >
-                      <User size={16} className="text-gray-400" /> Profile
+                      <User size={16} className="text-gray-400" />{" "}
+                      {language === "id" ? "Profil" : "Profile"}
                     </Link>
                     <Link
                       to="/settings"
                       onClick={() => setUserDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
                     >
-                      <Settings size={16} className="text-gray-400" /> Settings
+                      <Settings size={16} className="text-gray-400" />{" "}
+                      {language === "id" ? "Pengaturan" : "Settings"}
                     </Link>
                   </div>
                   <div className="border-t border-gray-100 dark:border-gray-800 py-1.5">
@@ -589,7 +608,8 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                       onClick={handleLogout}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 w-full text-left transition-colors"
                     >
-                      <LogOut size={16} /> Logout
+                      <LogOut size={16} />{" "}
+                      {language === "id" ? "Keluar" : "Logout"}
                     </button>
                   </div>
                 </motion.div>
@@ -619,7 +639,11 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search transactions, accounts..."
+                  placeholder={
+                    language === "id"
+                      ? "Cari transaksi, akun..."
+                      : "Search transactions, accounts..."
+                  }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 text-base rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
@@ -632,7 +656,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                 }}
                 className="px-3 py-2 text-sm font-bold text-primary-600 dark:text-primary-400 hover:underline shrink-0"
               >
-                Batal
+                {language === "id" ? "Batal" : "Cancel"}
               </button>
             </div>
 

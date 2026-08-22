@@ -9,6 +9,7 @@ import {
 import { FaqAccordion } from "../components/help/FaqAccordion";
 import { ContactCards } from "../components/help/ContactCards";
 import { helpFaqs, helpContactCards } from "../data/helpCenterContent";
+import { useLanguage } from "../hooks/useLanguage";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -27,6 +28,8 @@ const itemVariants: Variants = {
 };
 
 export default function HelpCenterPage() {
+  const { language } = useLanguage();
+  const id = language === "id";
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -60,8 +63,9 @@ export default function HelpCenterPage() {
             Help Center
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto">
-            Temukan jawaban untuk pertanyaan umum atau hubungi kami untuk
-            bantuan
+            {id
+              ? "Temukan jawaban untuk pertanyaan umum atau hubungi kami untuk bantuan"
+              : "Find answers to common questions or contact us for help"}
           </p>
         </motion.div>
 
@@ -75,7 +79,9 @@ export default function HelpCenterPage() {
               <HelpCircle size={18} />
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Pertanyaan yang Sering Ditanyakan
+              {id
+                ? "Pertanyaan yang Sering Ditanyakan"
+                : "Frequently Asked Questions"}
             </h2>
           </div>
           <FaqAccordion faqs={helpFaqs} />
@@ -90,7 +96,7 @@ export default function HelpCenterPage() {
               <Send size={18} />
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Hubungi Kami
+              {id ? "Hubungi Kami" : "Contact Us"}
             </h2>
           </div>
 
@@ -107,10 +113,12 @@ export default function HelpCenterPage() {
                   <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Pesan Terkirim!
+                  {id ? "Pesan Terkirim!" : "Message Sent!"}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Terima kasih, tim kami akan segera menghubungi Anda
+                  {id
+                    ? "Terima kasih, tim kami akan segera menghubungi Anda"
+                    : "Thank you, our team will contact you shortly"}
                 </p>
               </motion.div>
             ) : (
@@ -125,7 +133,7 @@ export default function HelpCenterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                      Nama
+                      {id ? "Nama" : "Name"}
                     </label>
                     <input
                       type="text"
@@ -133,7 +141,7 @@ export default function HelpCenterPage() {
                       onChange={(e) =>
                         setForm({ ...form, name: e.target.value })
                       }
-                      placeholder="Nama Anda"
+                      placeholder={id ? "Nama Anda" : "Your name"}
                       className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
                     />
                   </div>
@@ -147,14 +155,14 @@ export default function HelpCenterPage() {
                       onChange={(e) =>
                         setForm({ ...form, email: e.target.value })
                       }
-                      placeholder="email@anda.com"
+                      placeholder={id ? "email@anda.com" : "you@email.com"}
                       className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
                     />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                    Pesan
+                    {id ? "Pesan" : "Message"}
                   </label>
                   <textarea
                     value={form.message}
@@ -162,7 +170,11 @@ export default function HelpCenterPage() {
                       setForm({ ...form, message: e.target.value })
                     }
                     rows={4}
-                    placeholder="Tuliskan pertanyaan atau masalah Anda..."
+                    placeholder={
+                      id
+                        ? "Tuliskan pertanyaan atau masalah Anda..."
+                        : "Write your question or issue..."
+                    }
                     required
                     className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition resize-none"
                   />
@@ -177,7 +189,13 @@ export default function HelpCenterPage() {
                       size={16}
                       className={sending ? "animate-pulse" : ""}
                     />
-                    {sending ? "Mengirim..." : "Kirim Pesan"}
+                    {sending
+                      ? id
+                        ? "Mengirim..."
+                        : "Sending..."
+                      : id
+                      ? "Kirim Pesan"
+                      : "Send Message"}
                   </button>
                 </div>
               </motion.form>

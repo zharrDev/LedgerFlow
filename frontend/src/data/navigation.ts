@@ -22,8 +22,10 @@ import type { LucideIcon } from "lucide-react";
 
 export type NavSection = "menu" | "account" | "search";
 
+export type BilingualLabel = { en: string; id: string };
+
 export interface NavChild {
-  label: string;
+  label: BilingualLabel;
   path: string;
   icon: LucideIcon;
   keywords: string[];
@@ -33,7 +35,7 @@ export interface NavChild {
 
 export interface NavItem {
   id: string;
-  label: string;
+  label: BilingualLabel;
   path: string;
   icon: LucideIcon;
   section: NavSection;
@@ -50,7 +52,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     id: "dashboard",
-    label: "Dashboard",
+    label: { en: "Dashboard", id: "Dashboard" },
     path: "/dashboard",
     icon: LayoutDashboard,
     section: "menu",
@@ -59,7 +61,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "accounts",
-    label: "Accounts",
+    label: { en: "Accounts", id: "Akun" },
     path: "/chart-of-accounts",
     icon: BookOpen,
     section: "menu",
@@ -67,14 +69,14 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["accounts", "akun", "chart of accounts", "buku besar", "ledger"],
     children: [
       {
-        label: "Chart of Accounts",
+        label: { en: "Chart of Accounts", id: "Buku Besar Akun" },
         path: "/chart-of-accounts",
         icon: BookOpen,
         keywords: ["coa", "akun", "chart", "accounts"],
         desktopOrder: 2,
       },
       {
-        label: "Buku Besar",
+        label: { en: "General Ledger", id: "Buku Besar" },
         path: "/buku-besar",
         icon: FileText,
         keywords: ["buku", "besar", "ledger", "mutasi"],
@@ -84,7 +86,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "journal",
-    label: "Journal Entries",
+    label: { en: "Journal Entries", id: "Jurnal" },
     path: "/journal-entries",
     icon: PlusCircle,
     section: "menu",
@@ -93,7 +95,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "reports",
-    label: "Reports",
+    label: { en: "Reports", id: "Laporan" },
     path: "/income-statement",
     icon: FileText,
     section: "menu",
@@ -101,21 +103,21 @@ export const NAV_ITEMS: NavItem[] = [
     keywords: ["laporan", "reports", "laba", "rugi", "neraca", "kas"],
     children: [
       {
-        label: "Laba Rugi",
+        label: { en: "Income Statement", id: "Laba Rugi" },
         path: "/income-statement",
         icon: TrendingUp,
         keywords: ["laba", "rugi", "income", "pendapatan"],
         desktopOrder: 5,
       },
       {
-        label: "Neraca",
+        label: { en: "Balance Sheet", id: "Neraca" },
         path: "/balance-sheet",
         icon: Wallet,
         keywords: ["neraca", "balance", "aset", "liabilitas"],
         desktopOrder: 6,
       },
       {
-        label: "Arus Kas",
+        label: { en: "Cash Flow", id: "Arus Kas" },
         path: "/cash-flow",
         icon: Activity,
         keywords: ["arus", "kas", "cash", "flow"],
@@ -125,7 +127,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "period-management",
-    label: "Periode",
+    label: { en: "Period Management", id: "Manajemen Periode" },
     path: "/period-management",
     icon: Calendar,
     section: "menu",
@@ -135,7 +137,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "users-management",
-    label: "User Management",
+    label: { en: "User Management", id: "Manajemen Pengguna" },
     path: "/users-management",
     icon: Users,
     section: "menu",
@@ -145,7 +147,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "help-center",
-    label: "Help & Support",
+    label: { en: "Help & Support", id: "Bantuan & Dukungan" },
     path: "/help-center",
     icon: HelpCircle,
     section: "account",
@@ -154,7 +156,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "ai-cfo",
-    label: "AI CFO Assistant",
+    label: { en: "AI CFO Assistant", id: "Asisten AI CFO" },
     path: "/ai-cfo",
     icon: Bot,
     section: "search",
@@ -166,7 +168,7 @@ export const NAV_ITEMS: NavItem[] = [
   // Tetap diikutsertakan di search-only supaya muncul di pencarian cepat.
   {
     id: "profile",
-    label: "Profile",
+    label: { en: "Profile", id: "Profil" },
     path: "/profile",
     icon: User,
     section: "search",
@@ -176,7 +178,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "settings",
-    label: "Settings",
+    label: { en: "Settings", id: "Pengaturan" },
     path: "/settings",
     icon: Settings,
     section: "search",
@@ -197,7 +199,7 @@ export const BOTTOM_NAV_IDS = [
 
 export interface FlatNavItem {
   id: string;
-  label: string;
+  label: BilingualLabel;
   path: string;
   icon: LucideIcon;
   section: NavSection;
@@ -307,13 +309,13 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
 
 // ─── Quick Navigation (untuk pencarian Header) ────────────────────────
 export interface QuickNavItem {
-  label: string;
+  label: BilingualLabel;
   link: string;
   keywords: string[];
   icon: LucideIcon;
 }
 
-export function filterQuickNav(query: string): QuickNavItem[] {
+export function filterQuickNav(query: string, lang: "en" | "id" = "en"): QuickNavItem[] {
   const all: QuickNavItem[] = NAV_ITEMS.flatMap((item) => {
     if (item.children?.length) {
       return item.children.map((child) => ({
@@ -337,7 +339,7 @@ export function filterQuickNav(query: string): QuickNavItem[] {
   if (!q) return all.slice(0, 6);
   return all.filter(
     (item) =>
-      item.label.toLowerCase().includes(q) ||
+      item.label[lang].toLowerCase().includes(q) ||
       item.keywords.some((k) => k.includes(q) || q.includes(k)),
   );
 }

@@ -5,6 +5,7 @@ import {
   Search,
 } from "lucide-react";
 import { filterQuickNav, type QuickNavItem } from "../data/quickNav";
+import { useLanguage } from "../hooks/useLanguage";
 
 export interface AccountHit {
   id: string;
@@ -36,8 +37,9 @@ export function HeaderSearchResults({
   onNavigate,
   compact,
 }: HeaderSearchResultsProps) {
+  const { language } = useLanguage();
   const q = query.trim();
-  const navHits: QuickNavItem[] = filterQuickNav(q);
+  const navHits: QuickNavItem[] = filterQuickNav(q, language);
   const hasQuery = q.length > 0;
   const empty =
     hasQuery &&
@@ -57,20 +59,28 @@ export function HeaderSearchResults({
       {loading && (
         <div className="flex items-center gap-2 px-4 py-3 text-sm text-gray-500">
           <Loader2 size={14} className="animate-spin" />
-          Mencari...
+          {language === "id" ? "Mencari..." : "Searching..."}
         </div>
       )}
 
       {empty && (
         <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          Tidak ditemukan hasil untuk &ldquo;{q}&rdquo;
+          {language === "id"
+            ? `Tidak ditemukan hasil untuk &ldquo;${q}&rdquo;`
+            : `No results found for &ldquo;${q}&rdquo;`}
         </div>
       )}
 
       {!empty && (
         <div className="py-2">
           <p className="px-4 pt-1 pb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-            {hasQuery ? "Navigasi" : "Pencarian Cepat"}
+            {hasQuery
+              ? language === "id"
+                ? "Navigasi"
+                : "Navigate"
+              : language === "id"
+              ? "Pencarian Cepat"
+              : "Quick Search"}
           </p>
           <div className="space-y-0.5 px-2">
             {navHits.map((item) => (
@@ -81,7 +91,7 @@ export function HeaderSearchResults({
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:text-primary-600 transition-colors"
               >
                 <item.icon size={16} className="text-gray-400 shrink-0" />
-                <span className="font-medium truncate">{item.label}</span>
+                <span className="font-medium truncate">{item.label[language]}</span>
               </button>
             ))}
           </div>
@@ -89,7 +99,7 @@ export function HeaderSearchResults({
           {accounts.length > 0 && (
             <>
               <p className="px-4 pt-3 pb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Akun
+                {language === "id" ? "Akun" : "Accounts"}
               </p>
               <div className="space-y-0.5 px-2">
                 {accounts.map((acc) => (
@@ -119,7 +129,7 @@ export function HeaderSearchResults({
           {journals.length > 0 && (
             <>
               <p className="px-4 pt-3 pb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Jurnal
+                {language === "id" ? "Jurnal" : "Journals"}
               </p>
               <div className="space-y-0.5 px-2 pb-1">
                 {journals.map((j) => (
@@ -139,7 +149,8 @@ export function HeaderSearchResults({
                         {j.number}
                       </span>
                       <span className="font-medium line-clamp-1">
-                        {j.description || "Tanpa deskripsi"}
+                        {j.description ||
+                          (language === "id" ? "Tanpa deskripsi" : "No description")}
                       </span>
                     </span>
                   </button>
@@ -151,7 +162,9 @@ export function HeaderSearchResults({
           {!hasQuery && (
             <p className="px-4 py-2 text-[11px] text-gray-400 flex items-center gap-1.5">
               <Search size={12} />
-              Ketik untuk mencari halaman, akun, atau jurnal
+              {language === "id"
+                ? "Ketik untuk mencari halaman, akun, atau jurnal"
+                : "Type to search pages, accounts, or journals"}
             </p>
           )}
         </div>
