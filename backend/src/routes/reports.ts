@@ -2,6 +2,7 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { computeBalanceSheet } from "../lib/balance-sheet.js";
 
 const reports = new Hono();
 
@@ -156,96 +157,8 @@ reports.get("/balance-sheet", async (c) => {
     const { data: lines, error } = await query;
     if (error) return c.json({ error: error.message }, 500);
 
-    const assetMap: any = {};
-    const liabilityMap: any = {};
-    const equityMap: any = {};
-    let totalAssets = 0;
-    let totalLiabilities = 0;
-    let totalEquity = 0;
-
-    let totalRevenue = 0;
-    let totalExpense = 0;
-
-    for (const line of lines || []) {
-      const account = line.accounts as any;
-      const accType = (account.type || "").toUpperCase();
-      const nb = (account.normal_balance || "").toUpperCase();
-      const debit = Number(line.debit) || 0;
-      const credit = Number(line.credit) || 0;
-      const balance = nb === "DEBIT" ? debit - credit : credit - debit;
-
-      if (accType === "ASSET") {
-        if (!assetMap[account.code]) {
-          assetMap[account.code] = {
-            account_id: account.id,
-            account_code: account.code,
-            account_name: account.name,
-            balance: 0,
-          };
-        }
-        assetMap[account.code].balance += balance;
-        totalAssets += balance;
-      } else if (accType === "LIABILITY") {
-        if (!liabilityMap[account.code]) {
-          liabilityMap[account.code] = {
-            account_id: account.id,
-            account_code: account.code,
-            account_name: account.name,
-            balance: 0,
-          };
-        }
-        liabilityMap[account.code].balance += balance;
-        totalLiabilities += balance;
-      } else if (accType === "EQUITY") {
-        if (!equityMap[account.code]) {
-          equityMap[account.code] = {
-            account_id: account.id,
-            account_code: account.code,
-            account_name: account.name,
-            balance: 0,
-          };
-        }
-        equityMap[account.code].balance += balance;
-        totalEquity += balance;
-      } else if (accType === "REVENUE") {
-        totalRevenue += credit - debit;
-      } else if (accType === "EXPENSE") {
-        totalExpense += debit - credit;
-      }
-    }
-
-    const netIncome = totalRevenue - totalExpense;
-
-    if (Math.abs(netIncome) > 0.01) {
-      equityMap["_net_income"] = {
-        account_id: null,
-        account_code: "",
-        account_name: "Laba Bersih Periode Berjalan",
-        balance: netIncome,
-      };
-      totalEquity += netIncome;
-    }
-
-    const mk = (m: any) =>
-      Object.values(m)
-        .filter((a: any) => Math.abs(a.balance) > 0.01)
-        .sort((a: any, b: any) => {
-          if (a.account_code === "") return 1;
-          if (b.account_code === "") return -1;
-          return a.account_code.localeCompare(b.account_code);
-        });
-
-    return c.json({
-      assets: mk(assetMap),
-      liabilities: mk(liabilityMap),
-      equity: mk(equityMap),
-      total_assets: totalAssets,
-      total_liabilities: totalLiabilities,
-      total_equity: totalEquity,
-      net_income: netIncome,
-      is_balanced:
-        Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01,
-    });
+    // Kalkulasi neraca dipindah ke lib/balance-sheet.ts (murni & teruji).
+    return c.json(computeBalanceSheet((lines as unknown as never[]) || []));
   } catch (err: any) {
     console.error("[Balance Sheet] Error:", err);
     return c.json({ error: "Terjadi kesalahan saat memuat laporan. Coba lagi beberapa saat." }, 500);

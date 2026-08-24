@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
+import {
+  validateJournalLines,
+  getJournalTotals,
+  isJournalBalanced,
+} from "../lib/journal-validation.js";
 
 const journal = new Hono();
 
@@ -182,49 +187,12 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   if (!description || description.trim() === "") {
     return c.json({ error: "description wajib diisi" }, 400);
   }
-  if (!lines || lines.length < 2) {
-    return c.json({ error: "Minimal 2 baris required (debit + kredit)" }, 400);
-  }
 
-  // Validasi setiap line: accountCode ada, nominal valid, tepat satu sisi debit/kredit
-  for (const line of lines) {
-    if (!line.accountCode) {
-      return c.json({ error: "Semua baris harus memiliki accountCode" }, 400);
-    }
-
-    const debit = Number(line.debit);
-    const credit = Number(line.credit);
-    if (
-      !Number.isFinite(debit) ||
-      !Number.isFinite(credit) ||
-      debit < 0 ||
-      credit < 0
-    ) {
-      return c.json(
-        { error: `Nominal tidak valid di baris ${line.accountCode}` },
-        400,
-      );
-    }
-
-    // Maksimal 2 angka desimal (kolom DB NUMERIC(18,2))
-    const debitDecimals = (String(line.debit).split(".")[1] || "").length;
-    const creditDecimals = (String(line.credit).split(".")[1] || "").length;
-    if (debitDecimals > 2 || creditDecimals > 2) {
-      return c.json(
-        { error: "Nominal maksimal 2 angka di belakang koma" },
-        400,
-      );
-    }
-
-    // Tepat satu sisi: debit ATAU kredit, tidak boleh keduanya / keduanya kosong
-    if ((debit > 0 && credit > 0) || (debit === 0 && credit === 0)) {
-      return c.json(
-        {
-          error: `Baris ${line.accountCode}: isi tepat satu sisi (debit ATAU kredit)`,
-        },
-        400,
-      );
-    }
+  // Validasi baris: minimal 2 baris, accountCode ada, nominal valid,
+  // tepat satu sisi debit/kredit (lib/journal-validation.ts).
+  const linesValidationError = validateJournalLines(lines);
+  if (linesValidationError) {
+    return c.json({ error: linesValidationError }, 400);
   }
 
   let actualPeriodId = period_id;
@@ -320,16 +288,9 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
   }
 
   // Validasi double-entry: total debit harus sama dengan total kredit
-  const totalDebit = lines.reduce(
-    (s: number, l: any) => s + (Number(l.debit) || 0),
-    0,
-  );
-  const totalCredit = lines.reduce(
-    (s: number, l: any) => s + (Number(l.credit) || 0),
-    0,
-  );
+  const { totalDebit, totalCredit } = getJournalTotals(lines);
 
-  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+  if (!isJournalBalanced(lines)) {
     return c.json(
       {
         error: `Debit (${totalDebit.toFixed(2)}) harus sama dengan Kredit (${totalCredit.toFixed(2)})`,
@@ -485,8 +446,13 @@ journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
   if (description !== undefined && description.trim() === "") {
     return c.json({ error: "description wajib diisi" }, 400);
   }
-  if (lines && lines.length < 2) {
-    return c.json({ error: "Minimal 2 baris required (debit + kredit)" }, 400);
+
+  // Validasi baris bila dikirim (lib/journal-validation.ts).
+  if (lines) {
+    const linesError = validateJournalLines(lines);
+    if (linesError) {
+      return c.json({ error: linesError }, 400);
+    }
   }
 
   const { data: period } = await supabase
@@ -524,61 +490,14 @@ journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
   }
 
   if (lines) {
-    const totalDebit = lines.reduce(
-      (s: number, l: any) => s + (Number(l.debit) || 0),
-      0,
-    );
-    const totalCredit = lines.reduce(
-      (s: number, l: any) => s + (Number(l.credit) || 0),
-      0,
-    );
-    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    const { totalDebit, totalCredit } = getJournalTotals(lines);
+    if (!isJournalBalanced(lines)) {
       return c.json(
         {
           error: `Debit (${totalDebit.toFixed(2)}) harus sama dengan Kredit (${totalCredit.toFixed(2)})`,
         },
         400,
       );
-    }
-    for (const line of lines) {
-      if (!line.accountCode) {
-        return c.json(
-          { error: "Semua baris harus memiliki accountCode" },
-          400,
-        );
-      }
-
-      const debit = Number(line.debit);
-      const credit = Number(line.credit);
-      if (
-        !Number.isFinite(debit) ||
-        !Number.isFinite(credit) ||
-        debit < 0 ||
-        credit < 0
-      ) {
-        return c.json(
-          { error: `Nominal tidak valid di baris ${line.accountCode}` },
-          400,
-        );
-      }
-
-      const debitDecimals = (String(line.debit).split(".")[1] || "").length;
-      const creditDecimals = (String(line.credit).split(".")[1] || "").length;
-      if (debitDecimals > 2 || creditDecimals > 2) {
-        return c.json(
-          { error: "Nominal maksimal 2 angka di belakang koma" },
-          400,
-        );
-      }
-
-      if ((debit > 0 && credit > 0) || (debit === 0 && credit === 0)) {
-        return c.json(
-          {
-            error: `Baris ${line.accountCode}: isi tepat satu sisi (debit ATAU kredit)`,
-          },
-          400,
-        );
-      }
     }
   }
 

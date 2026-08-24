@@ -1,0 +1,36 @@
+name: Tests
+
+# Repo ini satu npm workspace (root package-lock.json berisi semua deps
+# untuk frontend + backend), jadi install sekali di root lalu jalankan
+# script per-workspace.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Typecheck & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (all workspaces)
+        run: npm ci
+
+      - name: Backend typecheck
+        run: npm run typecheck --workspace=backend
+
+      - name: Backend tests
+        run: npm test --workspace=backend
+
+      - name: Frontend tests
+        run: npm test --workspace=frontend
