@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Halaman utama -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/register</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Solutions -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/solutions/small-business</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/solutions/mid-market</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/solutions/accountants-firms</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/solutions/startups</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Product -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/product/chart-of-accounts</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/product/journal-entries</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/product/financial-reports</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/product/how-it-works</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/product/integrations</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/product/security</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Tools -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/tools/roi-calculator</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/tools/tax-strategist</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Resources -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/resources/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/resources/guides</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/resources/templates</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Company -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/company/about</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Bantuan & legal -->
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/help</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ledger-flow-frontend-azure.vercel.app/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

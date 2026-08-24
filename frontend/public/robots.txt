@@ -1,0 +1,28 @@
+# LedgerFlow — https://ledger-flow-frontend-azure.vercel.app
+# Halaman aplikasi (butuh login) tidak untuk di-crawl.
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /journal-entries
+Disallow: /buku-besar
+Disallow: /chart-of-accounts
+Disallow: /income-statement
+Disallow: /balance-sheet
+Disallow: /cash-flow
+Disallow: /ai-cfo
+Disallow: /period-management
+Disallow: /users-management
+Disallow: /help-center
+Disallow: /profile
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /admin-portal
+Disallow: /portal-akses
+Disallow: /auth/callback
+Disallow: /payment/
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /error/
+
+Sitemap: https://ledger-flow-frontend-azure.vercel.app/sitemap.xml
