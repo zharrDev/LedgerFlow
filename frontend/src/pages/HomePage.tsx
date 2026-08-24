@@ -1,12 +1,12 @@
 // src/pages/HomePage.tsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   type Variants,
   motion,
   useScroll,
   useTransform,
 } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   ChevronRight,
@@ -31,6 +31,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import Navbar from "../components/Navbar";
 import CursorTrail from "../components/home/CursorTrail";
+import OwlMascot from "../components/home/OwlMascot";
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
@@ -114,9 +115,6 @@ const featureCards: Array<{
     },
   },
 ];
-
-const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
 
 
 // ─── Animations ──────────────────────────────────────────────────────
@@ -231,6 +229,8 @@ export default function HomePage() {
             <div className="w-1 h-2 bg-white/60 rounded-full mt-2 animate-bounce" />
           </div>
         </motion.div>
+
+        <OwlMascot />
       </section>
 
       {/* ═══ Security ═══ */}
