@@ -59,7 +59,9 @@ api.interceptors.response.use(
     const is401AuthRoute = err.response?.status === 401 && isAuthRoute;
     if (!err.config?.skipErrorToast && !is401AuthRoute) {
       showToast({
-        variant: "error",
+        // 429 (rate limit) bukan kesalahan sistem — tampilkan sebagai
+        // warning dengan pesan dari backend (berisi "coba lagi ... menit").
+        variant: err.response?.status === 429 ? "warning" : "error",
         title: errorToastTitle(err),
         message: getErrorMessage(err),
       });

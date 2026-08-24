@@ -64,6 +64,8 @@ export function getErrorMessage(err: unknown): string {
 export function errorToastTitle(err: unknown): string {
   if (err instanceof AxiosError) {
     if (!err.response) return "Koneksi Terputus";
+    // 429 = kena rate limit, bukan kesalahan sistem.
+    if (err.response.status === 429) return "Terlalu Sering";
     if (err.response.status >= 500) return "Server Bermasalah";
   }
   return "Gagal";

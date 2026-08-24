@@ -25,8 +25,14 @@ import {
   sendWhatsAppLoginAlert,
   FonnteError,
 } from "../lib/whatsapp.js";
+import { strictOtpRateLimit } from "../middleware/rate-limit.js";
 
 const waAuth = new Hono();
+
+// STRICT rate limit: 5 request / 15 menit per kombinasi IP + nomor telepon,
+// berlaku untuk semua endpoint OTP di bawah. Limiter lama checkIpRateLimit
+// (per IP saja) tetap aktif sebagai defense-in-depth.
+waAuth.use("*", strictOtpRateLimit());
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;

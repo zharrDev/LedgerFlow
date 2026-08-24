@@ -29,6 +29,7 @@ import adminGateRoutes from "./routes/admin-gate.js";
 import uploadRoutes from "./routes/upload.js";
 import healthRoutes from "./routes/health.js";
 import aiRoutes from "./routes/ai.js";
+import { normalRateLimit } from "./middleware/rate-limit.js";
 
 const app = new Hono();
 
@@ -60,6 +61,12 @@ app.use("*", async (c, next) => {
   await next();
   c.header("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
 });
+
+// Rate limit NORMAL (100 req / 15 menit per IP) untuk semua route API.
+// Dipasang SETELAH CORS supaya preflight tidak memakan kuota, dan SEBELUM
+// registrasi route. Endpoint OTP dapat batas lebih ketat di routes/wa-auth.ts
+// (STRICT per IP+nomor — lihat middleware/rate-limit.ts).
+app.use("/api/*", normalRateLimit);
 
 // Health check
 app.get("/health", (c) => c.json({ status: "ok", app: "LedgerFlow API" }));
