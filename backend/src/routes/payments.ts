@@ -25,6 +25,7 @@ import {
   type PlanName, // Type: "free" | "pro" | "enterprise"
   type BillingCycle, // Type: "monthly" | "yearly"
 } from "../lib/midtrans.js";
+import { createNotification } from "../lib/notify.js";
 
 // Inisialisasi router Hono buat prefix /api/payments
 const payments = new Hono();
@@ -844,6 +845,16 @@ payments.post("/webhook", async (c) => {
       // Update subscription di database
       await supabase.from("subscriptions").update(updateData).eq("id", sub.id);
 
+      // Notifikasi pembayaran sukses (fire-and-forget — kegagalan notifikasi
+      // tidak boleh mempengaruhi respons webhook ke Midtrans).
+      createNotification({
+        userId: sub.user_id,
+        type: "payment_success",
+        title: "Pembayaran Berhasil",
+        message: `Pembayaran sebesar Rp${Number(payment.amount).toLocaleString("id-ID")} telah diterima. Langganan Anda kini aktif.`,
+        link: "/settings",
+      }).catch(console.error);
+
       // Log sukses
       console.log(
         `[Midtrans Webhook] Subscription activated for user ${sub.user_id}`,
@@ -857,6 +868,21 @@ payments.post("/webhook", async (c) => {
         .from("subscriptions")
         .update({ status: "past_due", updated_at: new Date().toISOString() })
         .eq("id", payment.subscription_id); // Filter by subscription ID
+
+      // Notifikasi pembayaran gagal (fire-and-forget).
+      createNotification({
+        userId: payment.user_id,
+        type: "payment_failed",
+        title:
+          paymentStatus === "expired"
+            ? "Pembayaran Kedaluwarsa"
+            : "Pembayaran Gagal",
+        message:
+          paymentStatus === "expired"
+            ? "Waktu pembayaran telah habis. Silakan buat transaksi baru untuk mengaktifkan langganan."
+            : "Pembayaran Anda tidak berhasil. Silakan coba lagi dari halaman langganan.",
+        link: "/pricing",
+      }).catch(console.error);
 
       // ─── Kalau REFUNDED/CHARGEBACK → cabut akses, balikin ke free ─────
       // Uang sudah dikembalikan, jadi user tidak boleh lagi menikmati plan

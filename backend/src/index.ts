@@ -29,6 +29,7 @@ import adminGateRoutes from "./routes/admin-gate.js";
 import uploadRoutes from "./routes/upload.js";
 import healthRoutes from "./routes/health.js";
 import aiRoutes from "./routes/ai.js";
+import notificationsRoutes from "./routes/notifications.js";
 import { normalRateLimit } from "./middleware/rate-limit.js";
 
 const app = new Hono();
@@ -88,6 +89,7 @@ app.route("/api/admin-gate", adminGateRoutes);
 app.route("/api/upload", uploadRoutes);
 app.route("/api/health", healthRoutes);
 app.route("/api/ai", aiRoutes);
+app.route("/api/notifications", notificationsRoutes);
 
 // 404 fallback
 app.notFound((c) => c.json({ error: "Route not found" }, 404));

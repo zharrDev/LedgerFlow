@@ -11,6 +11,7 @@ import {
 } from "./HeaderSearchResults";
 import { accountsService } from "../services/accountsService";
 import { journalService } from "../services/journalService";
+import { api } from "../lib/api";
 import logo from "../assets/ledgerflow.webp";
 import { useLanguage } from "../hooks/useLanguage";
 import {
@@ -29,6 +30,9 @@ import {
   PlusCircle,
   FileEdit,
   Trash2,
+  UserPlus,
+  CreditCard,
+  XCircle,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -46,47 +50,74 @@ export interface Notification {
     | "period_opened"
     | "period_closed"
     | "account_toggled"
-    | "profile_updated";
+    | "profile_updated"
+    | "member_invited"
+    | "payment_success"
+    | "payment_failed";
   title: string;
   message: string;
-  time: number;
+  time: number; // epoch ms (dari created_at backend)
   read: boolean;
   link?: string;
 }
 
-const NOTIF_KEY = "ledgerflow_notifications";
 const MAX_NOTIFS = 30;
 
-export function getNotifications(): Notification[] {
+// Baris mentah dari tabel notifications (backend) → bentuk yang dipakai UI.
+function mapNotificationRow(row: Record<string, unknown>): Notification {
+  return {
+    id: String(row.id),
+    type: row.type as Notification["type"],
+    title: String(row.title ?? ""),
+    message: String(row.message ?? ""),
+    time: new Date(String(row.created_at)).getTime(),
+    read: Boolean(row.read),
+    link: typeof row.link === "string" ? row.link : undefined,
+  };
+}
+
+// Ambil notifikasi terbaru dari backend. Dipakai Header untuk render.
+export async function getNotifications(): Promise<Notification[]> {
   try {
-    return JSON.parse(localStorage.getItem(NOTIF_KEY) || "[]");
+    const res = await api.get("/api/notifications", {
+      params: { limit: MAX_NOTIFS },
+      skipErrorToast: true,
+    });
+    return ((res.data?.data ?? []) as Record<string, unknown>[]).map(
+      mapNotificationRow,
+    );
   } catch {
     return [];
   }
 }
 
+// Buat notifikasi untuk user yang sedang login (aksi lokal di UI).
+// Fire-and-forget: kegagalan diabaikan diam-diam, badge akan tersinkron
+// saat polling berikutnya.
 export function pushNotification(
   notif: Omit<Notification, "id" | "time" | "read">,
 ) {
-  const current = getNotifications();
-  const newNotif: Notification = {
-    ...notif,
-    id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    time: Date.now(),
-    read: false,
-  };
-  const updated = [newNotif, ...current].slice(0, MAX_NOTIFS);
-  localStorage.setItem(NOTIF_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new CustomEvent("ledgerflow-notif"));
+  api
+    .post(
+      "/api/notifications",
+      {
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        link: notif.link,
+      },
+      { skipErrorToast: true },
+    )
+    .then(() => window.dispatchEvent(new CustomEvent("ledgerflow-notif")))
+    .catch(() => {});
 }
 
+// Tandai semua notifikasi user sebagai dibaca.
 export function markAllRead() {
-  const notifs = getNotifications().map((n: Notification) => ({
-    ...n,
-    read: true,
-  }));
-  localStorage.setItem(NOTIF_KEY, JSON.stringify(notifs));
-  window.dispatchEvent(new CustomEvent("ledgerflow-notif"));
+  api
+    .patch("/api/notifications/read-all", {}, { skipErrorToast: true })
+    .then(() => window.dispatchEvent(new CustomEvent("ledgerflow-notif")))
+    .catch(() => {});
 }
 
 /* ───────── Helpers ───────── */
@@ -117,6 +148,9 @@ const NOTIF_ICON: Record<string, { icon: typeof CheckCircle2; color: string }> =
     period_closed: { icon: Lock, color: "text-amber-500" },
     account_toggled: { icon: PlusCircle, color: "text-primary-500" },
     profile_updated: { icon: User, color: "text-primary-500" },
+    member_invited: { icon: UserPlus, color: "text-primary-500" },
+    payment_success: { icon: CreditCard, color: "text-emerald-500" },
+    payment_failed: { icon: XCircle, color: "text-rose-500" },
   };
 
 /* ───────── Header Component ───────── */
@@ -145,15 +179,23 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Load notifications
+  // Muat notifikasi dari backend (async). Dengan polling 30 detik + refresh
+  // saat event "ledgerflow-notif" (dipicu pushNotification/markAllRead) dan
+  // saat tab kembali fokus — badge tetap segar tanpa manual reload.
   const loadNotifs = useCallback(() => {
-    setNotifications(getNotifications());
+    getNotifications().then(setNotifications);
   }, []);
 
   useEffect(() => {
     loadNotifs();
     window.addEventListener("ledgerflow-notif", loadNotifs);
-    return () => window.removeEventListener("ledgerflow-notif", loadNotifs);
+    window.addEventListener("focus", loadNotifs);
+    const interval = setInterval(loadNotifs, 30_000);
+    return () => {
+      window.removeEventListener("ledgerflow-notif", loadNotifs);
+      window.removeEventListener("focus", loadNotifs);
+      clearInterval(interval);
+    };
   }, [loadNotifs]);
 
   // Close user dropdown on outside click
@@ -286,11 +328,13 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   };
 
   const handleNotifClick = (notif: Notification) => {
-    const updated = notifications.map((n) =>
-      n.id === notif.id ? { ...n, read: true } : n,
+    // Optimistic update UI, lalu persist ke backend.
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)),
     );
-    localStorage.setItem(NOTIF_KEY, JSON.stringify(updated));
-    setNotifications(updated);
+    api
+      .patch(`/api/notifications/${notif.id}/read`, {}, { skipErrorToast: true })
+      .catch(() => {});
     if (notif.link) {
       setNotifOpen(false);
       navigate(notif.link);
@@ -298,8 +342,8 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   };
 
   const handleMarkAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     markAllRead();
-    setNotifications(getNotifications());
   };
 
   return (

@@ -2,6 +2,10 @@ import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { sendAccountCreatedEmail } from "../lib/email.js";
+import {
+  createNotification,
+  createNotificationsForUsers,
+} from "../lib/notify.js";
 import crypto from "node:crypto";
 
 const userMgmt = new Hono();
@@ -137,6 +141,38 @@ userMgmt.post("/", requireRole("owner"), async (c) => {
       companyName,
       resetLink,
     ).catch(console.error);
+
+    // Notifikasi in-app (fire-and-forget):
+    //   1. Anggota baru → sambutan agar notifikasi pertamanya relevan.
+    //   2. Owner lain (kecuali yang melakukan invite) → info anggota baru.
+    createNotification({
+      userId: user.id,
+      companyId,
+      type: "member_invited",
+      title: "Selamat Datang di LedgerFlow",
+      message: `Anda ditambahkan sebagai ${role} di ${companyName || "perusahaan baru"}. Periksa email untuk mengatur password Anda.`,
+      link: "/dashboard",
+    }).catch(console.error);
+
+    const { data: otherOwners } = await supabase
+      .from("users")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("role", "owner")
+      .neq("id", myId);
+
+    if (otherOwners?.length) {
+      createNotificationsForUsers(
+        otherOwners.map((o) => o.id),
+        {
+          companyId,
+          type: "member_invited",
+          title: "Anggota Baru Ditambahkan",
+          message: `${name} (${email}) telah ditambahkan sebagai ${role}.`,
+          link: "/settings",
+        },
+      ).catch(console.error);
+    }
 
     console.log(
       `[user-mgmt] Member added by ${myId}: ${user.email} (role=${role}) company=${companyId}`,
