@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
 
 const accounts = new Hono();
 
@@ -24,6 +26,42 @@ const BALANCE_MAP: Record<string, string> = {
   revenue: "CREDIT",
   expense: "DEBIT",
 };
+
+// ── Schema zod: validasi STRUKTUR & TIPE body request ────────────────
+// Business rule (type-change guard, duplikasi code di DB) tetap di handler.
+
+const ACCOUNT_TYPES = Object.keys(TYPE_MAP) as [string, ...string[]];
+
+const accountCodeSchema = z
+  .string("code harus string")
+  .regex(/^\d{3,6}$/, "Code akun harus 3-6 digit angka.")
+  .transform((v) => v.trim());
+
+const accountNameSchema = z
+  .string("name harus string")
+  .trim()
+  .min(2, "Nama akun harus 2-100 karakter.")
+  .max(100, "Nama akun harus 2-100 karakter.");
+
+const accountTypeSchema = z.enum(ACCOUNT_TYPES, {
+  message: "Tipe akun tidak valid.",
+});
+
+// POST /api/accounts — semua field wajib
+const accountCreateSchema = z.object({
+  code: accountCodeSchema,
+  name: accountNameSchema,
+  type: accountTypeSchema,
+  parent_id: z.string().uuid().nullish(),
+});
+
+// PUT /api/accounts/:id — semua field opsional (partial update)
+const accountUpdateSchema = z.object({
+  code: accountCodeSchema.optional(),
+  name: accountNameSchema.optional(),
+  type: accountTypeSchema.optional(),
+  is_active: z.boolean().optional(),
+});
 
 accounts.get("/", async (c) => {
   const { company_id } = c.get("user");
@@ -61,38 +99,21 @@ accounts.get("/", async (c) => {
 
 // POST ACCOUNT
 // Membuat akun baru dan otomatis menentukan normal balance dari type
-accounts.post("/", requireRole("akuntan", "owner"), async (c) => {
+accounts.post("/", validateBody(accountCreateSchema), requireRole("akuntan", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
-    const body = await c.req.json();
+    const { code, name, type, parent_id } = c.get("validatedBody") as z.infer<
+      typeof accountCreateSchema
+    >;
 
-    console.log("BODY:", body);
+    console.log("BODY:", { code, name, type, parent_id });
 
-    const { code, name, type, parent_id } = body;
-
-    if (!code || !name || !type) {
-      return c.json({ error: "missing fields" }, 400);
-    }
-    if (typeof code !== "string" || !/^\d{3,6}$/.test(code.trim())) {
-      return c.json({ error: "Code akun harus 3-6 digit angka." }, 400);
-    }
-    if (
-      typeof name !== "string" ||
-      name.trim().length < 2 ||
-      name.trim().length > 100
-    ) {
-      return c.json({ error: "Nama akun harus 2-100 karakter." }, 400);
-    }
-    const mappedType = TYPE_MAP[type];
-    if (!mappedType) {
-      return c.json({ error: "Tipe akun tidak valid." }, 400);
-    }
-
+    // (code, name & type sudah divalidasi + di-trim oleh zod di atas.)
     const insertData = {
       company_id,
-      code: code.trim(),
-      name: name.trim(),
-      type: mappedType,
+      code,
+      name,
+      type: TYPE_MAP[type],
       normal_balance: BALANCE_MAP[type],
       parent_id: parent_id ?? null,
       is_active: true,
@@ -127,11 +148,11 @@ accounts.post("/", requireRole("akuntan", "owner"), async (c) => {
 
 // PUT ACCOUNT
 // Update akun milik company yang sedang login
-accounts.put("/:id", requireRole("akuntan", "owner"), async (c) => {
+accounts.put("/:id", validateBody(accountUpdateSchema), requireRole("akuntan", "owner"), async (c) => {
   try {
     const { company_id } = c.get("user");
     const id = c.req.param("id");
-    const body = await c.req.json();
+    const body = c.get("validatedBody") as z.infer<typeof accountUpdateSchema>;
 
     console.log("PUT DEBUG:", { id, company_id, body });
 
@@ -152,24 +173,7 @@ accounts.put("/:id", requireRole("akuntan", "owner"), async (c) => {
       EXPENSE: "DEBIT",
     };
 
-    // Validasi format field yang dikirim (hanya yang di-update)
-    if (
-      body.code !== undefined &&
-      (typeof body.code !== "string" || !/^\d{3,6}$/.test(body.code.trim()))
-    ) {
-      return c.json({ error: "Code akun harus 3-6 digit angka." }, 400);
-    }
-    if (
-      body.name !== undefined &&
-      (typeof body.name !== "string" ||
-        body.name.trim().length < 2 ||
-        body.name.trim().length > 100)
-    ) {
-      return c.json({ error: "Nama akun harus 2-100 karakter." }, 400);
-    }
-    if (body.type !== undefined && !TYPE_MAP[body.type]) {
-      return c.json({ error: "Tipe akun tidak valid." }, 400);
-    }
+    // (code, name & type sudah divalidasi zod bila dikirim.)
 
     // Ambil akun lama untuk cek perubahan type & kepemilikan
     const { data: existing } = await supabase

@@ -1,8 +1,10 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { authClient } from "../lib/authClient.js";
 import { signToken } from "../lib/jwt.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
 import {
   sendWelcomeEmail,
   sendLoginNotification,
@@ -11,6 +13,21 @@ import {
 import { ensureUserProfile } from "../lib/ensureProfile.js";
 
 const auth = new Hono();
+
+// ── Schema zod: validasi STRUKTUR & TIPE body request ────────────────
+// Business rule (Supabase auth, verifikasi email, suspend) tetap di handler.
+
+const registerSchema = z.object({
+  email: z.email("Format email tidak valid."),
+  password: z.string().min(8, "Password minimal 8 karakter."),
+  name: z.string().trim().min(1, "name wajib diisi"),
+  company_name: z.string().trim().min(1, "company_name wajib diisi"),
+});
+
+const loginSchema = z.object({
+  email: z.email("Format email tidak valid."),
+  password: z.string().min(1, "password wajib diisi"),
+});
 
 // Helper: ambil nama company dari company_id
 async function getCompanyName(companyId: string): Promise<string> {
@@ -110,7 +127,7 @@ function checkAuthRateLimit(c: any): boolean {
 // POST /api/auth/register
 // Alur: buat company -> buat auth user -> buat profil user -> kirim JWT
 
-auth.post("/register", async (c) => {
+auth.post("/register", validateBody(registerSchema), async (c) => {
   try {
     if (!checkAuthRateLimit(c)) {
       return c.json(
@@ -119,17 +136,10 @@ auth.post("/register", async (c) => {
       );
     }
 
-    const { email, password, name, company_name } = await c.req.json();
-
-    if (!email || !password || !name || !company_name) {
-      return c.json({ error: "All fields are required" }, 400);
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return c.json({ error: "Format email tidak valid." }, 400);
-    }
-    if (password.length < 8) {
-      return c.json({ error: "Password minimal 8 karakter." }, 400);
-    }
+    // (email, password, name & company_name sudah divalidasi zod di atas.)
+    const { email, password, name, company_name } = c.get("validatedBody") as z.infer<
+      typeof registerSchema
+    >;
 
     const { data: company, error: companyError } = await supabase
       .from("companies")
@@ -228,7 +238,7 @@ auth.post("/register", async (c) => {
 // POST /api/auth/login
 // Login via Supabase Auth, lalu ambil profil aplikasi dan buat JWT internal
 
-auth.post("/login", async (c) => {
+auth.post("/login", validateBody(loginSchema), async (c) => {
   if (!checkAuthRateLimit(c)) {
     return c.json(
       { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." },
@@ -236,14 +246,10 @@ auth.post("/login", async (c) => {
     );
   }
 
-  const { email, password } = await c.req.json();
-
-  if (!email || !password) {
-    return c.json({ error: "Email and password required" }, 400);
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return c.json({ error: "Format email tidak valid." }, 400);
-  }
+  // (email & password sudah divalidasi zod di atas.)
+  const { email, password } = c.get("validatedBody") as z.infer<
+    typeof loginSchema
+  >;
 
   const { data, error } = await authClient.auth.signInWithPassword({
     email,

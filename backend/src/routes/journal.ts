@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
 import {
   validateJournalLines,
   getJournalTotals,
@@ -11,6 +13,52 @@ const journal = new Hono();
 
 // Semua endpoint journal wajib login
 journal.use("*", authMiddleware);
+
+// ── Schema zod: validasi STRUKTUR & TIPE body request ────────────────
+// Business rule (balance, periode, akun aktif) tetap divalidasi terpisah
+// di handler SETELAH shape/tipe lolos dari zod.
+
+const journalLineSchema = z.object({
+  accountCode: z.string().min(1, "accountCode wajib diisi"),
+  debit: z.number("debit harus angka").min(0, "debit tidak boleh negatif"),
+  credit: z
+    .number("credit harus angka")
+    .min(0, "credit tidak boleh negatif"),
+  memo: z.string().nullish(),
+});
+
+const entryDateSchema = z
+  .string()
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), {
+    message: "entry_date harus tanggal yang valid",
+  });
+
+// POST /api/journal — semua field wajib (kecuali period_id & status)
+const journalEntryCreateSchema = z.object({
+  period_id: z.string().uuid().optional(),
+  entry_date: entryDateSchema,
+  description: z
+    .string()
+    .trim()
+    .min(1, "description wajib diisi"),
+  lines: z.array(journalLineSchema).min(2, "Jurnal minimal memiliki 2 baris"),
+  // Perilaku sama seperti sebelumnya: selain "posted" dianggap draft
+  status: z.string().optional(),
+});
+
+// PUT /api/journal/:id — semua field opsional (partial update)
+const journalEntryUpdateSchema = z.object({
+  entry_date: entryDateSchema.optional(),
+  description: z
+    .string()
+    .trim()
+    .min(1, "description wajib diisi")
+    .optional(),
+  lines: z
+    .array(journalLineSchema)
+    .min(2, "Jurnal minimal memiliki 2 baris")
+    .optional(),
+});
 
 // Deteksi error "fungsi RPC belum ada" (mis. migrasi DB belum dijalankan).
 // Kalau ini yang terjadi, kita fallback ke jalur non-atomik lama supaya app
@@ -169,26 +217,19 @@ journal.get("/:id", async (c) => {
 });
 
 // POST /api/journal
-journal.post("/", requireRole("owner", "akuntan"), async (c) => {
+journal.post("/", validateBody(journalEntryCreateSchema), requireRole("owner", "akuntan"), async (c) => {
   const { company_id, sub: created_by } = c.get("user");
-  const body = await c.req.json();
   const {
     period_id,
     entry_date,
     description,
     lines,
     status: requestedStatus,
-  } = body;
+  } = c.get("validatedBody") as z.infer<typeof journalEntryCreateSchema>;
 
-  // Validasi input dasar
-  if (!entry_date || new Date(entry_date).toString() === "Invalid Date") {
-    return c.json({ error: "entry_date wajib diisi dengan format valid" }, 400);
-  }
-  if (!description || description.trim() === "") {
-    return c.json({ error: "description wajib diisi" }, 400);
-  }
+  // (entry_date, description & shape lines sudah divalidasi zod di atas.)
 
-  // Validasi baris: minimal 2 baris, accountCode ada, nominal valid,
+  // Validasi baris (business rule): nominal valid, maks 2 desimal,
   // tepat satu sisi debit/kredit (lib/journal-validation.ts).
   const linesValidationError = validateJournalLines(lines);
   if (linesValidationError) {
@@ -418,11 +459,12 @@ journal.post("/", requireRole("owner", "akuntan"), async (c) => {
 });
 
 // PUT /api/journal/:id — update jurnal (hanya status draft)
-journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
+journal.put("/:id", validateBody(journalEntryUpdateSchema), requireRole("owner", "akuntan"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
-  const body = await c.req.json();
-  const { entry_date, description, lines } = body;
+  const { entry_date, description, lines } = c.get("validatedBody") as z.infer<
+    typeof journalEntryUpdateSchema
+  >;
 
   const { data: existing } = await supabase
     .from("journal_entries")
@@ -440,14 +482,10 @@ journal.put("/:id", requireRole("owner", "akuntan"), async (c) => {
     );
   }
 
-  if (entry_date && new Date(entry_date).toString() === "Invalid Date") {
-    return c.json({ error: "Format entry_date tidak valid." }, 400);
-  }
-  if (description !== undefined && description.trim() === "") {
-    return c.json({ error: "description wajib diisi" }, 400);
-  }
+  // (entry_date, description & shape lines sudah divalidasi zod di atas.)
 
-  // Validasi baris bila dikirim (lib/journal-validation.ts).
+  // Validasi baris (business rule) bila dikirim: nominal valid, maks 2
+  // desimal, tepat satu sisi debit/kredit (lib/journal-validation.ts).
   if (lines) {
     const linesError = validateJournalLines(lines);
     if (linesError) {
