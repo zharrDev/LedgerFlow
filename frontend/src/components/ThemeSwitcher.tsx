@@ -1,6 +1,7 @@
 import { useState, useEffect, type MouseEvent } from "react";
 import { Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { setThemeTransitioning, THEME_TRANSITION_END } from "../lib/themeTransition";
 
 type Theme = "light" | "dark";
 
@@ -52,6 +53,9 @@ export default function ThemeSwitcher() {
     }
 
     root.classList.add("theme-transitioning");
+    // Flag sinkron untuk seluruh app (video, dsb.) — jangan pause/evaluasi
+    // visibility di tengah transisi.
+    setThemeTransitioning(true);
     const transition = doc.startViewTransition(() => {
       // Terapkan class dark langsung (sinkron) supaya snapshot "baru"
       // View Transition pasti sudah memakai tema target, lalu sinkronkan
@@ -61,6 +65,10 @@ export default function ThemeSwitcher() {
     });
     transition.finished.finally(() => {
       root.classList.remove("theme-transitioning");
+      setThemeTransitioning(false);
+      // Beri tahu consumer video agar melanjutkan pemutaran bila sempat
+      // terhenti oleh snapshot/reflow di tengah transisi.
+      document.dispatchEvent(new Event(THEME_TRANSITION_END));
     });
   };
 
