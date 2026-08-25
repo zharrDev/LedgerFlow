@@ -21,17 +21,12 @@ import {
   Download,
   FileBarChart,
   UsersRound,
-  FileText,
-  Coins,
-  CheckCircle2,
-  TrendingUp,
 } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import Navbar from "../components/Navbar";
 import CursorTrail from "../components/home/CursorTrail";
 import OwlMascot from "../components/home/OwlMascot";
-import FloatingIcon from "../components/home/FloatingIcon";
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
@@ -472,62 +467,63 @@ export default function HomePage() {
       {/* ═══ CTA + Owl Mascot ═══ */}
       <motion.section
         {...SCROLL_REVEAL}
-        className="py-20 px-4 sm:px-6"
+        className="pt-28 sm:pt-32 md:pt-36 pb-20 px-4 sm:px-6"
       >
-        <div className="relative max-w-5xl mx-auto bg-gradient-to-br from-primary-600 via-primary-700 to-cyan-900 rounded-[2.5rem] py-16 sm:py-20 md:py-24 px-6 sm:px-10 md:px-16 text-center text-white shadow-2xl overflow-hidden">
-          {/* Dekorasi glow latar */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-[100px]" />
-            <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-[100px]" />
+        {/* Wrapper positioning context: owl + kartu sejajar */}
+        <div className="relative max-w-5xl mx-auto">
+          {/* Owl hinggap DI ATAS tepi kanan kartu — sibling, bukan anak
+              kartu. Kaki (-87% translate) menempel di atap, badan di luar. */}
+          <div className="absolute top-0 right-6 sm:right-10 md:right-14 lg:right-16 z-20 -translate-y-[87%]">
+            <OwlMascot />
           </div>
 
-          <div className="relative">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug">
-              {language === "id"
-                ? "Ambil Kendali Keuangan Anda Hari Ini"
-                : "Take Control of Your Finances Today"}
-            </h2>
-            <p className="mt-4 text-primary-100 text-base sm:text-lg">
-              {language === "id"
-                ? "Mulai uji coba gratis 15 hari — tanpa kartu kredit"
-                : "Start your 15-day free trial — no credit card required"}
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4">
-              {user ? (
-                <Link
-                  to="/dashboard"
-                  className="w-full sm:w-auto justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center gap-2"
-                >
-                  {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ArrowRight size={18} />
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    to="/register"
-                    className="w-full sm:w-auto justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center gap-2 shadow-md"
-                  >
-                    {language === "id"
-                      ? "Mulai uji coba gratis 15 hari"
-                      : "Start Free Trial"}{" "}
-                    <ArrowRight size={18} />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl font-semibold hover:bg-white/10 transition"
-                  >
-                    {language === "id" ? "Hubungi Sales" : "Talk to Sales"}
-                  </Link>
-                </>
-              )}
+          <div className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-cyan-900 rounded-[2.5rem] py-16 sm:py-20 md:py-24 px-6 sm:px-10 md:px-16 text-center text-white shadow-2xl">
+            {/* Dekorasi glow latar — dipotong di layer sendiri supaya
+                kartu tidak perlu overflow-hidden (owl bebas keluar atap) */}
+            <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
+              <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-[100px]" />
+              <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-[100px]" />
             </div>
 
-            {/* Owl + ikon melayang di sekelilingnya */}
-            <div className="relative mt-12 sm:mt-16 w-fit mx-auto">
-              <FloatingIcon icon={FileText} className="-left-9 -top-3 sm:-left-14 sm:-top-4" duration={3.6} delay={0} />
-              <FloatingIcon icon={Coins} className="-right-9 -top-4 sm:-right-14" duration={4.2} delay={0.8} />
-              <FloatingIcon icon={CheckCircle2} className="-left-11 bottom-2 sm:-left-16" duration={3.9} delay={1.6} />
-              <FloatingIcon icon={TrendingUp} className="-right-10 bottom-5 sm:-right-14" duration={4.5} delay={2.4} />
-              <OwlMascot />
+            <div className="relative">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug">
+                {language === "id"
+                  ? "Ambil Kendali Keuangan Anda Hari Ini"
+                  : "Take Control of Your Finances Today"}
+              </h2>
+              <p className="mt-4 text-primary-100 text-base sm:text-lg">
+                {language === "id"
+                  ? "Mulai uji coba gratis 15 hari — tanpa kartu kredit"
+                  : "Start your 15-day free trial — no credit card required"}
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4">
+                {user ? (
+                  <Link
+                    to="/dashboard"
+                    className="w-full sm:w-auto justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center gap-2"
+                  >
+                    {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ArrowRight size={18} />
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/register"
+                      className="w-full sm:w-auto justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center gap-2 shadow-md"
+                    >
+                      {language === "id"
+                        ? "Mulai uji coba gratis 15 hari"
+                        : "Start Free Trial"}{" "}
+                      <ArrowRight size={18} />
+                    </Link>
+                    <Link
+                      to="/login"
+                      className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl font-semibold hover:bg-white/10 transition"
+                    >
+                      {language === "id" ? "Hubungi Sales" : "Talk to Sales"}
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

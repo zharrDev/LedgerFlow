@@ -26,12 +26,12 @@ const BLINK_DURATION_MS = 130;
 const PUPIL_SPRING = { stiffness: 120, damping: 22, mass: 0.6 };
 
 /**
- * Maskot owl interaktif — focal point section CTA bawah homepage.
- * Arah pandang dihitung per-mata via sudut atan2 (akurat & proporsional
- * di semua arah), spring lembut, badan ikut miring dengan spring lebih
- * berat, kedipan otomatis acak, dan animasi mengambang saat idle.
- * Hanya aktif di device ber-cursor (pointer: fine + hover: hover)
- * dan menghormati prefers-reduced-motion — selain itu tampil statis.
+ * Maskot owl — hinggap di tepi atas kanan kartu CTA (di luar kartu,
+ * kaki menyentuh atap). BADAN DIAM: tidak miring, tidak float. Yang
+ * bergerak hanya mata (atan2 per-mata + spring pupil) dan kedipan
+ * otomatis acak. Hanya aktif di device ber-cursor (pointer: fine +
+ * hover: hover) dan menghormati prefers-reduced-motion — selain itu
+ * tampil statis.
  */
 export default function OwlMascot() {
   // Feature detection — lazy init agar tidak perlu setState di effect
@@ -68,11 +68,6 @@ export default function OwlMascot() {
   const leftOffsetY = useTransform(leftSpringY, (v) => v * maxTravelRef.current);
   const rightOffsetX = useTransform(rightSpringX, (v) => v * maxTravelRef.current);
   const rightOffsetY = useTransform(rightSpringY, (v) => v * maxTravelRef.current);
-
-  // Badan: spring lebih berat agar terasa "berat" mengikuti
-  const bodySpringX = useSpring(leftPupilX, { stiffness: 40, damping: 18 });
-  const rotate = useTransform(bodySpringX, [-1, 1], [-5, 5]);
-  const tiltY = useTransform(bodySpringX, [-1, 1], [2, -2]);
 
   // Jarak tempuh pupil proporsional dengan ukuran render
   useEffect(() => {
@@ -169,44 +164,38 @@ export default function OwlMascot() {
   return (
     <div
       ref={growRef}
-      className="pointer-events-none relative mx-auto w-32 sm:w-44 lg:w-56"
+      className="pointer-events-none relative w-28 sm:w-32 md:w-36 lg:w-40"
     >
-      {/* Scroll grow-in — scale tidak memengaruhi layout, badge
-          FloatingIcon di sekitar tidak bergeser */}
+      {/* Bayangan kontak tipis di bawah kaki — owl terasa duduk di atap */}
+      <div
+        aria-hidden
+        className="absolute bottom-0 left-1/2 h-2 w-16 sm:w-20 -translate-x-1/2 rounded-full bg-black/25 blur-md"
+      />
+      {/* Grow-in scale + landing dari atas (y:-28 → 0), sekali saat
+          pertama terlihat lalu DIAM total. Scale tidak memengaruhi layout. */}
       <motion.div
-        initial={{ scale: enabled ? 0.7 : 1 }}
-        animate={{ scale: !enabled || grown ? 1 : 0.7 }}
-        transition={{ type: "spring", stiffness: 120, damping: 18 }}
+        initial={
+          enabled
+            ? { scale: 0.7, opacity: 0, y: -28 }
+            : { scale: 1, opacity: 1, y: 0 }
+        }
+        animate={
+          !enabled || grown
+            ? { scale: 1, opacity: 1, y: 0 }
+            : { scale: 0.7, opacity: 0, y: -28 }
+        }
+        transition={{ type: "spring", stiffness: 120, damping: 14 }}
       >
-        <motion.div
-          initial={enabled ? { opacity: 0, y: 24, scale: 0.6 } : false}
-          animate={enabled ? { opacity: 1, y: 0, scale: 1 } : undefined}
-          transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.3 }}
-        >
-        {/* Idle float — hanya saat interaktif */}
-        <motion.div
-          animate={enabled ? { y: [0, -8, 0] } : undefined}
-          transition={
-            enabled
-              ? { repeat: Infinity, duration: 4.5, ease: "easeInOut" }
-              : undefined
-          }
-        >
-          {/* Body tilt mengikuti kursor dengan spring berat */}
-          <motion.div style={{ rotate, y: tiltY }}>
-            <div ref={containerRef} className="relative aspect-square w-full">
-              <img
-                src={owlMascot}
-                alt=""
-                aria-hidden
-                className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.4)]"
-              />
-              {renderPupil(LEFT_EYE, leftOffsetX, leftOffsetY)}
-              {renderPupil(RIGHT_EYE, rightOffsetX, rightOffsetY)}
-            </div>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+        <div ref={containerRef} className="relative aspect-square w-full">
+          <img
+            src={owlMascot}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.4)]"
+          />
+          {renderPupil(LEFT_EYE, leftOffsetX, leftOffsetY)}
+          {renderPupil(RIGHT_EYE, rightOffsetX, rightOffsetY)}
+        </div>
       </motion.div>
     </div>
   );
