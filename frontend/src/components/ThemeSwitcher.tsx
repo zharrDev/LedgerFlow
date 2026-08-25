@@ -42,53 +42,34 @@ export default function ThemeSwitcher() {
       return;
     }
 
-    // Animasi mask membutuhkan @property (terdaftar via CSS.registerProperty).
-    // Browser tanpa dukungan → overlay tidak bisa dianimasikan → instan saja.
-    if (typeof CSS === "undefined" || !("registerProperty" in CSS)) {
+    // Fallback browser tanpa View Transitions API (Safari/Firefox lama):
+    // ganti tema langsung, animasi ikon sun/moon tetap jalan seperti biasa.
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+    };
+    if (!doc.startViewTransition) {
       setTheme(newTheme);
       return;
     }
 
-    // Flag sinkron — IntersectionObserver video mengabaikan callback
-    // selama transisi supaya tidak ada play/pause nyentak.
+    root.classList.add("theme-transitioning");
+    // Flag sinkron untuk seluruh app (video, dsb.) — jangan pause/evaluasi
+    // visibility di tengah transisi.
     setThemeTransitioning(true);
-
-    // Terapkan tema ke DOM live SEKARANG. Tidak ada startViewTransition,
-    // tidak ada snapshot bitmap — <video> terus merender frame tema baru.
-    applyTheme(newTheme);
-    setTheme(newTheme);
-
-    // Rapid toggle: buang overlay transisi sebelumnya bila masih ada
-    // supaya tidak menumpuk (cek selesai: 3-4x toggle beruntun bersih).
-    document.getElementById("theme-circle-overlay")?.remove();
-
-    // Overlay warna tema LAMA; lubang transparan pada mask membesar dari
-    // tombol, "menghapus" warna lama dan mengekspos halaman live baru.
-    const oldBg = theme === "light" ? "#ffffff" : "#0F172A";
-    const overlay = document.createElement("div");
-    overlay.id = "theme-circle-overlay";
-    overlay.setAttribute("aria-hidden", "true");
-    overlay.style.cssText =
-      "position:fixed;inset:0;z-index:99999;pointer-events:none;" +
-      `background:${oldBg};` +
-      "-webkit-mask-image:radial-gradient(circle at var(--theme-toggle-x,50%) var(--theme-toggle-y,50%),transparent var(--mask-r),black var(--mask-r));" +
-      "mask-image:radial-gradient(circle at var(--theme-toggle-x,50%) var(--theme-toggle-y,50%),transparent var(--mask-r),black var(--mask-r));" +
-      "animation:theme-circle-reveal 0.6s ease-in-out forwards;";
-    document.body.appendChild(overlay);
-
-    const cleanup = () => {
-      overlay.remove();
+    const transition = doc.startViewTransition(() => {
+      // Terapkan class dark langsung (sinkron) supaya snapshot "baru"
+      // View Transition pasti sudah memakai tema target, lalu sinkronkan
+      // state React — useEffect-nya cuma meng-apply ulang class yang sama.
+      applyTheme(newTheme);
+      setTheme(newTheme);
+    });
+    transition.finished.finally(() => {
+      root.classList.remove("theme-transitioning");
       setThemeTransitioning(false);
       // Beri tahu consumer video agar melanjutkan pemutaran bila sempat
-      // terhenti oleh reflow di tengah transisi.
+      // terhenti oleh snapshot/reflow di tengah transisi.
       document.dispatchEvent(new Event(THEME_TRANSITION_END));
-    };
-    overlay.addEventListener("animationend", cleanup, { once: true });
-    // Safety net kalau animationend tidak fire (tab background, dsb.);
-    // isConnected mencegah cleanup ganda / overlay rapid-toggle lama.
-    window.setTimeout(() => {
-      if (overlay.isConnected) cleanup();
-    }, 800);
+    });
   };
 
   return (
