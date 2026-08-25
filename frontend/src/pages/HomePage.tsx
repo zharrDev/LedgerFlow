@@ -471,9 +471,9 @@ export default function HomePage() {
       >
         {/* Wrapper positioning context: owl + kartu sejajar */}
         <div className="relative max-w-5xl mx-auto">
-          {/* Owl hinggap DI ATAS tepi kanan kartu — sibling, bukan anak
+          {/* Owl hinggap DI ATAS tepi kiri kartu — sibling, bukan anak
               kartu. Kaki (-87% translate) menempel di atap, badan di luar. */}
-          <div className="absolute top-0 right-6 sm:right-10 md:right-14 lg:right-16 z-20 -translate-y-[87%]">
+          <div className="absolute top-0 left-6 sm:left-10 md:left-14 lg:left-16 z-20 -translate-y-[87%]">
             <OwlMascot />
           </div>
 
