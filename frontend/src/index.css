@@ -228,3 +228,34 @@ html { scroll-behavior: smooth; }
   .cursor-tail { display: none; }
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
+
+/* ── Theme circle-reveal transition (View Transitions API) ───────────
+   Tema light↔dark muncul menyebar berbentuk lingkaran dari titik tombol
+   toggle (ikon sun/moon). Koordinat titik asal di-set runtime oleh
+   ThemeSwitcher.tsx sebagai CSS custom property --theme-toggle-x/y.
+   Browser tanpa dukungan View Transitions API otomatis skip blok ini
+   (pseudo-element ::view-transition-* tidak pernah aktif) — ganti tema
+   tetap jalan normal lewat fallback langsung di ThemeSwitcher. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+@keyframes circle-reveal {
+  from {
+    clip-path: circle(0% at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
+  }
+}
+/* Class dipasang ke <html> hanya selama transisi berjalan */
+.theme-transitioning::view-transition-new(root) {
+  animation: circle-reveal 0.6s ease-in-out;
+}
