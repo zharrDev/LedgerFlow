@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Clock, DollarSign, TrendingDown } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
+import { SCROLL_REVEAL } from "../lib/scrollAnimations";
 
 export default function RoiCalculator() {
   const { language } = useLanguage();
@@ -23,9 +24,7 @@ export default function RoiCalculator() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      {...SCROLL_REVEAL}
       className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-lg p-6 sm:p-8"
     >
       <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-6">

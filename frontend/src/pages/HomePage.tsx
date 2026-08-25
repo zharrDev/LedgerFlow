@@ -1,11 +1,6 @@
 // src/pages/HomePage.tsx
 import { useState } from "react";
-import {
-  type Variants,
-  motion,
-  useScroll,
-  useTransform,
-} from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -41,6 +36,7 @@ import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
 import InViewVideo from "../components/home/InViewVideo";
+import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
 import fintechBgMobile from "../assets/hero/fintech-bgmobile.webp";
 import heroBgAnim from "../assets/hero/hero-bg-anim.webm";
@@ -121,19 +117,6 @@ const featureCards: Array<{
   },
 ];
 
-
-// ─── Animations ──────────────────────────────────────────────────────
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
-const staggerContainer: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
-  },
-};
 
 // ─── Main Page ───────────────────────────────────────────────────────
 export default function HomePage() {
@@ -239,14 +222,11 @@ export default function HomePage() {
       {/* ═══ Security ═══ */}
       <motion.section
         id="security"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={staggerContainer}
+        {...SCROLL_REVEAL}
         className="py-16 px-6 bg-gray-50/50 dark:bg-gray-900/20"
       >
         <div className="max-w-6xl mx-auto">
-          <motion.div variants={fadeUp} className="text-center mb-12">
+          <motion.div {...SCROLL_REVEAL_STAGGER(0)} className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
               {language === "id" ? "Dipercaya bisnis modern" : "Trusted by modern businesses"}
             </h2>
@@ -256,7 +236,7 @@ export default function HomePage() {
           </motion.div>
           <div className="grid gap-5 sm:gap-8 md:grid-cols-2">
             <motion.div
-              variants={fadeUp}
+              {...SCROLL_REVEAL_STAGGER(1)}
               className="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-primary-500/20 p-5 sm:p-6 min-w-0 hover:shadow-2xl transition"
             >
               <div className="flex items-start gap-3 mb-4 flex-wrap">
@@ -286,7 +266,7 @@ export default function HomePage() {
               </div>
             </motion.div>
             <motion.div
-              variants={fadeUp}
+              {...SCROLL_REVEAL_STAGGER(2)}
               className="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-primary-500/20 p-5 sm:p-6 min-w-0 hover:shadow-2xl transition"
             >
               <div className="flex items-start gap-3 mb-4 flex-wrap">
@@ -317,7 +297,7 @@ export default function HomePage() {
             </motion.div>
           </div>
           <motion.div
-            variants={fadeUp}
+            {...SCROLL_REVEAL_STAGGER(3)}
             className="flex flex-wrap justify-center gap-6 mt-10 pt-4 border-t border-gray-200 dark:border-gray-800"
           >
             {[
@@ -342,10 +322,7 @@ export default function HomePage() {
       {dashboardDemo && (
         <motion.section
           id="demo"
-          initial={{ opacity: 0, y: 60 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          {...SCROLL_REVEAL}
           className="relative py-20 px-6 overflow-hidden"
         >
           {/* Background Glow */}
@@ -428,9 +405,7 @@ export default function HomePage() {
 
       {/* ═══ Hero Carousel (gambar fitur) ═══ */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        {...SCROLL_REVEAL}
         className="text-center max-w-2xl mx-auto px-6 mb-10"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
@@ -446,9 +421,7 @@ export default function HomePage() {
       <section id="features" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...SCROLL_REVEAL}
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
@@ -462,10 +435,7 @@ export default function HomePage() {
             {featureCards.map((feat, idx) => (
               <motion.div
                 key={feat.title.en}
-                initial={{ opacity: 0, x: idx % 3 === 0 ? -56 : idx % 3 === 1 ? 56 : 0, y: idx % 3 === 2 ? 56 : 16 }}
-                whileInView={{ opacity: 1, x: 0, y: 0 }}
-                viewport={{ once: true, amount: 0.22 }}
-                transition={{ duration: 0.62, delay: idx * 0.09, ease: [0.22, 1, 0.36, 1] }}
+                {...SCROLL_REVEAL_STAGGER(idx)}
                 whileHover={{ y: -6, transition: { type: "tween", duration: 0.15 } }}
                 className="relative group bg-white/80 dark:bg-darkCard/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 min-w-0 border border-primary-500/20 shadow-md hover:shadow-xl transition-all duration-150"
               >
@@ -486,10 +456,7 @@ export default function HomePage() {
 
       {/* ═══ CTA + Owl Mascot ═══ */}
       <motion.section
-        initial={{ opacity: 0, y: 60 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        {...SCROLL_REVEAL}
         className="py-20 px-4 sm:px-6"
       >
         <div className="relative max-w-5xl mx-auto bg-gradient-to-br from-primary-600 via-primary-700 to-cyan-900 rounded-[2.5rem] py-16 sm:py-20 md:py-24 px-6 sm:px-10 md:px-16 text-center text-white shadow-2xl overflow-hidden">

@@ -2,11 +2,12 @@
 // Shared visual template for detail pages — solutions, products, tools, resources, company.
 
 import { Link } from "react-router-dom";
-import { motion, type Variants } from "framer-motion";
+import { motion, type MotionProps } from "framer-motion";
 import { ArrowLeft, ArrowRight, type LucideIcon } from "lucide-react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { useLanguage } from "../hooks/useLanguage";
+import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 
 type L = { en: string; id: string };
 
@@ -21,31 +22,22 @@ export type DetailPageContent = {
   interactiveContent?: React.ReactNode;
 };
 
-// ─── Animation Variants ────────────────────────────────────────────────
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-};
-
-const stagger: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
-};
-
 // Hero element animations (staggered entrance)
-const breadcrumbAnim = {
+type HeroAnimProps = Pick<MotionProps, "initial" | "animate">;
+
+const breadcrumbAnim: HeroAnimProps = {
   initial: { opacity: 0, y: -10 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut", delay: 0 } },
 };
-const badgeAnim = {
+const badgeAnim: HeroAnimProps = {
   initial: { opacity: 0, scale: 0.5 },
   animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut", delay: 0.1 } },
 };
-const titleAnim = {
+const titleAnim: HeroAnimProps = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.2 } },
 };
-const descAnim = {
+const descAnim: HeroAnimProps = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.3 } },
 };
@@ -108,20 +100,17 @@ export default function DetailPageTemplate({
         {/* ═══ Pain Points ═══ */}
         {content.painPoints && content.painPoints.length > 0 && (
           <motion.section
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            {...SCROLL_REVEAL}
             className="mt-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto"
           >
-            <motion.h2 variants={fadeUp} className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
+            <motion.h2 {...SCROLL_REVEAL_STAGGER(0)} className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
               {id ? "Masalah yang Sering Dihadapi" : "Common Challenges"}
             </motion.h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {content.painPoints.map((point, i) => (
                 <motion.div
                   key={i}
-                  variants={fadeUp}
+                  {...SCROLL_REVEAL_STAGGER(i + 1)}
                   className="rounded-2xl bg-red-50/60 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 p-5"
                 >
                   <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
@@ -139,20 +128,17 @@ export default function DetailPageTemplate({
         {/* ═══ Key Capabilities / Relevant Features ═══ */}
         {content.keyCapabilities && content.keyCapabilities.length > 0 && (
           <motion.section
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            {...SCROLL_REVEAL}
             className="mt-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto"
           >
-            <motion.h2 variants={fadeUp} className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
+            <motion.h2 {...SCROLL_REVEAL_STAGGER(0)} className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
               {id ? "Fitur Relevan di LedgerFlow" : "Relevant LedgerFlow Features"}
             </motion.h2>
             <div className="grid gap-5 sm:grid-cols-2">
               {content.keyCapabilities.map((cap, i) => (
                 <motion.div
                   key={i}
-                  variants={fadeUp}
+                  {...SCROLL_REVEAL_STAGGER(i + 1)}
                   className="flex items-start gap-4 rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5"
                 >
                   <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-500/10 dark:bg-primary-500/15 text-primary-500 flex items-center justify-center font-bold text-sm">
@@ -181,9 +167,7 @@ export default function DetailPageTemplate({
 
         {/* ═══ CTA ═══ */}
         <motion.section
-          initial={{ opacity: 0, scale: 0.97 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
+          {...SCROLL_REVEAL}
           className="mt-16 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto text-center"
         >
           <div className="rounded-3xl bg-gradient-to-r from-primary-600 to-primary-700 p-8 sm:p-12 text-white shadow-2xl">

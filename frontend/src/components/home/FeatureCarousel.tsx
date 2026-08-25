@@ -7,6 +7,7 @@ import smartBudgeting from "../../assets/hero/Smartbudgetting.webp";
 import multiEntitySupport from "../../assets/hero/multyEntitySupport.webp";
 import multiCurrency from "../../assets/hero/MultyCurrency.webp";
 import { useLanguage } from "../../hooks/useLanguage";
+import { SCROLL_REVEAL } from "../../lib/scrollAnimations";
 
 interface FeatureSlide {
   title: { en: string; id: string };
@@ -89,17 +90,13 @@ export default function FeatureCarousel() {
   useEffect(() => {
     const id = window.setInterval(next, AUTO_ADVANCE_MS);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <section className="py-20 px-0 sm:px-4 overflow-hidden">
       {/* Kapsul stadium raksasa ~92-96% lebar viewport, flat tanpa 3D */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        {...SCROLL_REVEAL}
         className="relative mx-auto w-[96%] max-w-[1700px]"
       >
         <div className="relative mx-auto w-[70%] sm:w-[78%] lg:w-[80%] h-[280px] sm:h-[400px] lg:h-[550px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900">
