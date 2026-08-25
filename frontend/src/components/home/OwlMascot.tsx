@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   motion,
+  useInView,
   useMotionValue,
   useSpring,
   useTransform,
@@ -8,11 +9,15 @@ import {
 } from "framer-motion";
 import owlMascot from "../../assets/owl-mascot.webp";
 
-// Posisi pusat mata diukur dari owl-mascot.webp (% dari kotak gambar)
-const LEFT_EYE = { x: 38.5, y: 36 };
-const RIGHT_EYE = { x: 58.5, y: 36 };
-const PUPIL_SIZE = 6.5; // % dari lebar container
-const MAX_TRAVEL_RATIO = 0.032; // jarak maksimum pupil = 3.2% lebar container
+// Posisi pusat mata (% dari kotak gambar) — diukur otomatis dari HASIL
+// CROP owl-mascot.webp oleh scripts/crop-owl.mjs (connected-component
+// pixel putih lensa kacamata). Jangan edit manual tanpa mengukur ulang.
+const LEFT_EYE = { x: 35.78, y: 35.72 };
+const RIGHT_EYE = { x: 63.04, y: 35.3 };
+const PUPIL_SIZE = 5; // % dari lebar container
+const MAX_TRAVEL_RATIO = 0.06; // jarak maksimum pupil = 6% lebar container
+// Batas geometris: travel + PUPIL_SIZE/2 harus ≤ radius lensa terkecil
+// (kanan, 9.1% lebar container) — extent 8.5% masih di dalam lensa.
 const BLINK_MIN_MS = 3000;
 const BLINK_MAX_MS = 7000;
 const BLINK_DURATION_MS = 130;
@@ -41,6 +46,11 @@ export default function OwlMascot() {
   const [blinking, setBlinking] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const maxTravelRef = useRef(MAX_TRAVEL_RATIO * 224);
+
+  // Scroll grow-in: mulai 70% ukuran, membesar ke 100% saat pertama
+  // kali terlihat di viewport (once) lalu TETAP besar walau scroll lagi.
+  const growRef = useRef<HTMLDivElement | null>(null);
+  const grown = useInView(growRef, { once: true, margin: "-60px" });
 
   // Arah pandang per mata: cos/sin dari sudut atan2 (selalu -1…1, proporsional)
   const leftPupilX = useMotionValue(0);
@@ -157,12 +167,22 @@ export default function OwlMascot() {
   );
 
   return (
-    <div className="pointer-events-none relative mx-auto w-32 sm:w-44 lg:w-56">
+    <div
+      ref={growRef}
+      className="pointer-events-none relative mx-auto w-32 sm:w-44 lg:w-56"
+    >
+      {/* Scroll grow-in — scale tidak memengaruhi layout, badge
+          FloatingIcon di sekitar tidak bergeser */}
       <motion.div
-        initial={enabled ? { opacity: 0, y: 24, scale: 0.6 } : false}
-        animate={enabled ? { opacity: 1, y: 0, scale: 1 } : undefined}
-        transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.3 }}
+        initial={{ scale: enabled ? 0.7 : 1 }}
+        animate={{ scale: !enabled || grown ? 1 : 0.7 }}
+        transition={{ type: "spring", stiffness: 120, damping: 18 }}
       >
+        <motion.div
+          initial={enabled ? { opacity: 0, y: 24, scale: 0.6 } : false}
+          animate={enabled ? { opacity: 1, y: 0, scale: 1 } : undefined}
+          transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.3 }}
+        >
         {/* Idle float — hanya saat interaktif */}
         <motion.div
           animate={enabled ? { y: [0, -8, 0] } : undefined}
@@ -186,6 +206,7 @@ export default function OwlMascot() {
             </div>
           </motion.div>
         </motion.div>
+      </motion.div>
       </motion.div>
     </div>
   );
