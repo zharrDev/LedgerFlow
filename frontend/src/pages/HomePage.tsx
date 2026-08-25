@@ -353,7 +353,7 @@ export default function HomePage() {
               <div className="absolute -inset-10 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-sky-500/20 blur-3xl rounded-[50px]" />
 
               {/* Main Card */}
-              <div className="relative overflow-hidden rounded-[36px] border border-white/20 bg-white/60 dark:bg-darkCard/70 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.18)] transition-all duration-700 group-hover:-translate-y-2">
+              <div className="relative overflow-hidden rounded-[36px] border border-white/20 bg-white/60 dark:bg-darkCard/70 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.18)] transition-[background-color,border-color,box-shadow,transform] duration-700 group-hover:-translate-y-2">
                 <InViewVideo
                   sources={[
                     { src: dashboardDemo, type: "video/webm" },

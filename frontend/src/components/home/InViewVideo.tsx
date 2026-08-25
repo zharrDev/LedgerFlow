@@ -15,8 +15,18 @@ export default function InViewVideo({ sources, className }: Props) {
     if (!video) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) video.play().catch(() => {});
-        else video.pause();
+        if (entry.isIntersecting) {
+          // Hanya play jika belum playing — cegah micro-pause dari
+          // pemanggilan play() ulang saat theme transition berjalan.
+          if (video.paused) video.play().catch(() => {});
+        } else if (
+          // Jangan pause saat circle-reveal theme transition aktif —
+          // snapshot View Transitions API butuh video tetap berjalan
+          // supaya tidak terlihat "jeda" di tengah animasi ganti tema.
+          !document.documentElement.classList.contains("theme-transitioning")
+        ) {
+          video.pause();
+        }
       },
       { threshold: 0.25 },
     );
