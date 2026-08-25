@@ -25,7 +25,6 @@ import {
 import { useLanguage } from "../hooks/useLanguage";
 import Footer from "../components/Footer"; // ← import shared Footer component
 import Navbar from "../components/Navbar";
-import CursorTrail from "../components/home/CursorTrail";
 import OwlMascot from "../components/home/OwlMascot";
 import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
@@ -138,7 +137,6 @@ export default function HomePage() {
 
   return (
     <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
-      <CursorTrail />
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
