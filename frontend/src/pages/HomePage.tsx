@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -37,6 +37,7 @@ import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
 import InViewVideo from "../components/home/InViewVideo";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
+import { THEME_TRANSITION_END } from "../lib/themeTransition";
 import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
 import fintechBgMobile from "../assets/hero/fintech-bgmobile.webp";
 import heroBgAnim from "../assets/hero/hero-bg-anim.webm";
@@ -127,6 +128,19 @@ export default function HomePage() {
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const opacityHero = useTransform(scrollY, [0, 300], [1, 0]);
 
+  // Hero video autoplay tanpa observer — tetap pastikan lanjut berjalan
+  // setelah circle-reveal theme transition (snapshot statis sesaat bisa
+  // membuat pemutaran terhenti).
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const resume = () => {
+      const v = heroVideoRef.current;
+      if (v && v.paused) v.play().catch(() => {});
+    };
+    document.addEventListener(THEME_TRANSITION_END, resume);
+    return () => document.removeEventListener(THEME_TRANSITION_END, resume);
+  }, []);
+
   return (
     <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
       <CursorTrail />
@@ -138,6 +152,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
         {!heroVideoError && (
           <video
+            ref={heroVideoRef}
             autoPlay
             muted
             loop

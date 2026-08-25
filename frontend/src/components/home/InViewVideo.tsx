@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { isThemeTransitioning, THEME_TRANSITION_END } from "../../lib/themeTransition";
 
 type Props = {
   sources: { src: string; type: string }[];
@@ -13,25 +14,38 @@ export default function InViewVideo({ sources, className }: Props) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    let intersecting = false;
     const observer = new IntersectionObserver(
       ([entry]) => {
+        // Selama circle-reveal theme transition: abaikan SELURUH callback —
+        // reflow class .dark bisa membuat intersection terbaca salah sesaat
+        // dan mem-pause video di tengah transisi.
+        if (isThemeTransitioning()) return;
+        intersecting = entry.isIntersecting;
         if (entry.isIntersecting) {
           // Hanya play jika belum playing — cegah micro-pause dari
-          // pemanggilan play() ulang saat theme transition berjalan.
+          // pemanggilan play() ulang yang tidak perlu.
           if (video.paused) video.play().catch(() => {});
-        } else if (
-          // Jangan pause saat circle-reveal theme transition aktif —
-          // snapshot View Transitions API butuh video tetap berjalan
-          // supaya tidak terlihat "jeda" di tengah animasi ganti tema.
-          !document.documentElement.classList.contains("theme-transitioning")
-        ) {
+        } else {
           video.pause();
         }
       },
       { threshold: 0.25 },
     );
     observer.observe(video);
-    return () => observer.disconnect();
+
+    // Setelah transisi selesai, lanjutkan pemutaran bila elemen memang
+    // sedang terlihat — menangani pause dari browser/reflow saat transisi.
+    const resume = () => {
+      if (video.paused && intersecting) video.play().catch(() => {});
+    };
+    document.addEventListener(THEME_TRANSITION_END, resume);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener(THEME_TRANSITION_END, resume);
+    };
   }, []);
 
   return (
