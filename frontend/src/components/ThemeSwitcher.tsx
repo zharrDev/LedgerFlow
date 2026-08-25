@@ -2,8 +2,18 @@ import { useState, useEffect, type MouseEvent } from "react";
 import { Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { setThemeTransitioning, THEME_TRANSITION_END } from "../lib/themeTransition";
+import {
+  beginVideoProtection,
+  canProtectVideosDuringTransition,
+  followTransitionReady,
+  restoreLiveVideos,
+} from "../lib/vtVideoGuard";
 
 type Theme = "light" | "dark";
+
+// Nomor urut transisi — transisi yang kedaluwarsa (ada toggle lebih baru)
+// tidak boleh membersihkan class/flag/video milik transisi terbaru.
+let transitionSeq = 0;
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -54,8 +64,18 @@ export default function ThemeSwitcher() {
 
     root.classList.add("theme-transitioning");
     // Flag sinkron untuk seluruh app (video, dsb.) — jangan pause/evaluasi
-    // visibility di tengah transisi.
+    // visibility di tengah transisi. Dipasang SEBELUM video dipindah.
     setThemeTransitioning(true);
+
+    // Rapid toggle: pulihkan guard transisi sebelumnya (bila masih jalan)
+    // supaya tidak ada placeholder/video terdetak ganda. Video live yang
+    // SAMA dipindah ke body (fixed di atas koordinat asalnya) + placeholder
+    // transparan — lalu diangkat ke top layer DI ATAS bitmap VT via
+    // popover manual sehingga playback tampil nyata selama wipe.
+    const protect = canProtectVideosDuringTransition();
+    if (protect) beginVideoProtection();
+
+    const mySeq = ++transitionSeq;
     const transition = doc.startViewTransition(() => {
       // Terapkan class dark langsung (sinkron) supaya snapshot "baru"
       // View Transition pasti sudah memakai tema target, lalu sinkronkan
@@ -63,11 +83,17 @@ export default function ThemeSwitcher() {
       applyTheme(newTheme);
       setTheme(newTheme);
     });
+    if (protect && transition.ready) {
+      followTransitionReady(transition.ready);
+    }
     transition.finished.finally(() => {
+      // Transisi lebih baru sudah mengambil alih — jangan sentuh apa pun.
+      if (mySeq !== transitionSeq) return;
+      restoreLiveVideos();
       root.classList.remove("theme-transitioning");
       setThemeTransitioning(false);
       // Beri tahu consumer video agar melanjutkan pemutaran bila sempat
-      // terhenti oleh snapshot/reflow di tengah transisi.
+      // terhenti oleh reflow di tengah transisi.
       document.dispatchEvent(new Event(THEME_TRANSITION_END));
     });
   };
