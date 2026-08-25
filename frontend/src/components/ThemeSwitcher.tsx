@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import { Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,7 +25,44 @@ export default function ThemeSwitcher() {
     applyTheme(theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
+  const toggleTheme = (e: MouseEvent<HTMLButtonElement>) => {
+    // Titik asal circle-reveal: pusat tombol yang diklik.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const root = document.documentElement;
+    root.style.setProperty("--theme-toggle-x", `${rect.left + rect.width / 2}px`);
+    root.style.setProperty("--theme-toggle-y", `${rect.top + rect.height / 2}px`);
+
+    const newTheme: Theme = theme === "light" ? "dark" : "light";
+
+    // Hormati preferensi pengguna yang sensitif terhadap gerakan —
+    // ganti tema langsung tanpa efek circle-reveal.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setTheme(newTheme);
+      return;
+    }
+
+    // Fallback browser tanpa View Transitions API (Safari/Firefox lama):
+    // ganti tema langsung, animasi ikon sun/moon tetap jalan seperti biasa.
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+    };
+    if (!doc.startViewTransition) {
+      setTheme(newTheme);
+      return;
+    }
+
+    root.classList.add("theme-transitioning");
+    const transition = doc.startViewTransition(() => {
+      // Terapkan class dark langsung (sinkron) supaya snapshot "baru"
+      // View Transition pasti sudah memakai tema target, lalu sinkronkan
+      // state React — useEffect-nya cuma meng-apply ulang class yang sama.
+      applyTheme(newTheme);
+      setTheme(newTheme);
+    });
+    transition.finished.finally(() => {
+      root.classList.remove("theme-transitioning");
+    });
+  };
 
   return (
     <button
