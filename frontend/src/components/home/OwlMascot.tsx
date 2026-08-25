@@ -4,6 +4,7 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
+  type MotionValue,
 } from "framer-motion";
 import owlMascot from "../../assets/owl-mascot.webp";
 
@@ -16,14 +17,14 @@ const BLINK_MIN_MS = 3000;
 const BLINK_MAX_MS = 7000;
 const BLINK_DURATION_MS = 130;
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
+// Spring lembut — gerakan halus & subtle, tidak "kaget" (gaya Kiro)
+const PUPIL_SPRING = { stiffness: 120, damping: 22, mass: 0.6 };
 
 /**
- * Maskot owl interaktif di hero section homepage.
- * Pupil mengikuti kursor (spring cepat), badan ikut miring (spring lambat),
- * kedipan otomatis acak, dan animasi mengambang saat idle.
+ * Maskot owl interaktif — focal point section CTA bawah homepage.
+ * Arah pandang dihitung per-mata via sudut atan2 (akurat & proporsional
+ * di semua arah), spring lembut, badan ikut miring dengan spring lebih
+ * berat, kedipan otomatis acak, dan animasi mengambang saat idle.
  * Hanya aktif di device ber-cursor (pointer: fine + hover: hover)
  * dan menghormati prefers-reduced-motion — selain itu tampil statis.
  */
@@ -39,28 +40,27 @@ export default function OwlMascot() {
   });
   const [blinking, setBlinking] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const maxTravelRef = useRef(MAX_TRAVEL_RATIO * 120);
+  const maxTravelRef = useRef(MAX_TRAVEL_RATIO * 224);
 
-  // Posisi kursor dinormalisasi: -1 (kiri/atas) … 1 (kanan/bawah) relatif ke owl
-  const pointerX = useMotionValue(0);
-  const pointerY = useMotionValue(0);
+  // Arah pandang per mata: cos/sin dari sudut atan2 (selalu -1…1, proporsional)
+  const leftPupilX = useMotionValue(0);
+  const leftPupilY = useMotionValue(0);
+  const rightPupilX = useMotionValue(0);
+  const rightPupilY = useMotionValue(0);
 
-  // Pupil: spring cepat & responsif
-  const pupilSpringX = useSpring(pointerX, {
-    stiffness: 260,
-    damping: 20,
-    mass: 0.5,
-  });
-  const pupilSpringY = useSpring(pointerY, {
-    stiffness: 260,
-    damping: 20,
-    mass: 0.5,
-  });
-  const pupilOffsetX = useTransform(pupilSpringX, (v) => v * maxTravelRef.current);
-  const pupilOffsetY = useTransform(pupilSpringY, (v) => v * maxTravelRef.current);
+  // Pupil: spring terpisah per mata
+  const leftSpringX = useSpring(leftPupilX, PUPIL_SPRING);
+  const leftSpringY = useSpring(leftPupilY, PUPIL_SPRING);
+  const rightSpringX = useSpring(rightPupilX, PUPIL_SPRING);
+  const rightSpringY = useSpring(rightPupilY, PUPIL_SPRING);
+
+  const leftOffsetX = useTransform(leftSpringX, (v) => v * maxTravelRef.current);
+  const leftOffsetY = useTransform(leftSpringY, (v) => v * maxTravelRef.current);
+  const rightOffsetX = useTransform(rightSpringX, (v) => v * maxTravelRef.current);
+  const rightOffsetY = useTransform(rightSpringY, (v) => v * maxTravelRef.current);
 
   // Badan: spring lebih berat agar terasa "berat" mengikuti
-  const bodySpringX = useSpring(pointerX, { stiffness: 55, damping: 15 });
+  const bodySpringX = useSpring(leftPupilX, { stiffness: 40, damping: 18 });
   const rotate = useTransform(bodySpringX, [-1, 1], [-5, 5]);
   const tiltY = useTransform(bodySpringX, [-1, 1], [2, -2]);
 
@@ -82,16 +82,27 @@ export default function OwlMascot() {
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      pointerX.set(
-        clamp((e.clientX - centerX) / (window.innerWidth / 2), -1, 1),
+
+      const leftEyeX = rect.left + (LEFT_EYE.x / 100) * rect.width;
+      const leftEyeY = rect.top + (LEFT_EYE.y / 100) * rect.height;
+      const rightEyeX = rect.left + (RIGHT_EYE.x / 100) * rect.width;
+      const rightEyeY = rect.top + (RIGHT_EYE.y / 100) * rect.height;
+
+      const angleLeft = Math.atan2(
+        e.clientY - leftEyeY,
+        e.clientX - leftEyeX,
       );
-      pointerY.set(
-        clamp((e.clientY - centerY) / (window.innerHeight / 2), -1, 1),
+      const angleRight = Math.atan2(
+        e.clientY - rightEyeY,
+        e.clientX - rightEyeX,
       );
+
+      leftPupilX.set(Math.cos(angleLeft));
+      leftPupilY.set(Math.sin(angleLeft));
+      rightPupilX.set(Math.cos(angleRight));
+      rightPupilY.set(Math.sin(angleRight));
     },
-    [pointerX, pointerY],
+    [leftPupilX, leftPupilY, rightPupilX, rightPupilY],
   );
 
   useEffect(() => {
@@ -122,7 +133,11 @@ export default function OwlMascot() {
     };
   }, [enabled]);
 
-  const renderPupil = (eye: { x: number; y: number }) => (
+  const renderPupil = (
+    eye: { x: number; y: number },
+    offsetX: MotionValue<number>,
+    offsetY: MotionValue<number>,
+  ) => (
     <motion.div
       aria-hidden
       className="absolute aspect-square rounded-full"
@@ -130,8 +145,8 @@ export default function OwlMascot() {
         left: `${eye.x - PUPIL_SIZE / 2}%`,
         top: `${eye.y - PUPIL_SIZE / 2}%`,
         width: `${PUPIL_SIZE}%`,
-        x: pupilOffsetX,
-        y: pupilOffsetY,
+        x: offsetX,
+        y: offsetY,
         transformOrigin: "center",
         background:
           "radial-gradient(circle at 32% 30%, #33507f 0%, #16264a 55%, #0c1730 100%)",
@@ -142,15 +157,15 @@ export default function OwlMascot() {
   );
 
   return (
-    <div className="pointer-events-none absolute right-4 top-20 z-20 hidden w-24 sm:block lg:right-8 lg:top-24 lg:w-[120px]">
+    <div className="pointer-events-none relative mx-auto w-32 sm:w-44 lg:w-56">
       <motion.div
-        initial={enabled ? { opacity: 0, y: -24, scale: 0.6 } : false}
+        initial={enabled ? { opacity: 0, y: 24, scale: 0.6 } : false}
         animate={enabled ? { opacity: 1, y: 0, scale: 1 } : undefined}
-        transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.4 }}
+        transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.3 }}
       >
         {/* Idle float — hanya saat interaktif */}
         <motion.div
-          animate={enabled ? { y: [0, -6, 0] } : undefined}
+          animate={enabled ? { y: [0, -8, 0] } : undefined}
           transition={
             enabled
               ? { repeat: Infinity, duration: 4.5, ease: "easeInOut" }
@@ -164,10 +179,10 @@ export default function OwlMascot() {
                 src={owlMascot}
                 alt=""
                 aria-hidden
-                className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+                className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.4)]"
               />
-              {renderPupil(LEFT_EYE)}
-              {renderPupil(RIGHT_EYE)}
+              {renderPupil(LEFT_EYE, leftOffsetX, leftOffsetY)}
+              {renderPupil(RIGHT_EYE, rightOffsetX, rightOffsetY)}
             </div>
           </motion.div>
         </motion.div>
