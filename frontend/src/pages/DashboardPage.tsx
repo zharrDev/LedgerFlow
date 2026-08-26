@@ -8,27 +8,25 @@ import { reportsService } from "../services/reportsService";
 import { journalService } from "../services/journalService";
 import { AppShell } from "../components/AppShell";
 import BrandedLoader from "../components/BrandedLoader";
+import { GreetingOwl } from "../components/dashboard/GreetingOwl";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { usePagination } from "../hooks/usePagination";
 import { TablePagination } from "../components/TablePagination";
 import { CashFlowChart } from "../components/CashFlowChart";
 import type { CashFlowDatum } from "../components/CashFlowChart";
 import {
-  PlusCircle,
   BookOpen,
   FileText,
   TrendingUp,
   TrendingDown,
   Wallet,
   Calendar,
-  Building2,
   Sparkles,
   CheckCircle,
   ArrowUpRight,
   ArrowDownRight,
   CircleDollarSign,
   BarChart3,
-  Zap,
   Landmark,
   CreditCard,
   Briefcase,
@@ -123,13 +121,6 @@ export default function DashboardPage() {
       net: r.value,
     }));
   }, [summary]);
-
-  const quickActions = [
-    { label: tx(language, "New Journal", "Jurnal Baru"), icon: PlusCircle, href: "/journal-entries" },
-    { label: tx(language, "Chart of Accounts", "Kelola COA"), icon: BookOpen, href: "/chart-of-accounts" },
-    { label: tx(language, "Income Statement", "Laba Rugi"), icon: FileText, href: "/income-statement" },
-    { label: tx(language, "Cash Flow", "Arus Kas"), icon: Wallet, href: "/cash-flow" },
-  ];
 
   const today = new Date();
   const formattedDate = formatDateFull(language, today.toISOString());
@@ -242,7 +233,7 @@ export default function DashboardPage() {
         animate="visible"
         className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8"
       >
-        {/* ═══ Hero Card (TIDAK BERUBAH) ═══ */}
+        {/* ═══ Hero Card — Greeting + Tanggal + Owl ═══ */}
         <motion.div
           variants={itemVariants}
           className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0B1120] via-[#111827] to-[#1F2937] border border-primary-500/30 shadow-2xl"
@@ -250,13 +241,9 @@ export default function DashboardPage() {
           <div className="absolute top-0 -right-32 w-72 h-72 bg-primary-500/30 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl"></div>
           <div className="relative p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] sm:text-xs font-mono text-primary-300 tracking-wider">
-                    {tx(language, "FINANCIAL COMMAND CENTER", "PUSAT KOMANDO KEUANGAN")}
-                  </span>
-                </div>
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              {/* Kiri — Greeting + Tanggal */}
+              <div className="flex-1 min-w-0 pr-0 lg:pr-8">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
                   <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold">
                     {tx(language, "Good ", "Selamat ")}
@@ -273,36 +260,15 @@ export default function DashboardPage() {
                     {user?.name?.split(" ")[0] || tx(language, "User", "Pengguna")}
                   </span>
                 </h1>
-                <p className="text-primary-200/80 text-sm sm:text-base mt-2 max-w-lg">
-                  {tx(language, "Here's your financial overview. All systems operational and ready for action.", "Berikut ringkasan keuangan Anda. Semua sistem berjalan normal dan siap digunakan.")}
-                </p>
-                <div className="flex flex-wrap gap-2 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm text-gray-400">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar size="14" /> {formattedDate}
-                  </span>
-                  <span className="hidden sm:flex items-center gap-1.5">
-                    <Building2 size="14" /> {user?.company_name || "LedgerFlow Corp"}
-                  </span>
-                  <span className="hidden sm:flex items-center gap-1.5">
-                    <Zap size="14" /> {tx(language, "Real-time Sync", "Sinkronisasi Real-time")}
-                  </span>
+                <div className="flex items-center gap-2 mt-3 text-sm text-gray-400">
+                  <Calendar size="14" className="shrink-0" />
+                  <span>{formattedDate}</span>
                 </div>
               </div>
-              {/* Quick Actions — responsive grid */}
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                {quickActions.map((action) => (
-                  <Link
-                    key={action.label}
-                    to={action.href}
-                    className="group flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2 sm:py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 hover:border-primary-500/50 hover:bg-primary-500/20 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:scale-105"
-                  >
-                    <action.icon
-                      size="14"
-                      className="text-primary-300 group-hover:text-primary-200 shrink-0"
-                    />
-                    <span className="truncate">{action.label}</span>
-                  </Link>
-                ))}
+
+              {/* Kanan — Owl (desktop only) */}
+              <div className="hidden lg:flex shrink-0 items-end justify-center">
+                <GreetingOwl />
               </div>
             </div>
           </div>
