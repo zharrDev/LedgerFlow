@@ -64,7 +64,7 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
           </div>
 
           {/* Main content card */}
-          <div className="flex-1 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
+          <div className="flex-1 min-h-0 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
             <main
               className={`flex-1 overflow-x-hidden ${
                 fullHeight
