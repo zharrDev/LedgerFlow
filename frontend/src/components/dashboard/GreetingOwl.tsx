@@ -1,22 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 
-// Owl poses — import as assets are added to frontend/src/assets/
-// For now, fallback to owl-mascot.webp for all poses
-import owlMascot from "../../assets/owl-mascot.webp";
-
-// TODO: Replace with individual owl assets once available:
-// import owlMencatat from "../../assets/owl-mencatat.webp";
-// import owlLaptop from "../../assets/owl-laptop.webp";
-// import owlKaca from "../../assets/owl-kacapembesar.webp";
-// import owlStatistik from "../../assets/owl-menulistatistik.webp";
-// import owlIde from "../../assets/owl-ide.webp";
+import owlMencatat from "../../assets/owl-analisis.webp";
+import owlLaptop from "../../assets/owl-laptop.webp";
+import owlKaca from "../../assets/owl-kacapembesar.webp";
+import owlStatistik from "../../assets/owl-analisis.webp";
+import owlIde from "../../assets/owl-idebolalampu.webp";
 
 const OWL_POSES = [
-  { src: owlMascot, alt: "Owl mencatat" },
-  { src: owlMascot, alt: "Owl di laptop" },
-  { src: owlMascot, alt: "Owl dengan kaca pembesar" },
-  { src: owlMascot, alt: "Owl melihat statistik" },
-  { src: owlMascot, alt: "Owl punya ide" },
+  { src: owlMencatat, alt: "Owl mencatat" },
+  { src: owlLaptop, alt: "Owl di laptop" },
+  { src: owlKaca, alt: "Owl dengan kaca pembesar" },
+  { src: owlStatistik, alt: "Owl melihat statistik" },
+  { src: owlIde, alt: "Owl punya ide" },
 ];
 
 const CYCLE_INTERVAL = 5000; // 5 seconds
@@ -27,21 +22,6 @@ export function GreetingOwl() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isActiveRef = useRef(true);
-
-  // Pause when tab is hidden
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden) {
-        isActiveRef.current = false;
-        if (timerRef.current) clearTimeout(timerRef.current);
-      } else {
-        isActiveRef.current = true;
-        startCycle();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
 
   // Respect prefers-reduced-motion
   const prefersReduced =
@@ -61,8 +41,23 @@ export function GreetingOwl() {
     }, CYCLE_INTERVAL);
   };
 
+  // Pause when tab is hidden
   useEffect(() => {
-    if (!prefersReduced) startCycle();
+    const handleVisibility = () => {
+      if (document.hidden) {
+        isActiveRef.current = false;
+        if (timerRef.current) clearTimeout(timerRef.current);
+      } else {
+        isActiveRef.current = true;
+        startCycle();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [prefersReduced]);
+
+  useEffect(() => {
+    startCycle();
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
