@@ -348,7 +348,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 transition-all duration-300 bg-white/60 dark:bg-darkCard/60 backdrop-blur-md">
+    <header className="sticky top-0 z-50 transition-all duration-300">
       <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16 w-full">
         {/* ── Left ── */}
         <div className="flex items-center gap-2 sm:gap-3">

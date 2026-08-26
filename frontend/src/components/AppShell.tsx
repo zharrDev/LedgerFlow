@@ -59,7 +59,7 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
         {/* Content area — header + main as separate cards */}
         <div className="flex-1 h-full flex flex-col gap-2 min-w-0">
           {/* Header card */}
-          <div className="shrink-0 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 relative z-10">
+          <div className="shrink-0 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-visible relative z-30">
             <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
           </div>
 
