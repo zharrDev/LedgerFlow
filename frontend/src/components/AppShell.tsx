@@ -56,19 +56,22 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
           <Sidebar mode="desktop" onLinkClick={closeMobileMenu} />
         </aside>
 
-        {/* Content card */}
-        <div className="flex-1 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
-          {/* Header strip — inside content card */}
-          <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
+        {/* Content area — header + main as separate cards */}
+        <div className="flex-1 h-full flex flex-col gap-2 min-w-0">
+          {/* Header card */}
+          <div className="shrink-0 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 relative z-10">
+            <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
+          </div>
 
-          {/* Main scrollable area */}
-          <main
-            className={`flex-1 overflow-x-hidden ${
-              fullHeight
-                ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
-                : "overflow-y-auto p-4 sm:p-6 lg:p-8 pb-8"
-            }`}
-          >
+          {/* Main content card */}
+          <div className="flex-1 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
+            <main
+              className={`flex-1 overflow-x-hidden ${
+                fullHeight
+                  ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
+                  : "overflow-y-auto p-4 sm:p-6 lg:p-8 pb-8"
+              }`}
+            >
             {!hideTitle && (title || description) && (
               <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>
                 {title && (
@@ -89,6 +92,7 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
               children
             )}
           </main>
+          </div>
         </div>
       </div>
 
