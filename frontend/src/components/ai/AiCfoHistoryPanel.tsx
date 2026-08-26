@@ -1,5 +1,7 @@
 import { MessageCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import type { AiCfoSession } from "../../utils/aiCfoStorage";
 import { formatSessionTime } from "../../utils/aiCfoStorage";
 
@@ -18,24 +20,26 @@ function SessionListBody({
   activeSessionId,
   onSelect,
   onItemSelect,
+  language,
 }: {
   sessions: AiCfoSession[];
   activeSessionId: string | null;
   onSelect: (id: string) => void;
   onItemSelect?: () => void;
+  language: "en" | "id";
 }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="px-3 h-14 flex items-center shrink-0 border-b border-gray-200 dark:border-gray-700">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          Riwayat hari ini ({sessions.length})
+          {tx(language, "Today's History", "Riwayat hari ini")} ({sessions.length})
         </p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 py-2 scrollbar-thin">
         {sessions.length === 0 ? (
           <p className="text-xs text-gray-400 dark:text-gray-500 px-2 py-6 text-center leading-relaxed">
-            Belum ada percakapan hari ini
+            {tx(language, "No conversations today", "Belum ada percakapan hari ini")}
           </p>
         ) : (
           <ul className="space-y-1">
@@ -65,7 +69,7 @@ function SessionListBody({
                         <p className="text-sm font-medium truncate">{session.title}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">
                           {formatSessionTime(session.updatedAt)}
-                          {msgCount > 1 ? ` · ${msgCount} pertanyaan` : ""}
+                          {msgCount > 1 ? ` · ${msgCount} ${tx(language, "questions", "pertanyaan")}` : ""}
                         </p>
                       </div>
                     </div>
@@ -88,6 +92,7 @@ export function AiCfoHistoryPanel({
   onSelect,
   overlay = false,
 }: AiCfoHistoryPanelProps) {
+  const { language } = useLanguage();
   if (overlay) {
     return (
       <AnimatePresence>
@@ -109,13 +114,13 @@ export function AiCfoHistoryPanel({
             >
               <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Riwayat chat
+                  {tx(language, "Chat History", "Riwayat chat")}
                 </span>
                 <button
                   type="button"
                   onClick={onClose}
                   className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  aria-label="Tutup riwayat"
+                  aria-label={tx(language, "Close history", "Tutup riwayat")}
                 >
                   <X size={16} />
                 </button>
@@ -126,6 +131,7 @@ export function AiCfoHistoryPanel({
                   activeSessionId={activeSessionId}
                   onSelect={onSelect}
                   onItemSelect={onClose}
+                  language={language}
                 />
               </div>
             </motion.aside>
@@ -147,6 +153,7 @@ export function AiCfoHistoryPanel({
           sessions={sessions}
           activeSessionId={activeSessionId}
           onSelect={onSelect}
+          language={language}
         />
       </div>
     </motion.aside>

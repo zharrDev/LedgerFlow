@@ -1,4 +1,6 @@
 import { Loader2, Send } from "lucide-react";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 
 interface AiCfoChatComposerProps {
   input: string;
@@ -15,6 +17,7 @@ export function AiCfoChatComposer({
   onSubmit,
   inputRef,
 }: AiCfoChatComposerProps) {
+  const { language } = useLanguage();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
@@ -36,7 +39,7 @@ export function AiCfoChatComposer({
               onSubmit();
             }
           }}
-          placeholder="Tanya tentang arus kas, beban, risiko..."
+          placeholder={tx(language, "Ask about cash flow, expenses, risks...", "Tanya tentang arus kas, beban, risiko...")}
           rows={2}
           disabled={loading}
           className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-60"
@@ -45,7 +48,7 @@ export function AiCfoChatComposer({
           type="submit"
           disabled={loading || !input.trim()}
           className="p-2.5 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-          aria-label="Kirim pesan"
+          aria-label={tx(language, "Send message", "Kirim pesan")}
         >
           {loading ? (
             <Loader2 size={18} className="animate-spin" />
@@ -55,7 +58,7 @@ export function AiCfoChatComposer({
         </button>
       </div>
       <p className="text-[10px] text-gray-400 mt-2 text-center">
-        Respons bisa memakan waktu lebih lama saat model gratis sedang antri
+        {tx(language, "Responses may take longer when free models are queuing", "Respons bisa memakan waktu lebih lama saat model gratis sedang antri")}
       </p>
     </form>
   );

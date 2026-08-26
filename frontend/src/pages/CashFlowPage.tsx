@@ -13,6 +13,8 @@ import {
   Activity,
 } from "lucide-react";
 import { AppShell } from "../components/AppShell";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { reportsService } from "../services/reportsService";
 import { useCashFlow } from "../hooks/useCashFlow";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -66,18 +68,15 @@ const letterVariants: Variants = {
 // ─── Section Config (satu keluarga warna — tint primary) ────────────
 const SECTION_CONFIG = {
   operating: {
-    label: "Aktivitas Operasi",
-    subtitle: "Operating Activities — Arus kas utama bisnis",
+    labelKey: "operating",
     icon: <TrendingUp size={16} />,
   },
   investing: {
-    label: "Aktivitas Investasi",
-    subtitle: "Investing Activities — Aset & Investasi",
+    labelKey: "investing",
     icon: <Building2 size={16} />,
   },
   financing: {
-    label: "Aktivitas Pendanaan",
-    subtitle: "Financing Activities — Modal & Utang",
+    labelKey: "financing",
     icon: <Banknote size={16} />,
   },
 } as const;
@@ -87,11 +86,28 @@ const SECTION_CONFIG = {
 function CashFlowSectionBlock({
   section,
   configKey,
+  language,
 }: {
   section: CashFlowSection;
   configKey: keyof typeof SECTION_CONFIG;
+  language: "en" | "id";
 }) {
   const cfg = SECTION_CONFIG[configKey];
+  const labels: Record<string, { label: string; subtitle: string }> = {
+    operating: {
+      label: tx(language, "Operating Activities", "Aktivitas Operasi"),
+      subtitle: tx(language, "Operating Activities — Core business cash flow", "Operating Activities — Arus kas utama bisnis"),
+    },
+    investing: {
+      label: tx(language, "Investing Activities", "Aktivitas Investasi"),
+      subtitle: tx(language, "Investing Activities — Assets & Investments", "Investing Activities — Aset & Investasi"),
+    },
+    financing: {
+      label: tx(language, "Financing Activities", "Aktivitas Pendanaan"),
+      subtitle: tx(language, "Financing Activities — Capital & Debt", "Financing Activities — Modal & Utang"),
+    },
+  };
+  const sectionLabels = labels[configKey];
 
   return (
     <>
@@ -101,10 +117,10 @@ function CashFlowSectionBlock({
         </span>
         <div>
           <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
-            {cfg.label}
+            {sectionLabels.label}
           </h3>
           <p className="text-[11px] text-gray-500 dark:text-gray-400">
-            {cfg.subtitle}
+            {sectionLabels.subtitle}
           </p>
         </div>
       </div>
@@ -116,7 +132,7 @@ function CashFlowSectionBlock({
               <Wallet size={18} />
             </div>
             <p className="text-sm text-gray-400">
-              Tidak ada transaksi pada periode ini
+              {tx(language, "No transactions in this period", "Tidak ada transaksi pada periode ini")}
             </p>
           </div>
         ) : (
@@ -239,10 +255,10 @@ function SummaryCard({
             }`}
           >
             {trend === "up"
-              ? "Positif"
+              ? tx(language, "Positive", "Positif")
               : trend === "down"
-                ? "Negatif"
-                : "Stabil"}
+                ? tx(language, "Negative", "Negatif")
+                : tx(language, "Stable", "Stabil")}
           </span>
         </div>
       )}
@@ -267,7 +283,7 @@ function NetChangeFooter({
         </span>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-800 dark:text-white">
-            Kenaikan / Penurunan Kas Bersih
+            {tx(language, "Net Cash Increase / Decrease", "Kenaikan / Penurunan Kas Bersih")}
           </p>
           <p className="text-[11px] text-gray-500 dark:text-gray-400">
             {periodName}
@@ -290,6 +306,7 @@ function NetChangeFooter({
 
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function CashFlowPage() {
+  const { language } = useLanguage();
   const { data, loading, error, periodId, setPeriodId } = useCashFlow();
   const [periods, setPeriods] = useState<Period[]>([]);
 
@@ -300,25 +317,25 @@ export default function CashFlowPage() {
   const chartData: CashFlowDatum[] = data
     ? [
         {
-          name: "Operasi",
+          name: tx(language, "Operating", "Operasi"),
           masuk: Math.max(0, data.operating.subtotal),
           keluar: Math.min(0, data.operating.subtotal),
           net: data.operating.subtotal,
         },
         {
-          name: "Investasi",
+          name: tx(language, "Investing", "Investasi"),
           masuk: Math.max(0, data.investing.subtotal),
           keluar: Math.min(0, data.investing.subtotal),
           net: data.investing.subtotal,
         },
         {
-          name: "Pendanaan",
+          name: tx(language, "Financing", "Pendanaan"),
           masuk: Math.max(0, data.financing.subtotal),
           keluar: Math.min(0, data.financing.subtotal),
           net: data.financing.subtotal,
         },
         {
-          name: "Total",
+          name: tx(language, "Total", "Total"),
           masuk: Math.max(0, data.netCashFlow),
           keluar: Math.min(0, data.netCashFlow),
           net: data.netCashFlow,
@@ -330,7 +347,7 @@ export default function CashFlowPage() {
     if (!data) return;
     const periodLabel = periodId
       ? periods.find((p) => p.id === periodId)?.name || ""
-      : "Semua Periode";
+      : tx(language, "All Periods", "Semua Periode");
     if (format === "excel") exportCashFlowExcel(data, periodLabel);
     else if (format === "word") exportCashFlowWord(data, periodLabel);
     else exportCashFlowPDF(data, periodLabel);
@@ -363,7 +380,7 @@ export default function CashFlowPage() {
                   className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
                   style={{ perspective: "600px" }}
                 >
-                  {"Laporan Arus Kas".split("").map((char, i) => (
+                  {tx(language, "Cash Flow Statement", "Laporan Arus Kas").split("").map((char, i) => (
                     <motion.span
                       key={i}
                       variants={letterVariants}
@@ -376,9 +393,9 @@ export default function CashFlowPage() {
                 </motion.h1>
               </div>
               <p className="text-gray-500 dark:text-gray-400 text-sm ml-1">
-                Cash Flow Statement —{" "}
+                {tx(language, "Cash Flow Statement —", "Laporan Arus Kas —")}{" "}
                 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                  Metode Tidak Langsung
+                  {tx(language, "Indirect Method", "Metode Tidak Langsung")}
                 </span>
               </p>
             </div>
@@ -391,7 +408,7 @@ export default function CashFlowPage() {
                   icon={<Wallet size={14} />}
                   minWidth={200}
                   options={[
-                    { value: "", label: "Semua Periode" },
+                    { value: "", label: tx(language, "All Periods", "Semua Periode") },
                     ...periods.map((p) => ({ value: p.id, label: p.name ?? "" })),
                   ]}
                 />
@@ -411,7 +428,7 @@ export default function CashFlowPage() {
                 <div className="absolute inset-0 rounded-full border-4 border-primary-500/20" />
                 <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-500 animate-spin" />
               </div>
-              <p className="text-sm text-gray-400">Memuat laporan...</p>
+              <p className="text-sm text-gray-400">{tx(language, "Loading report...", "Memuat laporan...")}</p>
             </div>
           )}
 
@@ -423,7 +440,7 @@ export default function CashFlowPage() {
                 onClick={() => window.location.reload()}
                 className="text-primary-500 text-sm hover:underline font-medium"
               >
-                Coba lagi
+                {tx(language, "Try again", "Coba lagi")}
               </button>
             </div>
           )}
@@ -433,13 +450,13 @@ export default function CashFlowPage() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <SummaryCard
-                  label="Saldo Kas Awal"
+                  label={tx(language, "Beginning Cash Balance", "Saldo Kas Awal")}
                   value={data.beginningCash}
                   icon={<Wallet size={16} />}
                   trend="neutral"
                 />
                 <SummaryCard
-                  label="Perubahan Kas"
+                  label={tx(language, "Cash Change", "Perubahan Kas")}
                   value={data.netCashFlow}
                   icon={
                     data.netCashFlow >= 0 ? (
@@ -451,7 +468,7 @@ export default function CashFlowPage() {
                   trend={data.netCashFlow >= 0 ? "up" : "down"}
                 />
                 <SummaryCard
-                  label="Saldo Kas Akhir"
+                  label={tx(language, "Ending Cash Balance", "Saldo Kas Akhir")}
                   value={data.endingCash}
                   icon={<PieChart size={16} />}
                   trend="up"
@@ -465,10 +482,10 @@ export default function CashFlowPage() {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h3 className="text-sm font-bold text-gray-800 dark:text-white">
-                      Visualisasi Arus Kas
+                      {tx(language, "Cash Flow Visualization", "Visualisasi Arus Kas")}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Perbandingan antar aktivitas
+                      {tx(language, "Comparison between activities", "Perbandingan antar aktivitas")}
                     </p>
                   </div>
                 </div>
@@ -488,14 +505,17 @@ export default function CashFlowPage() {
                   <CashFlowSectionBlock
                     section={data.operating}
                     configKey="operating"
+                    language={language}
                   />
                   <CashFlowSectionBlock
                     section={data.investing}
                     configKey="investing"
+                    language={language}
                   />
                   <CashFlowSectionBlock
                     section={data.financing}
                     configKey="financing"
+                    language={language}
                   />
                   <NetChangeFooter
                     value={data.netCashFlow}
@@ -511,7 +531,7 @@ export default function CashFlowPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/10 mb-4">
                 <Wallet size={32} className="opacity-50" />
               </div>
-              <p>Belum ada data untuk ditampilkan</p>
+              <p>{tx(language, "No data to display yet", "Belum ada data untuk ditampilkan")}</p>
             </div>
           )}
         </div>

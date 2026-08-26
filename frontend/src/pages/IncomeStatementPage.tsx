@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
 import { useIncomeStatement } from "../hooks/useIncomeStatement";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
+import { formatCompact } from "../i18n/compactNumber";
 import { reportsService } from "../services/reportsService";
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -18,7 +21,7 @@ import {
   Calendar,
 } from "lucide-react";
 import type { Period } from "../types/reports";
-import { formatCurrency, getCurrency } from "../utils/currency";
+import { formatCurrency } from "../utils/currency";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -54,17 +57,8 @@ const letterVariants: Variants = {
 // Format uang mengikuti mata uang aktif user (Settings → Regional).
 const formatRupiah = (val: number) => formatCurrency(val);
 
-const formatCompact = (val: number) => {
-  const abs = Math.abs(val);
-  const symbol =
-    getCurrency() === "IDR" ? "Rp" : getCurrency() === "USD" ? "$" : getCurrency();
-  if (abs >= 1_000_000_000) return `${symbol} ${(val / 1_000_000_000).toFixed(1)}M`;
-  if (abs >= 1_000_000) return `${symbol} ${(val / 1_000_000).toFixed(1)}jt`;
-  if (abs >= 1_000) return `${symbol} ${(val / 1_000).toFixed(0)}rb`;
-  return formatRupiah(val);
-};
-
 export function IncomeStatementPage() {
+  const { language } = useLanguage();
   const { data, loading, error, periodId, setPeriodId, refetch } =
     useIncomeStatement("");
   const [periods, setPeriods] = useState<Period[]>([]);
@@ -77,7 +71,7 @@ export function IncomeStatementPage() {
     if (!data) return;
     const periodLabel = periodId
       ? periods.find((p) => p.id === periodId)?.name || ""
-      : "Semua Periode";
+      : tx(language, "All Periods", "Semua Periode");
     if (format === "excel") exportIncomeStatementExcel(data, periodLabel);
     else if (format === "word") exportIncomeStatementWord(data, periodLabel);
     else exportIncomeStatementPDF(data, periodLabel);
@@ -108,7 +102,7 @@ export function IncomeStatementPage() {
                 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
                 style={{ perspective: "600px" }}
               >
-                {"Laporan Laba Rugi".split("").map((char, i) => (
+                {tx(language, "Income Statement", "Laporan Laba Rugi").split("").map((char, i) => (
                   <motion.span
                     key={i}
                     variants={letterVariants}
@@ -121,7 +115,7 @@ export function IncomeStatementPage() {
               </motion.h1>
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Pendapatan dan beban dari jurnal yang sudah di-post
+              {tx(language, "Revenue and expenses from posted journals", "Pendapatan dan beban dari jurnal yang sudah di-post")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
@@ -132,7 +126,7 @@ export function IncomeStatementPage() {
                 icon={<Calendar size={14} />}
                 minWidth={210}
                 options={[
-                  { value: "", label: "Semua Periode (YTD)" },
+                  { value: "", label: tx(language, "All Periods (YTD)", "Semua Periode (YTD)") },
                   ...periods.map((p) => ({ value: p.id, label: p.name ?? "" })),
                 ]}
               />
@@ -146,13 +140,13 @@ export function IncomeStatementPage() {
               <button
                 onClick={refetch}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-500 hover:border-primary-500/50 transition-colors bg-white dark:bg-darkCard shadow-sm"
-                title="Refresh"
+                title={tx(language, "Refresh", "Refresh")}
               >
                 <RefreshCw
                   size={16}
                   className={loading ? "animate-spin" : ""}
                 />
-                <span className="text-sm font-medium sm:hidden">Refresh</span>
+                <span className="text-sm font-medium sm:hidden">{tx(language, "Refresh", "Refresh")}</span>
               </button>
             </div>
           </div>
@@ -162,7 +156,7 @@ export function IncomeStatementPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-gray-400">Memuat laporan...</p>
+            <p className="text-sm text-gray-400">{tx(language, "Loading report...", "Memuat laporan...")}</p>
           </div>
         )}
 
@@ -174,7 +168,7 @@ export function IncomeStatementPage() {
               onClick={refetch}
               className="text-primary-500 text-sm hover:underline"
             >
-              Coba lagi
+              {tx(language, "Try again", "Coba lagi")}
             </button>
           </motion.div>
         )}
@@ -191,14 +185,14 @@ export function IncomeStatementPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-                    Pendapatan
+                    {tx(language, "Revenue", "Pendapatan")}
                   </span>
                   <div className="p-1.5 rounded-lg bg-emerald-500/10">
                     <TrendingUp size={16} className="text-emerald-500" />
                   </div>
                 </div>
                 <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {formatCompact(data.totalRevenue)}
+                  {formatCompact(language, data.totalRevenue)}
                 </p>
               </motion.div>
 
@@ -209,14 +203,14 @@ export function IncomeStatementPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-                    Beban
+                    {tx(language, "Expenses", "Beban")}
                   </span>
                   <div className="p-1.5 rounded-lg bg-rose-500/10">
                     <TrendingDown size={16} className="text-rose-500" />
                   </div>
                 </div>
                 <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-                  {formatCompact(data.totalExpense)}
+                  {formatCompact(language, data.totalExpense)}
                 </p>
               </motion.div>
 
@@ -227,7 +221,7 @@ export function IncomeStatementPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-                    Laba Bersih
+                    {tx(language, "Net Income", "Laba Bersih")}
                   </span>
                   <div className="p-1.5 rounded-lg bg-primary-500/10">
                     <FileText size={16} className="text-primary-500" />
@@ -240,7 +234,7 @@ export function IncomeStatementPage() {
                       : "text-rose-600 dark:text-rose-400"
                   }`}
                 >
-                  {formatCompact(data.netIncome)}
+                  {formatCompact(language, data.netIncome)}
                 </p>
               </motion.div>
             </div>
@@ -256,13 +250,13 @@ export function IncomeStatementPage() {
                   LedgerFlow
                 </h2>
                 <h3 className="font-bold text-gray-900 dark:text-white text-lg mt-1">
-                  Laporan Laba Rugi
+                  {tx(language, "Income Statement", "Laporan Laba Rugi")}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Untuk Periode:{" "}
+                  {tx(language, "For Period:", "Untuk Periode:")}{" "}
                   {periodId
                     ? periods.find((p) => p.id === periodId)?.name
-                    : "Sampai Saat Ini (YTD)"}
+                    : tx(language, "Year to Date", "Sampai Saat Ini (YTD)")}
                 </p>
               </div>
 
@@ -270,11 +264,11 @@ export function IncomeStatementPage() {
                 {/* PENDAPATAN */}
                 <div>
                   <h4 className="font-bold text-emerald-700 dark:text-emerald-400 border-b-2 border-emerald-500/20 pb-2 mb-3 flex items-center gap-2">
-                    <TrendingUp size={16} /> PENDAPATAN (REVENUE)
+                    <TrendingUp size={16} /> {tx(language, "REVENUE", "PENDAPATAN")}
                   </h4>
                   {data.revenue.length === 0 ? (
                     <p className="text-sm text-gray-400 italic px-2 py-4 text-center">
-                      Tidak ada transaksi pendapatan
+                      {tx(language, "No revenue transactions", "Tidak ada transaksi pendapatan")}
                     </p>
                   ) : (
                     <div className="space-y-1">
@@ -296,7 +290,7 @@ export function IncomeStatementPage() {
                       ))}
                       <div className="flex justify-between text-sm px-2 py-2.5 mt-2 bg-emerald-50/70 dark:bg-emerald-500/10 font-bold border-t border-emerald-200 dark:border-emerald-500/20 rounded-lg">
                         <span className="min-w-0 text-emerald-800 dark:text-emerald-300">
-                          Total Pendapatan
+                          {tx(language, "Total Revenue", "Total Pendapatan")}
                         </span>
                         <span className="shrink-0 text-emerald-800 dark:text-emerald-300 tabular-nums">
                           {formatRupiah(data.totalRevenue)}
@@ -309,11 +303,11 @@ export function IncomeStatementPage() {
                 {/* BEBAN */}
                 <div>
                   <h4 className="font-bold text-rose-700 dark:text-rose-400 border-b-2 border-rose-500/20 pb-2 mb-3 flex items-center gap-2">
-                    <TrendingDown size={16} /> BEBAN (EXPENSE)
+                    <TrendingDown size={16} /> {tx(language, "EXPENSES", "BEBAN")}
                   </h4>
                   {data.expense.length === 0 ? (
                     <p className="text-sm text-gray-400 italic px-2 py-4 text-center">
-                      Tidak ada transaksi beban
+                      {tx(language, "No expense transactions", "Tidak ada transaksi beban")}
                     </p>
                   ) : (
                     <div className="space-y-1">
@@ -335,7 +329,7 @@ export function IncomeStatementPage() {
                       ))}
                       <div className="flex justify-between text-sm px-2 py-2.5 mt-2 bg-rose-50/70 dark:bg-rose-500/10 font-bold border-t border-rose-200 dark:border-rose-500/20 rounded-lg">
                         <span className="min-w-0 text-rose-800 dark:text-rose-300">
-                          Total Beban
+                          {tx(language, "Total Expenses", "Total Beban")}
                         </span>
                         <span className="shrink-0 text-rose-800 dark:text-rose-300 tabular-nums">
                           {formatRupiah(data.totalExpense)}
@@ -356,8 +350,8 @@ export function IncomeStatementPage() {
                 >
                   <span>
                     {data.netIncome >= 0
-                      ? "Laba Bersih (Net Income)"
-                      : "Rugi Bersih (Net Loss)"}
+                      ? tx(language, "Net Income", "Laba Bersih")
+                      : tx(language, "Net Loss", "Rugi Bersih")}
                   </span>
                   <span className="text-xl sm:text-2xl tabular-nums break-all sm:break-normal w-full sm:w-auto text-left sm:text-right">
                     {formatRupiah(data.netIncome)}
@@ -372,7 +366,7 @@ export function IncomeStatementPage() {
         {!data && !loading && !error && (
           <div className="py-24 text-center text-gray-400">
             <FileText size={48} className="mx-auto mb-4 opacity-40" />
-            <p>Tidak ada data laporan.</p>
+            <p>{tx(language, "No report data.", "Tidak ada data laporan.")}</p>
           </div>
         )}
       </motion.div>

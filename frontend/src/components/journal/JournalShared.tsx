@@ -114,8 +114,8 @@ export function formatIDR(value: number): string {
   return formatCurrency(value);
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
+export function formatDate(iso: string, language: "en" | "id" = "id"): string {
+  return new Date(iso).toLocaleDateString(language === "id" ? "id-ID" : "en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",

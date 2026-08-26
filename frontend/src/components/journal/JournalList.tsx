@@ -9,6 +9,8 @@ import {
   formatIDR,
   formatDate,
 } from "./JournalShared";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import { AlertCircle, BookOpen } from "lucide-react";
 import { TablePagination, type TablePaginationProps } from "../TablePagination";
 
@@ -27,15 +29,6 @@ interface JournalListProps {
   canDelete?: boolean;
 }
 
-const HEADERS = [
-  "Nomor",
-  "Tanggal",
-  "Deskripsi",
-  "Status",
-  "Total Debit",
-  "Aksi",
-] as const;
-
 export function JournalList({
   entries,
   loading,
@@ -49,13 +42,23 @@ export function JournalList({
   canPost = true,
   canDelete = true,
 }: JournalListProps) {
+  const { language } = useLanguage();
+
+  const HEADERS = [
+    tx(language, "No.", "Nomor"),
+    tx(language, "Date", "Tanggal"),
+    tx(language, "Description", "Deskripsi"),
+    tx(language, "Status", "Status"),
+    tx(language, "Total Debit", "Total Debit"),
+    tx(language, "Actions", "Aksi"),
+  ] as const;
 
   return (
     <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
       {loading ? (
         <div className="py-20 flex flex-col items-center gap-3 text-gray-400">
           <SpinnerIcon className="w-6 h-6" />
-          <span className="text-sm">Memuat data...</span>
+          <span className="text-sm">{tx(language, "Loading...", "Memuat data...")}</span>
         </div>
       ) : error ? (
         <div className="py-20 flex flex-col items-center gap-3">
@@ -66,7 +69,7 @@ export function JournalList({
             onClick={onRetry}
             className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300"
           >
-            Coba Lagi
+            {tx(language, "Try Again", "Coba Lagi")}
           </button>
         </div>
       ) : (
@@ -77,13 +80,13 @@ export function JournalList({
                 <tr className="border-b border-gray-200 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
                   {HEADERS.map((h, i) => {
                     const minW =
-                      h === "Nomor" || h === "Tanggal"
+                      i === 0 || i === 1
                         ? "min-w-[120px]"
-                        : h === "Deskripsi"
+                        : i === 2
                           ? "min-w-[220px]"
-                          : h === "Status"
+                          : i === 3
                             ? "min-w-[110px]"
-                            : h === "Total Debit"
+                            : i === 4
                               ? "min-w-[160px]"
                               : "min-w-[150px]";
                     return (
@@ -108,7 +111,7 @@ export function JournalList({
                         className="mx-auto mb-3 text-gray-300 dark:text-gray-600"
                       />
                       <p className="text-sm text-gray-400 mb-3">
-                        Belum ada journal entry
+                        {tx(language, "No journal entries yet", "Belum ada journal entry")}
                       </p>
                       {canPost && (
                         <button
@@ -116,7 +119,7 @@ export function JournalList({
                           onClick={onNew}
                           className="px-4 py-2 text-sm bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:shadow-lg transition-all"
                         >
-                          Buat Entry Pertama
+                          {tx(language, "Create First Entry", "Buat Entry Pertama")}
                         </button>
                       )}
                     </td>
@@ -165,6 +168,7 @@ function JournalRow({
   canPost,
   canDelete,
 }: JournalRowProps) {
+  const { language } = useLanguage();
   const isDraft = entry.status === "draft";
 
   return (
@@ -178,14 +182,14 @@ function JournalRow({
         </span>
       </td>
       <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-        {formatDate(entry.date)}
+        {formatDate(entry.date, language)}
       </td>
       <td className="px-4 py-3">
         <span className="text-sm text-gray-800 dark:text-gray-200 line-clamp-1">
           {entry.description}
         </span>
         <span className="text-xs text-gray-400">
-          {entry.lines?.length ?? 0} baris
+          {entry.lines?.length ?? 0} {tx(language, "lines", "baris")}
         </span>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
@@ -199,7 +203,7 @@ function JournalRow({
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex gap-1.5 justify-end">
           <ActionButton
-            title="Lihat detail"
+            title={tx(language, "View detail", "Lihat detail")}
             onClick={() => onView(entry)}
             icon={<IconEdit size={14} />}
             variant="default"
@@ -208,7 +212,7 @@ function JournalRow({
             <>
               {canPost && (
                 <ActionButton
-                  title="Posting ke buku besar"
+                  title={tx(language, "Post to ledger", "Posting ke buku besar")}
                   onClick={() => onPost(entry)}
                   icon={<IconSend size={14} />}
                   variant="primary"
@@ -216,7 +220,7 @@ function JournalRow({
               )}
               {canDelete && (
                 <ActionButton
-                  title="Hapus draft"
+                  title={tx(language, "Delete draft", "Hapus draft")}
                   onClick={() => onDelete(entry)}
                   icon={<IconTrash size={14} />}
                   variant="danger"

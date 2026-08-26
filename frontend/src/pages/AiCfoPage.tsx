@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Bot, MessageSquarePlus, PanelLeft } from "lucide-react";
 import { AppShell } from "../components/AppShell";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { AiCfoChatBubble } from "../components/ai/AiCfoChatBubble";
 import type { AiChatMessage } from "../components/ai/AiCfoChatBubble";
 import { AiCfoChatComposer } from "../components/ai/AiCfoChatComposer";
@@ -20,6 +22,7 @@ import {
 
 export default function AiCfoPage() {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { summary } = useDashboardData();
   const userId = user?.id ?? "";
   const companyId = user?.company_id ?? "";
@@ -226,7 +229,7 @@ export default function AiCfoPage() {
             className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-500 transition-colors"
           >
             <ArrowLeft size={16} />
-            Kembali
+            {tx(language, "Back", "Kembali")}
           </Link>
           <div className="flex items-center gap-2">
             <button
@@ -239,7 +242,7 @@ export default function AiCfoPage() {
               }`}
             >
               <PanelLeft size={16} />
-              <span className="hidden sm:inline">Riwayat</span>
+              <span className="hidden sm:inline">{tx(language, "History", "Riwayat")}</span>
             </button>
             <button
               type="button"
@@ -247,7 +250,7 @@ export default function AiCfoPage() {
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-500/10 px-3 py-1.5 rounded-lg transition-colors"
             >
               <MessageSquarePlus size={16} />
-              <span className="hidden sm:inline">Baru</span>
+              <span className="hidden sm:inline">{tx(language, "New", "Baru")}</span>
             </button>
           </div>
         </div>
@@ -283,8 +286,8 @@ export default function AiCfoPage() {
                   type="button"
                   onClick={() => setHistoryOpen(true)}
                   className="p-2 rounded-lg text-gray-500 hover:bg-white/60 dark:hover:bg-gray-800 transition-colors shrink-0"
-                  title="Buka riwayat chat"
-                  aria-label="Buka riwayat chat"
+                  title={tx(language, "Open chat history", "Buka riwayat chat")}
+                  aria-label={tx(language, "Open chat history", "Buka riwayat chat")}
                 >
                   <PanelLeft size={18} />
                 </button>
@@ -299,7 +302,7 @@ export default function AiCfoPage() {
                 <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
                   {activeSessionId
                     ? sessions.find((s) => s.id === activeSessionId)?.title
-                    : "Percakapan baru"}
+                    : tx(language, "New conversation", "Percakapan baru")}
                 </p>
               </div>
             </div>

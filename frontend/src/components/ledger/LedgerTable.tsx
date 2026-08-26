@@ -3,6 +3,8 @@ import type {
   LedgerLine,
   NormalBalance,
 } from "../../types/ledger";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import {
   SpinnerIcon,
   formatIDR,
@@ -26,17 +28,17 @@ interface LedgerTableProps {
 function balanceSideLabel(
   normalBalance: NormalBalance,
   balance: number,
+  language: "en" | "id",
   withNormalHint = false,
 ): string {
-  // Backend menyimpan saldo relatif ke sisi normal: positif = sisi normal.
   const onNormalSide = balance >= 0;
   const side = onNormalSide
     ? normalBalance
     : normalBalance === "Debit"
-      ? "Kredit"
-      : "Debit";
+      ? tx(language, "Credit", "Kredit")
+      : tx(language, "Debit", "Debit");
   if (!withNormalHint) return side;
-  return onNormalSide ? `${side} (normal)` : `${side} (terbalik)`;
+  return onNormalSide ? `${side} (${tx(language, "normal", "normal")})` : `${side} (${tx(language, "reversed", "terbalik")})`;
 }
 
 /** Huruf sisi saldo (D/K) sesuai normal balance akun, bukan asumsi "positif = Debit". */
@@ -53,13 +55,13 @@ function balanceSideLetter(
   return side === "Debit" ? "D" : "K";
 }
 
-const HEADERS = [
-  "Tanggal",
-  "No. Jurnal",
-  "Keterangan",
-  "Debit",
-  "Kredit",
-  "Saldo",
+const HEADERS_KEYS = [
+  "date",
+  "journalNo",
+  "description",
+  "debit",
+  "credit",
+  "balance",
 ] as const;
 
 export function LedgerTable({
@@ -68,6 +70,7 @@ export function LedgerTable({
   error,
   onRetry,
 }: LedgerTableProps) {
+  const { language } = useLanguage();
   const {
     page,
     setPage,
@@ -86,7 +89,7 @@ export function LedgerTable({
     return (
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md py-20 flex flex-col items-center gap-3 text-gray-400">
         <SpinnerIcon className="w-6 h-6" />
-        <span className="text-sm">Memuat buku besar...</span>
+        <span className="text-sm">{tx(language, "Loading ledger...", "Memuat buku besar...")}</span>
       </div>
     );
   }
@@ -101,7 +104,7 @@ export function LedgerTable({
           onClick={onRetry}
           className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300"
         >
-          Coba Lagi
+          {tx(language, "Try Again", "Coba Lagi")}
         </button>
       </div>
     );
@@ -112,7 +115,7 @@ export function LedgerTable({
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md py-20 flex flex-col items-center gap-3">
         <BookOpen size={40} className="text-gray-300 dark:text-gray-600" />
         <p className="text-sm text-gray-400">
-          Pilih akun dan periode untuk melihat buku besar
+          {tx(language, "Select an account and period to view the ledger", "Pilih akun dan periode untuk melihat buku besar")}
         </p>
       </div>
     );
@@ -138,30 +141,31 @@ export function LedgerTable({
         period={period?.name}
         startDate={startDate}
         endDate={endDate}
+        language={language}
       />
 
       {/* ── Summary stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
-          label="Saldo Awal"
+          label={tx(language, "Opening Balance", "Saldo Awal")}
           value={formatIDRCompact(Math.abs(openingBalance))}
-          sub={balanceSideLabel(account.normalBalance, openingBalance)}
+          sub={balanceSideLabel(account.normalBalance, openingBalance, language)}
           colorClass="text-gray-500 dark:text-gray-400"
         />
         <StatCard
-          label="Total Debit"
+          label={tx(language, "Total Debit", "Total Debit")}
           value={formatIDRCompact(totalDebit)}
           colorClass="text-primary-600 dark:text-primary-400"
         />
         <StatCard
-          label="Total Kredit"
+          label={tx(language, "Total Credit", "Total Kredit")}
           value={formatIDRCompact(totalCredit)}
           colorClass="text-emerald-600 dark:text-emerald-400"
         />
         <StatCard
-          label="Saldo Akhir"
+          label={tx(language, "Closing Balance", "Saldo Akhir")}
           value={formatIDRCompact(Math.abs(closingBalance))}
-          sub={balanceSideLabel(account.normalBalance, closingBalance, true)}
+          sub={balanceSideLabel(account.normalBalance, closingBalance, language, true)}
           colorClass="text-primary-600 dark:text-primary-400"
         />
       </div>
@@ -172,20 +176,29 @@ export function LedgerTable({
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
-                {HEADERS.map((h, i) => {
+                {HEADERS_KEYS.map((key, i) => {
+                  const headerLabels: Record<string, string> = {
+                    date: tx(language, "Date", "Tanggal"),
+                    journalNo: tx(language, "Journal No.", "No. Jurnal"),
+                    description: tx(language, "Description", "Keterangan"),
+                    debit: tx(language, "Debit", "Debit"),
+                    credit: tx(language, "Credit", "Kredit"),
+                    balance: tx(language, "Balance", "Saldo"),
+                  };
+                  const h = headerLabels[key];
                   const minW =
-                    h === "Tanggal"
+                    key === "date"
                       ? "min-w-[100px]"
-                      : h === "No. Jurnal"
+                      : key === "journalNo"
                         ? "min-w-[130px]"
-                        : h === "Keterangan"
+                        : key === "description"
                           ? "min-w-[220px]"
-                          : h === "Debit" || h === "Kredit"
+                          : key === "debit" || key === "credit"
                             ? "min-w-[150px]"
                             : "min-w-[180px]";
                   return (
                     <th
-                      key={h}
+                      key={key}
                       className={`px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${minW} ${
                         i >= 3 ? "text-right" : "text-left"
                       }`}
@@ -202,6 +215,7 @@ export function LedgerTable({
                 balance={openingBalance}
                 date={startDate}
                 normalBalance={account.normalBalance}
+                language={language}
               />
 
               {lines.length === 0 ? (
@@ -210,7 +224,7 @@ export function LedgerTable({
                     colSpan={6}
                     className="px-4 py-12 text-center text-sm text-gray-400"
                   >
-                    Tidak ada transaksi pada periode ini
+                    {tx(language, "No transactions in this period", "Tidak ada transaksi pada periode ini")}
                   </td>
                 </tr>
               ) : (
@@ -219,6 +233,7 @@ export function LedgerTable({
                     key={line.id}
                     line={line}
                     normalBalance={account.normalBalance}
+                    language={language}
                   />
                 ))
               )}
@@ -229,6 +244,7 @@ export function LedgerTable({
                 totalDebit={totalDebit}
                 totalCredit={totalCredit}
                 normalBalance={account.normalBalance}
+                language={language}
               />
             </tfoot>
           </table>
@@ -247,18 +263,18 @@ export function LedgerTable({
             onPrev={prev}
             onNext={next}
             onGoTo={setPage}
-            itemLabel="transaksi"
+            itemLabel={tx(language, "transactions", "transaksi")}
           />
         )}
 
         {/* Footer */}
         <div className="px-4 py-2.5 border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col sm:flex-row sm:justify-between gap-1 sm:items-center">
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            {lines.length} transaksi · {formatDate(startDate)} –{" "}
-            {formatDate(endDate)}
+            {lines.length} {tx(language, "transactions", "transaksi")} · {formatDate(startDate, language)} –{" "}
+            {formatDate(endDate, language)}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            Saldo normal:{" "}
+            {tx(language, "Normal balance:", "Saldo normal:")}{" "}
             <span
               className={`font-medium ${account.normalBalance === "Debit" ? "text-primary-600 dark:text-primary-400" : "text-emerald-600 dark:text-emerald-400"}`}
             >
@@ -278,11 +294,13 @@ function AccountHeader({
   period,
   startDate,
   endDate,
+  language,
 }: {
   account: LedgerResult["account"];
   period?: string;
   startDate: string;
   endDate: string;
+  language: "en" | "id";
 }) {
   return (
     <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md px-5 py-4">
@@ -299,16 +317,16 @@ function AccountHeader({
           <p className="text-xs text-gray-400 dark:text-gray-500">
             {period ? (
               <>
-                Periode:{" "}
+                {tx(language, "Period:", "Periode:")}{" "}
                 <span className="text-gray-600 dark:text-gray-300">
                   {period}
                 </span>
               </>
             ) : (
               <>
-                Rentang:{" "}
+                {tx(language, "Range:", "Rentang:")}{" "}
                 <span className="text-gray-600 dark:text-gray-300">
-                  {formatDate(startDate)} — {formatDate(endDate)}
+                  {formatDate(startDate, language)} — {formatDate(endDate, language)}
                 </span>
               </>
             )}
@@ -322,7 +340,7 @@ function AccountHeader({
                 : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
             }`}
           >
-            Saldo Normal: {account.normalBalance}
+            {tx(language, "Normal Balance:", "Saldo Normal:")} {account.normalBalance}
           </span>
         </div>
       </div>
@@ -336,10 +354,12 @@ function OpeningRow({
   balance,
   date,
   normalBalance,
+  language,
 }: {
   balance: number;
   date: string;
   normalBalance: NormalBalance;
+  language: "en" | "id";
 }) {
   // Saldo awal di kolom Debit/Kredit sesuai sisi normal akun
   // (positif = sisi normal, negatif = sisi berlawanan).
@@ -352,12 +372,12 @@ function OpeningRow({
   return (
     <tr className="bg-gray-50/50 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800/50">
       <td className="px-4 py-2.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-        {formatDateShort(date)}
+        {formatDateShort(date, language)}
       </td>
       <td className="px-4 py-2.5 whitespace-nowrap" />
       <td className="px-4 py-2.5">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 italic">
-          Saldo Awal
+          {tx(language, "Opening Balance", "Saldo Awal")}
         </span>
       </td>
       <td className="px-4 py-2.5 text-right whitespace-nowrap">
@@ -392,9 +412,11 @@ function OpeningRow({
 function LedgerRow({
   line,
   normalBalance,
+  language,
 }: {
   line: LedgerLine;
   normalBalance: NormalBalance;
+  language: "en" | "id";
 }) {
   // Backend: saldo positif = sesuai sisi normal akun
   const isNormalSide = line.balance >= 0;
@@ -405,7 +427,7 @@ function LedgerRow({
   return (
     <tr className="hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">
       <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap">
-        {formatDateShort(line.date)}
+        {formatDateShort(line.date, language)}
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <span className="font-mono text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-1.5 py-0.5 rounded-md border border-primary-200 dark:border-primary-500/20">
@@ -456,11 +478,13 @@ function ClosingRow({
   totalDebit,
   totalCredit,
   normalBalance,
+  language,
 }: {
   balance: number;
   totalDebit: number;
   totalCredit: number;
   normalBalance: NormalBalance;
+  language: "en" | "id";
 }) {
   return (
     <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
@@ -468,7 +492,7 @@ function ClosingRow({
         colSpan={3}
         className="px-4 py-2.5 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
       >
-        Total / Saldo Akhir
+        {tx(language, "Total / Closing Balance", "Total / Saldo Akhir")}
       </td>
       <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <span className="text-sm font-semibold text-primary-700 dark:text-primary-400 tabular-nums">

@@ -16,6 +16,8 @@ import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 type UserData = {
   id: string;
@@ -36,15 +38,16 @@ const roleColors: Record<string, string> = {
   akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
 };
 
-const ALL_ROLES = [
-  { value: "owner", label: "Owner" },
-  { value: "akuntan", label: "Akuntan" },
-];
-
 export default function UserManagementPage() {
   const { user: me } = useAuth();
   const { toast } = useToast();
+  const { language } = useLanguage();
   const myRole = me?.role || "owner";
+
+  const ALL_ROLES = [
+    { value: "owner", label: tx(language, "Owner", "Pemilik") },
+    { value: "akuntan", label: tx(language, "Accountant", "Akuntan") },
+  ];
 
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,13 +84,13 @@ export default function UserManagementPage() {
       await fetchUsers();
       toast({
         variant: "success",
-        title: "Role berhasil diubah",
-        message: `Role diperbarui menjadi ${newRole}.`,
+        title: tx(language, "Role updated successfully", "Role berhasil diubah"),
+        message: tx(language, `Role updated to ${newRole}.`, `Role diperbarui menjadi ${newRole}.`),
       });
     } catch (err: any) {
       toast({
         variant: "error",
-        title: "Gagal mengubah role",
+        title: tx(language, "Failed to change role", "Gagal mengubah role"),
         message: getErrorMessage(err),
       });
     }
@@ -95,7 +98,7 @@ export default function UserManagementPage() {
 
   const handleDelete = async (userId: string, userName: string) => {
     if (
-      !window.confirm(`Hapus user "${userName}"? Tindakan ini tidak bisa dibatalkan.`)
+      !window.confirm(tx(language, `Delete user "${userName}"? This action cannot be undone.`, `Hapus user "${userName}"? Tindakan ini tidak bisa dibatalkan.`))
     )
       return;
     try {
@@ -103,13 +106,13 @@ export default function UserManagementPage() {
       await fetchUsers();
       toast({
         variant: "success",
-        title: "User dihapus",
-        message: `${userName} berhasil dihapus dari perusahaan.`,
+        title: tx(language, "User deleted", "User dihapus"),
+        message: tx(language, `${userName} has been removed from the company.`, `${userName} berhasil dihapus dari perusahaan.`),
       });
     } catch (err: any) {
       toast({
         variant: "error",
-        title: "Gagal menghapus user",
+        title: tx(language, "Failed to delete user", "Gagal menghapus user"),
         message: getErrorMessage(err),
       });
     }
@@ -118,11 +121,11 @@ export default function UserManagementPage() {
   const handleAddMember = async () => {
     setFormError("");
     if (!form.name.trim() || !form.email.trim()) {
-      setFormError("Nama dan email wajib diisi.");
+      setFormError(tx(language, "Name and email are required.", "Nama dan email wajib diisi."));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setFormError("Format email tidak valid.");
+      setFormError(tx(language, "Invalid email format.", "Format email tidak valid."));
       return;
     }
     setSubmitting(true);
@@ -143,7 +146,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <AppShell title="Manajemen User" description="Kelola role dan akses user dalam perusahaan Anda">
+    <AppShell title={tx(language, "User Management", "Manajemen User")} description={tx(language, "Manage user roles and access in your company", "Kelola role dan akses user dalam perusahaan Anda")}>
       {/* ── Tombol Tambah Anggota ── */}
       <div className="flex justify-end mb-4">
         <button
@@ -154,7 +157,7 @@ export default function UserManagementPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium shadow-md hover:shadow-lg hover:opacity-95 transition-all"
         >
           <Plus size={16} />
-          Tambah Anggota
+          {tx(language, "Add Member", "Tambah Anggota")}
         </button>
       </div>
 
@@ -169,13 +172,13 @@ export default function UserManagementPage() {
       ) : users.length === 0 ? (
         <div className="text-center py-20 text-gray-500">
           <UserCog size={48} className="mx-auto mb-3 opacity-40" />
-          <p>Belum ada user lain di perusahaan ini.</p>
+          <p>{tx(language, "No other users in this company yet.", "Belum ada user lain di perusahaan ini.")}</p>
           <button
             onClick={() => setShowModal(true)}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
           >
             <Plus size={16} />
-            Tambah Anggota Pertama
+            {tx(language, "Add First Member", "Tambah Anggota Pertama")}
           </button>
         </div>
       ) : (
@@ -222,12 +225,12 @@ export default function UserManagementPage() {
                       onChange={(v) => handleRoleChange(user.id, v)}
                       options={roleOptions}
                       minWidth={140}
-                      placeholder="Pilih role"
+                      placeholder={tx(language, "Select role", "Pilih role")}
                     />
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-white/5 cursor-not-allowed select-none">
                       <Lock size={12} />
-                      Owner
+                      {tx(language, "Owner", "Pemilik")}
                     </span>
                   )}
 
@@ -235,7 +238,7 @@ export default function UserManagementPage() {
                     <button
                       onClick={() => handleDelete(user.id, user.name)}
                       className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                      title="Hapus user"
+                      title={tx(language, "Delete user", "Hapus user")}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -267,7 +270,7 @@ export default function UserManagementPage() {
             >
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Tambah Anggota
+                  {tx(language, "Add Member", "Tambah Anggota")}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
@@ -280,13 +283,13 @@ export default function UserManagementPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                    Nama Lengkap
+                    {tx(language, "Full Name", "Nama Lengkap")}
                   </label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="cth: Budi Santoso"
+                    placeholder={tx(language, "e.g. Budi Santoso", "cth: Budi Santoso")}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 outline-none transition"
                   />
                 </div>
@@ -299,7 +302,7 @@ export default function UserManagementPage() {
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="cth: budi@perusahaan.com"
+                    placeholder={tx(language, "e.g. budi@company.com", "cth: budi@perusahaan.com")}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 outline-none transition"
                   />
                 </div>
@@ -316,8 +319,7 @@ export default function UserManagementPage() {
                     fullWidth
                   />
                   <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-                    Anggota baru otomatis menerima email berisi link untuk mengatur
-                    kata sandi.
+                    {tx(language, "New members automatically receive an email with a link to set their password.", "Anggota baru otomatis menerima email berisi link untuk mengatur kata sandi.")}
                   </p>
                 </div>
 
@@ -332,7 +334,7 @@ export default function UserManagementPage() {
                   disabled={submitting}
                   className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-semibold shadow-md hover:opacity-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? "Menyimpan..." : "Kirim Undangan"}
+                  {submitting ? tx(language, "Saving...", "Menyimpan...") : tx(language, "Send Invitation", "Kirim Undangan")}
                 </button>
               </div>
             </motion.div>

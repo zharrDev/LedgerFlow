@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import { AppShell } from "../components/AppShell";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
+import { MONTHS_FULL } from "../i18n/months";
 import { getBalanceSheet, getPeriods } from "../services/reportsService";
 import type { BalanceSheetResponse, Period } from "../types/reports";
 import { BalanceSheetCard } from "../components/reports/BalanceSheetCard";
@@ -47,6 +50,7 @@ function toExportData(bs: BalanceSheetResponse): BalanceSheetData {
 
 export default function BalanceSheet() {
   const { user } = useAuth();
+  const { language } = useLanguage();
 
   const [periods, setPeriods] = useState<Period[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
@@ -86,7 +90,7 @@ export default function BalanceSheet() {
       }
     } catch (err) {
       console.error("Error fetching periods:", err);
-      setError("Gagal memuat data periode");
+      setError(tx(language, "Failed to load period data", "Gagal memuat data periode"));
     } finally {
       setIsLoadingPeriods(false);
     }
@@ -101,7 +105,7 @@ export default function BalanceSheet() {
       setBalanceSheet(data);
     } catch (err) {
       console.error("Error fetching balance sheet:", err);
-      setError("Gagal memuat data neraca");
+      setError(tx(language, "Failed to load balance sheet data", "Gagal memuat data neraca"));
       setBalanceSheet(null);
     } finally {
       setIsLoadingReport(false);
@@ -109,21 +113,7 @@ export default function BalanceSheet() {
   };
 
   const getPeriodLabel = (period: Period): string => {
-    const monthNames = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-    return `${monthNames[period.month - 1]} ${period.year}`;
+    return `${MONTHS_FULL[language][period.month - 1]} ${period.year}`;
   };
 
   const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
@@ -131,7 +121,7 @@ export default function BalanceSheet() {
     const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
     const periodLabel = selectedPeriod
       ? getPeriodLabel(selectedPeriod)
-      : "Semua Periode";
+      : tx(language, "All Periods", "Semua Periode");
     const exportData = toExportData(balanceSheet);
     if (format === "excel") exportBalanceSheetExcel(exportData, periodLabel);
     else if (format === "word") exportBalanceSheetWord(exportData, periodLabel);
@@ -145,7 +135,7 @@ export default function BalanceSheet() {
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
-              Memuat data periode...
+              {tx(language, "Loading period data...", "Memuat data periode...")}
             </p>
           </div>
         </div>
@@ -182,7 +172,7 @@ export default function BalanceSheet() {
                   className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center flex-wrap"
                   style={{ perspective: "600px" }}
                 >
-                  {"Neraca (Balance Sheet)".split("").map((char, i) => (
+                  {tx(language, "Balance Sheet", "Neraca").split("").map((char, i) => (
                     <motion.span
                       key={i}
                       variants={{
@@ -206,7 +196,7 @@ export default function BalanceSheet() {
                   ))}
                 </motion.h1>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Laporan Posisi Keuangan Perusahaan
+                  {tx(language, "Company Financial Position Report", "Laporan Posisi Keuangan Perusahaan")}
                 </p>
               </div>
             </div>
@@ -216,15 +206,15 @@ export default function BalanceSheet() {
                   value={selectedPeriodId}
                   onChange={handlePeriodChange}
                   disabled={isLoadingReport}
-                  placeholder="Pilih Periode"
+                  placeholder={tx(language, "Select Period", "Pilih Periode")}
                   icon={<Calendar size={16} />}
                   minWidth={210}
                   options={[
-                    { value: "", label: "Semua Periode" },
+                    { value: "", label: tx(language, "All Periods", "Semua Periode") },
                     ...periods.map((period) => ({
                       value: period.id,
                       label: `${getPeriodLabel(period)}${
-                        period.status === "closed" ? " (Tutup)" : ""
+                        period.status === "closed" ? tx(language, " (Closed)", " (Tutup)") : ""
                       }`,
                     })),
                   ]}
@@ -249,7 +239,7 @@ export default function BalanceSheet() {
               <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-lg font-semibold text-rose-900 dark:text-rose-100 mb-1">
-                  Terjadi Kesalahan
+                  {tx(language, "An Error Occurred", "Terjadi Kesalahan")}
                 </h3>
                 <p className="text-rose-700 dark:text-rose-300">{error}</p>
               </div>
@@ -262,7 +252,7 @@ export default function BalanceSheet() {
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">
-                Memuat laporan neraca...
+                {tx(language, "Loading balance sheet...", "Memuat laporan neraca...")}
               </p>
             </div>
           </div>
@@ -276,10 +266,10 @@ export default function BalanceSheet() {
           >
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Belum Ada Data
+              {tx(language, "No Data Yet", "Belum Ada Data")}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Belum ada data neraca untuk periode ini
+              {tx(language, "No balance sheet data for this period", "Belum ada data neraca untuk periode ini")}
             </p>
           </motion.div>
         )}
@@ -288,19 +278,19 @@ export default function BalanceSheet() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <BalanceSheetCard
-                title="Total Aset"
+                title={tx(language, "Total Assets", "Total Aset")}
                 amount={balanceSheet.total_assets}
                 icon={TrendingUp}
                 index={0}
               />
               <BalanceSheetCard
-                title="Total Liabilitas"
+                title={tx(language, "Total Liabilities", "Total Liabilitas")}
                 amount={balanceSheet.total_liabilities}
                 icon={TrendingDown}
                 index={1}
               />
               <BalanceSheetCard
-                title="Total Ekuitas"
+                title={tx(language, "Total Equity", "Total Ekuitas")}
                 amount={balanceSheet.total_equity}
                 icon={Wallet}
                 index={2}
@@ -331,13 +321,13 @@ export default function BalanceSheet() {
                   className="rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-4 sm:p-5"
                 >
                   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
-                    Komposisi Neraca
+                    {tx(language, "Balance Sheet Composition", "Komposisi Neraca")}
                   </p>
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
                         <span className="text-gray-700 dark:text-gray-200 font-medium">
-                          Aset
+                          {tx(language, "Assets", "Aset")}
                         </span>
                         <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200 shrink-0">
                           {assetsPct}%
@@ -353,7 +343,7 @@ export default function BalanceSheet() {
                     <div>
                       <div className="flex justify-between text-xs sm:text-sm mb-1.5 gap-2">
                         <span className="text-gray-700 dark:text-gray-200 font-medium truncate">
-                          Liabilitas + Ekuitas
+                          {tx(language, "Liabilities + Equity", "Liabilitas + Ekuitas")}
                         </span>
                         <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-200 shrink-0">
                           {lePct}%
@@ -381,27 +371,27 @@ export default function BalanceSheet() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="min-w-0 rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg">
                   <BalanceSheetTable
-                    title="ASET"
+                    title={tx(language, "ASSETS", "ASET")}
                     accounts={balanceSheet.assets}
                     total={balanceSheet.total_assets}
-                    emptyMessage="Tidak ada data aset"
+                    emptyMessage={tx(language, "No asset data", "Tidak ada data aset")}
                   />
                 </div>
                 <div className="min-w-0 rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg">
                   <BalanceSheetTable
-                    title="LIABILITAS"
+                    title={tx(language, "LIABILITIES", "LIABILITAS")}
                     accounts={balanceSheet.liabilities}
                     total={balanceSheet.total_liabilities}
-                    emptyMessage="Tidak ada data liabilitas"
+                    emptyMessage={tx(language, "No liability data", "Tidak ada data liabilitas")}
                   />
                 </div>
               </div>
               <div className="mx-auto w-full lg:w-[calc(50%-0.625rem)] min-w-0 rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg">
                 <BalanceSheetTable
-                  title="EKUITAS"
+                  title={tx(language, "EQUITY", "EKUITAS")}
                   accounts={balanceSheet.equity}
                   total={balanceSheet.total_equity}
-                  emptyMessage="Tidak ada data ekuitas"
+                  emptyMessage={tx(language, "No equity data", "Tidak ada data ekuitas")}
                 />
               </div>
             </motion.div>

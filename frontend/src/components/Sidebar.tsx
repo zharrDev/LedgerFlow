@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import {
   Building2,
   ChevronRight,
@@ -121,7 +122,7 @@ const SidebarContent = ({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-gray-900 dark:text-white truncate leading-tight flex items-center gap-1">
-                {companyName || "My Company"}
+                {companyName || tx(language, "My Company", "Perusahaan Saya")}
               </p>
               <p className="text-[10px] text-gray-500 dark:text-gray-400 capitalize truncate leading-tight mt-0.5">
                 {user.role || "owner"} · {user.name?.split(" ")[0] || "User"}

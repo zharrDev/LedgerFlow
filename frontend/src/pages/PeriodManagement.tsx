@@ -4,6 +4,9 @@ import { AppShell } from "../components/AppShell";
 import { periodsService } from "../services/periodsService";
 import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
+import { MONTHS_FULL } from "../i18n/months";
 import { pushNotification } from "../components/Header";
 import { HoverDropdown } from "../components/HoverDropdown";
 import {
@@ -50,6 +53,7 @@ const letterVariants: Variants = {
 };
 
 export default function PeriodManagement() {
+  const { language } = useLanguage();
   const { user } = useAuth();
   const [periods, setPeriods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,14 +93,14 @@ export default function PeriodManagement() {
       await fetchPeriods();
       pushNotification({
         type: "period_opened",
-        title: "Periode Dibuka",
-        message: `Periode ${monthNames[newMonth - 1]} ${newYear} sekarang aktif dan siap menerima transaksi.`,
+        title: tx(language, "Period Opened", "Periode Dibuka"),
+        message: tx(language, `Period ${MONTHS_FULL[language][newMonth - 1]} ${newYear} is now active and ready for transactions.`, `Periode ${MONTHS_FULL[language][newMonth - 1]} ${newYear} sekarang aktif dan siap menerima transaksi.`),
         link: "/period-management",
       });
     } catch (err: any) {
       pushNotification({
         type: "period_opened",
-        title: "Gagal Membuka Periode",
+        title: tx(language, "Failed to Open Period", "Gagal Membuka Periode"),
         message: getErrorMessage(err),
         link: "/period-management",
       });
@@ -123,35 +127,21 @@ export default function PeriodManagement() {
       setConfirmClose(null);
       pushNotification({
         type: "period_closed",
-        title: "Periode Ditutup",
-        message:
-          "Periode berhasil ditutup. Transaksi tidak bisa diposting lagi ke periode ini.",
+        title: tx(language, "Period Closed", "Periode Ditutup"),
+        message: tx(language, "Period successfully closed. Transactions can no longer be posted to this period.", "Periode berhasil ditutup. Transaksi tidak bisa diposting lagi ke periode ini."),
         link: "/period-management",
       });
     } catch {
       pushNotification({
         type: "period_closed",
-        title: "Gagal Menutup Periode",
-        message: "Terjadi kesalahan saat menutup periode.",
+        title: tx(language, "Failed to Close Period", "Gagal Menutup Periode"),
+        message: tx(language, "An error occurred while closing the period.", "Terjadi kesalahan saat menutup periode."),
         link: "/period-management",
       });
     }
   };
 
-  const monthNames = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
+  const monthNames = MONTHS_FULL[language];
 
   // Stats
   const openCount = periods.filter((p) => p.status === "open").length;
@@ -183,7 +173,7 @@ export default function PeriodManagement() {
               className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
               style={{ perspective: "600px" }}
             >
-              {"Manajemen Periode".split("").map((char, i) => (
+              {tx(language, "Period Management", "Manajemen Periode").split("").map((char, i) => (
                 <motion.span
                   key={i}
                   variants={letterVariants}
@@ -196,7 +186,7 @@ export default function PeriodManagement() {
             </motion.h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Kontrol pembukaan dan penutupan buku bulanan
+            {tx(language, "Control monthly book opening and closing", "Kontrol pembukaan dan penutupan buku bulanan")}
           </p>
         </motion.div>
 
@@ -208,19 +198,19 @@ export default function PeriodManagement() {
           {[
             {
               icon: Calendar,
-              label: "Total Periode",
+              label: tx(language, "Total Periods", "Total Periode"),
               value: periods.length,
               color: "primary",
             },
             {
               icon: Unlock,
-              label: "Terbuka",
+              label: tx(language, "Open", "Terbuka"),
               value: openCount,
               color: "emerald",
             },
             {
               icon: Lock,
-              label: "Tertutup",
+              label: tx(language, "Closed", "Tertutup"),
               value: closedCount,
               color: "gray",
             },
@@ -264,7 +254,7 @@ export default function PeriodManagement() {
             <div className="p-1.5 rounded-lg bg-primary-50 dark:bg-primary-500/10 text-primary-500">
               <Plus size={14} />
             </div>
-            Buka Periode Baru
+            {tx(language, "Open New Period", "Buka Periode Baru")}
           </h2>
           <form
             onSubmit={handleOpenPeriod}
@@ -272,7 +262,7 @@ export default function PeriodManagement() {
           >
             <div className="flex-1 min-w-[150px]">
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                Tahun
+                {tx(language, "Year", "Tahun")}
               </label>
               <input
                 type="number"
@@ -283,7 +273,7 @@ export default function PeriodManagement() {
             </div>
             <div className="flex-1 min-w-[150px]">
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                Bulan
+                {tx(language, "Month", "Bulan")}
               </label>
               <HoverDropdown
                 value={String(newMonth)}
@@ -306,7 +296,7 @@ export default function PeriodManagement() {
               ) : (
                 <Plus size={16} />
               )}
-              Buka Periode
+              {tx(language, "Open Period", "Buka Periode")}
             </button>
           </form>
         </motion.div>
@@ -320,14 +310,14 @@ export default function PeriodManagement() {
           <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center gap-2">
             <Calendar size={16} className="text-primary-500" />
             <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Daftar Periode
+              {tx(language, "Period List", "Daftar Periode")}
             </h2>
           </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
               <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
-              <p className="text-sm">Memuat periode...</p>
+              <p className="text-sm">{tx(language, "Loading periods...", "Memuat periode...")}</p>
             </div>
           ) : periods.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
@@ -335,9 +325,9 @@ export default function PeriodManagement() {
                 size={40}
                 className="text-gray-300 dark:text-gray-600"
               />
-              <p className="text-sm">Belum ada periode</p>
+              <p className="text-sm">{tx(language, "No periods yet", "Belum ada periode")}</p>
               <p className="text-xs text-gray-400">
-                Buat periode pertama Anda untuk memulai pencatatan
+                {tx(language, "Create your first period to start recording", "Buat periode pertama Anda untuk memulai pencatatan")}
               </p>
             </div>
           ) : (
@@ -369,7 +359,7 @@ export default function PeriodManagement() {
                         {monthNames[p.month - 1]} {p.year}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">
-                        Periode buku bulanan
+                        {tx(language, "Monthly book period", "Periode buku bulanan")}
                       </p>
                     </div>
                   </div>
@@ -377,11 +367,11 @@ export default function PeriodManagement() {
                   <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                     {p.status === "open" ? (
                       <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200 dark:border-emerald-500/20 uppercase">
-                        <Unlock size={12} /> Terbuka
+                        <Unlock size={12} /> {tx(language, "Open", "Terbuka")}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 dark:border-gray-700 uppercase">
-                        <Lock size={12} /> Tertutup
+                        <Lock size={12} /> {tx(language, "Closed", "Tertutup")}
                       </span>
                     )}
 
@@ -390,12 +380,12 @@ export default function PeriodManagement() {
                         onClick={() => setConfirmClose(p.id)}
                         className="flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-500/20 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       >
-                        Tutup Buku
+                        {tx(language, "Close Books", "Tutup Buku")}
                       </button>
                     )}
                     {p.status === "closed" && (
                       <span className="flex items-center gap-1 text-xs text-gray-400">
-                        <CheckCircle2 size={12} /> Selesai
+                        <CheckCircle2 size={12} /> {tx(language, "Completed", "Selesai")}
                       </span>
                     )}
                   </div>
@@ -407,9 +397,9 @@ export default function PeriodManagement() {
           {/* Footer */}
           {periods.length > 0 && (
             <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span>{periods.length} periode</span>
+              <span>{periods.length} {tx(language, "periods", "periode")}</span>
               <span>
-                {openCount} terbuka · {closedCount} tertutup
+                {openCount} {tx(language, "open", "terbuka")} · {closedCount} {tx(language, "closed", "tertutup")}
               </span>
             </div>
           )}
@@ -454,17 +444,13 @@ export default function PeriodManagement() {
 
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Konfirmasi Tahun Periode
+                      {tx(language, "Confirm Period Year", "Konfirmasi Tahun Periode")}
                     </h3>
                     <p className="text-primary-500 font-semibold text-sm mt-0.5">
                       {monthNames[newMonth - 1]} {newYear}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                      Tahun ini jauh dari tahun berjalan ({" "}
-                      {new Date().getFullYear()}). Pastikan ini memang yang
-                      Anda maksud — periode bisa dibuka untuk tahun apa saja
-                      (historis atau masa depan), tapi salah ketik akan membuat
-                      periode yang salah.
+                      {tx(language, `This year is far from the current year (${new Date().getFullYear()}). Make sure this is what you intend — periods can be opened for any year (historical or future), but a typo will create the wrong period.`, `Tahun ini jauh dari tahun berjalan (${new Date().getFullYear()}). Pastikan ini memang yang Anda maksud — periode bisa dibuka untuk tahun apa saja (historis atau masa depan), tapi salah ketik akan membuat periode yang salah.`)}
                     </p>
                   </div>
                 </div>
@@ -475,7 +461,7 @@ export default function PeriodManagement() {
                   onClick={() => setConfirmYearFar(false)}
                   className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                 >
-                  Batal
+                  {tx(language, "Cancel", "Batal")}
                 </button>
                 <motion.button
                   whileHover={{ scale: 1.03 }}
@@ -487,7 +473,7 @@ export default function PeriodManagement() {
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold shadow-md transition-all"
                 >
                   <Calendar size={15} />
-                  Ya, Buka Periode Ini
+                  {tx(language, "Yes, Open This Period", "Ya, Buka Periode Ini")}
                 </motion.button>
               </div>
             </motion.div>
@@ -533,7 +519,7 @@ export default function PeriodManagement() {
 
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Tutup Periode?
+                      {tx(language, "Close Period?", "Tutup Periode?")}
                     </h3>
                     {closingPeriod && (
                       <p className="text-primary-500 font-semibold text-sm mt-0.5">
@@ -542,11 +528,10 @@ export default function PeriodManagement() {
                       </p>
                     )}
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                      Setelah ditutup, transaksi tidak bisa diposting lagi ke
-                      periode ini.
+                      {tx(language, "After closing, transactions can no longer be posted to this period.", "Setelah ditutup, transaksi tidak bisa diposting lagi ke periode ini.")}
                       <span className="font-semibold text-rose-500 dark:text-rose-400">
                         {" "}
-                        Tindakan ini tidak dapat dibatalkan.
+                        {tx(language, "This action cannot be undone.", "Tindakan ini tidak dapat dibatalkan.")}
                       </span>
                     </p>
                   </div>
@@ -558,7 +543,7 @@ export default function PeriodManagement() {
                   onClick={() => setConfirmClose(null)}
                   className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                 >
-                  Batal
+                  {tx(language, "Cancel", "Batal")}
                 </button>
                 <motion.button
                   whileHover={{ scale: 1.03 }}
@@ -567,7 +552,7 @@ export default function PeriodManagement() {
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white text-sm font-semibold shadow-md transition-all"
                 >
                   <Lock size={15} />
-                  Ya, Tutup Periode
+                  {tx(language, "Yes, Close Period", "Ya, Tutup Periode")}
                 </motion.button>
               </div>
             </motion.div>

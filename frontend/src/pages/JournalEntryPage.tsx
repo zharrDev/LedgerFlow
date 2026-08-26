@@ -8,6 +8,8 @@ import type {
 } from "../types/journal";
 import { useJournal } from "../hooks/useJournal";
 import { usePagination } from "../hooks/usePagination";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { journalService } from "../services/journalService";
 import { JournalList } from "../components/journal/JournalList";
 import { JournalForm } from "../components/journal/JournalForm";
@@ -123,6 +125,7 @@ export default function JournalEntryPage() {
     deleteEntry,
   } = useJournal();
 
+  const { language } = useLanguage();
   const { user } = useAuth();
   const myRole = user?.role || "";
   // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus = owner only.
@@ -245,10 +248,10 @@ export default function JournalEntryPage() {
 
   const pageTitle =
     view.mode === "new"
-      ? "Buat Entry Baru"
+      ? tx(language, "New Entry", "Buat Entry Baru")
       : view.mode === "detail"
         ? view.entry.number
-        : "Journal Entry";
+        : tx(language, "Journal Entry", "Entri Jurnal");
 
   return (
     <AppShell>
@@ -270,7 +273,7 @@ export default function JournalEntryPage() {
                 onClick={() => setView({ mode: "list" })}
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 mb-2 transition-colors"
               >
-                <ArrowLeft size={12} /> Journal Entry
+                <ArrowLeft size={12} /> {tx(language, "Journal Entry", "Entri Jurnal")}
               </button>
             )}
             <div className="flex items-center gap-2.5 mb-1">
@@ -298,10 +301,10 @@ export default function JournalEntryPage() {
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               {view.mode === "list"
-                ? "Pencatatan transaksi ke dalam buku jurnal umum"
+                ? tx(language, "Record transactions in the general journal", "Pencatatan transaksi ke dalam buku jurnal umum")
                 : view.mode === "new"
-                  ? "Isi detail transaksi dan pastikan debit = kredit"
-                  : "Detail journal entry"}
+                  ? tx(language, "Fill in transaction details and ensure debit = credit", "Isi detail transaksi dan pastikan debit = kredit")
+                  : tx(language, "Journal entry detail", "Detail entri jurnal")}
             </p>
           </div>
 
@@ -315,7 +318,7 @@ export default function JournalEntryPage() {
                 size={16}
                 className="transition-transform group-hover:rotate-90"
               />
-              Buat Entry Baru
+              {tx(language, "New Entry", "Buat Entry Baru")}
             </button>
           )}
         </motion.div>
@@ -342,8 +345,8 @@ export default function JournalEntryPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {quota.planName === "free" ? "Plan Free" : "Kuota Jurnal"} —{" "}
-                  {quota.left} jurnal tersisa bulan ini (dari {quota.max})
+                  {quota.planName === "free" ? "Plan Free" : tx(language, "Journal Quota", "Kuota Jurnal")} —{" "}
+                  {tx(language, `journals remaining this month (of ${quota.max})`, `jurnal tersisa bulan ini (dari ${quota.max})`)}
                 </p>
                 <div className="mt-1.5 h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700/60 overflow-hidden">
                   <div
@@ -367,7 +370,7 @@ export default function JournalEntryPage() {
                 href="/pricing"
                 className="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
               >
-                Upgrade ke Pro
+                {tx(language, "Upgrade to Pro", "Upgrade ke Pro")}
               </a>
             )}
           </motion.div>
@@ -377,27 +380,27 @@ export default function JournalEntryPage() {
         {view.mode === "list" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="Total Entry"
+              label={tx(language, "Total Entries", "Total Entry")}
               value={stats.total}
               icon={<FileEdit size={14} className="text-gray-500" />}
               accent="bg-gray-500/10"
             />
             <StatCard
-              label="Posted"
+              label={tx(language, "Posted", "Diposting")}
               value={stats.posted}
               icon={<CheckCircle size={14} className="text-emerald-500" />}
               accent="bg-emerald-500/10"
             />
             <StatCard
-              label="Draft"
+              label={tx(language, "Draft", "Draf")}
               value={stats.draft}
               icon={<FileEdit size={14} className="text-amber-500" />}
               accent="bg-amber-500/10"
             />
             <StatCard
-              label="Total Posted"
+              label={tx(language, "Total Posted", "Total Diposting")}
               value={fmtIDR(stats.totalPostedDebit)}
-              sub="Total Debit"
+              sub={tx(language, "Total Debit", "Total Debit")}
               icon={<CircleDollarSign size={14} className="text-primary-500" />}
               accent="bg-primary-500/10"
             />
@@ -417,7 +420,7 @@ export default function JournalEntryPage() {
               />
               <input
                 type="text"
-                placeholder="Cari nomor atau deskripsi..."
+                placeholder={tx(language, "Search number or description...", "Cari nomor atau deskripsi...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
@@ -429,9 +432,9 @@ export default function JournalEntryPage() {
               onChange={(v) => setFilterStatus(v as FilterStatus)}
               minWidth={150}
               options={[
-                { value: "all", label: "Semua Status" },
-                { value: "active", label: "Posted" },
-                { value: "inactive", label: "Draft" },
+                { value: "all", label: tx(language, "All Status", "Semua Status") },
+                { value: "active", label: tx(language, "Posted", "Diposting") },
+                { value: "inactive", label: tx(language, "Draft", "Draf") },
               ]}
             />
 
@@ -444,7 +447,7 @@ export default function JournalEntryPage() {
                 }}
                 className="flex items-center gap-1 px-3 py-2 text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
-                <X size={12} /> Reset
+                <X size={12} /> {tx(language, "Reset", "Reset")}
               </button>
             )}
           </motion.div>
@@ -475,12 +478,12 @@ export default function JournalEntryPage() {
                 onPrev: pagination.prev,
                 onNext: pagination.next,
                 onGoTo: pagination.goTo,
-                itemLabel: "entry",
+                itemLabel: tx(language, "entries", "entry"),
                 summary: (
                   <>
-                    {pagination.startIndex}–{pagination.endIndex} dari{" "}
-                    {pagination.totalItems} entry · {stats.posted} posted ·{" "}
-                    {stats.draft} draft · Total Debit:{" "}
+                    {pagination.startIndex}–{pagination.endIndex} {tx(language, "of", "dari")}{" "}
+                    {pagination.totalItems} {tx(language, "entries", "entry")} · {stats.posted} {tx(language, "posted", "diposting")} ·{" "}
+                    {stats.draft} {tx(language, "draft", "draf")} · {tx(language, "Total Debit:", "Total Debit:")}{" "}
                     <span className="font-medium text-gray-700 dark:text-gray-300 tabular-nums">
                       {fmtIDR(stats.totalPostedDebit)}
                     </span>

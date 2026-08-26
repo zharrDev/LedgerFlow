@@ -125,16 +125,18 @@ export function formatIDRCompact(value: number): string {
   return formatCurrency(value);
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
+export function formatDate(iso: string, language: "en" | "id" = "id"): string {
+  const locale = language === "en" ? "en-US" : "id-ID";
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
-export function formatDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
+export function formatDateShort(iso: string, language: "en" | "id" = "id"): string {
+  const locale = language === "en" ? "en-US" : "id-ID";
+  return new Date(iso).toLocaleDateString(locale, {
     day: "2-digit",
     month: "short",
   });

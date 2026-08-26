@@ -1,4 +1,6 @@
 import { Bot, BarChart3, Wallet, TrendingDown, ShieldAlert } from "lucide-react";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import { getTimeGreeting, getQuickActions } from "../../utils/aiCfoPrompt";
 import type { DashboardSummary } from "../../hooks/useDashboardData";
 
@@ -24,9 +26,10 @@ export function AiCfoWelcome({
   onQuickAction,
   todaySessionCount = 0,
 }: AiCfoWelcomeProps) {
-  const greeting = getTimeGreeting();
+  const { language } = useLanguage();
+  const greeting = getTimeGreeting(language);
   const firstName = userName?.split(" ")[0] || "there";
-  const actions = getQuickActions(summary);
+  const actions = getQuickActions(summary, language);
 
   return (
     <div className="flex flex-col items-center justify-center text-center px-2 py-8 sm:py-12">
@@ -38,19 +41,18 @@ export function AiCfoWelcome({
         {greeting}, {firstName}!
       </h2>
       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
-        Saya AI CFO LedgerFlow — siap membantu analisis keuangan bisnis Anda.
-        Ada yang bisa saya bantu hari ini?
+        {tx(language, "I'm AI CFO LedgerFlow — ready to help analyze your business finances. How can I help you today?", "Saya AI CFO LedgerFlow — siap membantu analisis keuangan bisnis Anda. Ada yang bisa saya bantu hari ini?")}
       </p>
       {todaySessionCount > 0 && (
         <p className="mt-2 text-xs text-primary-600 dark:text-primary-400">
-          {todaySessionCount} percakapan tersimpan — klik{" "}
-          <strong className="font-medium">Riwayat</strong> di atas untuk melanjutkan.
+          {todaySessionCount} {tx(language, "saved conversations — click", "percakapan tersimpan — klik")}{" "}
+          <strong className="font-medium">{tx(language, "History", "Riwayat")}</strong> {tx(language, "above to continue.", "di atas untuk melanjutkan.")}
         </p>
       )}
 
       <div className="mt-8 w-full max-w-md">
         <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-          Pilih topik atau ketik pertanyaan sendiri
+          {tx(language, "Choose a topic or type your own question", "Pilih topik atau ketik pertanyaan sendiri")}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {actions.map((action) => {

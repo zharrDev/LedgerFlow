@@ -1,4 +1,6 @@
 import { AlertCircle } from "lucide-react";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import { AiCfoFormattedContent } from "./AiCfoFormattedContent";
 
 export type AiChatRole = "user" | "assistant" | "error";
@@ -14,6 +16,7 @@ interface AiCfoChatBubbleProps {
 }
 
 export function AiCfoChatBubble({ message }: AiCfoChatBubbleProps) {
+  const { language } = useLanguage();
   return (
     <div
       className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
@@ -30,7 +33,7 @@ export function AiCfoChatBubble({ message }: AiCfoChatBubbleProps) {
         {message.role === "error" && (
           <span className="flex items-start gap-1.5 font-medium mb-1">
             <AlertCircle size={14} className="shrink-0 mt-0.5" />
-            AI tidak tersedia
+            {tx(language, "AI not available", "AI tidak tersedia")}
           </span>
         )}
         {message.role === "assistant" ? (

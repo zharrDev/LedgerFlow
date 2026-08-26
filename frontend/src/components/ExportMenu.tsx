@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, FileText, FileSpreadsheet, FileDown } from "lucide-react";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 export type ExportFormat = "pdf" | "excel" | "word" | "csv";
 
@@ -30,9 +32,10 @@ export function ExportMenu({
   disabled,
   formats = ["pdf", "excel", "word"],
   onExport,
-  label = "Export",
+  label,
   align = "right",
 }: ExportMenuProps) {
+  const { language } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,7 +58,7 @@ export function ExportMenu({
         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-darkCard shadow-sm"
       >
         <Download size={16} />
-        <span className="text-sm font-medium">{label}</span>
+        <span className="text-sm font-medium">{label ?? tx(language, "Export", "Ekspor")}</span>
       </button>
 
       <AnimatePresence>

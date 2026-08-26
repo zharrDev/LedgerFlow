@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { useToast } from "../context/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { formatPrice, cancelSubscription } from "../services/paymentService";
 import { getErrorMessage } from "../lib/errorMessage";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -62,6 +64,7 @@ type CurrencyOption = (typeof CURRENCIES)[number]["code"];
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { language } = useLanguage();
   const [saved, setSaved] = useState(false);
 
   // Subscription
@@ -132,8 +135,8 @@ export default function SettingsPage() {
     setSaved(true);
     toast({
       variant: "success",
-      title: "Pengaturan Disimpan!",
-      message: "Semua preferensi Anda berhasil diperbarui.",
+      title: tx(language, "Settings Saved!", "Pengaturan Disimpan!"),
+      message: tx(language, "All your preferences have been updated successfully.", "Semua preferensi Anda berhasil diperbarui."),
     });
     setTimeout(() => setSaved(false), 2000);
 
@@ -152,7 +155,7 @@ export default function SettingsPage() {
   const handleCancelSubscription = async () => {
     if (
       !confirm(
-        "Yakin ingin cancel subscription? Anda akan dikembalikan ke plan Free.",
+        tx(language, "Are you sure you want to cancel subscription? You will be returned to the Free plan.", "Yakin ingin cancel subscription? Anda akan dikembalikan ke plan Free."),
       )
     )
       return;
@@ -161,14 +164,14 @@ export default function SettingsPage() {
       await cancelSubscription("User requested from settings");
       toast({
         variant: "success",
-        title: "Subscription Dibatalkan",
-        message: "Anda telah dikembalikan ke plan Free.",
+        title: tx(language, "Subscription Cancelled", "Subscription Dibatalkan"),
+        message: tx(language, "You have been returned to the Free plan.", "Anda telah dikembalikan ke plan Free."),
       });
       refreshSub();
     } catch (err: any) {
       toast({
         variant: "error",
-        title: "Gagal",
+        title: tx(language, "Failed", "Gagal"),
         message: getErrorMessage(err),
       });
     } finally {
@@ -181,9 +184,9 @@ export default function SettingsPage() {
     label: string;
     icon: React.ReactNode;
   }[] = [
-    { value: "light", label: "Light", icon: <Sun size={16} /> },
-    { value: "dark", label: "Dark", icon: <Moon size={16} /> },
-    { value: "system", label: "System", icon: <Monitor size={16} /> },
+    { value: "light", label: tx(language, "Light", "Terang"), icon: <Sun size={16} /> },
+    { value: "dark", label: tx(language, "Dark", "Gelap"), icon: <Moon size={16} /> },
+    { value: "system", label: tx(language, "System", "Sistem"), icon: <Monitor size={16} /> },
   ];
 
   return (
@@ -207,7 +210,7 @@ export default function SettingsPage() {
               className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
               style={{ perspective: "600px" }}
             >
-              {"Settings".split("").map((char, i) => (
+              {tx(language, "Settings", "Pengaturan").split("").map((char, i) => (
                 <motion.span
                   key={i}
                   variants={letterVariants}
@@ -220,7 +223,7 @@ export default function SettingsPage() {
             </motion.h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Kelola preferensi dan konfigurasi aplikasi
+            {tx(language, "Manage app preferences and configuration", "Kelola preferensi dan konfigurasi aplikasi")}
           </p>
         </motion.div>
 
@@ -232,7 +235,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <CreditCard size={18} className="text-primary-500" />
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Langganan
+              {tx(language, "Subscription", "Langganan")}
             </h3>
           </div>
 
@@ -241,14 +244,14 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Plan Saat Ini
+                  {tx(language, "Current Plan", "Plan Saat Ini")}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {subscription?.plans?.display_name || "Free"}
                 </p>
               </div>
               <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                {formatPrice(subscription?.plans?.price_monthly || 0)}/bulan
+                {formatPrice(subscription?.plans?.price_monthly || 0)}/{tx(language, "month", "bulan")}
               </span>
             </div>
 
@@ -256,7 +259,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Status
+                  {tx(language, "Status", "Status")}
                 </p>
               </div>
               <span
@@ -267,10 +270,10 @@ export default function SettingsPage() {
                 }`}
               >
                 {isTrial
-                  ? `Trial (${trialDaysLeft} hari tersisa)`
+                  ? tx(language, `Trial (${trialDaysLeft} days left)`, `Trial (${trialDaysLeft} hari tersisa)`)
                   : isActive
-                    ? "Aktif"
-                    : "Tidak Aktif"}
+                    ? tx(language, "Active", "Aktif")
+                    : tx(language, "Inactive", "Tidak Aktif")}
               </span>
             </div>
 
@@ -279,8 +282,8 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
                 <Sparkles size={14} className="text-amber-500" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Trial berakhir dalam <strong>{trialDaysLeft} hari</strong>.
-                  Upgrade sekarang agar tidak kehilangan akses fitur premium.
+                  {tx(language, "Trial ends in", "Trial berakhir dalam")} <strong>{trialDaysLeft} {tx(language, "days", "hari")}</strong>.
+                  {tx(language, "Upgrade now to not lose access to premium features.", "Upgrade sekarang agar tidak kehilangan akses fitur premium.")}
                 </p>
               </div>
             )}
@@ -290,13 +293,13 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    Siklus Pembayaran
+                    {tx(language, "Billing Cycle", "Siklus Pembayaran")}
                   </p>
                 </div>
                 <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
                   {subscription?.billing_cycle === "yearly"
-                    ? "Tahunan"
-                    : "Bulanan"}
+                    ? tx(language, "Yearly", "Tahunan")
+                    : tx(language, "Monthly", "Bulanan")}
                 </span>
               </div>
             )}
@@ -306,7 +309,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    Berlaku Sampai
+                    {tx(language, "Valid Until", "Berlaku Sampai")}
                   </p>
                 </div>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -330,7 +333,7 @@ export default function SettingsPage() {
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium hover:shadow-md transition-all shadow-sm"
                 >
                   <Crown size={14} className="flex-shrink-0" />
-                  <span>Upgrade Plan</span>
+                  <span>{tx(language, "Upgrade Plan", "Upgrade Plan")}</span>
                   <ArrowRight size={14} className="flex-shrink-0" />
                 </Link>
               )}
@@ -341,7 +344,7 @@ export default function SettingsPage() {
                     to="/pricing"
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium hover:shadow-md transition-all shadow-sm"
                   >
-                    <span>Ganti Plan</span>
+                    <span>{tx(language, "Change Plan", "Ganti Plan")}</span>
                   </Link>
                   <button
                     onClick={handleCancelSubscription}
@@ -349,7 +352,7 @@ export default function SettingsPage() {
                     className="flex-1 py-2.5 px-4 text-center rounded-xl border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50 shadow-sm"
                   >
                     <span>
-                      {cancelLoading ? "Membatalkan..." : "Cancel Subscription"}
+                      {cancelLoading ? tx(language, "Cancelling...", "Membatalkan...") : tx(language, "Cancel Subscription", "Cancel Subscription")}
                     </span>
                   </button>
                 </>
@@ -366,14 +369,14 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <Palette size={18} className="text-primary-500" />
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Tampilan
+              {tx(language, "Appearance", "Tampilan")}
             </h3>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Tema
+                {tx(language, "Theme", "Tema")}
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {themeOptions.map((opt) => (
@@ -420,13 +423,13 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <Globe size={18} className="text-primary-500" />
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Regional
+              {tx(language, "Regional", "Regional")}
             </h3>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Mata Uang Default
+              {tx(language, "Default Currency", "Mata Uang Default")}
             </label>
             <HoverDropdown
               value={currency}
@@ -436,8 +439,7 @@ export default function SettingsPage() {
               options={CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
             />
             <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-              Mata uang ini dipakai untuk menampilkan semua angka di aplikasi
-              (jurnal, buku besar, laporan, dashboard) dan hasil export.
+              {tx(language, "This currency is used to display all numbers in the app (journal, ledger, reports, dashboard) and export results.", "Mata uang ini dipakai untuk menampilkan semua angka di aplikasi (jurnal, buku besar, laporan, dashboard) dan hasil export.")}
             </p>
           </div>
         </motion.div>
@@ -450,7 +452,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <Bell size={18} className="text-primary-500" />
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Notifikasi
+              {tx(language, "Notifications", "Notifikasi")}
             </h3>
           </div>
 
@@ -458,23 +460,23 @@ export default function SettingsPage() {
             {[
               {
                 key: "email" as const,
-                label: "Notifikasi Email",
-                desc: "Terima update via email",
+                label: tx(language, "Email Notifications", "Notifikasi Email"),
+                desc: tx(language, "Receive updates via email", "Terima update via email"),
               },
               {
                 key: "push" as const,
-                label: "Push Notification",
-                desc: "Notifikasi di browser",
+                label: tx(language, "Push Notification", "Push Notification"),
+                desc: tx(language, "Notifications in browser", "Notifikasi di browser"),
               },
               {
                 key: "journal" as const,
-                label: "Journal Entry Baru",
-                desc: "Notif saat ada entry baru",
+                label: tx(language, "New Journal Entry", "Journal Entry Baru"),
+                desc: tx(language, "Notify when there is a new entry", "Notif saat ada entry baru"),
               },
               {
                 key: "report" as const,
-                label: "Laporan Bulanan",
-                desc: "Ringkasan laporan tiap bulan",
+                label: tx(language, "Monthly Report", "Laporan Bulanan"),
+                desc: tx(language, "Summary of reports each month", "Ringkasan laporan tiap bulan"),
               },
             ].map((item) => (
               <div
@@ -523,7 +525,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <Shield size={18} className="text-primary-500" />
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Keamanan
+              {tx(language, "Security", "Keamanan")}
             </h3>
           </div>
 
@@ -531,10 +533,10 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Autentikasi
+                  {tx(language, "Authentication", "Autentikasi")}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Metode login yang aktif
+                  {tx(language, "Active login method", "Metode login yang aktif")}
                 </p>
               </div>
               <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
@@ -544,14 +546,14 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Sesi Aktif
+                  {tx(language, "Active Session", "Sesi Aktif")}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Perangkat yang sedang login
+                  {tx(language, "Device currently logged in", "Perangkat yang sedang login")}
                 </p>
               </div>
               <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                1 perangkat
+                {tx(language, "1 device", "1 perangkat")}
               </span>
             </div>
           </div>
@@ -570,10 +572,10 @@ export default function SettingsPage() {
             {saved ? (
               <>
                 <Check size={16} className="flex-shrink-0" />{" "}
-                <span>Tersimpan!</span>
+                <span>{tx(language, "Saved!", "Tersimpan!")}</span>
               </>
             ) : (
-              <span>Simpan Pengaturan</span>
+              <span>{tx(language, "Save Settings", "Simpan Pengaturan")}</span>
             )}
           </button>
         </motion.div>

@@ -10,6 +10,8 @@ import {
   IconActivate,
 } from "./AccountShared";
 import { TablePagination, type TablePaginationProps } from "./TablePagination";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 interface AccountTableProps {
   accounts: Account[];
@@ -32,12 +34,13 @@ export function AccountTable({
   toggling,
   pagination,
 }: AccountTableProps) {
+  const { language } = useLanguage();
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3 z-10">
         <SpinnerIcon className="w-6 h-6 animate-spin text-primary-500" />
-        <p className="text-sm">Loading accounts...</p>
+        <p className="text-sm">{tx(language, "Loading accounts...", "Memuat akun...")}</p>
       </div>
     );
   }
@@ -50,7 +53,7 @@ export function AccountTable({
           onClick={onRetry}
           className="text-primary-500 text-sm hover:underline"
         >
-          Try again
+          {tx(language, "Try again", "Coba lagi")}
         </button>
       </div>
     );
@@ -64,12 +67,12 @@ export function AccountTable({
           <thead className="bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700/50 top-0 z-1">
             <tr>
               {[
-                "Code",
-                "Account Name",
-                "Type",
-                "Normal Balance",
-                "Status",
-                "Actions",
+                tx(language, "Code", "Kode"),
+                tx(language, "Account Name", "Nama Akun"),
+                tx(language, "Type", "Tipe"),
+                tx(language, "Normal Balance", "Saldo Normal"),
+                tx(language, "Status", "Status"),
+                tx(language, "Actions", "Aksi"),
               ].map((header) => (
                 <th
                   key={header}
@@ -100,9 +103,9 @@ export function AccountTable({
                         />
                       </svg>
                     </div>
-                    <p>No accounts found</p>
+                    <p>{tx(language, "No accounts found", "Tidak ada akun ditemukan")}</p>
                     <p className="text-xs">
-                      Create your first account to get started
+                      {tx(language, "Create your first account to get started", "Buat akun pertama Anda untuk memulai")}
                     </p>
                   </div>
                 </td>
@@ -140,12 +143,12 @@ export function AccountTable({
                   <td className="px-5 py-3">
                     <div className="flex gap-2">
                       <ActionButton
-                        title="Edit"
+                        title={tx(language, "Edit", "Edit")}
                         onClick={() => onEdit(account)}
                         icon={<IconEdit />}
                       />
                       <ActionButton
-                        title={account.isActive ? "Deactivate" : "Activate"}
+                        title={account.isActive ? tx(language, "Deactivate", "Nonaktifkan") : tx(language, "Activate", "Aktifkan")}
                         onClick={() => onToggleStatus(account)}
                         danger={account.isActive}
                         icon={

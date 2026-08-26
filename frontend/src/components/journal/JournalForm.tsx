@@ -21,6 +21,8 @@ import {
   IconSend,
 } from "./JournalShared";
 import { useAccounts } from "../../hooks/useAccounts";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import type { Account } from "../../types/account";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
@@ -73,6 +75,7 @@ function buildPayload(
 
 // ─── Component ────────────────────────────────────────────────────────
 export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
+  const { language } = useLanguage();
   const [form, setForm] = useState<JournalEntryForm>({
     ...DEFAULT_JOURNAL_FORM,
     lines: [makeEmptyLine(), makeEmptyLine()],
@@ -92,8 +95,8 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
 
   const validate = useCallback((): boolean => {
     const e: JournalFormErrors = {};
-    if (!form.date) e.date = "Tanggal wajib diisi";
-    if (!form.description.trim()) e.description = "Deskripsi wajib diisi";
+    if (!form.date) e.date = tx(language, "Date is required", "Tanggal wajib diisi");
+    if (!form.description.trim()) e.description = tx(language, "Description is required", "Deskripsi wajib diisi");
 
     const filledLines = form.lines.filter(
       (l) =>
@@ -102,19 +105,19 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
         parseAmount(l.credit) > 0,
     );
     if (filledLines.length < 2) {
-      e.lines = "Minimal 2 baris akun harus diisi";
+      e.lines = tx(language, "At least 2 account lines must be filled", "Minimal 2 baris akun harus diisi");
     }
 
     const hasDebitLine = form.lines.some((l) => parseAmount(l.debit) > 0);
     const hasCreditLine = form.lines.some((l) => parseAmount(l.credit) > 0);
     if (!hasDebitLine || !hasCreditLine) {
-      e.lines = "Harus ada minimal 1 baris debit dan 1 baris kredit";
+      e.lines = tx(language, "Must have at least 1 debit line and 1 credit line", "Harus ada minimal 1 baris debit dan 1 baris kredit");
     }
 
     if (totalDebit === 0 || totalCredit === 0) {
-      e.balance = "Total debit dan kredit tidak boleh nol";
+      e.balance = tx(language, "Total debit and credit must not be zero", "Total debit dan kredit tidak boleh nol");
     } else if (!isBalanced) {
-      e.balance = `Debit dan kredit tidak seimbang (selisih ${new Intl.NumberFormat("id-ID").format(diff)})`;
+      e.balance = tx(language, `Debit and credit are not balanced (difference ${new Intl.NumberFormat(language === "id" ? "id-ID" : "en-US").format(diff)})`, `Debit dan kredit tidak seimbang (selisih ${new Intl.NumberFormat("id-ID").format(diff)})`);
     }
 
     const debitAccounts = new Set<string>();
@@ -125,13 +128,13 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
         !l.accountCode.trim() &&
         (parseAmount(l.debit) > 0 || parseAmount(l.credit) > 0)
       ) {
-        e.lines = "Semua baris yang memiliki nilai harus memilih akun";
+        e.lines = tx(language, "All lines with amounts must select an account", "Semua baris yang memiliki nilai harus memilih akun");
         break;
       }
       if (l.accountCode.trim()) {
         const acc = accounts.find((a) => a.code === l.accountCode.trim());
         if (!acc) {
-          e.lines = `Kode akun ${l.accountCode.trim()} tidak valid`;
+          e.lines = tx(language, `Account code ${l.accountCode.trim()} is invalid`, `Kode akun ${l.accountCode.trim()} tidak valid`);
           break;
         }
 
@@ -140,11 +143,11 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
         const hasCredit = parseAmount(l.credit) > 0;
 
         if (accType === "revenue" && hasDebit) {
-          e.lines = `Akun pendapatan "${acc.code} - ${acc.name}" harus dicatat di sisi KREDIT, bukan Debit.`;
+          e.lines = tx(language, `Revenue account "${acc.code} - ${acc.name}" must be recorded on the CREDIT side, not Debit.`, `Akun pendapatan "${acc.code} - ${acc.name}" harus dicatat di sisi KREDIT, bukan Debit.`);
           break;
         }
         if (accType === "expense" && hasCredit) {
-          e.lines = `Akun beban "${acc.code} - ${acc.name}" harus dicatat di sisi DEBIT, bukan Kredit.`;
+          e.lines = tx(language, `Expense account "${acc.code} - ${acc.name}" must be recorded on the DEBIT side, not Credit.`, `Akun beban "${acc.code} - ${acc.name}" harus dicatat di sisi DEBIT, bukan Kredit.`);
           break;
         }
 
@@ -162,13 +165,13 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
           const acc = accounts.find((a) => a.code === code);
           return acc ? `${code} (${acc.name})` : code;
         });
-        e.lines = `Akun debit dan kredit tidak boleh sama pada jurnal yang sama. Akun beririsan: ${dupNames.join(", ")}`;
+        e.lines = tx(language, `Debit and credit accounts must not be the same in the same journal. Overlapping accounts: ${dupNames.join(", ")}`, `Akun debit dan kredit tidak boleh sama pada jurnal yang sama. Akun beririsan: ${dupNames.join(", ")}`);
       }
     }
 
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [form, totalDebit, totalCredit, isBalanced, diff, accounts]);
+  }, [form, totalDebit, totalCredit, isBalanced, diff, accounts, language]);
 
   const updateLine = useCallback(
     (uid: string, field: keyof JournalLineForm, value: string) => {
@@ -245,12 +248,12 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
       {/* Header fields */}
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md p-5">
         <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-          Informasi Entry
+          {tx(language, "Entry Information", "Informasi Entry")}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-4">
           <div>
             <label className={labelCls}>
-              Tanggal <Required />
+              {tx(language, "Date", "Tanggal")} <Required />
             </label>
             <input
               type="date"
@@ -266,11 +269,11 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
           </div>
           <div>
             <label className={labelCls}>
-              Deskripsi <Required />
+              {tx(language, "Description", "Deskripsi")} <Required />
             </label>
             <input
               type="text"
-              placeholder="Misal: Pembayaran sewa kantor bulan Januari"
+              placeholder={tx(language, "e.g. Office rent payment for January", "Misal: Pembayaran sewa kantor bulan Januari")}
               value={form.description}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 handleChange(() =>
@@ -288,7 +291,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md">
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/80 dark:bg-gray-800/50 rounded-t-2xl">
           <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Baris Jurnal
+            {tx(language, "Journal Lines", "Baris Jurnal")}
           </h2>
           <button
             type="button"
@@ -296,14 +299,14 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors"
           >
             <IconPlus size={13} />
-            Tambah Baris
+            {tx(language, "Add Line", "Tambah Baris")}
           </button>
         </div>
 
         <div className="overflow-x-auto">
           <div className="min-w-[780px]">
             <div className="grid grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/30">
-              {["Akun", "Keterangan", "Debit (Rp)", "Kredit (Rp)", ""].map(
+              {[tx(language, "Account", "Akun"), tx(language, "Description", "Keterangan"), tx(language, "Debit", "Debit"), tx(language, "Credit", "Kredit"), ""].map(
                 (h) => (
                   <span
                     key={h}
@@ -368,7 +371,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
           className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
         >
           <IconArrowLeft size={15} />
-          Kembali
+          {tx(language, "Back", "Kembali")}
         </button>
         <div className="flex flex-wrap gap-2.5">
           {/* Simpan Draft */}
@@ -382,7 +385,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
             ) : (
               <IconCheck size={14} />
             )}
-            Simpan Draft
+            {tx(language, "Save Draft", "Simpan Draft")}
           </button>
 
           {/* Simpan & Post */}
@@ -397,7 +400,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
             ) : (
               <IconSend size={14} />
             )}
-            Simpan & Post
+            {tx(language, "Save & Post", "Simpan & Post")}
           </button>
         </div>
       </div>
@@ -415,6 +418,7 @@ function AccountSelect({
   value: string;
   onChange: (code: string, name: string) => void;
 }) {
+  const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [dropdownPos, setDropdownPos] = useState<{
@@ -497,9 +501,9 @@ function AccountSelect({
       className="z-[9999] bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto scrollbar-none"
     >
       {filtered.length === 0 ? (
-        <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
-          Tidak ada akun ditemukan
-        </div>
+          <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
+            {tx(language, "No accounts found", "Tidak ada akun ditemukan")}
+          </div>
       ) : (
         filtered.map((a) => (
           <div
@@ -537,7 +541,7 @@ function AccountSelect({
             autoFocus
             type="text"
             className="w-full bg-transparent outline-none placeholder-gray-300 dark:placeholder-gray-600"
-            placeholder="Cari kode/nama..."
+            placeholder={tx(language, "Search code/name...", "Cari kode/nama...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -548,7 +552,7 @@ function AccountSelect({
           <span
             className={`w-full truncate ${!displayValue ? "text-gray-400 dark:text-gray-500" : ""}`}
           >
-            {displayValue || "Pilih Akun..."}
+            {displayValue || tx(language, "Select Account...", "Pilih Akun...")}
           </span>
         )}
       </div>
@@ -579,6 +583,7 @@ function JournalLineRow({
   onUpdateAccount,
   onRemove,
 }: LineRowProps) {
+  const { language } = useLanguage();
   const hasDebit = parseFloat(line.debit) > 0;
   const hasCredit = parseFloat(line.credit) > 0;
 
@@ -597,7 +602,7 @@ function JournalLineRow({
       <div>
         <input
           type="text"
-          placeholder="Keterangan baris (opsional)"
+          placeholder={tx(language, "Line description (optional)", "Keterangan baris (opsional)")}
           value={line.description}
           onChange={(e) => onUpdate(line.uid, "description", e.target.value)}
           className={linputCls}
@@ -630,7 +635,7 @@ function JournalLineRow({
           type="button"
           onClick={() => onRemove(line.uid)}
           disabled={!canRemove}
-          title="Hapus baris"
+          title={tx(language, "Delete line", "Hapus baris")}
           className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 disabled:pointer-events-none"
         >
           <IconTrash size={14} />
@@ -656,10 +661,11 @@ function BalanceFooter({
   hasAmounts,
   diff,
 }: BalanceFooterProps) {
+  const { language } = useLanguage();
   const fmt = (n: number) =>
     n === 0
       ? "—"
-      : new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0 }).format(n);
+      : new Intl.NumberFormat(language === "id" ? "id-ID" : "en-US", { minimumFractionDigits: 0 }).format(n);
 
   return (
     <div
@@ -676,19 +682,19 @@ function BalanceFooter({
           (isBalanced ? (
             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
               <CheckCircle2 size={16} />
-              Seimbang
+              {tx(language, "Balanced", "Seimbang")}
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
               <AlertTriangle size={16} />
-              Selisih: {fmt(diff)}
+              {tx(language, "Difference:", "Selisih:")} {fmt(diff)}
             </span>
           ))}
       </div>
       <div className="flex items-center gap-6 text-sm">
         <div className="text-right">
           <p className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">
-            Total Debit
+            {tx(language, "Total Debit", "Total Debit")}
           </p>
           <p className="font-semibold tabular-nums text-primary-700 dark:text-primary-400 mt-0.5">
             {fmt(totalDebit)}
@@ -697,7 +703,7 @@ function BalanceFooter({
         <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
         <div className="text-right">
           <p className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">
-            Total Kredit
+            {tx(language, "Total Credit", "Total Kredit")}
           </p>
           <p className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400 mt-0.5">
             {fmt(totalCredit)}

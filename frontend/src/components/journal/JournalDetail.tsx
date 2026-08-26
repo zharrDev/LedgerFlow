@@ -10,6 +10,8 @@ import {
   formatIDR,
   formatDate,
 } from "./JournalShared";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 
 interface JournalDetailProps {
   entry: JournalEntry;
@@ -31,6 +33,7 @@ export function JournalDetail({
   canPost = true,
   canDelete = true,
 }: JournalDetailProps) {
+  const { language } = useLanguage();
   const isDraft = entry.status === "draft";
   const isBalanced = Math.abs(entry.totalDebit - entry.totalCredit) < 0.005;
 
@@ -54,8 +57,8 @@ export function JournalDetail({
               {entry.description}
             </h2>
             <p className="text-xs text-gray-400 dark:text-gray-500">
-              Tanggal: {formatDate(entry.date)} · Dibuat:{" "}
-              {formatDate(entry.createdAt)}
+              {tx(language, "Date: ", "Tanggal: ")}{formatDate(entry.date, language)} {tx(language, " · Created: ", " · Dibuat: ")}{" "}
+              {formatDate(entry.createdAt, language)}
             </p>
           </div>
 
@@ -69,8 +72,8 @@ export function JournalDetail({
                     disabled={posting || !isBalanced}
                     title={
                       !isBalanced
-                        ? "Entry tidak seimbang — tidak dapat diposting"
-                        : "Posting ke buku besar"
+                        ? tx(language, "Entry is unbalanced — cannot post", "Entry tidak seimbang — tidak dapat diposting")
+                        : tx(language, "Post to ledger", "Posting ke buku besar")
                     }
                     className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl hover:shadow-lg hover:shadow-primary-500/25 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
@@ -79,12 +82,12 @@ export function JournalDetail({
                     ) : (
                       <IconSend size={14} />
                     )}
-                    Post ke Buku Besar
+                    {tx(language, "Post to Ledger", "Post ke Buku Besar")}
                   </button>
                 )}
                 {canDelete && (
                   <ActionButton
-                    title="Hapus draft"
+                    title={tx(language, "Delete draft", "Hapus draft")}
                     onClick={() => onDelete(entry)}
                     icon={<IconTrash size={14} />}
                     variant="danger"
@@ -98,16 +101,16 @@ export function JournalDetail({
         {/* Summary chips */}
         <div className="flex gap-3 mt-4 flex-wrap">
           <Chip
-            label="Total Debit"
+            label={tx(language, "Total Debit", "Total Debit")}
             value={formatIDR(entry.totalDebit)}
             accent="primary"
           />
           <Chip
-            label="Total Kredit"
+            label={tx(language, "Total Credit", "Total Kredit")}
             value={formatIDR(entry.totalCredit)}
             accent="emerald"
           />
-          <Chip label="Baris" value={`${entry.lines?.length ?? 0} akun`} />
+          <Chip label={tx(language, "Lines", "Baris")} value={`${entry.lines?.length ?? 0} ${tx(language, "accounts", "akun")}`} />
           {!isBalanced && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 font-medium">
               <svg
@@ -121,7 +124,7 @@ export function JournalDetail({
               >
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               </svg>
-              Tidak Seimbang
+              {tx(language, "Not Balanced", "Tidak Seimbang")}
             </span>
           )}
         </div>
@@ -131,7 +134,7 @@ export function JournalDetail({
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Baris Jurnal
+            {tx(language, "Journal Lines", "Baris Jurnal")}
           </h3>
         </div>
 
@@ -141,20 +144,20 @@ export function JournalDetail({
               <tr className="border-b border-gray-100 dark:border-gray-800/50">
                 {[
                   "#",
-                  "Kode",
-                  "Nama Akun",
-                  "Keterangan",
-                  "Debit",
-                  "Kredit",
+                  tx(language, "Code", "Kode"),
+                  tx(language, "Account Name", "Nama Akun"),
+                  tx(language, "Description", "Keterangan"),
+                  tx(language, "Debit", "Debit"),
+                  tx(language, "Credit", "Kredit"),
                 ].map((h, i) => {
                   const minW =
                     h === "#"
                       ? "min-w-[40px]"
-                      : h === "Kode"
+                      : i === 1
                         ? "min-w-[100px]"
-                        : h === "Nama Akun"
+                        : i === 2
                           ? "min-w-[180px]"
-                          : h === "Keterangan"
+                          : i === 3
                             ? "min-w-[200px]"
                             : "min-w-[150px]";
                   return (
@@ -216,7 +219,7 @@ export function JournalDetail({
                   colSpan={4}
                   className="px-4 py-3 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
                 >
-                  Total
+                  {tx(language, "Total", "Total")}
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-semibold text-primary-700 dark:text-primary-400 tabular-nums whitespace-nowrap">
                   {formatIDR(entry.totalDebit)}
@@ -238,7 +241,7 @@ export function JournalDetail({
           className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
         >
           <IconArrowLeft size={15} />
-          Kembali ke Daftar
+          {tx(language, "Back to List", "Kembali ke Daftar")}
         </button>
       </div>
     </motion.div>

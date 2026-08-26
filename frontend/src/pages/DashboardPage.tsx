@@ -35,6 +35,10 @@ import {
 } from "lucide-react";
 import type { Period } from "../types/reports";
 import { formatAbsCurrency, getCurrency } from "../utils/currency";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
+import { formatCompact } from "../i18n/compactNumber";
+import { formatDateFull } from "../i18n/dateFormat";
 
 // ─── Animation variants ─────────────────────────────────────────────
 const containerVariants: Variants = {
@@ -56,17 +60,8 @@ const itemVariants: Variants = {
 // ─── Format helpers ─────────────────────────────────────────────────
 const formatIDR = (amount: number) => formatAbsCurrency(amount);
 
-const formatCompact = (amount: number) => {
-  const abs = Math.abs(amount);
-  const symbol =
-    getCurrency() === "IDR" ? "Rp" : getCurrency() === "USD" ? "$" : getCurrency();
-  if (abs >= 1_000_000_000) return `${symbol} ${(amount / 1_000_000_000).toFixed(1)}M`;
-  if (abs >= 1_000_000) return `${symbol} ${(amount / 1_000_000).toFixed(1)}jt`;
-  if (abs >= 1_000) return `${symbol} ${(amount / 1_000).toFixed(0)}rb`;
-  return formatIDR(amount);
-};
-
 export default function DashboardPage() {
+  const { language } = useLanguage();
   const { user } = useAuth();
   const { accounts, loading: accountsLoading } = useAccounts();
   const [periodId, setPeriodId] = useState<string>("");
@@ -105,7 +100,7 @@ export default function DashboardPage() {
   // Opsi periode untuk HoverDropdown
   const periodOptions = useMemo(
     () => [
-      { value: "", label: "Semua Periode (YTD)" },
+      { value: "", label: tx(language, "All Periods (YTD)", "Semua Periode (YTD)") },
       ...periods.map((p) => ({ value: p.id, label: p.name ?? "" })),
     ],
     [periods],
@@ -116,10 +111,10 @@ export default function DashboardPage() {
   const cashFlowChartData: CashFlowDatum[] = useMemo(() => {
     if (!summary) return [];
     const rows = [
-      { name: "Operasi", value: summary.operatingCash ?? 0 },
-      { name: "Investasi", value: summary.investingCash ?? 0 },
-      { name: "Pendanaan", value: summary.financingCash ?? 0 },
-      { name: "Bersih", value: summary.netCashFlow ?? 0 },
+      { name: tx(language, "Operating", "Operasi"), value: summary.operatingCash ?? 0 },
+      { name: tx(language, "Investing", "Investasi"), value: summary.investingCash ?? 0 },
+      { name: tx(language, "Financing", "Pendanaan"), value: summary.financingCash ?? 0 },
+      { name: tx(language, "Net", "Bersih"), value: summary.netCashFlow ?? 0 },
     ];
     return rows.map((r) => ({
       name: r.name,
@@ -130,19 +125,14 @@ export default function DashboardPage() {
   }, [summary]);
 
   const quickActions = [
-    { label: "Jurnal Baru", icon: PlusCircle, href: "/journal-entries" },
-    { label: "Kelola COA", icon: BookOpen, href: "/chart-of-accounts" },
-    { label: "Laba Rugi", icon: FileText, href: "/income-statement" },
-    { label: "Arus Kas", icon: Wallet, href: "/cash-flow" },
+    { label: tx(language, "New Journal", "Jurnal Baru"), icon: PlusCircle, href: "/journal-entries" },
+    { label: tx(language, "Chart of Accounts", "Kelola COA"), icon: BookOpen, href: "/chart-of-accounts" },
+    { label: tx(language, "Income Statement", "Laba Rugi"), icon: FileText, href: "/income-statement" },
+    { label: tx(language, "Cash Flow", "Arus Kas"), icon: Wallet, href: "/cash-flow" },
   ];
 
   const today = new Date();
-  const formattedDate = today.toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const formattedDate = formatDateFull(language, today.toISOString());
 
   // Financial Health Score (sederhana: berdasarkan rasio ekuitas terhadap aset)
   const healthScore = useMemo(() => {
@@ -153,10 +143,10 @@ export default function DashboardPage() {
 
   const healthLabel =
     healthScore >= 70
-      ? "Sehat & Stabil"
+      ? tx(language, "Healthy & Stable", "Sehat & Stabil")
       : healthScore >= 40
-        ? "Cukup Baik"
-        : "Perlu Perhatian";
+        ? tx(language, "Fair", "Cukup Baik")
+        : tx(language, "Needs Attention", "Perlu Perhatian");
 
 
   // SkeletonRow untuk tabel loading
@@ -264,26 +254,27 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] sm:text-xs font-mono text-primary-300 tracking-wider">
-                    FINANCIAL COMMAND CENTER
+                    {tx(language, "FINANCIAL COMMAND CENTER", "PUSAT KOMANDO KEUANGAN")}
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
                   <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold">
-                    Good{" "}
-                    {new Date().getHours() < 12
-                      ? "Morning"
-                      : new Date().getHours() < 18
-                        ? "Afternoon"
-                        : "Evening"}
+                    {tx(language, "Good ", "Selamat ")}
+                    {new Date().getHours() < 11
+                      ? tx(language, "Morning", "Pagi")
+                      : new Date().getHours() < 15
+                        ? tx(language, "Afternoon", "Siang")
+                        : new Date().getHours() < 18
+                          ? tx(language, "Evening", "Sore")
+                          : tx(language, "Evening", "Malam")}
                   </span>
                   ,{" "}
                   <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold text-primary-400">
-                    {user?.name?.split(" ")[0] || "User"}
+                    {user?.name?.split(" ")[0] || tx(language, "User", "Pengguna")}
                   </span>
                 </h1>
                 <p className="text-primary-200/80 text-sm sm:text-base mt-2 max-w-lg">
-                  Here's your financial overview. All systems operational and
-                  ready for action.
+                  {tx(language, "Here's your financial overview. All systems operational and ready for action.", "Berikut ringkasan keuangan Anda. Semua sistem berjalan normal dan siap digunakan.")}
                 </p>
                 <div className="flex flex-wrap gap-2 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm text-gray-400">
                   <span className="flex items-center gap-1.5">
@@ -293,7 +284,7 @@ export default function DashboardPage() {
                     <Building2 size="14" /> {user?.company_name || "LedgerFlow Corp"}
                   </span>
                   <span className="hidden sm:flex items-center gap-1.5">
-                    <Zap size="14" /> Real-time Sync
+                    <Zap size="14" /> {tx(language, "Real-time Sync", "Sinkronisasi Real-time")}
                   </span>
                 </div>
               </div>
@@ -340,8 +331,8 @@ export default function DashboardPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {quota.planName === "free" ? "Plan Free" : "Kuota Jurnal"} —{" "}
-                  {quota.left} jurnal tersisa bulan ini (dari {quota.max})
+                  {quota.planName === "free" ? "Plan Free" : tx(language, "Journal Quota", "Kuota Jurnal")} —{" "}
+                  {quota.left} {tx(language, "journals remaining this month (of ", "jurnal tersisa bulan ini (dari ")}{quota.max})
                 </p>
                 <div className="mt-1.5 h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700/60 overflow-hidden">
                   <div
@@ -365,7 +356,7 @@ export default function DashboardPage() {
                 to="/pricing"
                 className="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors text-center"
               >
-                Upgrade ke Pro
+                {tx(language, "Upgrade to Pro", "Upgrade ke Pro")}
               </Link>
             )}
           </motion.div>
@@ -377,7 +368,7 @@ export default function DashboardPage() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Ringkasan Keuangan
+            {tx(language, "Financial Summary", "Ringkasan Keuangan")}
           </h2>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="w-full sm:w-auto">
@@ -408,34 +399,34 @@ export default function DashboardPage() {
           ) : (
             <>
               <KPICard
-                label="Total Pendapatan"
-                value={formatCompact(summary.totalRevenue)}
+                label={tx(language, "Total Revenue", "Total Pendapatan")}
+                value={formatCompact(language, summary.totalRevenue)}
                 icon={<TrendingUp size="20" className="text-emerald-500" />}
                 iconBg="bg-emerald-500/10"
                 valueColor="text-emerald-500 dark:text-emerald-400"
                 subtitle={
                   <>
-                    <ArrowUpRight size="12" /> Periode berjalan
+                    <ArrowUpRight size="12" /> {tx(language, "Current period", "Periode berjalan")}
                   </>
                 }
                 subtitleColor="text-emerald-600 dark:text-emerald-400"
               />
               <KPICard
-                label="Total Pengeluaran"
-                value={formatCompact(summary.totalExpense)}
+                label={tx(language, "Total Expenses", "Total Pengeluaran")}
+                value={formatCompact(language, summary.totalExpense)}
                 icon={<TrendingDown size="20" className="text-rose-500" />}
                 iconBg="bg-rose-500/10"
                 valueColor="text-rose-500 dark:text-rose-400"
                 subtitle={
                   <>
-                    <ArrowDownRight size="12" /> Periode berjalan
+                    <ArrowDownRight size="12" /> {tx(language, "Current period", "Periode berjalan")}
                   </>
                 }
                 subtitleColor="text-rose-500"
               />
               <KPICard
-                label="Laba Bersih"
-                value={formatCompact(summary.netIncome)}
+                label={tx(language, "Net Income", "Laba Bersih")}
+                value={formatCompact(language, summary.netIncome)}
                 icon={
                   <CircleDollarSign size="20" className="text-primary-500" />
                 }
@@ -453,11 +444,11 @@ export default function DashboardPage() {
                         (summary.netIncome / (summary.totalRevenue || 1)) *
                         100
                       ).toFixed(0)}
-                      % margin
+                      {tx(language, "% margin", "% margin")}
                     </>
                   ) : (
                     <>
-                      <ArrowDownRight size="12" /> Rugi periode ini
+                      <ArrowDownRight size="12" /> {tx(language, "Loss this period", "Rugi periode ini")}
                     </>
                   )
                 }
@@ -468,8 +459,8 @@ export default function DashboardPage() {
                 }
               />
               <KPICard
-                label="Saldo Kas"
-                value={formatCompact(summary.endingCash)}
+                label={tx(language, "Cash Balance", "Saldo Kas")}
+                value={formatCompact(language, summary.endingCash)}
                 icon={<Wallet size="20" className="text-blue-500" />}
                 iconBg="bg-blue-500/10"
                 valueColor="text-blue-500 dark:text-blue-400"
@@ -477,12 +468,12 @@ export default function DashboardPage() {
                   summary.netCashFlow >= 0 ? (
                     <>
                       <ArrowUpRight size="12" className="text-emerald-500" /> +
-                      {formatCompact(summary.netCashFlow)} periode ini
+                      {formatCompact(language, summary.netCashFlow)} {tx(language, "this period", "periode ini")}
                     </>
                   ) : (
                     <>
                       <ArrowDownRight size="12" className="text-rose-500" /> -
-                      {formatCompact(summary.netCashFlow)} periode ini
+                      {formatCompact(language, summary.netCashFlow)} {tx(language, "this period", "periode ini")}
                     </>
                   )
                 }
@@ -501,7 +492,7 @@ export default function DashboardPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Skor Kesehatan
+                {tx(language, "Health Score", "Skor Kesehatan")}
               </h3>
               <BarChart3 size="16" className="text-gray-400" />
             </div>
@@ -580,7 +571,7 @@ export default function DashboardPage() {
                 {healthLabel}
               </p>
               <p className="text-xs text-gray-500 text-center mt-2 max-w-[200px]">
-                Berdasarkan rasio ekuitas terhadap total aset perusahaan.
+                {tx(language, "Based on equity-to-total-assets ratio.", "Berdasarkan rasio ekuitas terhadap total aset perusahaan.")}
               </p>
             </div>
           </motion.div>
@@ -592,15 +583,15 @@ export default function DashboardPage() {
           >
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Monitor Arus Kas
+                {tx(language, "Cash Flow Monitor", "Monitor Arus Kas")}
               </h3>
               <div className="flex items-center gap-3 text-xs  text-gray-700 dark:text-gray-300">
                 <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-cyan-500"></div> Masuk
+                  <div className="w-2 h-2 rounded-full bg-cyan-500"></div> {tx(language, "Inflow", "Masuk")}
                 </span>
                 <span className="flex items-center gap-1  text-gray-700 dark:text-gray-300">
                   <div className="w-2 h-2 rounded-full bg-rose-500"></div>{" "}
-                  Keluar
+                  {tx(language, "Outflow", "Keluar")}
                 </span>
               </div>
             </div>
@@ -612,14 +603,14 @@ export default function DashboardPage() {
               <div>
                 <CashFlowChart
                   data={cashFlowChartData}
-                  formatValue={formatCompact}
+                  formatValue={(v) => formatCompact(language, v)}
                   height={260}
                 />
 
                 {/* Net summary */}
                 <div className="mt-2 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
                   <span className="text-sm text-gray-500">
-                    Perubahan Kas Bersih
+                    {tx(language, "Net Cash Change", "Perubahan Kas Bersih")}
                   </span>
                   <span
                     className={`text-lg font-bold tabular-nums ${
@@ -641,21 +632,21 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
             {
-              label: "Total Aset",
+              label: tx(language, "Total Assets", "Total Aset"),
               value: summary?.totalAssets ?? 0,
               icon: <Landmark size="18" className="text-cyan-500" />,
               color: "cyan",
               link: "/balance-sheet",
             },
             {
-              label: "Total Kewajiban",
+              label: tx(language, "Total Liabilities", "Total Kewajiban"),
               value: summary?.totalLiabilities ?? 0,
               icon: <CreditCard size="18" className="text-amber-500" />,
               color: "amber",
               link: "/balance-sheet",
             },
             {
-              label: "Total Ekuitas",
+              label: tx(language, "Total Equity", "Total Ekuitas"),
               value: summary?.totalEquity ?? 0,
               icon: <Briefcase size="18" className="text-purple-500" />,
               color: "purple",
@@ -682,21 +673,21 @@ export default function DashboardPage() {
                   {item.label}
                 </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white mt-1 tabular-nums">
-                  {formatCompact(item.value)}
+                  {formatCompact(language, item.value)}
                 </p>
-                {item.label === "Total Ekuitas" && (
+                {item.label === tx(language, "Total Equity", "Total Ekuitas") && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
                     {summary?.isBalanced ? (
                       <>
                         <CheckCircle size="12" className="text-emerald-500" />{" "}
                         <span className="text-emerald-600 dark:text-emerald-400">
-                          Neraca Seimbang
+                          {tx(language, "Balance OK", "Neraca Seimbang")}
                         </span>
                       </>
                     ) : (
                       <>
                         <span className="text-rose-500">
-                          ⚠ Neraca tidak seimbang
+                          {tx(language, "⚠ Balance mismatch", "⚠ Neraca tidak seimbang")}
                         </span>
                       </>
                     )}
@@ -716,13 +707,13 @@ export default function DashboardPage() {
           >
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Akun Terbaru
+                {tx(language, "Recent Accounts", "Akun Terbaru")}
               </h3>
               <Link
                 to="/chart-of-accounts"
                 className="text-xs text-primary-500 hover:text-primary-600 font-medium"
               >
-                Lihat Semua →
+                {tx(language, "View All →", "Lihat Semua →")}
               </Link>
             </div>
             <div className="overflow-x-auto">
@@ -730,16 +721,16 @@ export default function DashboardPage() {
                 <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                   <tr>
                     <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase min-w-[100px]">
-                      Code
+                      {tx(language, "Code", "Kode")}
                     </th>
                     <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase min-w-[180px]">
-                      Nama Akun
+                      {tx(language, "Account Name", "Nama Akun")}
                     </th>
                     <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase min-w-[120px]">
-                      Tipe
+                      {tx(language, "Type", "Tipe")}
                     </th>
                     <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase min-w-[120px]">
-                      Status
+                      {tx(language, "Status", "Status")}
                     </th>
                   </tr>
                 </thead>
@@ -756,7 +747,7 @@ export default function DashboardPage() {
                         colSpan={4}
                         className="py-8 text-center text-gray-500"
                       >
-                        Belum ada akun. Buat akun pertama Anda!
+                        {tx(language, "No accounts yet. Create your first account!", "Belum ada akun. Buat akun pertama Anda!")}
                       </td>
                     </tr>
                   ) : (
@@ -787,7 +778,7 @@ export default function DashboardPage() {
                             <div
                               className={`w-1.5 h-1.5 rounded-full ${acc.isActive ? "bg-emerald-500" : "bg-gray-400"}`}
                             ></div>
-                            {acc.isActive ? "Active" : "Inactive"}
+                            {acc.isActive ? tx(language, "Active", "Aktif") : tx(language, "Inactive", "Nonaktif")}
                           </span>
                         </td>
                       </tr>
@@ -808,7 +799,7 @@ export default function DashboardPage() {
                 onPrev={accountsPagination.prev}
                 onNext={accountsPagination.next}
                 onGoTo={accountsPagination.setPage}
-                itemLabel="akun"
+                itemLabel={tx(language, "accounts", "akun")}
               />
             )}
           </motion.div>
@@ -820,7 +811,7 @@ export default function DashboardPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Akses Cepat
+                {tx(language, "Quick Access", "Akses Cepat")}
               </h3>
               <Sparkles size="16" className="text-primary-500" />
             </div>
@@ -835,9 +826,9 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      Laporan Laba Rugi
+                      {tx(language, "Income Statement", "Laporan Laba Rugi")}
                     </p>
-                    <p className="text-xs text-gray-500">Pendapatan & Beban</p>
+                    <p className="text-xs text-gray-500">{tx(language, "Revenue & Expenses", "Pendapatan & Beban")}</p>
                   </div>
                 </div>
                 <ArrowUpRight
@@ -856,10 +847,10 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      Neraca
+                      {tx(language, "Balance Sheet", "Neraca")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      Aset, Kewajiban & Ekuitas
+                      {tx(language, "Assets, Liabilities & Equity", "Aset, Kewajiban & Ekuitas")}
                     </p>
                   </div>
                 </div>
@@ -879,10 +870,10 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      Arus Kas
+                      {tx(language, "Cash Flow", "Arus Kas")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      Metode tidak langsung
+                      {tx(language, "Indirect method", "Metode tidak langsung")}
                     </p>
                   </div>
                 </div>
@@ -902,10 +893,10 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      Buku Besar
+                      {tx(language, "General Ledger", "Buku Besar")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      Riwayat transaksi per akun
+                      {tx(language, "Transaction history per account", "Riwayat transaksi per akun")}
                     </p>
                   </div>
                 </div>

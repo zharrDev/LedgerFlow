@@ -3,6 +3,8 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useAccounts } from "../hooks/useAccounts";
 import { usePagination } from "../hooks/usePagination";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { AppShell } from "../components/AppShell";
 import {
   PlusCircle,
@@ -73,6 +75,7 @@ const letterVariants: Variants = {
 };
 
 export default function ChartOfAccounts() {
+  const { language } = useLanguage();
   const {
     accounts,
     loading,
@@ -156,43 +159,43 @@ export default function ChartOfAccounts() {
 
   const statCards = [
     {
-      label: "Total Accounts",
+      label: tx(language, "Total Accounts", "Total Akun"),
       value: stats.total,
       icon: Database,
       color: "primary",
     },
     {
-      label: "Active Accounts",
+      label: tx(language, "Active Accounts", "Akun Aktif"),
       value: stats.active,
       icon: CheckCircle,
       color: "emerald",
     },
     {
-      label: "Assets",
+      label: tx(language, "Assets", "Aset"),
       value: stats.byType.asset,
       icon: Landmark,
       color: "cyan",
     },
     {
-      label: "Liabilities",
+      label: tx(language, "Liabilities", "Kewajiban"),
       value: stats.byType.liability,
       icon: CreditCard,
       color: "amber",
     },
     {
-      label: "Equity",
+      label: tx(language, "Equity", "Ekuitas"),
       value: stats.byType.equity,
       icon: Briefcase,
       color: "purple",
     },
     {
-      label: "Revenue",
+      label: tx(language, "Revenue", "Pendapatan"),
       value: stats.byType.revenue,
       icon: TrendingUp,
       color: "green",
     },
     {
-      label: "Expenses",
+      label: tx(language, "Expenses", "Beban"),
       value: stats.byType.expense,
       icon: TrendingDown,
       color: "rose",
@@ -200,29 +203,29 @@ export default function ChartOfAccounts() {
   ];
 
   const typeOptions = [
-    { value: "all", label: "All Types" },
-    { value: "asset", label: "Asset" },
-    { value: "liability", label: "Liability" },
-    { value: "equity", label: "Equity" },
-    { value: "revenue", label: "Revenue" },
-    { value: "expense", label: "Expense" },
+    { value: "all", label: tx(language, "All Types", "Semua Tipe") },
+    { value: "asset", label: tx(language, "Asset", "Aset") },
+    { value: "liability", label: tx(language, "Liability", "Kewajiban") },
+    { value: "equity", label: tx(language, "Equity", "Ekuitas") },
+    { value: "revenue", label: tx(language, "Revenue", "Pendapatan") },
+    { value: "expense", label: tx(language, "Expense", "Beban") },
   ];
 
   const statusOptions = [
-    { value: "all", label: "All Status" },
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
+    { value: "all", label: tx(language, "All Status", "Semua Status") },
+    { value: "active", label: tx(language, "Active", "Aktif") },
+    { value: "inactive", label: tx(language, "Inactive", "Nonaktif") },
   ];
 
   const getTypeLabel = (val: string) => {
-    if (val === "all") return "All Types";
+    if (val === "all") return tx(language, "All Types", "Semua Tipe");
     return val.charAt(0).toUpperCase() + val.slice(1);
   };
 
   const getStatusLabel = (val: string) => {
-    if (val === "all") return "All Status";
-    if (val === "active") return "Active";
-    return "Inactive";
+    if (val === "all") return tx(language, "All Status", "Semua Status");
+    if (val === "active") return tx(language, "Active", "Aktif");
+    return tx(language, "Inactive", "Nonaktif");
   };
 
   // ─── Export Handlers ──────────────────────────────────────────────
@@ -268,7 +271,7 @@ export default function ChartOfAccounts() {
       );
       if (isDuplicate) {
         failed++;
-        failures.push(`${acc.code} — ${acc.name}: kode sudah dipakai`);
+        failures.push(`${acc.code} — ${acc.name}: ${tx(language, "code already in use", "kode sudah dipakai")}`);
         continue;
       }
 
@@ -285,13 +288,13 @@ export default function ChartOfAccounts() {
         } else {
           failed++;
           failures.push(
-            `${acc.code} — ${acc.name}: gagal disimpan (mungkin kode sudah dipakai)`,
+            `${acc.code} — ${acc.name}: ${tx(language, "failed to save (code may already be in use)", "gagal disimpan (mungkin kode sudah dipakai)")}`,
           );
         }
       } catch (err) {
         failed++;
         const msg =
-          err instanceof Error ? err.message : "terjadi kesalahan tidak terduga";
+          err instanceof Error ? err.message : tx(language, "an unexpected error occurred", "terjadi kesalahan tidak terduga");
         failures.push(`${acc.code} — ${acc.name}: ${msg}`);
       }
     }
@@ -331,7 +334,7 @@ export default function ChartOfAccounts() {
                 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
                 style={{ perspective: "600px" }}
               >
-                {"Chart of Accounts".split("").map((char, i) => (
+                {tx(language, "Chart of Accounts", "Bagan Akun").split("").map((char, i) => (
                   <motion.span
                     key={i}
                     variants={letterVariants}
@@ -344,7 +347,7 @@ export default function ChartOfAccounts() {
               </motion.h1>
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Manage and organize your financial accounts efficiently.
+              {tx(language, "Manage and organize your financial accounts efficiently.", "Kelola dan organisir akun keuangan Anda secara efisien.")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
@@ -359,7 +362,7 @@ export default function ChartOfAccounts() {
                 size="16"
                 className="transition-transform group-hover:rotate-90"
               />
-              <span>Add Account</span>
+              <span>{tx(language, "Add Account", "Tambah Akun")}</span>
             </button>
 
             {/* Export Dropdown */}
@@ -374,7 +377,7 @@ export default function ChartOfAccounts() {
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors w-full sm:w-auto"
             >
               <Upload size="16" />
-              <span>Import</span>
+              <span>{tx(language, "Import", "Import")}</span>
             </button>
             <input
               ref={fileInputRef}
@@ -422,7 +425,7 @@ export default function ChartOfAccounts() {
             />
             <input
               type="text"
-              placeholder="Search by code or name..."
+              placeholder={tx(language, "Search by code or name...", "Cari berdasarkan kode atau nama...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-darkCard text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all"
@@ -481,12 +484,12 @@ export default function ChartOfAccounts() {
               onPrev: pagination.prev,
               onNext: pagination.next,
               onGoTo: pagination.goTo,
-              itemLabel: "akun",
+              itemLabel: tx(language, "accounts", "akun"),
               summary: (
                 <>
-                  {pagination.startIndex}–{pagination.endIndex} dari{" "}
-                  {pagination.totalItems} (total {stats.total}) · {stats.active}{" "}
-                  aktif · {stats.total - stats.active} nonaktif
+                  {pagination.startIndex}–{pagination.endIndex} {tx(language, "of", "dari")}{" "}
+                  {pagination.totalItems} ({tx(language, "total", "total")} {stats.total}) · {stats.active}{" "}
+                  {tx(language, "active", "aktif")} · {stats.total - stats.active} {tx(language, "inactive", "nonaktif")}
                 </>
               ),
             }}
@@ -541,10 +544,10 @@ export default function ChartOfAccounts() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                      Import Accounts
+                      {tx(language, "Import Accounts", "Import Akun")}
                     </h3>
                     <p className="text-xs text-gray-500">
-                      Upload file CSV untuk tambah akun
+                      {tx(language, "Upload CSV file to add accounts", "Upload file CSV untuk tambah akun")}
                     </p>
                   </div>
                 </div>
@@ -564,7 +567,7 @@ export default function ChartOfAccounts() {
                     <div className="flex items-center gap-2 mb-2">
                       <AlertCircle size={16} className="text-rose-500" />
                       <span className="text-sm font-medium text-rose-700 dark:text-rose-400">
-                        {importErrors.length} peringatan
+                        {importErrors.length} {tx(language, "warnings", "peringatan")}
                       </span>
                     </div>
                     <ul className="space-y-1">
@@ -592,9 +595,9 @@ export default function ChartOfAccounts() {
                     <div className="flex items-center gap-2">
                       <Check size={16} className="text-emerald-500" />
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {importResult.success} akun berhasil diimport
+                        {importResult.success} {tx(language, "accounts imported successfully", "akun berhasil diimport")}
                         {importResult.failed > 0 &&
-                          `, ${importResult.failed} gagal`}
+                          `, ${importResult.failed} ${tx(language, "failed", "gagal")}`}
                       </span>
                     </div>
                     {importResult.errors.length > 0 && (
@@ -618,20 +621,20 @@ export default function ChartOfAccounts() {
                 {importData.length > 0 && !importResult && (
                   <div>
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Preview ({importData.length} akun)
+                      {tx(language, "Preview", "Preview")} ({importData.length} {tx(language, "accounts", "akun")})
                     </p>
                     <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-800/50">
                           <tr>
                             <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500">
-                              Kode
+                              {tx(language, "Code", "Kode")}
                             </th>
                             <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500">
-                              Nama
+                              {tx(language, "Name", "Nama")}
                             </th>
                             <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500">
-                              Tipe
+                              {tx(language, "Type", "Tipe")}
                             </th>
                           </tr>
                         </thead>
@@ -660,7 +663,7 @@ export default function ChartOfAccounts() {
                                 colSpan={3}
                                 className="py-2 px-3 text-center text-xs text-gray-400"
                               >
-                                ... dan {importData.length - 10} akun lainnya
+                                ... {tx(language, "and", "dan")} {importData.length - 10} {tx(language, "more accounts", "akun lainnya")}
                               </td>
                             </tr>
                           )}
@@ -676,7 +679,7 @@ export default function ChartOfAccounts() {
                   className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
                 >
                   <FileDown size={14} />
-                  Download template CSV
+                  {tx(language, "Download CSV template", "Download template CSV")}
                 </button>
               </div>
 
@@ -687,7 +690,7 @@ export default function ChartOfAccounts() {
                   disabled={importing}
                   className="px-4 py-2 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  {importResult ? "Tutup" : "Batal"}
+                  {importResult ? tx(language, "Close", "Tutup") : tx(language, "Cancel", "Batal")}
                 </button>
                 {!importResult && importData.length > 0 && (
                   <button
@@ -698,12 +701,12 @@ export default function ChartOfAccounts() {
                     {importing ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Importing...
+                        {tx(language, "Importing...", "Importing...")}
                       </>
                     ) : (
                       <>
                         <Upload size={14} />
-                        Import {importData.length} Akun
+                        {tx(language, "Import", "Import")} {importData.length} {tx(language, "Accounts", "Akun")}
                       </>
                     )}
                   </button>

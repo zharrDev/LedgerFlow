@@ -13,6 +13,8 @@ import {
   DEFAULT_ACCOUNT_FORM,
   CODE_REGEX,
 } from "../types/constants";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { IconClose, SpinnerIcon } from "./AccountShared";
 
 export function AccountModal({
@@ -31,6 +33,7 @@ export function AccountModal({
   /** Daftar code akun yang sudah ada — untuk cek duplikat sebelum submit */
   existingCodes?: string[];
 }) {
+  const { language } = useLanguage();
   const [form, setForm] = useState<AccountFormData>(DEFAULT_ACCOUNT_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -54,8 +57,8 @@ export function AccountModal({
   const validate = () => {
     const e: FormErrors = {};
     const code = form.code.trim();
-    if (!code) e.code = "Code is required";
-    else if (!CODE_REGEX.test(code)) e.code = "Code must be 3-6 digits";
+    if (!code) e.code = tx(language, "Code is required", "Kode wajib diisi");
+    else if (!CODE_REGEX.test(code)) e.code = tx(language, "Code must be 3-6 digits", "Kode harus 3-6 digit");
     else {
       // Cek duplikat (abaikan code milik akun yang sedang diedit)
       const isDuplicate = existingCodes.some(
@@ -64,9 +67,9 @@ export function AccountModal({
           c.trim().toLowerCase() !== (editAccount?.code ?? "").toLowerCase(),
       );
       if (isDuplicate)
-        e.code = `Code "${code}" sudah dipakai — gunakan code yang unik`;
+        e.code = tx(language, `Code "${code}" is already in use — use a unique code`, `Code "${code}" sudah dipakai — gunakan code yang unik`);
     }
-    if (!form.name.trim()) e.name = "Name is required";
+    if (!form.name.trim()) e.name = tx(language, "Name is required", "Nama wajib diisi");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -82,7 +85,7 @@ export function AccountModal({
         ...prev,
         code:
           prev.code ||
-          "Gagal menyimpan — periksa apakah code sudah dipakai",
+          tx(language, "Failed to save — check if the code is already in use", "Gagal menyimpan — periksa apakah code sudah dipakai"),
       }));
   };
 
@@ -131,7 +134,7 @@ export function AccountModal({
                   )}
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {editAccount ? "Edit Account" : "Add New Account"}
+                  {editAccount ? tx(language, "Edit Account", "Edit Akun") : tx(language, "Add New Account", "Tambah Akun Baru")}
                 </h2>
               </div>
               <button
@@ -148,7 +151,7 @@ export function AccountModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-                    Account Code
+                    {tx(language, "Account Code", "Kode Akun")}
                   </label>
                   <input
                     type="text"
@@ -157,7 +160,7 @@ export function AccountModal({
                       setForm((f) => ({ ...f, code: e.target.value }))
                     }
                     className={`w-full px-3 py-2 text-sm border rounded-xl bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${errors.code ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}
-                    placeholder="e.g. 1000"
+                    placeholder={tx(language, "e.g. 1000", "cth. 1000")}
                   />
                   {errors.code && (
                     <p className="mt-1 text-xs text-red-500">{errors.code}</p>
@@ -165,7 +168,7 @@ export function AccountModal({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-                    Account Name
+                    {tx(language, "Account Name", "Nama Akun")}
                   </label>
                   <input
                     type="text"
@@ -174,7 +177,7 @@ export function AccountModal({
                       setForm((f) => ({ ...f, name: e.target.value }))
                     }
                     className={`w-full px-3 py-2 text-sm border rounded-xl bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 ${errors.name ? "border-red-400" : "border-gray-200 dark:border-gray-700"}`}
-                    placeholder="e.g. Cash in Bank"
+                    placeholder={tx(language, "e.g. Cash in Bank", "cth. Kas di Bank")}
                   />
                   {errors.name && (
                     <p className="mt-1 text-xs text-red-500">{errors.name}</p>
@@ -185,7 +188,7 @@ export function AccountModal({
               {/* Account Type */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">
-                  Account Type
+                  {tx(language, "Account Type", "Tipe Akun")}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {ACCOUNT_TYPES.map((t) => {
@@ -204,7 +207,7 @@ export function AccountModal({
                         }}
                         className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${selected ? `${cls.button} shadow-sm` : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-primary-500"}`}
                       >
-                        {t}
+                        {tx(language, t.charAt(0).toUpperCase() + t.slice(1), t === "asset" ? "Aset" : t === "liability" ? "Kewajiban" : t === "equity" ? "Ekuitas" : t === "revenue" ? "Pendapatan" : "Beban")}
                       </button>
                     );
                   })}
@@ -215,7 +218,7 @@ export function AccountModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">
-                    Normal Balance
+                    {tx(language, "Normal Balance", "Saldo Normal")}
                   </label>
                   <div className="flex p-0.5 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <button
@@ -240,7 +243,7 @@ export function AccountModal({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">
-                    Status
+                    {tx(language, "Status", "Status")}
                   </label>
                   <div className="flex p-0.5 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <button
@@ -248,7 +251,7 @@ export function AccountModal({
                       onClick={() => setForm((f) => ({ ...f, isActive: true }))}
                       className={`flex-1 py-1.5 text-xs rounded-lg transition-all ${form.isActive ? "bg-white dark:bg-darkCard shadow-sm text-emerald-600" : "text-gray-400"}`}
                     >
-                      Active
+                      {tx(language, "Active", "Aktif")}
                     </button>
                     <button
                       type="button"
@@ -257,7 +260,7 @@ export function AccountModal({
                       }
                       className={`flex-1 py-1.5 text-xs rounded-lg transition-all ${!form.isActive ? "bg-white dark:bg-darkCard shadow-sm text-rose-500" : "text-gray-400"}`}
                     >
-                      Inactive
+                      {tx(language, "Inactive", "Nonaktif")}
                     </button>
                   </div>
                 </div>
@@ -271,7 +274,7 @@ export function AccountModal({
                   disabled={saving}
                   className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                 >
-                  Cancel
+                  {tx(language, "Cancel", "Batal")}
                 </button>
                 <button
                   type="submit"
@@ -279,7 +282,7 @@ export function AccountModal({
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium flex items-center gap-2 shadow-sm hover:shadow-primary-500/25 transition-all"
                 >
                   {saving && <SpinnerIcon className="w-4 h-4" />}
-                  {editAccount ? "Save Changes" : "Create Account"}
+                  {editAccount ? tx(language, "Save Changes", "Simpan Perubahan") : tx(language, "Create Account", "Buat Akun")}
                 </button>
               </div>
             </form>

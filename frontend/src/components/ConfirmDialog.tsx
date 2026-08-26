@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Account } from "../types/account";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 export function ConfirmDialog({
   open,
@@ -14,6 +16,7 @@ export function ConfirmDialog({
   account: Account | null;
   loading: boolean;
 }) {
+  const { language } = useLanguage();
   if (!open || !account) return null;
   const willDeactivate = account.isActive === true;
 
@@ -60,11 +63,11 @@ export function ConfirmDialog({
               )}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {willDeactivate ? "Deactivate Account?" : "Activate Account?"}
+              {willDeactivate ? tx(language, "Deactivate Account?", "Nonaktifkan Akun?") : tx(language, "Activate Account?", "Aktifkan Akun?")}
             </h3>
             <p className="text-sm text-gray-500 mb-5">
-              Are you sure you want to{" "}
-              {willDeactivate ? "deactivate" : "activate"} <br />
+              {tx(language, "Are you sure you want to", "Apakah Anda yakin ingin")}{" "}
+              {willDeactivate ? tx(language, "deactivate", "menonaktifkan") : tx(language, "activate", "mengaktifkan")} <br />
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 {account.code} – {account.name}
               </span>
@@ -76,7 +79,7 @@ export function ConfirmDialog({
                 disabled={loading}
                 className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
-                Cancel
+                {tx(language, "Cancel", "Batal")}
               </button>
               <button
                 onClick={onConfirm}
@@ -84,10 +87,10 @@ export function ConfirmDialog({
                 className={`flex-1 py-2 rounded-xl text-white text-sm font-medium transition-all ${willDeactivate ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700"}`}
               >
                 {loading
-                  ? "Processing..."
+                  ? tx(language, "Processing...", "Memproses...")
                   : willDeactivate
-                    ? "Deactivate"
-                    : "Activate"}
+                    ? tx(language, "Deactivate", "Nonaktifkan")
+                    : tx(language, "Activate", "Aktifkan")}
               </button>
             </div>
           </motion.div>

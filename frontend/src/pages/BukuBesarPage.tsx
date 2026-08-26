@@ -2,6 +2,8 @@ import { useEffect, useCallback, useRef } from "react";
 import { motion, type Variants } from "framer-motion";
 import type { LedgerQueryParams } from "../types/ledger";
 import { useLedger } from "../hooks/useLedger";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import { LedgerFilter } from "../components/ledger/LedgerFilter";
 import { LedgerTable } from "../components/ledger/LedgerTable";
 import { AppShell } from "../components/AppShell";
@@ -39,6 +41,7 @@ const letterVariants: Variants = {
 };
 
 export default function BukuBesarPage() {
+  const { language } = useLanguage();
   const {
     accounts,
     periods,
@@ -91,7 +94,7 @@ export default function BukuBesarPage() {
                 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
                 style={{ perspective: "600px" }}
               >
-                {"Buku Besar".split("").map((char, i) => (
+                {tx(language, "General Ledger", "Buku Besar").split("").map((char, i) => (
                   <motion.span
                     key={i}
                     variants={letterVariants}
@@ -103,8 +106,7 @@ export default function BukuBesarPage() {
                 ))}
               </motion.h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm">
-                Mutasi dan saldo berjalan per akun dari transaksi yang sudah
-                di-posting
+                {tx(language, "Running balance and mutations per account from posted transactions", "Mutasi dan saldo berjalan per akun dari transaksi yang sudah di-posting")}
               </p>
             </div>
           </div>
@@ -123,7 +125,7 @@ export default function BukuBesarPage() {
               onClick={fetchRefData}
               className="ml-auto text-xs underline flex items-center gap-1"
             >
-              <RefreshCw size={12} /> Coba Lagi
+              <RefreshCw size={12} /> {tx(language, "Try Again", "Coba Lagi")}
             </button>
           </motion.div>
         )}

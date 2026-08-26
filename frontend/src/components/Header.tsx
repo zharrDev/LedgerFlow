@@ -14,6 +14,7 @@ import { journalService } from "../services/journalService";
 import { api } from "../lib/api";
 import logo from "../assets/ledgerflow.webp";
 import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import {
   Menu,
   X,
@@ -371,7 +372,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                 LedgerFlow
               </span>
               <span className="text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-blue-500 transition-all mt-0.5">
-                Financial Platform
+                {tx(language, "Financial Platform", "Platform Keuangan")}
               </span>
             </div>
           </Link>

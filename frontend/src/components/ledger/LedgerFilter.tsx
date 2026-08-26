@@ -6,6 +6,8 @@ import type {
   LedgerQueryParams,
   DateRangeMode,
 } from "../../types/ledger";
+import { useLanguage } from "../../hooks/useLanguage";
+import { tx } from "../../i18n/tx";
 import { SpinnerIcon, IconCalendar, IconRefresh } from "./LedgerShared";
 import { HoverDropdown } from "../HoverDropdown";
 
@@ -29,6 +31,7 @@ export function LedgerFilter({
   const [periodId, setPeriodId] = useState<string>("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const { language } = useLanguage();
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -40,13 +43,13 @@ export function LedgerFilter({
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (!accountId) e.accountId = "Pilih akun terlebih dahulu";
-    if (mode === "period" && !periodId) e.periodId = "Pilih periode";
+    if (!accountId) e.accountId = tx(language, "Select an account first", "Pilih akun terlebih dahulu");
+    if (mode === "period" && !periodId) e.periodId = tx(language, "Select a period", "Pilih periode");
     if (mode === "custom") {
-      if (!startDate) e.startDate = "Tanggal awal wajib diisi";
-      if (!endDate) e.endDate = "Tanggal akhir wajib diisi";
+      if (!startDate) e.startDate = tx(language, "Start date is required", "Tanggal awal wajib diisi");
+      if (!endDate) e.endDate = tx(language, "End date is required", "Tanggal akhir wajib diisi");
       if (startDate && endDate && startDate > endDate)
-        e.endDate = "Tanggal akhir harus setelah tanggal awal";
+        e.endDate = tx(language, "End date must be after start date", "Tanggal akhir harus setelah tanggal awal");
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -69,7 +72,7 @@ export function LedgerFilter({
     return (
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md p-8 flex items-center justify-center gap-3 text-gray-400">
         <SpinnerIcon className="w-5 h-5" />
-        <span className="text-sm">Memuat data referensi...</span>
+        <span className="text-sm">{tx(language, "Loading reference data...", "Memuat data referensi...")}</span>
       </div>
     );
   }
@@ -82,7 +85,7 @@ export function LedgerFilter({
             <IconCalendar size={14} />
           </div>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-            Filter Buku Besar
+            {tx(language, "Ledger Filter", "Filter Buku Besar")}
           </h2>
         </div>
 
@@ -90,7 +93,7 @@ export function LedgerFilter({
           {/* Account selector */}
           <div className="sm:col-span-1">
             <label className={labelCls}>
-              Akun <Required />
+              {tx(language, "Account", "Akun")} <Required />
             </label>
             <HoverDropdown
               value={accountId}
@@ -99,10 +102,10 @@ export function LedgerFilter({
                 setErrors((prev) => ({ ...prev, accountId: "" }));
               }}
               fullWidth
-              placeholder="— Pilih Akun —"
+              placeholder={tx(language, "— Select Account —", "— Pilih Akun —")}
               minWidth={260}
               options={[
-                { value: "", label: "— Pilih Akun —" },
+                { value: "", label: tx(language, "— Select Account —", "— Pilih Akun —") },
                 ...accounts.map((a) => ({
                   value: String(a.id),
                   label: `${a.code} — ${a.name}`,
@@ -115,7 +118,7 @@ export function LedgerFilter({
           {/* Date range mode + controls */}
           <div>
             <label className={labelCls}>
-              Rentang Waktu <Required />
+              {tx(language, "Time Range", "Rentang Waktu")} <Required />
             </label>
 
             {/* Mode toggle */}
@@ -134,7 +137,7 @@ export function LedgerFilter({
                       : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   }`}
                 >
-                  {m === "period" ? "Per Periode" : "Rentang Kustom"}
+                  {m === "period" ? tx(language, "Per Period", "Per Periode") : tx(language, "Custom Range", "Rentang Kustom")}
                 </button>
               ))}
             </div>
@@ -149,10 +152,10 @@ export function LedgerFilter({
                     setErrors((prev) => ({ ...prev, periodId: "" }));
                   }}
                   fullWidth
-                  placeholder="— Pilih Periode —"
+                  placeholder={tx(language, "— Select Period —", "— Pilih Periode —")}
                   minWidth={220}
                   options={[
-                    { value: "", label: "— Pilih Periode —" },
+                    { value: "", label: tx(language, "— Select Period —", "— Pilih Periode —") },
                     ...periods.map((p) => ({
                       value: String(p.id),
                       label: `${p.name}${p.isActive ? " ✦" : ""}`,
@@ -207,7 +210,7 @@ export function LedgerFilter({
               ) : (
                 <IconRefresh size={14} />
               )}
-              Tampilkan
+              {tx(language, "Show", "Tampilkan")}
             </button>
           </div>
         </div>

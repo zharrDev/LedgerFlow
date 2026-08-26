@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { pushNotification } from "../components/Header";
 import { validateName } from "../utils/validation";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -56,6 +58,7 @@ const letterVariants: Variants = {
 
 export default function ProfilePage() {
   const { user, login, token, updateUser, logout } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -97,12 +100,12 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setMessage({ type: "error", text: "Ukuran foto maksimal 2MB" });
+      setMessage({ type: "error", text: tx(language, "Photo size max 2MB", "Ukuran foto maksimal 2MB") });
       return;
     }
 
     if (!file.type.startsWith("image/")) {
-      setMessage({ type: "error", text: "File harus berupa gambar" });
+      setMessage({ type: "error", text: tx(language, "File must be an image", "File harus berupa gambar") });
       return;
     }
 
@@ -131,14 +134,14 @@ export default function ProfilePage() {
         // Push notification
         pushNotification({
           type: "profile_updated",
-          title: "Foto Profil Diperbarui",
-          message: "Avatar baru Anda sudah aktif di seluruh aplikasi.",
+          title: tx(language, "Profile Photo Updated", "Foto Profil Diperbarui"),
+          message: tx(language, "Your new avatar is now active across the app.", "Avatar baru Anda sudah aktif di seluruh aplikasi."),
           link: "/profile",
         });
 
         setMessage({
           type: "success",
-          text: "Foto profil berhasil diperbarui!",
+          text: tx(language, "Profile photo updated successfully!", "Foto profil berhasil diperbarui!"),
         });
       } catch (err: any) {
         console.error(
@@ -153,7 +156,7 @@ export default function ProfilePage() {
     } catch (err: any) {
       setMessage({
         type: "error",
-        text: "Gagal mengupload foto profil",
+        text: tx(language, "Failed to upload profile photo", "Gagal mengupload foto profil"),
       });
     } finally {
       setUploadingAvatar(false);
@@ -186,7 +189,7 @@ export default function ProfilePage() {
         login(token, updatedUser);
       }
 
-      setMessage({ type: "success", text: "Profil berhasil diperbarui!" });
+      setMessage({ type: "success", text: tx(language, "Profile updated successfully!", "Profil berhasil diperbarui!") });
     } catch (err: any) {
       setMessage({
         type: "error",
@@ -227,7 +230,7 @@ export default function ProfilePage() {
               className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
               style={{ perspective: "600px" }}
             >
-              {"Profile".split("").map((char, i) => (
+              {tx(language, "Profile", "Profil").split("").map((char, i) => (
                 <motion.span
                   key={i}
                   variants={letterVariants}
@@ -240,7 +243,7 @@ export default function ProfilePage() {
             </motion.h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Kelola informasi dan foto profil Anda
+            {tx(language, "Manage your profile information and photo", "Kelola informasi dan foto profil Anda")}
           </p>
         </motion.div>
 
@@ -260,7 +263,7 @@ export default function ProfilePage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  getInitials(user?.name || "User")
+                  getInitials(user?.name || tx(language, "User", "User"))
                 )}
               </div>
               <button
@@ -286,17 +289,17 @@ export default function ProfilePage() {
             {/* Info */}
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {user?.name || "User"}
+                {user?.name || tx(language, "User", "User")}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {user?.email || "user@ledgerflow.com"}
               </p>
               <div className="flex items-center gap-3 mt-2 flex-wrap justify-center sm:justify-start">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20 capitalize">
-                  <Shield size={12} /> {user?.role || "owner"}
+                  <Shield size={12} /> {user?.role || tx(language, "owner", "owner")}
                 </span>
                 <span className="text-xs text-gray-400">
-                  Bergabung {user?.id ? "Jun 2026" : "—"}
+                  {tx(language, "Joined", "Bergabung")} {user?.id ? "Jun 2026" : "—"}
                 </span>
               </div>
               <button
@@ -304,7 +307,7 @@ export default function ProfilePage() {
                 disabled={uploadingAvatar}
                 className="mt-3 text-xs text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50"
               >
-                {uploadingAvatar ? "Mengupload..." : "Ubah foto profil"}
+                {uploadingAvatar ? tx(language, "Uploading...", "Mengupload...") : tx(language, "Change profile photo", "Ubah foto profil")}
               </button>
             </div>
           </div>
@@ -316,7 +319,7 @@ export default function ProfilePage() {
           className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-6"
         >
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-4">
-            Informasi Pribadi
+            {tx(language, "Personal Information", "Informasi Pribadi")}
           </h3>
 
           {/* Message */}
@@ -353,7 +356,7 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Nama Lengkap
+                {tx(language, "Full Name", "Nama Lengkap")}
               </label>
               <div className="relative">
                 <User
@@ -390,7 +393,7 @@ export default function ProfilePage() {
                 />
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                Email tidak dapat diubah
+                {tx(language, "Email cannot be changed", "Email tidak dapat diubah")}
               </p>
             </div>
 
@@ -405,7 +408,7 @@ export default function ProfilePage() {
                 ) : (
                   <Save size={16} className="flex-shrink-0" />
                 )}
-                <span>{saving ? "Menyimpan..." : "Simpan Perubahan"}</span>
+                <span>{saving ? tx(language, "Saving...", "Menyimpan...") : tx(language, "Save Changes", "Simpan Perubahan")}</span>
               </button>
             </div>
           </div>
@@ -417,15 +420,15 @@ export default function ProfilePage() {
           className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-6"
         >
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-4">
-            Informasi Akun
+            {tx(language, "Account Information", "Informasi Akun")}
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
               <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                <Building2 size={14} /> Perusahaan
+                <Building2 size={14} /> {tx(language, "Company", "Perusahaan")}
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {user?.company_name || "My Company"}
+                {user?.company_name || tx(language, "My Company", "My Company")}
               </span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
@@ -433,12 +436,12 @@ export default function ProfilePage() {
                 <Shield size={14} /> Role
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-gray-200 capitalize">
-                {user?.role || "owner"}
+                {user?.role || tx(language, "owner", "owner")}
               </span>
             </div>
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                <Calendar size={14} /> Bergabung
+                <Calendar size={14} /> {tx(language, "Joined", "Bergabung")}
               </span>
               <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                 Juni 2026
@@ -453,7 +456,7 @@ export default function ProfilePage() {
           className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden"
         >
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider px-6 pt-6 pb-2">
-            Akun & Bantuan
+            {tx(language, "Account & Support", "Akun & Bantuan")}
           </h3>
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             <Link
@@ -461,7 +464,7 @@ export default function ProfilePage() {
               className="flex items-center gap-3 px-6 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               <Settings size={18} className="text-gray-400 shrink-0" />
-              <span className="flex-1 font-medium">Settings</span>
+              <span className="flex-1 font-medium">{tx(language, "Settings", "Pengaturan")}</span>
               <ChevronRight size={16} className="text-gray-400" />
             </Link>
             <Link
@@ -469,7 +472,7 @@ export default function ProfilePage() {
               className="flex items-center gap-3 px-6 py-3.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               <HelpCircle size={18} className="text-gray-400 shrink-0" />
-              <span className="flex-1 font-medium">Help & Support</span>
+              <span className="flex-1 font-medium">{tx(language, "Help & Support", "Bantuan & Dukungan")}</span>
               <ChevronRight size={16} className="text-gray-400" />
             </Link>
             <button
