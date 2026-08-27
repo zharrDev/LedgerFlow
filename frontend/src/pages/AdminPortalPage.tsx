@@ -576,7 +576,7 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800/30">
-                    <tr>{[tx(language, "User", "User"), tx(language, "Plan", "Paket"), tx(language, "Cycle", "Siklus"), tx(language, "Status", "Status"), tx(language, "End Date", "Periode Berakhir")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                    <tr>{[tx(language, "User", "User"), tx(language, "Plan", "Paket"), tx(language, "Cycle", "Siklus"), tx(language, "Status", "Status"), tx(language, "Period Ends", "Periode Berakhir")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                     {subPagination.pageItems.map((s) => (
@@ -741,7 +741,7 @@ function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), "Email / No. HP", tx(language, "Company", "Company"), tx(language, "Role", "Role"), tx(language, "Status", "Status"), tx(language, "Action", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
+              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), "Email / No. HP", tx(language, "Company", "Company"), tx(language, "Role", "Role"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                 {pagination.pageItems.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
@@ -755,7 +755,7 @@ function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }
                         {u.status === "suspended" ? (
                           <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
                         ) : (
-                          <button onClick={() => onSuspend(u)} title="Suspend" className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
+                          <button onClick={() => onSuspend(u)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
                         )}
                         <button onClick={() => onDelete(u)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
                       </div>
@@ -786,7 +786,7 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), tx(language, "Currency", "Mata Uang"), tx(language, "Created", "Dibuat"), tx(language, "Status", "Status"), tx(language, "Action", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
+              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), tx(language, "Currency", "Mata Uang"), tx(language, "Created", "Dibuat"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                 {pagination.pageItems.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
@@ -800,7 +800,7 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
                         {c.status === "suspended" ? (
                           <button onClick={() => onUnsuspend(c)} title={tx(language, "Activate", "Aktifkan")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
                         ) : (
-                          <button onClick={() => onSuspend(c)} title="Suspend" className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
+                          <button onClick={() => onSuspend(c)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
                         )}
                         <button onClick={() => onDelete(c)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
                       </div>
@@ -840,7 +840,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { toast({ variant: "error", title: "Error", message: tx(language, "Plan name is required", "Nama plan wajib diisi") }); return; }
+    if (!form.name.trim()) { toast({ variant: "error", title: tx(language, "Error", "Error"), message: tx(language, "Plan name is required", "Nama plan wajib diisi") }); return; }
     setSubmitting(true);
     try {
       if (editingPlan) {
@@ -886,7 +886,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/30">
-                  <tr>{[tx(language, "Name", "Nama"), tx(language, "Monthly Price", "Harga Bulanan"), tx(language, "Yearly Price", "Harga Tahunan"), tx(language, "Max Companies", "Max perusahaan"), tx(language, "Max Journals", "Max jurnal"), tx(language, "Status", "Status"), tx(language, "Action", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                  <tr>{[tx(language, "Name", "Nama"), tx(language, "Monthly Price", "Harga Bulanan"), tx(language, "Yearly Price", "Harga Tahunan"), tx(language, "Max Companies", "Max perusahaan"), tx(language, "Max Journals", "Max jurnal"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                   {pagination.pageItems.map((p) => (

@@ -233,47 +233,59 @@ export default function DashboardPage() {
         animate="visible"
         className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8"
       >
-        {/* ═══ Hero Card — Greeting + Tanggal + Owl ═══ */}
-        <motion.div
-          variants={itemVariants}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0B1120] via-[#111827] to-[#1F2937] border border-primary-500/30 shadow-2xl"
-        >
-          <div className="absolute top-0 -right-32 w-72 h-72 bg-primary-500/30 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl"></div>
-          <div className="relative p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-              {/* Kiri — Greeting + Tanggal */}
-              <div className="flex-1 min-w-0 pr-0 lg:pr-8">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-                  <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold">
-                    {tx(language, "Good ", "Selamat ")}
-                    {new Date().getHours() < 11
-                      ? tx(language, "Morning", "Pagi")
-                      : new Date().getHours() < 15
-                        ? tx(language, "Afternoon", "Siang")
-                        : new Date().getHours() < 18
-                          ? tx(language, "Evening", "Sore")
-                          : tx(language, "Evening", "Malam")}
-                  </span>
-                  ,{" "}
-                  <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold text-primary-400">
-                    {user?.name?.split(" ")[0] || tx(language, "User", "Pengguna")}
-                  </span>
-                </h1>
-                <div className="flex items-center gap-2 mt-3 text-sm text-gray-400">
-                  <Calendar size="14" className="shrink-0" />
-                  <span>{formattedDate}</span>
+        {/* ═══ Hero Card — Greeting + Tanggal + Owl (pop-out) ═══ */}
+        <section className="relative mt-6 lg:mt-8">
+          {/* blurred decorations — clipped to the panel */}
+          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+            <div className="absolute top-0 -right-32 w-72 h-72 bg-primary-500/30 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl" />
+          </div>
+
+          {/* Greeting panel — overflow-visible so owl can peek out top */}
+          <motion.div
+            variants={itemVariants}
+            className="relative overflow-visible rounded-2xl bg-gradient-to-r from-[#0B1120] via-[#111827] to-[#1F2937] border border-primary-500/30 shadow-2xl"
+          >
+            <div className="relative p-4 sm:p-6 lg:p-8 xl:p-10 pr-16 sm:pr-20 lg:pr-24">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                {/* Kiri — Greeting + Tanggal */}
+                <div className="flex-1 min-w-0 pr-0 lg:pr-8">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+                    <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold">
+                      {tx(language, "Good ", "Selamat ")}
+                      {new Date().getHours() < 11
+                        ? tx(language, "Morning", "Pagi")
+                        : new Date().getHours() < 15
+                          ? tx(language, "Afternoon", "Siang")
+                          : new Date().getHours() < 18
+                            ? tx(language, "Evening", "Sore")
+                            : tx(language, "Evening", "Malam")}
+                    </span>
+                    ,{" "}
+                    <span className="font-script text-2xl sm:text-4xl lg:text-5xl font-semibold text-primary-400">
+                      {user?.name?.split(" ")[0] || tx(language, "User", "Pengguna")}
+                    </span>
+                  </h1>
+                  <div className="flex items-center gap-2 mt-3 text-sm text-gray-400">
+                    <Calendar size="14" className="shrink-0" />
+                    <span>{formattedDate}</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Kanan — Owl (desktop only) */}
-              <div className="hidden lg:flex shrink-0 items-end justify-center">
-                <GreetingOwl />
-              </div>
             </div>
+            <div className="h-0.5 w-full bg-gradient-to-r from-primary-500 via-emerald-500 to-primary-500"></div>
+          </motion.div>
+
+          {/* Desktop owl — pops out above panel top */}
+          <div className="hidden lg:block absolute -top-10 lg:-top-12 xl:-top-14 right-4 lg:right-8 xl:right-10 z-10">
+            <GreetingOwl size="h-28 lg:h-36 xl:h-40" />
           </div>
-          <div className="h-0.5 w-full bg-gradient-to-r from-primary-500 via-emerald-500 to-primary-500"></div>
-        </motion.div>
+
+          {/* Mobile owl — subtle pop-out */}
+          <div className="lg:hidden absolute -top-3 sm:-top-4 right-2 sm:right-3 z-10">
+            <GreetingOwl size="h-16 sm:h-20" />
+          </div>
+        </section>
 
         {/* ═══ Banner sisa kuota jurnal (plan Free) ═══ */}
         {quota && quota.max !== null && quota.max > 0 && (

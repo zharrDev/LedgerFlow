@@ -17,7 +17,7 @@ const OWL_POSES = [
 const CYCLE_INTERVAL = 5000; // 5 seconds
 const FADE_DURATION = 350; // 350ms crossfade
 
-export function GreetingOwl() {
+export function GreetingOwl({ size = "h-28 lg:h-36 xl:h-40" }: { size?: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -70,7 +70,7 @@ export function GreetingOwl() {
       <img
         src={pose.src}
         alt={pose.alt}
-        className="h-32 lg:h-40 xl:h-44 w-auto object-contain transition-opacity"
+        className={`${size} w-auto object-contain transition-opacity`}
         style={{
           opacity: isTransitioning ? 0 : 1,
           transitionDuration: `${FADE_DURATION}ms`,
