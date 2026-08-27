@@ -342,7 +342,7 @@ export default function HomePage() {
             {/* Heading */}
             <div className="text-center max-w-4xl mx-auto mb-16">
               <BorderBeamBadge text={language === "id" ? "Demo Produk" : "Product Demo"} icon={<Sparkles size={16} />} />
-              <h2 className="mt-6 text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <h2 className="mt-6 text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                 {language === "id" ? "Lihat LedgerFlow" : "See LedgerFlow"}
                 <span className="block bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 bg-clip-text text-transparent">
                   {language === "id" ? "Secara Real-Time" : "In Real-Time"}
