@@ -9,6 +9,7 @@
 //   PATCH /api/notifications/read-all   -> tandai semua notifikasi dibaca
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const notifications = new Hono();
@@ -55,8 +56,8 @@ notifications.get("/", async (c) => {
       .eq("read", false),
   ]);
 
-  if (listRes.error) return c.json({ error: listRes.error.message }, 500);
-  if (unreadRes.error) return c.json({ error: unreadRes.error.message }, 500);
+  if (listRes.error) return dbErrorResponse(c, listRes.error);
+  if (unreadRes.error) return dbErrorResponse(c, unreadRes.error);
 
   return c.json({
     data: listRes.data ?? [],
@@ -97,7 +98,7 @@ notifications.post("/", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json(data, 201);
 });
 
@@ -114,7 +115,7 @@ notifications.patch("/:id/read", async (c) => {
     .eq("id", id)
     .eq("user_id", sub);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ success: true });
 });
 
@@ -128,7 +129,7 @@ notifications.patch("/read-all", async (c) => {
     .eq("user_id", sub)
     .eq("read", false);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ success: true });
 });
 

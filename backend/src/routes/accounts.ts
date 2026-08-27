@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 
@@ -145,7 +146,7 @@ accounts.get("/", async (c) => {
   const { data, error, count } = await query;
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return dbErrorResponse(c, error);
   }
 
   return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
@@ -164,7 +165,7 @@ accounts.get("/:id", async (c) => {
     .maybeSingle();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return dbErrorResponse(c, error);
   }
   if (!data) {
     return c.json({ error: "Akun tidak ditemukan" }, 404);
@@ -363,7 +364,7 @@ accounts.delete("/:id", requireRole("owner"), async (c) => {
     .select("id");
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return dbErrorResponse(c, error);
   }
 
   // Tidak ada baris yang diupdate → akun tidak dimiliki company ini /

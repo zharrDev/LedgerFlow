@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authClient } from "../lib/authClient.js";
 import { signToken } from "../lib/jwt.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -225,13 +226,7 @@ auth.post("/register", validateBody(registerSchema), async (c) => {
     );
   } catch (err) {
     console.error("REGISTER CRASH:", err);
-    return c.json(
-      {
-        step: "catch_block",
-        error: err instanceof Error ? err.message : String(err),
-      },
-      500,
-    );
+    return dbErrorResponse(c, err);
   }
 });
 
@@ -267,7 +262,7 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
     .maybeSingle();
 
   if (profileError) {
-    return c.json({ error: profileError.message }, 500);
+    return dbErrorResponse(c, profileError);
   }
 
   if (!user) {
@@ -279,12 +274,7 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
       user = provisioned.user;
     } catch (err) {
       console.error("AUTO-HEAL ERROR:", err);
-      return c.json(
-        {
-          error: err instanceof Error ? err.message : "Gagal membuat profil",
-        },
-        500,
-      );
+      return dbErrorResponse(c, err, "Gagal membuat profil");
     }
   }
 
@@ -387,7 +377,7 @@ auth.post("/exchange-token", async (c) => {
       .maybeSingle();
 
     if (profileError) {
-      return c.json({ error: profileError.message }, 500);
+      return dbErrorResponse(c, profileError);
     }
 
     if (!user) {
@@ -397,12 +387,7 @@ auth.post("/exchange-token", async (c) => {
         user = provisioned.user;
       } catch (err) {
         console.error("AUTO-PROVISION ERROR:", err);
-        return c.json(
-          {
-            error: err instanceof Error ? err.message : "Gagal membuat profil",
-          },
-          500,
-        );
+        return dbErrorResponse(c, err, "Gagal membuat profil");
       }
     }
 
@@ -446,10 +431,7 @@ auth.post("/exchange-token", async (c) => {
     });
   } catch (err) {
     console.error("EXCHANGE TOKEN ERROR:", err);
-    return c.json(
-      { error: err instanceof Error ? err.message : "Authentication failed" },
-      400,
-    );
+    return dbErrorResponse(c, err, "Authentication failed");
   }
 });
 

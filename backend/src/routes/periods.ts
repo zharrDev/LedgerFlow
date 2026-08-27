@@ -1,6 +1,7 @@
 // routes/periods.ts
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const periods = new Hono();
@@ -20,7 +21,7 @@ periods.get("/", async (c) => {
     .order("year", { ascending: false })
     .order("month", { ascending: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json(data ?? []);
 });
 
@@ -48,7 +49,7 @@ periods.post("/", requireRole("owner"), async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json(data, 201);
 });
 
@@ -81,7 +82,7 @@ periods.patch("/:id/close", requireRole("owner"), async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ message: "Periode berhasil ditutup", data });
 });
 
@@ -129,7 +130,7 @@ periods.delete("/:id", requireRole("owner"), async (c) => {
     .eq("id", id)
     .eq("company_id", user.company_id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ success: true, message: "Periode berhasil dihapus" });
 });
 

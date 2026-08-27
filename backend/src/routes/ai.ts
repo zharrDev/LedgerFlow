@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { HumanMessage } from "@langchain/core/messages";
 import { authMiddleware } from "../middleware/auth.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { createAIGraph } from "../ai/graph/graph.js";
 import { AI_GRAPH_TIMEOUT_MS } from "../ai/models/provider.js";
 
@@ -99,7 +100,7 @@ ai.post("/chat", async (c) => {
     }
 
     console.error("[AI CFO] Error:", err);
-    return c.json({ error: `AI gagal memproses: ${err?.message || String(err)}` }, 500);
+    return dbErrorResponse(c, err, "AI gagal memproses. Coba lagi beberapa saat.");
   }
 });
 

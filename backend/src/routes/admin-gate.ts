@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import bcrypt from "bcryptjs";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import {
   signAdminGateToken,
   ADMIN_GATE_TTL_SECONDS,
@@ -658,7 +659,7 @@ adminGate.post("/plans", requireAdminGate, async (c) => {
 
   if (error) {
     console.error("[admin-gate] plans create error:", error);
-    return c.json({ error: "Gagal membuat plan: " + error.message }, 500);
+    return dbErrorResponse(c, error, "Gagal membuat plan.");
   }
   return c.json(data, 201);
 });

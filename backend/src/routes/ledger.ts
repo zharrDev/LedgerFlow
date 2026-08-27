@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const ledger = new Hono();
@@ -61,7 +62,7 @@ ledger.get("/", async (c) => {
     .eq("id", account_id);
 
   if (accErr) {
-    return c.json({ error: accErr.message }, 500);
+    return dbErrorResponse(c, accErr);
   }
 
   const account = (accountRows ?? [])[0];
@@ -131,7 +132,7 @@ ledger.get("/", async (c) => {
     .lte("entry_date", endDate);
 
   if (entriesErr) {
-    return c.json({ error: entriesErr.message }, 500);
+    return dbErrorResponse(c, entriesErr);
   }
 
   const entryList = entries ?? [];
@@ -155,7 +156,7 @@ ledger.get("/", async (c) => {
       .in("journal_entry_id", entryIds);
 
     if (linesErr) {
-      return c.json({ error: linesErr.message }, 500);
+      return dbErrorResponse(c, linesErr);
     }
     lineRows = (lines ?? []) as typeof lineRows;
   }

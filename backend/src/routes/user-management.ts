@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { sendAccountCreatedEmail } from "../lib/email.js";
 import {
@@ -210,7 +211,7 @@ userMgmt.get("/", requireRole("owner"), async (c) => {
   query = query.range(offset, offset + limitNum - 1);
 
   const { data, error, count } = await query;
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
@@ -258,7 +259,7 @@ userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
     .from("users")
     .update({ role })
     .eq("id", id);
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
 
   const { error: memberErr } = await supabase
     .from("company_members")
@@ -303,7 +304,7 @@ userMgmt.delete("/:id", requireRole("owner"), async (c) => {
 
   const { error: authErr } = await supabase.auth.admin.deleteUser(id);
   if (authErr) {
-    return c.json({ error: authErr.message }, 500);
+    return dbErrorResponse(c, authErr);
   }
 
   return c.json({ message: "User berhasil dihapus" });

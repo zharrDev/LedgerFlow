@@ -15,6 +15,7 @@
 
 import { Hono } from "hono"; // Framework web ringan buat bikin API routes
 import { supabase } from "../lib/supabase.js"; // Client Supabase buat akses database
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js"; // Verifikasi JWT -> c.get("user")
 import {
   snap, // Midtrans Snap API — buat bikin transaksi payment popup
@@ -47,7 +48,7 @@ payments.get("/plans", async (c) => {
     .order("price_monthly", { ascending: true });
 
   // Kalau query gagal, return error 500 (Internal Server Error)
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
 
   // Kalau sukses, return data plans (array of plan objects)
   return c.json(data);
@@ -104,7 +105,7 @@ payments.get("/subscription", authMiddleware, async (c) => {
   // Kalau query gagal (error database), log & return 500
   if (error) {
     console.error("[Payments] Subscription fetch error:", error);
-    return c.json({ error: error.message }, 500);
+    return dbErrorResponse(c, error);
   }
 
   // ─── Kalau user belum punya subscription, auto-create yang free ─────
@@ -158,7 +159,7 @@ payments.get("/subscription", authMiddleware, async (c) => {
     // Kalau gagal insert, log error & return 500
     if (insertErr) {
       console.error("[Payments] Auto-create subscription error:", insertErr);
-      return c.json({ error: insertErr.message }, 500);
+      return dbErrorResponse(c, insertErr);
     }
 
     // Return subscription baru + info tambahan:
@@ -949,7 +950,7 @@ payments.get("/history", authMiddleware, async (c) => {
     .limit(20);
 
   // Kalau query gagal, return error
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
 
   // Return data pembayaran (array of payment objects)
   return c.json(data);
@@ -1001,7 +1002,7 @@ payments.post("/cancel", authMiddleware, async (c) => {
     .eq("user_id", userId); // Filter by user ID
 
   // Kalau gagal update, return error
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
 
   // Log sukses
   console.log(`[Payments] Subscription canceled for user ${userId}`);

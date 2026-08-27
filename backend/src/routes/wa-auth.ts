@@ -16,6 +16,7 @@
 import { Hono } from "hono";
 import { randomInt, createHash, timingSafeEqual } from "node:crypto";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { signToken } from "../lib/jwt.js";
 import { DEMO_MODE_ENABLED, DEMO_OTP_CODE } from "../lib/env.js";
 import { DEMO_PHONE_SET } from "../lib/demoConfig.js";
@@ -549,7 +550,7 @@ waAuth.post("/login/verify", async (c) => {
       .eq("phone", phone)
       .maybeSingle();
     if (userError) {
-      return c.json({ error: userError.message }, 500);
+      return dbErrorResponse(c, userError);
     }
     if (!user) {
       return c.json({ error: "Akun tidak ditemukan." }, 404);

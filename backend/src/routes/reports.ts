@@ -1,6 +1,7 @@
 // routes/reports.ts (FIXED — Balance Sheet includes Net Income in Equity)
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { computeBalanceSheet } from "../lib/balance-sheet.js";
 
@@ -61,7 +62,7 @@ reports.get("/income-statement", async (c) => {
     if (periodId) query = query.eq("journal_entries.period_id", periodId);
 
     const { data: lines, error } = await query;
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return dbErrorResponse(c, error);
 
     const revenueMap: Record<
       string,
@@ -155,7 +156,7 @@ reports.get("/balance-sheet", async (c) => {
     if (periodId) query = query.eq("journal_entries.period_id", periodId);
 
     const { data: lines, error } = await query;
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return dbErrorResponse(c, error);
 
     // Kalkulasi neraca dipindah ke lib/balance-sheet.ts (murni & teruji).
     return c.json(computeBalanceSheet((lines as unknown as never[]) || []));
@@ -170,8 +171,6 @@ reports.get("/balance-sheet", async (c) => {
 reports.get("/cash-flow", async (c) => {
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
-
-  console.log("[Cash Flow] Request:", { periodId, companyId });
 
   try {
     let periodYear: number | null = null;
@@ -229,10 +228,8 @@ reports.get("/cash-flow", async (c) => {
 
     if (periodError) {
       console.error("[Cash Flow] Period query error:", periodError);
-      return c.json({ error: periodError.message }, 500);
+      return dbErrorResponse(c, periodError);
     }
-
-    console.log("[Cash Flow] Period lines:", periodLines?.length);
 
     let beginningCash = 0;
 
@@ -390,15 +387,6 @@ reports.get("/cash-flow", async (c) => {
     const netCashFlow = operatingTotal + investingTotal + financingTotal;
     const endingCash = beginningCash + netCashFlow;
 
-    console.log("[Cash Flow] Success:", {
-      operating: operatingTotal,
-      investing: investingTotal,
-      financing: financingTotal,
-      netCashFlow,
-      beginningCash,
-      endingCash,
-    });
-
     return c.json({
       periodId: periodId || null,
       periodName,
@@ -439,7 +427,7 @@ reports.get("/periods", async (c) => {
     .order("year", { ascending: false })
     .order("month", { ascending: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
 
   const formatted = (data || []).map((p: any) => ({
     id: p.id,

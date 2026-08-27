@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
+import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
@@ -180,7 +181,7 @@ journal.get("/", async (c) => {
   query = query.range(offset, offset + limitNum - 1);
 
   const { data, error, count } = await query;
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
@@ -212,7 +213,7 @@ journal.get("/:id", async (c) => {
     .is("deleted_at", null)
     .single();
 
-  if (error) return c.json({ error: error.message }, 404);
+  if (error) return dbErrorResponse(c, error);
   return c.json(data);
 });
 
@@ -549,7 +550,7 @@ journal.put("/:id", validateBody(journalEntryUpdateSchema), requireRole("owner",
       .from("journal_entries")
       .update(headerUpdates)
       .eq("id", id);
-    if (updErr) return c.json({ error: updErr.message }, 500);
+    if (updErr) return dbErrorResponse(c, updErr);
   }
 
   // Update lines: map accountCode -> account_id, replace semua line lama
@@ -679,7 +680,7 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
 
   return c.json(data);
 });
@@ -727,7 +728,7 @@ journal.delete("/:id", requireRole("owner"), async (c) => {
     .eq("id", id)
     .eq("company_id", company_id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return dbErrorResponse(c, error);
   return c.json({ success: true, message: "Entry berhasil dihapus" });
 });
 
