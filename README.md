@@ -881,8 +881,9 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Validasi: jurnal hanya bisa diinput di periode "open"
 
 ### 6. Multi-Perusahaan
-- Satu akun bisa memiliki banyak perusahaan
-- Data terisolasi per perusahaan
+- Setiap akun terhubung ke **satu perusahaan** (user ↔ company 1:1)
+- Data antar-perusahaan terisolasi penuh (multi-tenant)
+- Untuk mengelola lebih dari satu perusahaan, gunakan akun terpisah
 
 ### 7. Subscription & Payment
 - 3 tier: Free (50 jurnal/bulan), Pro (Rp99rb/bln), Enterprise (Rp299rb/bln)

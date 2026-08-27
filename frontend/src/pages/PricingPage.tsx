@@ -119,8 +119,8 @@ const FEATURE_COMPARISON: Array<{
       {
         name: { en: "Number of Companies", id: "Jumlah Perusahaan" },
         free: "1",
-        pro: "3",
-        enterprise: "Unlimited",
+        pro: "1",
+        enterprise: "1",
       },
       { name: { en: "Multi-User & Roles", id: "Multi-Pengguna & Peran" }, free: false, pro: false, enterprise: true },
       { name: { en: "Audit Trail", id: "Jejak Audit" }, free: false, pro: false, enterprise: true },
