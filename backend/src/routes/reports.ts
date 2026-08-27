@@ -261,23 +261,67 @@ reports.get("/cash-flow", async (c) => {
       }
     }
 
+    // ── Klasifikasi arus kas (metode tidak langsung / indirect method) ──
+    // Aturan:
+    //   * Pendapatan/Beban → naik/turunkan laba bersih.
+    //   * Perubahan modal kerja (aset lancar & utang lancar, selain kas)
+    //     → penyesuaian OPERASI pada laba bersih.
+    //   * Aset tidak lancar (aset tetap, investasi) → INVESTASI.
+    //   * Utang jangka panjang & ekuitas → PENDANAAN.
+    // Setiap akun diagregasi (Map per kode akun) supaya tiap akun muncul
+    // satu baris, bukan muncul berkali-kali per jurnal.
+
+    interface FlowAcc {
+      accountCode: string;
+      accountName: string;
+      amount: number;
+    }
+
+    // Keyword penentu kategori (nama akun/code, lowercase)
+    const KW_OPERATING_ASSET = [
+      "piutang", "persediaan", "perlengkapan", "biaya dibayar di muka",
+      "biaya dibayar dimuka", "prepaid", "receivable", "inventory",
+      "supplies", "ppn masukan", "pajak dibayar di muka", "uang muka",
+      "akumulasi", "accumulated", "depreciation",
+    ];
+    const KW_OPERATING_LIABILITY = [
+      "hutang usaha", "utang usaha", "hutang dagang", "utang dagang",
+      "hutang gaji", "utang gaji", "hutang sewa", "utang sewa",
+      "hutang bunga", "utang bunga", "hutang akrual", "utang akrual",
+      "ppn keluaran", "ppn", "pajak", "tax", "accrual", "voucher",
+    ];
+    const KW_LONG_TERM_LIABILITY = [
+      "hutang bank", "utang bank", "hutang jangka panjang",
+      "utang jangka panjang", "pinjaman", "bank loan", "long-term",
+      "long term", "lease",
+    ];
+    // Tentukan kategori akun: "operating" | "investing" | "financing"
+    const classify = (account: any): "operating" | "investing" | "financing" | null => {
+      const accType = (account.type || "").toUpperCase();
+      const hay = `${account.name || ""} ${account.code || ""}`.toLowerCase();
+      const match = (kws: string[]) => kws.some((k) => hay.includes(k));
+
+      if (accType === "REVENUE" || accType === "EXPENSE") return null;
+      if (isCashAccount(account.code, account.name, account.type)) return null;
+
+      if (accType === "ASSET") {
+        if (match(KW_OPERATING_ASSET)) return "operating";
+        return "investing";
+      }
+      if (accType === "LIABILITY") {
+        if (match(KW_LONG_TERM_LIABILITY)) return "financing";
+        if (match(KW_OPERATING_LIABILITY)) return "operating";
+        return "financing";
+      }
+      if (accType === "EQUITY") return "financing";
+      return null;
+    };
+
     let netIncome = 0;
 
-    const operatingItems: { label: string; amount: number }[] = [];
-    const investingItems: {
-      accountCode: string;
-      accountName: string;
-      amount: number;
-    }[] = [];
-    const financingItems: {
-      accountCode: string;
-      accountName: string;
-      amount: number;
-    }[] = [];
-
-    let operatingTotal = 0;
-    let investingTotal = 0;
-    let financingTotal = 0;
+    const operatingAdjust: Map<string, FlowAcc> = new Map();
+    const investingItemsMap: Map<string, FlowAcc> = new Map();
+    const financingItemsMap: Map<string, FlowAcc> = new Map();
 
     for (const line of periodLines || []) {
       const account = line.accounts as any;
@@ -286,48 +330,65 @@ reports.get("/cash-flow", async (c) => {
       const credit = Number(line.credit) || 0;
       const netMovement = debit - credit;
 
-      if (isCashAccount(account.code, account.name, account.type)) {
-        continue;
-      }
+      if (isCashAccount(account.code, account.name, account.type)) continue;
 
       if (accType === "REVENUE") {
         netIncome += credit - debit;
-      } else if (accType === "EXPENSE") {
+        continue;
+      }
+      if (accType === "EXPENSE") {
         netIncome -= debit - credit;
-      } else if (accType === "ASSET") {
-        const cashFlow = -netMovement;
-        if (Math.abs(cashFlow) > 0.01) {
-          investingItems.push({
-            accountCode: account.code,
-            accountName: account.name,
-            amount: cashFlow,
-          });
-          investingTotal += cashFlow;
-        }
-      } else if (accType === "LIABILITY" || accType === "EQUITY") {
-        const cashFlow = -netMovement;
-        if (Math.abs(cashFlow) > 0.01) {
-          financingItems.push({
-            accountCode: account.code,
-            accountName: account.name,
-            amount: cashFlow,
-          });
-          financingTotal += cashFlow;
-        }
+        continue;
+      }
+
+      const bucket = classify(account);
+      if (!bucket) continue;
+
+      // Perubahan akun → arus kas: kenaikan aset/penurunan utang mengurangi kas, dst.
+      const cashFlow = -netMovement;
+      const target =
+        bucket === "operating"
+          ? operatingAdjust
+          : bucket === "investing"
+            ? investingItemsMap
+            : financingItemsMap;
+
+      const existing = target.get(account.code);
+      if (existing) {
+        existing.amount += cashFlow;
+      } else {
+        target.set(account.code, {
+          accountCode: account.code,
+          accountName: account.name,
+          amount: cashFlow,
+        });
       }
     }
 
-    operatingItems.push({
-      label: "Laba Bersih (Net Income)",
-      amount: netIncome,
-    });
-    operatingTotal = netIncome;
+    // Buat daftar item per kategori (agregat, hanya yang non-nol)
+    const toSortedList = (m: Map<string, FlowAcc>) =>
+      [...m.values()]
+        .filter((x) => Math.abs(x.amount) > 0.01)
+        .sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
+    const operatingItems: { label: string; amount: number }[] = [
+      { label: "Laba Bersih (Net Income)", amount: netIncome },
+      ...toSortedList(operatingAdjust).map((x) => ({
+        label: `Perubahan ${x.accountName} (${x.accountCode})`,
+        amount: x.amount,
+      })),
+    ];
+    const investingItems = toSortedList(investingItemsMap);
+    const financingItems = toSortedList(financingItemsMap);
+
+    // Total = laba bersih + seluruh penyesuaian modal kerja
+    let operatingTotal = netIncome;
+    for (const x of operatingAdjust.values()) operatingTotal += x.amount;
+    const investingTotal = investingItems.reduce((s, x) => s + x.amount, 0);
+    const financingTotal = financingItems.reduce((s, x) => s + x.amount, 0);
 
     const netCashFlow = operatingTotal + investingTotal + financingTotal;
     const endingCash = beginningCash + netCashFlow;
-
-    investingItems.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
-    financingItems.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
 
     console.log("[Cash Flow] Success:", {
       operating: operatingTotal,

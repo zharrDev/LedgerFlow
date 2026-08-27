@@ -120,7 +120,8 @@ function buildJournalData(
     add(
       `Pendapatan jasa konsultasi ${monthLabel(period.month)}`,
       [
-        ["1100", 50000000, 0],
+        ["1100", 30000000, 0],
+        ["1200", 20000000, 0],
         ["4000", 0, 45000000],
         ["2400", 0, 5000000],
       ],
@@ -151,8 +152,8 @@ function buildJournalData(
       ["1100", 0, 3000000],
     ], "posted");
     add(`Penerimaan piutang ${monthLabel(period.month)}`, [
-      ["1100", 4000000, 0],
-      ["1200", 0, 4000000],
+      ["1100", 12000000, 0],
+      ["1200", 0, 12000000],
     ], "posted");
     add(`Penyusutan peralatan ${monthLabel(period.month)}`, [
       ["5500", 1000000, 0],
