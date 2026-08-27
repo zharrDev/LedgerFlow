@@ -371,7 +371,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
               <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-all">
                 LedgerFlow
               </span>
-              <span className="text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-blue-500 transition-all mt-0.5">
+              <span className="hidden md:block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-blue-500 transition-all mt-0.5">
                 {tx(language, "Financial Platform", "Platform Keuangan")}
               </span>
             </div>
@@ -421,11 +421,11 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
         </div>
 
         {/* ── Right ── */}
-        <div className="flex items-center gap-2 lg:gap-3">
+        <div className="flex items-center gap-1 lg:gap-3">
           {/* Mobile search */}
           <button
             onClick={() => setSearchOpen(!searchOpen)}
-            className="md:hidden p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            className="md:hidden p-1.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
             <Search size={20} />
           </button>
@@ -447,7 +447,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
             onMouseEnter={handleNotifMouseEnter}
             onMouseLeave={handleNotifMouseLeave}
           >
-            <button className="relative p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+            <button className="relative p-1.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
               <Bell size={20} />
               {unreadCount > 0 && (
                 <motion.span
