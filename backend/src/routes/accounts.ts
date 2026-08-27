@@ -27,6 +27,59 @@ const BALANCE_MAP: Record<string, string> = {
   expense: "DEBIT",
 };
 
+// Validasi parent akun (hierarki): pastikan parent ada di company yang sama
+// dan tidak membentuk siklus / merujuk diri sendiri. Mengembalikan pesan error
+// bila tidak valid, atau null bila aman.
+async function validateParentId(
+  parentId: string | null | undefined,
+  companyId: string,
+  selfId?: string,
+): Promise<string | null> {
+  if (!parentId) return null;
+
+  // 1. Parent tidak boleh merujuk akun itu sendiri
+  if (selfId && parentId === selfId) {
+    return "Akun tidak bisa dijadikan parent untuk dirinya sendiri.";
+  }
+
+  // 2. Parent harus ada & milik company yang sama (cegah cross-tenant)
+  const { data: parent, error } = await supabase
+    .from("accounts")
+    .select("id, parent_id")
+    .eq("id", parentId)
+    .eq("company_id", companyId)
+    .maybeSingle();
+  if (error || !parent) {
+    return "Parent akun tidak ditemukan di perusahaan ini.";
+  }
+
+  // 3. Cegah siklus: bila parent_id (atau leluhurnya) menunjuk ke selfId
+  if (selfId) {
+    type NodeRef = { id: string; parent_id: string | null };
+    let current: NodeRef | null = parent as NodeRef | null;
+    const seen = new Set<string>([parent.id]);
+    let depth = 0;
+    while (current?.parent_id && depth < 20) {
+      if (current.parent_id === selfId) {
+        return "Hierarki akun tidak boleh membentuk siklus.";
+      }
+      if (seen.has(current.parent_id)) break; // hindari loop antar parent
+      seen.add(current.parent_id);
+      const { data: p } = await supabase
+        .from("accounts")
+        .select("id, parent_id")
+        .eq("id", current.parent_id)
+        .eq("company_id", companyId)
+        .maybeSingle();
+      if (!p) break;
+      current = p as NodeRef | null;
+      depth++;
+    }
+  }
+
+  return null;
+}
+
 // ── Schema zod: validasi STRUKTUR & TIPE body request ────────────────
 // Business rule (type-change guard, duplikasi code di DB) tetap di handler.
 
@@ -60,6 +113,7 @@ const accountUpdateSchema = z.object({
   code: accountCodeSchema.optional(),
   name: accountNameSchema.optional(),
   type: accountTypeSchema.optional(),
+  parent_id: z.string().uuid().nullish(),
   is_active: z.boolean().optional(),
 });
 
@@ -97,6 +151,28 @@ accounts.get("/", async (c) => {
   return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
+// GET /api/accounts/:id — ambil satu akun milik company yang login
+accounts.get("/:id", async (c) => {
+  const { company_id } = c.get("user");
+  const id = c.req.param("id");
+
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("id", id)
+    .eq("company_id", company_id)
+    .maybeSingle();
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+  if (!data) {
+    return c.json({ error: "Akun tidak ditemukan" }, 404);
+  }
+
+  return c.json(data);
+});
+
 // POST ACCOUNT
 // Membuat akun baru dan otomatis menentukan normal balance dari type
 accounts.post("/", validateBody(accountCreateSchema), requireRole("akuntan", "owner"), async (c) => {
@@ -106,9 +182,13 @@ accounts.post("/", validateBody(accountCreateSchema), requireRole("akuntan", "ow
       typeof accountCreateSchema
     >;
 
-    console.log("BODY:", { code, name, type, parent_id });
-
     // (code, name & type sudah divalidasi + di-trim oleh zod di atas.)
+    // Validasi parent: harus ada, milik company yang sama, dan tidak siklus.
+    const parentError = await validateParentId(parent_id, company_id);
+    if (parentError) {
+      return c.json({ error: parentError }, 400);
+    }
+
     const insertData = {
       company_id,
       code,
@@ -118,8 +198,6 @@ accounts.post("/", validateBody(accountCreateSchema), requireRole("akuntan", "ow
       parent_id: parent_id ?? null,
       is_active: true,
     };
-
-    console.log("INSERT DATA:", insertData);
 
     const { data, error } = await supabase
       .from("accounts")
@@ -154,8 +232,6 @@ accounts.put("/:id", validateBody(accountUpdateSchema), requireRole("akuntan", "
     const id = c.req.param("id");
     const body = c.get("validatedBody") as z.infer<typeof accountUpdateSchema>;
 
-    console.log("PUT DEBUG:", { id, company_id, body });
-
     const TYPE_MAP: Record<string, string> = {
       asset: "ASSET",
       liability: "LIABILITY",
@@ -185,6 +261,15 @@ accounts.put("/:id", validateBody(accountUpdateSchema), requireRole("akuntan", "
 
     if (!existing) {
       return c.json({ error: "Akun tidak ditemukan" }, 404);
+    }
+
+    // Validasi parent bila dikirim: harus ada, milik company yang sama,
+    // tidak merujuk diri sendiri, dan tidak membentuk siklus.
+    if (body.parent_id !== undefined) {
+      const parentError = await validateParentId(body.parent_id, company_id, id);
+      if (parentError) {
+        return c.json({ error: parentError }, 400);
+      }
     }
 
     const newType = body.type ? TYPE_MAP[body.type] : undefined;
@@ -217,13 +302,16 @@ accounts.put("/:id", validateBody(accountUpdateSchema), requireRole("akuntan", "
       normal_balance: newType ? BALANCE_MAP[newType] : undefined,
       is_active: body.is_active,
     };
+    // parent_id hanya diubah bila dikirim (undefined = jangan sentuh);
+    // null = hapus parent.
+    if (body.parent_id !== undefined) {
+      updateData.parent_id = body.parent_id;
+    }
 
     // Hapus field undefined agar tidak ikut diupdate
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined) delete updateData[key];
     });
-
-    console.log("UPDATE DATA:", updateData);
 
     const { data, error } = await supabase
       .from("accounts")
@@ -231,8 +319,6 @@ accounts.put("/:id", validateBody(accountUpdateSchema), requireRole("akuntan", "
       .eq("id", id)
       .eq("company_id", company_id)
       .select();
-
-    console.log("SUPABASE RESPONSE:", { data, error });
 
     if (error) {
       if (error.code === "23505") {
@@ -269,14 +355,21 @@ accounts.delete("/:id", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("accounts")
     .update({ is_active: false })
     .eq("id", id)
-    .eq("company_id", company_id);
+    .eq("company_id", company_id)
+    .select("id");
 
   if (error) {
     return c.json({ error: error.message }, 500);
+  }
+
+  // Tidak ada baris yang diupdate → akun tidak dimiliki company ini /
+  // tidak ada → harus 404, bukan 200 sukses palsu.
+  if (!data || data.length === 0) {
+    return c.json({ error: "Akun tidak ditemukan" }, 404);
   }
 
   return c.json({ message: "Account deactivated" });
