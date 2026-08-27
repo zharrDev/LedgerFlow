@@ -45,7 +45,13 @@ export const STRICT_WINDOW_MS = 15 * 60 * 1000;
 export const STRICT_MAX = 5;
 
 export const NORMAL_WINDOW_MS = 15 * 60 * 1000;
-export const NORMAL_MAX = 100;
+export const NORMAL_MAX = 300;
+
+// Tingkat USER: request yang sudah login. Dikunci per-user (bukan per-IP)
+// supaya pengguna sah yang ribut polling laporan/notifikasi tidak kena cap
+// per-IP yang terlalu ketat (apalagi kalau satu IP dipakai banyak user).
+export const AUTH_WINDOW_MS = 15 * 60 * 1000;
+export const AUTH_MAX = 600;
 
 const DEFAULT_MESSAGE = "Terlalu banyak permintaan. Coba lagi beberapa menit lagi.";
 
@@ -137,4 +143,29 @@ export function strictOtpRateLimit() {
 export const normalRateLimit = rateLimit({
   windowMs: NORMAL_WINDOW_MS,
   max: NORMAL_MAX,
+});
+
+// ── Tingkat USER: route yang butuh login (per user id, fallback ke IP) ──
+// Kunci diambil dari klaim `sub` pada JWT di header Authorization; kalau
+// gagal di-decode (misal route anonim), jatuh ke IP klien.
+export const userRateLimit = rateLimit({
+  windowMs: AUTH_WINDOW_MS,
+  max: AUTH_MAX,
+  keyGenerator: (c) => {
+    const auth = c.req.header("authorization");
+    if (auth?.startsWith("Bearer ")) {
+      const parts = auth.slice(7).split(".");
+      if (parts.length === 3) {
+        try {
+          const claims = JSON.parse(
+            Buffer.from(parts[1], "base64url").toString("utf-8"),
+          );
+          if (claims?.sub) return `user:${claims.sub}`;
+        } catch {
+          // JWT rusak → fallback ke IP
+        }
+      }
+    }
+    return getClientIp(c);
+  },
 });
