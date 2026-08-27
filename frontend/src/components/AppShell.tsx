@@ -48,7 +48,7 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors overflow-x-hidden">    
       {/* Desktop: 2 floating cards */}
       <div className="hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}

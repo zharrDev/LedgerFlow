@@ -561,7 +561,9 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
             </AnimatePresence>
           </div>
 
-          <LanguageSwitcher />
+          <div className="hidden sm:block">
+            <LanguageSwitcher />
+          </div>
           <ThemeSwitcher />
 
           {/* ── User Dropdown (click) ── */}
