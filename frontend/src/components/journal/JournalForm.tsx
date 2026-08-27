@@ -304,8 +304,8 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
         </div>
 
         <div className="overflow-x-auto">
-          <div className="min-w-[780px]">
-            <div className="grid grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/30">
+          <div className="min-w-[320px]">
+            <div className="hidden md:grid md:grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/30">
               {[tx(language, "Account", "Akun"), tx(language, "Description", "Keterangan"), tx(language, "Debit", "Debit"), tx(language, "Credit", "Kredit"), ""].map(
                 (h) => (
                   <span
@@ -588,18 +588,29 @@ function JournalLineRow({
   const hasCredit = parseFloat(line.credit) > 0;
 
   return (
-    <div className="grid grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 items-center group hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-gray-400 dark:text-gray-600 w-4 shrink-0 tabular-nums font-medium">
-          {index + 1}
-        </span>
-        <AccountSelect
-          accounts={accounts}
-          value={line.accountCode}
-          onChange={(code, name) => onUpdateAccount(line.uid, code, name)}
-        />
-      </div>
+    <div className="grid grid-cols-1 gap-2 px-5 py-3 md:grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] md:gap-2 md:px-5 md:py-2 md:items-center group hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">
+      {/* Account */}
       <div>
+        <label className="md:hidden block text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+          {tx(language, "Account", "Akun")}
+        </label>
+        <div className="flex items-center gap-2">
+          <span className="hidden md:inline text-[11px] text-gray-400 dark:text-gray-600 w-4 shrink-0 tabular-nums font-medium">
+            {index + 1}
+          </span>
+          <AccountSelect
+            accounts={accounts}
+            value={line.accountCode}
+            onChange={(code, name) => onUpdateAccount(line.uid, code, name)}
+          />
+        </div>
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="md:hidden block text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+          {tx(language, "Description", "Keterangan")}
+        </label>
         <input
           type="text"
           placeholder={tx(language, "Line description (optional)", "Keterangan baris (opsional)")}
@@ -608,29 +619,41 @@ function JournalLineRow({
           className={linputCls}
         />
       </div>
-      <div>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="0"
-          value={line.debit}
-          onChange={(e) => onUpdate(line.uid, "debit", e.target.value)}
-          disabled={hasCredit}
-          className={`${linputCls} text-right tabular-nums ${hasDebit ? "text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 border-primary-200 dark:border-primary-500/20" : ""} disabled:opacity-40 disabled:cursor-not-allowed`}
-        />
+
+      {/* Debit + Credit (2 kolom di mobile, 2 kolom grid di md+) */}
+      <div className="grid grid-cols-2 gap-2 md:contents">
+        <div>
+          <label className="md:hidden block text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+            {tx(language, "Debit", "Debit")}
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            value={line.debit}
+            onChange={(e) => onUpdate(line.uid, "debit", e.target.value)}
+            disabled={hasCredit}
+            className={`${linputCls} text-right tabular-nums ${hasDebit ? "text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 border-primary-200 dark:border-primary-500/20" : ""} disabled:opacity-40 disabled:cursor-not-allowed`}
+          />
+        </div>
+        <div>
+          <label className="md:hidden block text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+            {tx(language, "Credit", "Kredit")}
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            value={line.credit}
+            onChange={(e) => onUpdate(line.uid, "credit", e.target.value)}
+            disabled={hasDebit}
+            className={`${linputCls} text-right tabular-nums ${hasCredit ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20" : ""} disabled:opacity-40 disabled:cursor-not-allowed`}
+          />
+        </div>
       </div>
-      <div>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="0"
-          value={line.credit}
-          onChange={(e) => onUpdate(line.uid, "credit", e.target.value)}
-          disabled={hasDebit}
-          className={`${linputCls} text-right tabular-nums ${hasCredit ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20" : ""} disabled:opacity-40 disabled:cursor-not-allowed`}
-        />
-      </div>
-      <div className="flex justify-center ml-1">
+
+      {/* Delete */}
+      <div className="flex justify-end md:justify-center md:ml-1">
         <button
           type="button"
           onClick={() => onRemove(line.uid)}
