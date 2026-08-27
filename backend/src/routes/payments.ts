@@ -1078,12 +1078,21 @@ payments.get("/check-access", authMiddleware, async (c) => {
 
   // Kalau ada query parameter "feature", cek akses spesifik
   if (feature && featureAccess[feature]) {
+    // Trial aktif = full akses semua fitur (bisa nyobain semua plan berbayar)
+    // Karena itu kalau user lagi trial, fitur apapun boleh diakses.
+    const trialGrantsAccess = isTrialActive;
     // Cek apakah plan user termasuk dalam daftar plan yang bisa akses fitur ini
-    const hasAccess = featureAccess[feature].includes(planName);
+    const hasAccess = trialGrantsAccess || featureAccess[feature].includes(planName);
 
     return c.json({
       has_access: hasAccess, // Apakah bisa akses
       plan: planName, // Plan user sekarang
+      is_trial: isTrialActive, // Apakah lagi trial
+      trial_days_left: isTrialActive // Sisa hari trial (kalau trial)
+        ? Math.ceil(
+            (new Date(sub.trial_end).getTime() - now.getTime()) / 86400000,
+          )
+        : 0,
       required_plan: hasAccess ? null : featureAccess[feature][0], // Plan minimal yang dibutuhkan (kalau gak bisa akses)
     });
   }

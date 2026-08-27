@@ -57,15 +57,20 @@ export function useSubscription() {
   const isEnterprise = planName === "enterprise";
 
   // Cek akses fitur di sisi client berdasarkan plan aktif user
+  // NB: user yang lagi trial aktif = boleh akses SEMUA fitur (full access)
+  // supaya bisa nyobain semua fitur berbayar sebelum upgrade.
   const canAccess = useCallback(
     (feature: string): boolean => {
       if (!isActive) return false;
+
+      // Sedang trial aktif → full akses semua fitur
+      if (isTrial) return true;
 
       const allowedPlans = FEATURE_PLAN[feature];
       if (!allowedPlans) return true;
       return allowedPlans.includes(planName);
     },
-    [isActive, planName],
+    [isActive, isTrial, planName],
   );
 
   // Ambil plan minimum yang dibutuhkan untuk fitur tertentu
