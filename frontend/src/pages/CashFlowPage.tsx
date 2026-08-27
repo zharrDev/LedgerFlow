@@ -359,7 +359,7 @@ export default function CashFlowPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="relative max-w-5xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-6"
+        className="relative max-w-5xl mx-auto space-y-8 py-6"
       >
         <AuroraBackground />
         <div className="relative z-10 space-y-8">

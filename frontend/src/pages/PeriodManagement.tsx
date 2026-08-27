@@ -158,7 +158,7 @@ export default function PeriodManagement() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8"
+        className="max-w-4xl mx-auto space-y-6"
       >
         {/* Header */}
         <motion.div variants={itemVariants}>

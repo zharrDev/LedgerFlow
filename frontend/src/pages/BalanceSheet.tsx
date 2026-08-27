@@ -145,7 +145,7 @@ export default function BalanceSheet() {
 
   return (
     <AppShell>
-      <div className="relative max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+      <div className="relative max-w-7xl mx-auto space-y-6 py-6">
         <AuroraBackground />
         <div className="relative z-10 space-y-6">
         {/* Header */}

@@ -53,7 +53,7 @@ export default function HelpCenterPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-4xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8"
+        className="max-w-4xl mx-auto space-y-8"
       >
         <motion.div variants={itemVariants} className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
