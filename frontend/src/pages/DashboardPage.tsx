@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAccounts } from "../hooks/useAccounts";
@@ -7,7 +7,6 @@ import { useDashboardData } from "../hooks/useDashboardData";
 import { reportsService } from "../services/reportsService";
 import { journalService } from "../services/journalService";
 import { AppShell } from "../components/AppShell";
-import BrandedLoader from "../components/BrandedLoader";
 import { GreetingOwl } from "../components/dashboard/GreetingOwl";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { usePagination } from "../hooks/usePagination";
@@ -82,15 +81,6 @@ export default function DashboardPage() {
       .then(setQuota)
       .catch(() => setQuota(null));
   }, []);
-
-  // Initial load: tampilkan BrandedLoader sampai data pertama siap.
-  // Setelah sekali loaded, skeleton per-bagian tetap dipakai untuk kasus
-  // refresh/ganti periode (summaryLoading berubah kembali menjadi true).
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  useEffect(() => {
-    if (!accountsLoading && !summaryLoading) setHasLoadedOnce(true);
-  }, [accountsLoading, summaryLoading]);
-  const initialLoading = !hasLoadedOnce && (accountsLoading || summaryLoading);
 
   // Pagination untuk tabel "Akun Terbaru" (5 baris per halaman, bisa digeser)
   const accountsPagination = usePagination(accounts, 5);
@@ -210,22 +200,11 @@ export default function DashboardPage() {
   );
 
   return (
-    <AnimatePresence mode="wait">
-      {initialLoading ? (
-        <motion.div
-          key="branded-loader"
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <BrandedLoader />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="dashboard-content"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.35 }}
-        >
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
+    >
     <AppShell>
       <motion.div
         variants={containerVariants}
@@ -888,8 +867,6 @@ export default function DashboardPage() {
         </div>
       </motion.div>
     </AppShell>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </motion.div>
   );
 }

@@ -3,7 +3,6 @@ import type { Account, AccountFormData } from "../types/account";
 import { accountsService } from "../services/accountsService";
 import { useToast } from "../context/ToastContext";
 import { getSessionToken } from "../lib/session";
-import { pushNotification } from "../components/Header";
 import { getErrorMessage } from "../lib/errorMessage";
 
 // Helper: urutkan akun berdasarkan kode akun
@@ -158,15 +157,6 @@ export function useAccounts() {
           variant: "success",
           title,
           message: `${account.code} · ${account.name}`,
-        });
-
-        pushNotification({
-          type: "account_toggled",
-          title,
-          message: `${account.code} · ${account.name} ${
-            newStatus ? "diaktifkan" : "dinonaktifkan"
-          }`,
-          link: "/chart-of-accounts",
         });
 
         return true;

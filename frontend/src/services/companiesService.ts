@@ -8,7 +8,7 @@ export type CompanyInfo = {
 
 // Ambil company milik user yang login (currency disimpan per-company).
 export async function getMyCompany(): Promise<CompanyInfo> {
-  const res = await api.get("/api/companies");
+  const res = await api.get("/api/companies", { skipErrorToast: true });
   const data = Array.isArray(res.data) ? res.data[0] : res.data;
   return data as CompanyInfo;
 }

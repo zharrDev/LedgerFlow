@@ -28,6 +28,7 @@ export const getIncomeStatement = async (
         period_id: periodId,
         company_id: getCompanyId(),
       },
+      skipErrorToast: true,
     },
   );
   return data;
@@ -45,6 +46,7 @@ export const getBalanceSheet = async (
         period_id: periodId,
         company_id: companyId,
       },
+      skipErrorToast: true,
     },
   );
   return data;
@@ -59,6 +61,7 @@ export const getCashFlow = async (
       period_id: periodId,
       company_id: getCompanyId(),
     },
+    skipErrorToast: true,
   });
   return data;
 };
@@ -69,6 +72,7 @@ export const getPeriods = async (): Promise<Period[]> => {
 
   const { data } = await api.get("/api/reports/periods", {
     params: { company_id: companyId },
+    skipErrorToast: true,
   });
 
   return Array.isArray(data) ? data : [];

@@ -5,6 +5,8 @@ import InfoPanel from "../components/InfoPanel";
 import AuthFlipCard from "../components/auth/AuthFlipCard";
 import LoginForm from "../components/auth/LoginForm";
 import RegisterForm from "../components/auth/RegisterForm";
+import { api } from "../lib/api";
+import { getSessionToken } from "../lib/session";
 
 export default function AuthPage({
   initialMode,
@@ -18,6 +20,25 @@ export default function AuthPage({
 
   useEffect(() => {
     setShowUI(true);
+  }, []);
+
+  // Warm-up saat halaman login/register kebukak:
+  //   1. Prefetch chunk DashboardPage biar Navigasi ke dashboard lebih cepat
+  //      pas login berhasil (Suspense gak nunggu download chunk).
+  //   2. Kalau user udah punya token (balik ke login, mis. sesi expired),
+  //      ping /health buat "menghidupkan" backend Render free-tier yang
+  //      cold-start 30-60 detik, biar navigasi berikutnya gak nunggu lama.
+  useEffect(() => {
+    let cancelled = false;
+    // Prefetch chunk dashboard
+    import("./DashboardPage").catch(() => {});
+    // Warm-up backend kalau ada token (hingga keep-alive tak terpakai)
+    if (getSessionToken() && !cancelled) {
+      api.get("/health", { skipErrorToast: true }).catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Shortcut rahasia ke gerbang admin: Ctrl+Alt+\.

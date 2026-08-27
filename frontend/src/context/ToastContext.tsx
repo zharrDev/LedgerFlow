@@ -134,8 +134,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Dedupe: kunci signature (variant+title+message) dari toast yang masih
+  // tampil. Kalau ada toast identik ditambahkan lagi, di-skip supaya tidak
+  // bertumpuk (mis. banyak request gagal barengan dengan pesan sama).
+  const activeSignatures = useRef<Map<string, string>>(new Map());
+
   const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => {
+      const target = prev.find((t) => t.id === id);
+      if (target) {
+        const sig = `${target.variant}|${target.title}|${target.message ?? ""}`;
+        if (activeSignatures.current.get(sig) === id) {
+          activeSignatures.current.delete(sig);
+        }
+      }
+      return prev.filter((t) => t.id !== id);
+    });
     const t = timers.current.get(id);
     if (t) clearTimeout(t);
     timers.current.delete(id);
@@ -143,9 +157,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const addToast = useCallback(
     (item: Omit<ToastItem, "id">) => {
+      const sig = `${item.variant}|${item.title}|${item.message ?? ""}`;
+      // Toast identik sudah tampil → skip (dedupe)
+      if (activeSignatures.current.has(sig)) return;
+
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const duration = item.duration ?? 4000;
 
+      activeSignatures.current.set(sig, id);
       setToasts((prev) => [...prev.slice(-4), { ...item, id }]); // max 5 visible
 
       const timer = setTimeout(() => dismiss(id), duration);

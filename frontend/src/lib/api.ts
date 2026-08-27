@@ -37,6 +37,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    // Request yang dibatalkan (ERR_CANCELED / CanceledError), mis. karena
+    // unmount / navigasi / React StrictMode — jangan dimunculkan toast.
+    if (axios.isCancel(err) || err?.code === "ERR_CANCELED") {
+      return Promise.reject(err);
+    }
+
     // JSON parse error (mis. response HTML "Cannot GET ..." dari Hono 404)
     // tidak punya err.config — langsung tolak tanpa toast agar komponen
     // pemanggil (safeHealthCheck dll) bisa handle sendiri secara graceful.

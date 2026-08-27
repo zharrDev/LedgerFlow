@@ -116,7 +116,9 @@ export async function isSandboxMode(): Promise<boolean> {
 
   try {
     // Hit API GET /is-sandbox ke backend
-    const res = await api.get("/api/payments/is-sandbox");
+    const res = await api.get("/api/payments/is-sandbox", {
+      skipErrorToast: true,
+    });
 
     // Backend return { is_sandbox: true/false }
     // Simpen hasilnya ke cache
@@ -125,20 +127,9 @@ export async function isSandboxMode(): Promise<boolean> {
     return _isSandbox;
   } catch {
     // ─── Fallback: Kalau API gagal (misal network error) ──────────────
-    // Cek dari URL script Snap.js yang diload di HTML
-    // Kalau script-nya dari app.sandbox.midtrans.com → sandbox
-    // Kalau dari app.midtrans.com → production
-    const scripts = document.querySelectorAll('script[src*="midtrans"]'); // Cari semua script yang ada "midtrans" di URL-nya
-    for (const s of scripts) {
-      // Cek apakah URL script mengandung kata "sandbox"
-      if (s.getAttribute("src")?.includes("sandbox")) {
-        _isSandbox = true; // Cache hasilnya
-        return true; // Return true = sandbox
-      }
-    }
-
-    // Kalau gak ada script Midtrans atau URL-nya gak ada "sandbox"
-    // Asumsi production (lebih aman: kalau gak yakin, anggap production)
+    // Script Snap.js diload on-demand (bukan di HTML), jadi gak bisa
+    // deteksi sandbox dari DOM. Asumsi production (lebih aman: kalau
+    // gak yakin, anggap production).
     _isSandbox = false;
     return false;
   }
@@ -158,7 +149,7 @@ export async function isSandboxMode(): Promise<boolean> {
  */
 export async function getPlans(): Promise<Plan[]> {
   // Hit API GET /plans
-  const res = await api.get("/api/payments/plans");
+  const res = await api.get("/api/payments/plans", { skipErrorToast: true });
 
   // Response data berisi array Plan (langsung dari Supabase)
   return res.data;
@@ -174,7 +165,9 @@ export async function getPlans(): Promise<Plan[]> {
  */
 export async function getSubscription(): Promise<Subscription> {
   // Hit API GET /subscription (user ID dikirim via header oleh api interceptor)
-  const res = await api.get("/api/payments/subscription");
+  const res = await api.get("/api/payments/subscription", {
+    skipErrorToast: true,
+  });
 
   // Response data berisi object Subscription + data plan yang di-join
   return res.data;
@@ -291,29 +284,88 @@ export async function checkFeatureAccess(
 // MIDTRANS SNAP HELPER — Buka popup pembayaran Midtrans
 // ═══════════════════════════════════════════════════════════════════════
 
+// Client key Midtrans (sandbox). Snap.js diload on-demand pas mau bayar,
+// bukan di index.html — biar gak nimbulin warning "language not supported"
+// dan gak bebanin halaman dashboard yang gak butuh Snap sama sekali.
+const SNAP_CLIENT_KEY = "Mid-client-UdVDzr6pTrrbTWHN";
+
+// Cache URL Snap.js biar gak re-create script setiap kali.
+let _snapScriptPromise: Promise<void> | null = null;
+
+/**
+ * Load script Snap.js on-demand.
+ *
+ * Balikin Promise yang resolve pas script kebaca + window.snap kebentuk.
+ * Kalau udah pernah diload, langsung resolve (idempotent).
+ */
+async function loadSnapScript(): Promise<void> {
+  const win = window as any;
+  if (win.snap) return; // Udah kebentuk, gak perlu load lagi
+
+  // Kalau lagi proses loading, reuse promise yang sama (anti double-load)
+  if (_snapScriptPromise) return _snapScriptPromise;
+
+  // Deteksi sandbox/production dulu sebelum bikin URL script
+  const sandbox = await isSandboxMode();
+
+  _snapScriptPromise = new Promise<void>((resolve, reject) => {
+    try {
+      const base = sandbox
+        ? "https://app.sandbox.midtrans.com"
+        : "https://app.midtrans.com";
+      const script = document.createElement("script");
+      script.src = `${base}/snap/snap.js`;
+      script.setAttribute("data-client-key", SNAP_CLIENT_KEY);
+      script.async = true;
+
+      let settled = false;
+
+      script.onload = () => {
+        // Kadang onload keburu sebelum window.snap kebentuk (tunggu sebentar)
+        const trySnap = () => {
+          if (win.snap) {
+            if (!settled) {
+              settled = true;
+              resolve();
+            }
+            return;
+          }
+          setTimeout(trySnap, 50); // Retry kecil-kecil
+        };
+        trySnap();
+      };
+      script.onerror = () => {
+        if (!settled) {
+          settled = true;
+          reject(new Error("Failed to load Snap.js"));
+        }
+      };
+
+      document.head.appendChild(script);
+    } catch (err) {
+      reject(err);
+    }
+  });
+
+  // Reset cache biar bisa dicoba lagi kalau gagal load
+  _snapScriptPromise.catch(() => {
+    _snapScriptPromise = null;
+  });
+
+  return _snapScriptPromise;
+}
+
 /**
  * Buka popup pembayaran Midtrans Snap.
  *
  * PRASYARAT:
- *   Script Snap.js harus udah diload di HTML:
- *   Sandbox:  <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="SBX-xxx">
- *   Production: <script src="https://app.midtrans.com/snap/snap.js" data-client-key="PROD-xxx">
- *
- * CARA KERJANYA:
- *   1. Cek apakah window.snap udah ada (Snap.js udah diload)
- *   2. Kalau belum ada, log error (popup gak bisa dibuka)
- *   3. Kalau udah ada, panggil snap.pay(token, callbacks)
- *   4. Midtrans bakal munculin popup pembayaran di browser
- *   5. Callbacks dipanggil sesuai hasil pembayaran:
- *      - onSuccess → pembayaran berhasil (credit card auto-settle)
- *      - onPending → pembayaran pending (VA, bank transfer, dll)
- *      - onError   → pembayaran error/gagal
- *      - onClose   → user tutup popup tanpa bayar
+ *   Script Snap.js diload on-demand otomatis (gak perlu tag <script> di HTML).
+ *   Halaman Pricing pakai fungsi ini via subscribe() → snap_token.
  *
  * @param snapToken  — Token dari Midtrans (dapet dari subscribe())
  * @param callbacks  — Object berisi callback functions
  */
-export function openSnapPayment(
+export async function openSnapPayment(
   snapToken: string, // Token yang dapet dari subscribe() response
   callbacks?: {
     // Optional callbacks buat handle hasil pembayaran
@@ -323,27 +375,31 @@ export function openSnapPayment(
     onClose?: () => void; // Dipanggil kalau user tutup popup
   },
   redirectUrl?: string, // URL alternatif (dari response subscribe) kalau popup gagal
-): void {
-  // Cast window ke any biar bisa akses window.snap (Snap.js nambahin properti ini)
+): Promise<void> {
   const win = window as any;
 
-  // Cek apakah Snap.js udah diload
-  // Kalau belum, berarti ada masalah di HTML (script tag kurang / salah URL)
-  if (!win.snap) {
-    console.error(
-      "[Payment] Snap.js not loaded! Add the script tag to your HTML.",
-    );
-    // ─── FALLBACK: Kalau Snap.js gak ada, coba redirect langsung ─────
-    // Pakai redirect_url dari response subscribe() (dari backend).
-    // Midtrans bakal buka halaman pembayarannya di tab baru,
-    // dan setelah selesai bakal diarahkan ke Finish URL yang dikonfigurasi.
+  try {
+    // Load Snap.js on-demand kalau belum pernah diload
+    await loadSnapScript();
+  } catch (err) {
+    // ─── FALLBACK: Kalau Snap.js gagal di-load ─────────────────────────
+    console.error("[Payment] Snap.js failed to load:", err);
     if (redirectUrl) {
       console.log("[Payment] Falling back to redirect URL:", redirectUrl);
       window.open(redirectUrl, "_blank", "noopener,noreferrer");
     } else {
-      console.error(
-        "[Payment] No redirect_url provided — payment cannot be opened.",
-      );
+      callbacks?.onError?.(err);
+    }
+    return;
+  }
+
+  if (!win.snap) {
+    console.error("[Payment] Snap.js not loaded!");
+    if (redirectUrl) {
+      console.log("[Payment] Falling back to redirect URL:", redirectUrl);
+      window.open(redirectUrl, "_blank", "noopener,noreferrer");
+    } else {
+      callbacks?.onError?.(new Error("Snap.js not loaded"));
     }
     return;
   }
@@ -351,42 +407,40 @@ export function openSnapPayment(
   // Panggil Midtrans Snap API: snap.pay(token, options)
   // Ini yang bikin popup pembayaran muncul di layar user
   try {
+    // Default bahasa sesuai <html lang="..."> biar gak ada warning
+    // "language not supported" dari Midtrans.
+    const lang = document.documentElement.lang.startsWith("id") ? "id" : "en";
+
     win.snap.pay(snapToken, {
+      // Set bahasa tampilan Snap sesuai bahasa browser/user
+      language: lang,
+
       // Callback: pembayaran BERHASIL
-      // Dipanggil kalau transaksi langsung settle (contoh: credit card yang langsung approve)
-      // result berisi: order_id, transaction_status, payment_type, dll
       onSuccess: (result: any) => {
-        console.log("[Payment] Success:", result); // Log buat debugging
-        callbacks?.onSuccess?.(result); // Panggil callback dari caller (PricingPage)
+        console.log("[Payment] Success:", result);
+        callbacks?.onSuccess?.(result);
       },
 
       // Callback: pembayaran PENDING
-      // Dipanggil kalau transaksi belum settle (contoh: VA yang belum dibayar,
-      // e-wallet yang belum dikonfirmasi, dll)
-      // result berisi info cara bayar (nomor VA, dll)
       onPending: (result: any) => {
-        console.log("[Payment] Pending:", result); // Log buat debugging
-        callbacks?.onPending?.(result); // Panggil callback dari caller
+        console.log("[Payment] Pending:", result);
+        callbacks?.onPending?.(result);
       },
 
       // Callback: pembayaran ERROR/GAGAL
-      // Dipanggil kalau transaksi gagal (contoh: kartu ditolak, saldo kurang, dll)
       onError: (result: any) => {
-        console.error("[Payment] Error:", result); // Log error buat debugging
-        callbacks?.onError?.(result); // Panggil callback dari caller
+        console.error("[Payment] Error:", result);
+        callbacks?.onError?.(result);
       },
 
       // Callback: user TUTUP POPUP
-      // Dipanggil kalau user klik tombol close (X) di popup Midtrans
-      // ATAU kalau popup di-close otomatis karena timeout
       onClose: () => {
-        console.log("[Payment] Popup closed"); // Log buat debugging
-        callbacks?.onClose?.(); // Panggil callback dari caller
+        console.log("[Payment] Popup closed");
+        callbacks?.onClose?.();
       },
     });
   } catch (err) {
     // ─── FALLBACK: Kalau snap.pay() throw (misal popup diblokir / CSP) ─
-    // Popup gagal dibuka → redirect langsung ke halaman pembayaran Midtrans
     console.error("[Payment] snap.pay failed, falling back to redirect:", err);
     callbacks?.onClose?.();
     if (redirectUrl) {
