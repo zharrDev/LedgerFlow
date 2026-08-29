@@ -15,6 +15,9 @@ import BrandedLoader from "./components/BrandedLoader";
 // Route-based code splitting — setiap halaman hanya dimuat saat dibutuhkan.
 const lazyPage = (factory: () => Promise<{ default: React.ComponentType }>) =>
   lazy(factory);
+const lazyTyped = <P extends object>(
+  factory: () => Promise<{ default: React.ComponentType<P> }>,
+) => lazy(factory);
 const namedLazy = <T extends React.ComponentType>(
   factory: () => Promise<Record<string, unknown>>,
   name: string,
@@ -24,7 +27,9 @@ const namedLazy = <T extends React.ComponentType>(
   );
 
 const ChartOfAccounts = lazyPage(() => import("./pages/ChartOfAccounts"));
-const AuthPage = lazyPage(() => import("./pages/AuthPage"));
+const AuthPage = lazyTyped<{ initialMode: "login" | "register" }>(() =>
+  import("./pages/AuthPage"),
+);
 const DashboardPage = lazyPage(() => import("./pages/DashboardPage"));
 const JournalEntryPage = lazyPage(() => import("./pages/JournalEntryPage"));
 const BukuBesarPage = lazyPage(() => import("./pages/BukuBesarPage"));
@@ -50,7 +55,10 @@ const ProductDetailPage = lazyPage(() => import("./pages/ProductDetailPage"));
 const ToolDetailPage = lazyPage(() => import("./pages/ToolDetailPage"));
 const ResourceDetailPage = lazyPage(() => import("./pages/ResourceDetailPage"));
 const CompanyDetailPage = lazyPage(() => import("./pages/CompanyDetailPage"));
-const PaymentResultPage = lazyPage(() => import("./pages/PaymentResultPage"));
+import type { PaymentResultPageProps } from "./pages/PaymentResultPage";
+const PaymentResultPage = lazyTyped<PaymentResultPageProps>(() =>
+  import("./pages/PaymentResultPage"),
+);
 const ForgotPasswordPage = lazyPage(() =>
   import("./pages/ForgotPasswordPage"),
 );

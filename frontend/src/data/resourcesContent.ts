@@ -4,8 +4,6 @@
 import { Newspaper, GraduationCap, FileSpreadsheet, type LucideIcon } from "lucide-react";
 import type { DetailPageContent } from "../components/DetailPageTemplate";
 
-type L = { en: string; id: string };
-
 type ResourceContent = DetailPageContent & {
   icon: LucideIcon;
 };

@@ -115,7 +115,7 @@ const itemVariants: Variants = {
 };
 
 // ─── Component ──────────────────────────────────────────────────────
-interface PaymentResultPageProps {
+export interface PaymentResultPageProps {
   type: ResultType;
 }
 

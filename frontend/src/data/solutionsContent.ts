@@ -4,8 +4,6 @@
 import { Building, Landmark, Users, Receipt, type LucideIcon } from "lucide-react";
 import type { DetailPageContent } from "../components/DetailPageTemplate";
 
-type L = { en: string; id: string };
-
 type SolutionContent = DetailPageContent & {
   icon: LucideIcon;
 };

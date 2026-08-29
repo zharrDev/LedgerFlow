@@ -1147,7 +1147,7 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
                         <div className="flex items-center gap-2">
                           <CreditCard size={15} className="text-indigo-500" />
                           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{data.subscription.plan_name || "—"}</span>
-                          {subBadge(data.subscription.status)}
+                          <SubBadge status={data.subscription.status} />
                         </div>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           {data.subscription.billing_cycle === "yearly" ? tx(language, "Yearly", "Tahunan") : tx(language, "Monthly", "Bulanan")}
@@ -1204,7 +1204,7 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function entityStatusBadge(status?: "active" | "suspended", language?: string) {
+function entityStatusBadge(status?: "active" | "suspended", language?: "en" | "id") {
   if (status === "suspended") return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"><Ban size={10} /> Suspend</span>;
   return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"><CheckCircle2 size={10} /> {tx(language || "en", "Active", "Aktif")}</span>;
 }

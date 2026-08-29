@@ -3,7 +3,7 @@ import { ArrowUpRight, Mail, ShieldCheck } from "lucide-react";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XIcon, YoutubeIcon } from "./icons/SocialIcons";
 import logo from "../assets/ledgerflow.webp";
 import { useLanguage } from "../hooks/useLanguage";
-import { siteLinks, getLinkHref } from "../data/siteLinks";
+import { siteLinks, getLinkHref, type SiteLinkItem } from "../data/siteLinks";
 
 const socials = [
   { name: "Instagram", href: "https://instagram.com/ledgerflow", Icon: InstagramIcon },
@@ -29,7 +29,7 @@ const Footer = () => {
 
   const groups = footerCategories.map((cat) => ({
     title: categoryLabels[cat][language],
-    items: siteLinks[cat].map((item) => ({
+    items: siteLinks[cat].map((item: SiteLinkItem) => ({
       label: id
         ? (item.title === "Small Businesses" ? "Usaha kecil"
           : item.title === "Mid-Market Companies" ? "Perusahaan berkembang"
