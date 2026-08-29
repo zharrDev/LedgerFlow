@@ -136,7 +136,7 @@ export default function HomePage() {
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
-      <section className="relative min-h-screen bg-gradient-to-br from-[#020617] via-[#0B1120] to-[#0F172A] dark:from-[#020617] dark:via-[#0B1120] dark:to-[#0F172A] overflow-hidden">
+      <section className="relative min-h-screen overflow-hidden">
         {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
           {/* ── Teks Kiri ── */}
@@ -234,7 +234,7 @@ export default function HomePage() {
       <motion.section
         id="security"
         {...SCROLL_REVEAL}
-        className="py-16 px-6 bg-gray-50/50 dark:bg-gray-900/20"
+        className="py-16 px-6"
       >
         <div className="max-w-6xl mx-auto">
           <motion.div {...SCROLL_REVEAL_STAGGER(0)} className="text-center mb-12">
@@ -426,7 +426,7 @@ export default function HomePage() {
       {/* ═══ Hero Carousel (gambar fitur) ═══ */}
       <motion.div
         {...SCROLL_REVEAL}
-        className="text-center max-w-2xl mx-auto px-6 mb-10"
+        className="text-center max-w-2xl mx-auto px-6 py-16"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
           <TextReveal
