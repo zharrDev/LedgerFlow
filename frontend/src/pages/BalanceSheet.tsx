@@ -19,7 +19,6 @@ import type { BalanceSheetResponse, Period } from "../types/reports";
 import { BalanceSheetCard } from "../components/reports/BalanceSheetCard";
 import { BalanceSheetTable } from "../components/reports/BalanceSheetTable";
 import { BalanceSheetStatus } from "../components/reports/BalanceSheetStatus";
-import AuroraBackground from "../components/reports/AuroraBackground";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ExportMenu } from "../components/ExportMenu";
 import {
@@ -145,9 +144,8 @@ export default function BalanceSheet() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[80vh] overflow-hidden">
-        <AuroraBackground />
-        <div className="relative z-10 max-w-7xl mx-auto space-y-6 py-6">
+      <div className="min-h-[80vh]">
+        <div className="max-w-7xl mx-auto space-y-6 py-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

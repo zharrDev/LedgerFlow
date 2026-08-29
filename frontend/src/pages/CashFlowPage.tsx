@@ -21,7 +21,6 @@ import { useCashFlow } from "../hooks/useCashFlow";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ExportMenu } from "../components/ExportMenu";
 import { CashFlowChart, type CashFlowDatum } from "../components/CashFlowChart";
-import AuroraBackground from "../components/reports/AuroraBackground";
 import {
   exportCashFlowPDF,
   exportCashFlowExcel,
@@ -338,9 +337,8 @@ export default function CashFlowPage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[80vh] overflow-x-hidden">
-        <AuroraBackground />
-        <div className="relative z-10 max-w-5xl mx-auto space-y-8 py-6">
+      <div className="min-h-[80vh]">
+        <div className="max-w-5xl mx-auto space-y-8 py-6">
           {/* ── Page Header ── */}
           <ScrollReveal
             direction="left"
