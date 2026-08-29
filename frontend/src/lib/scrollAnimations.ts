@@ -12,14 +12,48 @@ type ScrollRevealProps = Pick<
   "initial" | "whileInView" | "viewport" | "transition"
 >;
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 export const SCROLL_REVEAL: ScrollRevealProps = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
+  transition: { duration: 0.65, ease: EASE },
 };
 
 export const SCROLL_REVEAL_STAGGER = (idx: number): ScrollRevealProps => ({
   ...SCROLL_REVEAL,
   transition: { ...SCROLL_REVEAL.transition, delay: idx * 0.08 },
 });
+
+// ── Arah tambahan ─────────────────────────────────────────────────────
+// Muncul dari kiri (x: -32 → 0), dll. Mempertahankan gaya yang sama
+// (fade + geser) hanya dengan arah berbeda.
+
+export const SCROLL_REVEAL_LEFT: ScrollRevealProps = {
+  initial: { opacity: 0, x: -32 },
+  whileInView: { opacity: 1, x: 0 },
+  viewport: { once: true, margin: "-80px" },
+  transition: { duration: 0.65, ease: EASE },
+};
+
+export const SCROLL_REVEAL_RIGHT: ScrollRevealProps = {
+  initial: { opacity: 0, x: 32 },
+  whileInView: { opacity: 1, x: 0 },
+  viewport: { once: true, margin: "-80px" },
+  transition: { duration: 0.65, ease: EASE },
+};
+
+export const SCROLL_REVEAL_SCALE: ScrollRevealProps = {
+  initial: { opacity: 0, scale: 0.9 },
+  whileInView: { opacity: 1, scale: 1 },
+  viewport: { once: true, margin: "-80px" },
+  transition: { duration: 0.65, ease: EASE },
+};
+
+export const SCROLL_REVEAL_FADE: ScrollRevealProps = {
+  initial: { opacity: 0 },
+  whileInView: { opacity: 1 },
+  viewport: { once: true, margin: "-80px" },
+  transition: { duration: 0.8, ease: EASE },
+};

@@ -30,6 +30,8 @@ import FeatureCarousel from "../components/home/FeatureCarousel";
 import ScrollCardWrapper from "../components/home/ScrollCardWrapper";
 import BorderBeamBadge from "../components/home/BorderBeamBadge";
 import InViewVideo from "../components/home/InViewVideo";
+import { TextReveal } from "../components/TextReveal";
+import ScrollReveal from "../components/ScrollReveal";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 import { THEME_TRANSITION_END } from "../lib/themeTransition";
 import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
@@ -167,51 +169,71 @@ export default function HomePage() {
           className="relative z-10 max-w-4xl mx-auto"
         >
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
           >
             <h2 className="text-[2.25rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
-              {language === "id" ? "Kelola Masa Depan" : "Manage Your Financial"} <br />
-              {language === "id" ? "Keuangan Anda" : "Future"} <br />
+              <TextReveal
+                text={language === "id" ? "Kelola Masa Depan" : "Manage Your Financial"}
+                delay={0.1}
+                staggerDelay={0.04}
+              />
+              <br />
+              <TextReveal
+                text={language === "id" ? "Keuangan Anda" : "Future"}
+                delay={0.3}
+                staggerDelay={0.04}
+              />
+              <br />
               <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
-                {language === "id" ? "Dengan Percaya Diri" : "With Confidence"}
+                <TextReveal
+                  text={language === "id" ? "Dengan Percaya Diri" : "With Confidence"}
+                  delay={0.5}
+                  staggerDelay={0.04}
+                />
               </span>
             </h2>
-            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
+            <ScrollReveal direction="up" delay={0.7} className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
               {language === "id" ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time." : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
-            </p>
+            </ScrollReveal>
             <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 w-full px-4">
               {user ? (
-                <Link
-                  to="/dashboard"
-                  className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
-                >
-                  {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ChevronRight size={18} />
-                </Link>
-              ) : (
-                <>
+                <ScrollReveal direction="up" delay={0.85}>
                   <Link
-                    to="/register"
+                    to="/dashboard"
                     className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
                   >
-                    {language === "id" ? "Coba gratis 15 hari" : "15-day free trial"} <ChevronRight size={18} />
+                    {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ChevronRight size={18} />
                   </Link>
-                  <Link
-                    to="/login"
-                    className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
-                  >
-                    {language === "id" ? "Lihat cara kerjanya" : "See how it works"}
-                  </Link>
+                </ScrollReveal>
+              ) : (
+                <>
+                  <ScrollReveal direction="up" delay={0.85}>
+                    <Link
+                      to="/register"
+                      className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                      {language === "id" ? "Coba gratis 15 hari" : "15-day free trial"} <ChevronRight size={18} />
+                    </Link>
+                  </ScrollReveal>
+                  <ScrollReveal direction="up" delay={1}>
+                    <Link
+                      to="/login"
+                      className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
+                    >
+                      {language === "id" ? "Lihat cara kerjanya" : "See how it works"}
+                    </Link>
+                  </ScrollReveal>
                 </>
               )}
             </div>
-            <p className="mt-6 text-xs sm:text-sm text-gray-300 flex flex-wrap items-center justify-center gap-2 px-4 text-center">
+            <ScrollReveal direction="fade" delay={1.1} className="mt-6 text-xs sm:text-sm text-gray-300 flex flex-wrap items-center justify-center gap-2 px-4 text-center">
               <Lock size={14} className="flex-shrink-0" />
               {language === "id"
                 ? "Keamanan kelas enterprise dengan enkripsi penuh"
                 : "Enterprise-grade security with full encryption"}
-            </p>
+            </ScrollReveal>
           </motion.div>
         </motion.div>
 
@@ -236,7 +258,9 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <motion.div {...SCROLL_REVEAL_STAGGER(0)} className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              {language === "id" ? "Dipercaya bisnis modern" : "Trusted by modern businesses"}
+              <TextReveal
+                text={language === "id" ? "Dipercaya bisnis modern" : "Trusted by modern businesses"}
+              />
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
               {language === "id" ? "Keamanan setingkat bank & kepatuhan perusahaan" : "Bank-grade security & enterprise compliance"}
@@ -343,9 +367,14 @@ export default function HomePage() {
             <div className="text-center max-w-4xl mx-auto mb-16">
               <BorderBeamBadge text={language === "id" ? "Demo Produk" : "Product Demo"} icon={<Sparkles size={16} />} />
               <h2 className="mt-6 text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
-                {language === "id" ? "Lihat LedgerFlow" : "See LedgerFlow"}
+                <TextReveal
+                  text={language === "id" ? "Lihat LedgerFlow" : "See LedgerFlow"}
+                />
                 <span className="block bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 bg-clip-text text-transparent">
-                  {language === "id" ? "Secara Real-Time" : "In Real-Time"}
+                  <TextReveal
+                    text={language === "id" ? "Secara Real-Time" : "In Real-Time"}
+                    delay={0.15}
+                  />
                 </span>
               </h2>
               <p className="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-400">
@@ -417,7 +446,9 @@ export default function HomePage() {
         className="text-center max-w-2xl mx-auto px-6 mb-10"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-          {language === "id" ? "Jelajahi Fitur di Dalamnya" : "Explore What's Inside"}
+          <TextReveal
+            text={language === "id" ? "Jelajahi Fitur di Dalamnya" : "Explore What's Inside"}
+          />
         </h2>
         <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
           {language === "id" ? "Semua alat yang Anda perlukan, dalam satu platform." : "Every tool you need, built into one platform."}
@@ -433,7 +464,9 @@ export default function HomePage() {
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-              {language === "id" ? "Semua yang Anda butuhkan untuk berkembang" : "Everything you need to scale"}
+              <TextReveal
+                text={language === "id" ? "Semua yang Anda butuhkan untuk berkembang" : "Everything you need to scale"}
+              />
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-3">
               {language === "id" ? "Fitur andal yang dibuat untuk tim keuangan modern" : "Powerful features built for modern finance teams"}
@@ -485,9 +518,11 @@ export default function HomePage() {
 
             <div className="relative">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug">
-                {language === "id"
-                  ? "Ambil Kendali Keuangan Anda Hari Ini"
-                  : "Take Control of Your Finances Today"}
+                <TextReveal
+                  text={language === "id"
+                    ? "Ambil Kendali Keuangan Anda Hari Ini"
+                    : "Take Control of Your Finances Today"}
+                />
               </h2>
               <p className="mt-4 text-primary-100 text-base sm:text-lg">
                 {language === "id"
