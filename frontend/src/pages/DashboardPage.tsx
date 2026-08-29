@@ -41,7 +41,7 @@ import { formatDateFull } from "../i18n/dateFormat";
 // ─── Animation variants ─────────────────────────────────────────────
 const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
-  visible: {
+  show: {
     y: 0,
     opacity: 1,
     transition: { type: "spring", stiffness: 300, damping: 24 },
@@ -202,7 +202,12 @@ export default function DashboardPage() {
     <AppShell>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* ═══ Hero Card — Greeting + Nama + Tanggal (+ Owl desktop) ═══ */}
-        <ScrollReveal direction="up" className="relative mt-6 lg:mt-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mt-6 lg:mt-8"
+        >
           {/* blurred decorations — clipped to the panel */}
           <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <div className="absolute top-0 -right-32 w-72 h-72 bg-primary-500/30 rounded-full blur-3xl" />
@@ -210,10 +215,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Greeting panel — overflow-visible so owl can peek out top */}
-          <motion.div
-            variants={itemVariants}
-            className="relative overflow-visible rounded-2xl bg-gradient-to-r from-[#0B1120] via-[#111827] to-[#1F2937] border border-primary-500/30 shadow-2xl"
-          >
+          <div className="relative overflow-visible rounded-2xl bg-gradient-to-r from-[#0B1120] via-[#111827] to-[#1F2937] border border-primary-500/30 shadow-2xl">
             <div className="relative p-4 sm:p-6 lg:p-7 xl:p-8">
               <div className="flex items-end justify-between gap-4">
                 {/* Kiri — Greeting + Nama + Tanggal (3 baris sans-serif) */}
@@ -240,13 +242,13 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="h-0.5 w-full bg-gradient-to-r from-primary-500 via-emerald-500 to-primary-500"></div>
-          </motion.div>
+          </div>
 
           {/* Desktop owl — pops out above panel top, kanan-bawah */}
           <div className="hidden lg:block absolute -top-12 lg:-top-14 right-8 xl:right-10 z-10">
             <GreetingOwl size="h-36 lg:h-44" />
           </div>
-        </ScrollReveal>
+        </motion.div>
 
         {/* ═══ Banner sisa kuota jurnal (plan Free) ═══ */}
         {quota && quota.max !== null && quota.max > 0 && (
@@ -323,13 +325,28 @@ export default function DashboardPage() {
         </ScrollReveal>
 
         {/* ═══ KPI Cards Row ═══ */}
-        <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: { opacity: 0 },
+            show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+          }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+        >
           {summaryLoading || !summary ? (
             // Skeleton cards
             [...Array(4)].map((_, i) => (
               <motion.div
                 key={i}
-                variants={itemVariants}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+                  },
+                }}
                 className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5 animate-pulse"
               >
                 <div className="h-20"></div>
@@ -420,7 +437,7 @@ export default function DashboardPage() {
               />
             </>
           )}
-        </ScrollReveal>
+        </motion.div>
 
         {/* ═══ Financial Health & Cash Flow Monitor ═══ */}
         <ScrollReveal direction="scale" className="grid grid-cols-1 lg:grid-cols-3 gap-6">

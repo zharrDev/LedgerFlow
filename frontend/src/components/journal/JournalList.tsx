@@ -92,7 +92,7 @@ export function JournalList({
                     return (
                       <th
                         key={h}
-                        className={`px-4 py-3.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${minW} ${
+                        className={`px-4 py-3 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${minW} ${
                           i >= 4 ? "text-right" : "text-left"
                         }`}
                       >

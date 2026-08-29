@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { AppShell } from "../components/AppShell";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
@@ -148,7 +149,7 @@ export default function UserManagementPage() {
   return (
     <AppShell title={tx(language, "User Management", "Manajemen User")} description={tx(language, "Manage user roles and access in your company", "Kelola role dan akses user dalam perusahaan Anda")}>
       {/* ── Tombol Tambah Anggota ── */}
-      <div className="flex justify-end mb-4">
+      <ScrollReveal direction="left" className="flex justify-end mb-4">
         <button
           onClick={() => {
             setFormError("");
@@ -159,7 +160,7 @@ export default function UserManagementPage() {
           <Plus size={16} />
           {tx(language, "Add Member", "Tambah Anggota")}
         </button>
-      </div>
+      </ScrollReveal>
 
       {loading ? (
         <div className="flex justify-center py-20">
