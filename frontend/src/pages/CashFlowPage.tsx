@@ -120,9 +120,10 @@ function CashFlowSectionBlock({
 
       <div>
         {section.items.length === 0 ? (
-          <div className="px-5 py-8 text-center">              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary-500/10 text-gray-400 mb-2">
-                <Wallet size={18} />
-              </div>
+          <div className="px-5 py-8 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary-500/10 text-gray-400 mb-2">
+              <Wallet size={18} />
+            </div>
             <p className="text-sm text-gray-400">
               {tx(language, "No transactions in this period", "Tidak ada transaksi pada periode ini")}
             </p>
@@ -218,7 +219,7 @@ function SummaryCard({
         <span className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">
           {label}
         </span>
-        <div className="p-2.5 rounded-full bg-primary-500/10 dark:bg-primary-500/15 text-primary-600 dark:text-primary-300">
+        <div className="p-2.5 rounded-xl bg-primary-500/10 dark:bg-primary-500/15 text-primary-600 dark:text-primary-300">
           {icon}
         </div>
       </div>
@@ -274,7 +275,7 @@ function NetChangeFooter({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 sm:px-6 py-5 bg-primary-500/10 dark:bg-primary-500/15 border-t border-primary-500/20 dark:border-primary-500/25">
       <div className="flex items-center gap-2.5">
-        <span className="p-2 rounded-full bg-white text-primary-600 shadow">
+        <span className="p-2 rounded-xl bg-white text-primary-600 shadow">
           <Activity size={16} />
         </span>
         <div>
@@ -361,7 +362,7 @@ export default function CashFlowPage() {
           >
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-2.5 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg">
                   <Wallet size={20} />
                 </div>
                 <motion.h1
@@ -376,6 +377,7 @@ export default function CashFlowPage() {
                     <motion.span
                       key={i}
                       variants={letterVariants}
+                      className="inline-block"
                       style={{ transformOrigin: "bottom center" }}
                     >
                       {char === " " ? "\u00A0" : char}

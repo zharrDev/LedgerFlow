@@ -29,8 +29,8 @@ export const BalanceSheetCard = ({
       <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-primary-400/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
 
       <div className="relative z-10">
-        <div className="inline-flex items-center justify-center w-11 h-11 rounded-full mb-4 bg-primary-500/10 dark:bg-primary-500/15 text-primary-600 dark:text-primary-400">
-          <Icon className="w-5 h-5" />
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 bg-primary-500/10 dark:bg-primary-500/15 text-primary-600 dark:text-primary-400">
+          <Icon className="w-6 h-6" />
         </div>
 
         <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">

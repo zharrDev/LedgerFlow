@@ -157,7 +157,7 @@ export default function BalanceSheet() {
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-start sm:items-center gap-3">
-              <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-full flex-shrink-0">
+              <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex-shrink-0">
                 <FileText className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
@@ -190,6 +190,7 @@ export default function BalanceSheet() {
                           },
                         },
                       }}
+                      className="inline-block"
                       style={{ transformOrigin: "bottom center" }}
                     >
                       {char === " " ? "\u00A0" : char}
@@ -235,7 +236,7 @@ export default function BalanceSheet() {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.1 }}
-            className="bg-rose-50 dark:bg-rose-900/20 border-2 border-rose-500 rounded-2xl p-6"
+            className="bg-rose-50 dark:bg-rose-900/20 border border-rose-300 dark:border-rose-500/30 rounded-2xl p-6"
           >
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />

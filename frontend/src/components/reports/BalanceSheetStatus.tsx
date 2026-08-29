@@ -32,7 +32,7 @@ export const BalanceSheetStatus = ({
     >
       <div className="flex items-start gap-4">
         <div
-          className={`p-2.5 rounded-full flex-shrink-0 mt-0.5 ${
+          className={`p-2.5 rounded-xl flex-shrink-0 mt-0.5 ${
             isBalanced
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               : "bg-rose-500/10 text-rose-600 dark:text-rose-400"

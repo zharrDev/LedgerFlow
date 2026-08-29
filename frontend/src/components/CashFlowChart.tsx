@@ -122,13 +122,10 @@ function SummaryCard({
     <div className="relative flex flex-col gap-1 rounded-2xl px-4 py-3 overflow-hidden flex-1 min-w-0">
       {/* background gradient blob */}
       <div
-        className="absolute inset-0 opacity-[0.12] dark:opacity-[0.18]"
+        className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] rounded-2xl"
         style={{
           background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})`,
         }}
-      />
-      <div
-        className="absolute inset-0 rounded-2xl ring-1 ring-inset"
       />
       <span className="text-xs font-medium text-slate-500 dark:text-slate-400 relative z-10">
         {label}
