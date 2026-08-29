@@ -69,7 +69,7 @@ export function AppShell({ children, title, description, fullHeight, hideTitle }
               className={`flex-1 overflow-x-hidden ${
                 fullHeight
                   ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
-                  : "overflow-y-auto p-4 sm:p-6 lg:p-8 pb-8"
+                  : "overflow-y-auto app-scroll p-4 sm:p-6 lg:p-8 pb-8"
               }`}
             >
             {!hideTitle && (title || description) && (

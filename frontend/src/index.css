@@ -128,6 +128,14 @@ body {
   scrollbar-color: rgb(34 211 238 / 0.75) #f1f5f9;
 }
 
+/* Smooth scroll pada container scroll custom (homepage + main AppShell).
+   html sudah di-scroll-behavior: smooth, tapi container overflow-y-auto
+   perlu aturan sendiri. */
+.homepage-scroll,
+.app-scroll {
+  scroll-behavior: smooth;
+}
+
 .dark .homepage-scroll {
   scrollbar-color: rgb(34 211 238 / 0.75) #1e293b;
 }
