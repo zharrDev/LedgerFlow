@@ -77,7 +77,8 @@ export default function BukuBesarPage() {
       <motion.div
         variants={containerVariants}
         initial="hidden"
-        animate="visible"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
         className="max-w-6xl mx-auto space-y-6"
       >
         {/* ── Page Header ── */}

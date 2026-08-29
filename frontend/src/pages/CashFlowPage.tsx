@@ -362,7 +362,8 @@ export default function CashFlowPage() {
       <motion.div
         variants={containerVariants}
         initial="hidden"
-        animate="visible"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
         className="relative max-w-5xl mx-auto space-y-8 py-6"
       >
         <AuroraBackground />

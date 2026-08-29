@@ -151,7 +151,8 @@ export default function BalanceSheet() {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
           className="bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 dark:border-white/10 p-4 sm:p-6"
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -162,7 +163,8 @@ export default function BalanceSheet() {
               <div>
                 <motion.h1
                   initial="hidden"
-                  animate="visible"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.5 }}
                   variants={{
                     hidden: {},
                     visible: {
@@ -232,7 +234,8 @@ export default function BalanceSheet() {
         {error && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, amount: 0.1 }}
             className="bg-rose-50 dark:bg-rose-900/20 border-2 border-rose-500 rounded-2xl p-6"
           >
             <div className="flex items-start gap-3">
@@ -261,7 +264,8 @@ export default function BalanceSheet() {
         {!isLoadingReport && !error && !balanceSheet && selectedPeriodId && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.1 }}
             className="text-center py-20"
           >
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -317,7 +321,8 @@ export default function BalanceSheet() {
               return (
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
                   className="rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-4 sm:p-5"
                 >
                   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
@@ -365,7 +370,8 @@ export default function BalanceSheet() {
             {/* ─── ✅ Fix A4 done: per section jadi card sendiri (grid 2 kolom + EKUITAS center) ─── */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.05 }}
               className="space-y-5"
             >
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

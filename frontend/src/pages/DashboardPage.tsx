@@ -31,7 +31,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import type { Period } from "../types/reports";
-import { formatAbsCurrency, getCurrency } from "../utils/currency";
+import { formatAbsCurrency } from "../utils/currency";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { formatCompact } from "../i18n/compactNumber";
@@ -209,7 +209,8 @@ export default function DashboardPage() {
       <motion.div
         variants={containerVariants}
         initial="hidden"
-        animate="visible"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
         className="max-w-7xl mx-auto space-y-8"
       >
         {/* ═══ Hero Card — Greeting + Nama + Tanggal (+ Owl desktop) ═══ */}

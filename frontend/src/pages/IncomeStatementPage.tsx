@@ -82,7 +82,8 @@ export function IncomeStatementPage() {
       <motion.div
         variants={containerVariants}
         initial="hidden"
-        animate="visible"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
         className="max-w-4xl mx-auto space-y-6"
       >
         {/* ── Page Header ── */}
