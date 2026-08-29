@@ -257,7 +257,8 @@ export default function PricingPage() {
         {/* ═══ Hero ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
           className="text-center"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 text-primary-600 text-sm font-medium mb-4">
@@ -266,7 +267,8 @@ export default function PricingPage() {
           </div>
           <motion.h1
             initial="hidden"
-            animate="visible"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.5 }}
             variants={{
               hidden: {},
               visible: {
@@ -337,7 +339,8 @@ export default function PricingPage() {
         {/* ═══ Billing Toggle ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
           transition={{ delay: 0.1 }}
           className="flex justify-center"
         >
@@ -389,7 +392,8 @@ export default function PricingPage() {
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.1 }}
                 transition={{ delay: 0.1 + idx * 0.1 }}
                 className={`relative rounded-3xl bg-white dark:bg-darkCard border-2 ${
                   isPopular
@@ -502,8 +506,9 @@ export default function PricingPage() {
         {/* ═══ Feature Comparison Toggle ═══ */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ delay: 0.15 }}
           className="text-center mt-8"
         >
           <button
@@ -604,8 +609,9 @@ export default function PricingPage() {
         {/* ═══ Payment Methods ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ delay: 0.3 }}
           className="text-center mt-8"
         >
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -647,8 +653,9 @@ export default function PricingPage() {
         {/* ═══ FAQ ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.05 }}
+          transition={{ delay: 0.2 }}
           className="max-w-3xl mx-auto pb-8"
         >
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white text-center mb-6 sm:mb-8">
