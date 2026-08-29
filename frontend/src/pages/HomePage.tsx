@@ -136,7 +136,7 @@ export default function HomePage() {
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
-      <section className="relative min-h-screen overflow-hidden">
+      <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
         {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
           {/* ── Teks Kiri ── */}
@@ -145,14 +145,14 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
               <TextReveal
                 text={language === "id" ? "Kelola Masa Depan Keuangan Anda" : "Manage Your Financial Future"}
                 delay={0.1}
                 staggerDelay={0.03}
               />
               <br />
-              <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
                 <TextReveal
                   text={language === "id" ? "Dengan Percaya Diri" : "With Confidence"}
                   delay={0.4}
@@ -161,7 +161,7 @@ export default function HomePage() {
               </span>
             </h2>
 
-            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-300 max-w-lg leading-relaxed">
+            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg leading-relaxed">
               {language === "id"
                 ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
                 : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
@@ -185,7 +185,7 @@ export default function HomePage() {
                   </Link>
                   <Link
                     to="/login"
-                    className="px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
+                    className="px-6 py-3 border border-gray-300 dark:border-white/30 rounded-xl text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition"
                   >
                     {language === "id" ? "Lihat cara kerjanya" : "See how it works"}
                   </Link>
@@ -224,8 +224,8 @@ export default function HomePage() {
           transition={{ delay: 1.2, duration: 1 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
         >
-          <div className="w-6 h-10 rounded-full border-2 border-white/40 flex justify-center">
-            <div className="w-1 h-2 bg-white/60 rounded-full mt-2 animate-bounce" />
+          <div className="w-6 h-10 rounded-full border-2 border-gray-400 dark:border-white/40 flex justify-center">
+            <div className="w-1 h-2 bg-gray-400 dark:bg-white/60 rounded-full mt-2 animate-bounce" />
           </div>
         </motion.div>
       </section>
