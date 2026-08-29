@@ -15,15 +15,15 @@ type ScrollRevealProps = Pick<
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 export const SCROLL_REVEAL: ScrollRevealProps = {
-  initial: { opacity: 0, y: 24 },
+  initial: { opacity: 0, y: 44 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.65, ease: EASE },
+  viewport: { once: true, amount: 0.18 },
+  transition: { duration: 0.9, ease: EASE },
 };
 
 export const SCROLL_REVEAL_STAGGER = (idx: number): ScrollRevealProps => ({
   ...SCROLL_REVEAL,
-  transition: { ...SCROLL_REVEAL.transition, delay: idx * 0.08 },
+  transition: { ...SCROLL_REVEAL.transition, delay: idx * 0.12 },
 });
 
 // ── Arah tambahan ─────────────────────────────────────────────────────
@@ -31,29 +31,29 @@ export const SCROLL_REVEAL_STAGGER = (idx: number): ScrollRevealProps => ({
 // (fade + geser) hanya dengan arah berbeda.
 
 export const SCROLL_REVEAL_LEFT: ScrollRevealProps = {
-  initial: { opacity: 0, x: -32 },
+  initial: { opacity: 0, x: -44 },
   whileInView: { opacity: 1, x: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.65, ease: EASE },
+  viewport: { once: true, amount: 0.18 },
+  transition: { duration: 0.9, ease: EASE },
 };
 
 export const SCROLL_REVEAL_RIGHT: ScrollRevealProps = {
-  initial: { opacity: 0, x: 32 },
+  initial: { opacity: 0, x: 44 },
   whileInView: { opacity: 1, x: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.65, ease: EASE },
+  viewport: { once: true, amount: 0.18 },
+  transition: { duration: 0.9, ease: EASE },
 };
 
 export const SCROLL_REVEAL_SCALE: ScrollRevealProps = {
   initial: { opacity: 0, scale: 0.9 },
   whileInView: { opacity: 1, scale: 1 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.65, ease: EASE },
+  viewport: { once: true, amount: 0.18 },
+  transition: { duration: 0.9, ease: EASE },
 };
 
 export const SCROLL_REVEAL_FADE: ScrollRevealProps = {
   initial: { opacity: 0 },
   whileInView: { opacity: 1 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.8, ease: EASE },
+  viewport: { once: true, amount: 0.18 },
+  transition: { duration: 0.9, ease: EASE },
 };

@@ -66,9 +66,9 @@ export function ScrollReveal({
   children,
   direction = "up",
   delay = 0,
-  duration = 0.65,
+  duration = 0.9,
   once = true,
-  distance = 28,
+  distance = 44,
   className,
   stagger = false,
 }: ScrollRevealProps) {
@@ -81,7 +81,7 @@ export function ScrollReveal({
         variants={variants}
         initial="hidden"
         whileInView="show"
-        viewport={{ once, margin: "-60px" }}
+        viewport={{ once, amount: 0.18 }}
       >
         {children}
       </motion.div>
@@ -93,7 +93,7 @@ export function ScrollReveal({
       className={className}
       initial="hidden"
       whileInView="show"
-      viewport={{ once, margin: "-60px" }}
+      viewport={{ once, amount: 0.18 }}
       variants={{
         hidden: variants.hidden,
         show: variants.show,

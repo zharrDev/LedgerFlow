@@ -1,6 +1,6 @@
 // src/pages/HomePage.tsx
-import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -23,7 +23,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
-import Footer from "../components/Footer"; // ← import shared Footer component
+import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import OwlMascot from "../components/home/OwlMascot";
 import FeatureCarousel from "../components/home/FeatureCarousel";
@@ -33,11 +33,9 @@ import InViewVideo from "../components/home/InViewVideo";
 import { TextReveal } from "../components/TextReveal";
 import ScrollReveal from "../components/ScrollReveal";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
-import { THEME_TRANSITION_END } from "../lib/themeTransition";
-import fintechBgDesktop from "../assets/hero/fintech-bgdekstop.webp";
-import fintechBgMobile from "../assets/hero/fintech-bgmobile.webp";
-import heroBgAnim from "../assets/hero/hero-bg-anim.webm";
-import heroBgAnimFallback from "../assets/hero/hero-bg-anim.mp4";
+
+// Lazy-load Three.js — HANYA masuk bundle HomePage, bukan dashboard.
+const HeroWebGL = lazy(() => import("../components/home/HeroWebGL"));
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -119,131 +117,114 @@ const featureCards: Array<{
 export default function HomePage() {
   const { user } = useAuth();
   const { language } = useLanguage();
-  const [heroVideoError, setHeroVideoError] = useState(false);
-  const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 500], [0, 150]);
-  const opacityHero = useTransform(scrollY, [0, 300], [1, 0]);
 
-  // Hero video autoplay tanpa observer — tetap pastikan lanjut berjalan
-  // setelah circle-reveal theme transition (snapshot statis sesaat bisa
-  // membuat pemutaran terhenti).
-  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  // Scroll progress for 3D scene — tracks .homepage-scroll container, NOT window.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollProgress = useRef(0);
   useEffect(() => {
-    const resume = () => {
-      const v = heroVideoRef.current;
-      if (v && v.paused) v.play().catch(() => {});
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      scrollProgress.current = el.scrollTop / el.clientHeight;
     };
-    document.addEventListener(THEME_TRANSITION_END, resume);
-    return () => document.removeEventListener(THEME_TRANSITION_END, resume);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <div className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
+    <div ref={scrollContainerRef} className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
       <Navbar />
       <ScrollCardWrapper>
       {/* ═══ Hero ═══ */}
-      <section className="relative min-h-screen flex items-center justify-center text-center px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat sm:hidden" style={{ backgroundImage: `url(${fintechBgMobile})` }} />
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden sm:block" style={{ backgroundImage: `url(${fintechBgDesktop})` }} />
-        {!heroVideoError && (
-          <video
-            ref={heroVideoRef}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden
-            poster={fintechBgDesktop}
-            onError={() => setHeroVideoError(true)}
-            className="absolute inset-0 w-full h-full object-cover"
-          >
-            <source src={heroBgAnim} type="video/webm" />
-            <source src={heroBgAnimFallback} type="video/mp4" />
-          </video>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/25 via-darkBg/35 to-transparent pointer-events-none" />
-
-        <motion.div
-          style={{ y: heroY, opacity: opacityHero }}
-          className="relative z-10 max-w-4xl mx-auto"
-        >
+      <section className="relative min-h-screen bg-gradient-to-br from-[#020617] via-[#0B1120] to-[#0F172A] dark:from-[#020617] dark:via-[#0B1120] dark:to-[#0F172A] overflow-hidden">
+        {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
+          {/* ── Teks Kiri ── */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h2 className="text-[2.25rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+            <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
               <TextReveal
-                text={language === "id" ? "Kelola Masa Depan" : "Manage Your Financial"}
+                text={language === "id" ? "Kelola Masa Depan Keuangan Anda" : "Manage Your Financial Future"}
                 delay={0.1}
-                staggerDelay={0.04}
+                staggerDelay={0.03}
               />
               <br />
-              <TextReveal
-                text={language === "id" ? "Keuangan Anda" : "Future"}
-                delay={0.3}
-                staggerDelay={0.04}
-              />
-              <br />
-              <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent break-words">
+              <span className="bg-gradient-to-r from-primary-400 to-cyan-300 bg-clip-text text-transparent">
                 <TextReveal
                   text={language === "id" ? "Dengan Percaya Diri" : "With Confidence"}
-                  delay={0.5}
-                  staggerDelay={0.04}
+                  delay={0.4}
+                  staggerDelay={0.03}
                 />
               </span>
             </h2>
-            <ScrollReveal direction="left" delay={0.7} className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
-              {language === "id" ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time." : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
-            </ScrollReveal>
-            <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 w-full px-4">
+
+            <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-300 max-w-lg leading-relaxed">
+              {language === "id"
+                ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
+                : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               {user ? (
-                <ScrollReveal direction="up" delay={0.85}>
-                  <Link
-                    to="/dashboard"
-                    className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
-                  >
-                    {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ChevronRight size={18} />
-                  </Link>
-                </ScrollReveal>
+                <Link
+                  to="/dashboard"
+                  className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                >
+                  {language === "id" ? "Buka Dashboard" : "Go to Dashboard"} <ChevronRight size={18} />
+                </Link>
               ) : (
                 <>
-                  <ScrollReveal direction="up" delay={0.85}>
-                    <Link
-                      to="/register"
-                      className="w-full sm:w-auto justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
-                    >
-                      {language === "id" ? "Coba gratis 15 hari" : "15-day free trial"} <ChevronRight size={18} />
-                    </Link>
-                  </ScrollReveal>
-                  <ScrollReveal direction="up" delay={1}>
-                    <Link
-                      to="/login"
-                      className="w-full sm:w-auto text-center px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
-                    >
-                      {language === "id" ? "Lihat cara kerjanya" : "See how it works"}
-                    </Link>
-                  </ScrollReveal>
+                  <Link
+                    to="/register"
+                    className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                  >
+                    {language === "id" ? "Coba gratis 15 hari" : "15-day free trial"} <ChevronRight size={18} />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="px-6 py-3 border border-white/30 rounded-xl text-white hover:bg-white/10 transition"
+                  >
+                    {language === "id" ? "Lihat cara kerjanya" : "See how it works"}
+                  </Link>
                 </>
               )}
             </div>
-            <ScrollReveal direction="fade" delay={1.1} className="mt-6 text-xs sm:text-sm text-gray-300 flex flex-wrap items-center justify-center gap-2 px-4 text-center">
+
+            <p className="mt-5 text-xs sm:text-sm text-gray-400 flex items-center gap-2">
               <Lock size={14} className="flex-shrink-0" />
               {language === "id"
                 ? "Keamanan kelas enterprise dengan enkripsi penuh"
                 : "Enterprise-grade security with full encryption"}
-            </ScrollReveal>
+            </p>
           </motion.div>
-        </motion.div>
 
+          {/* ── 3D Scene Kanan ── */}
+          <div className="relative h-[40vh] sm:h-[50vh] lg:h-[70vh] lg:min-h-[480px]">
+            {typeof window !== "undefined" && (
+              <Suspense
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-32 h-32 rounded-full bg-primary-500/20 blur-3xl animate-pulse" />
+                  </div>
+                }
+              >
+                <HeroWebGL scrollProgress={scrollProgress} />
+              </Suspense>
+            )}
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          transition={{ delay: 1.2, duration: 1 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
         >
-          <div className="w-6 h-10 rounded-full border-2 border-white/60 flex justify-center">
+          <div className="w-6 h-10 rounded-full border-2 border-white/40 flex justify-center">
             <div className="w-1 h-2 bg-white/60 rounded-full mt-2 animate-bounce" />
           </div>
         </motion.div>
