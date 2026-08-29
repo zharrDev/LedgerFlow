@@ -194,7 +194,7 @@ export default function HomePage() {
                 />
               </span>
             </h2>
-            <ScrollReveal direction="up" delay={0.7} className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
+            <ScrollReveal direction="left" delay={0.7} className="mt-6 text-base sm:text-lg md:text-xl text-gray-100 max-w-2xl mx-auto px-2">
               {language === "id" ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time." : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
             </ScrollReveal>
             <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 w-full px-4">
@@ -391,13 +391,15 @@ export default function HomePage() {
 
               {/* Main Card */}
               <div className="relative overflow-hidden rounded-[36px] border border-white/20 bg-white/60 dark:bg-darkCard/70 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.18)] transition-[background-color,border-color,box-shadow,transform] duration-700 group-hover:-translate-y-2">
-                <InViewVideo
-                  sources={[
-                    { src: dashboardDemo, type: "video/webm" },
-                    { src: dashboardDemoFallback, type: "video/mp4" },
-                  ]}
-                  className="w-full min-h-[100px] md:min-h-[300px] lg:min-h-[450px] object-cover"
-                />
+                <ScrollReveal direction="scale" className="w-full">
+                  <InViewVideo
+                    sources={[
+                      { src: dashboardDemo, type: "video/webm" },
+                      { src: dashboardDemoFallback, type: "video/mp4" },
+                    ]}
+                    className="w-full min-h-[100px] md:min-h-[300px] lg:min-h-[450px] object-cover"
+                  />
+                </ScrollReveal>
                 {/* Overlay Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
               </div>

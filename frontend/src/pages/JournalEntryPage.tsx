@@ -19,6 +19,7 @@ import { IconJournal } from "../components/journal/JournalShared";
 import { useAuth } from "../context/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { formatCurrency } from "../utils/currency";
 import {
   ArrowLeft,
@@ -37,13 +38,6 @@ type ViewState =
   | { mode: "detail"; entry: JournalEntry };
 
 // ─── Animation variants ─────────────────────────────────────────────
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-  },
-};
 const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -255,16 +249,10 @@ export default function JournalEntryPage() {
 
   return (
     <AppShell>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        className="max-w-6xl mx-auto space-y-6"
-      >
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* ── Page Header ── */}
-        <motion.div
-          variants={itemVariants}
+        <ScrollReveal
+          direction="left"
           className="flex items-start justify-between gap-4 flex-wrap"
         >
           <div>
@@ -323,12 +311,12 @@ export default function JournalEntryPage() {
               {tx(language, "New Entry", "Buat Entry Baru")}
             </button>
           )}
-        </motion.div>
+        </ScrollReveal>
 
         {/* ── Banner sisa kuota jurnal (plan Free) ── */}
         {quota && quota.max !== null && quota.max > 0 && (
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="left"
             className={`rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 ${
               (quota.left ?? 0) <= 10
                 ? "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40"
@@ -375,12 +363,12 @@ export default function JournalEntryPage() {
                 {tx(language, "Upgrade to Pro", "Upgrade ke Pro")}
               </a>
             )}
-          </motion.div>
+          </ScrollReveal>
         )}
 
         {/* ── Stats (list view only) ── */}
         {view.mode === "list" && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <ScrollReveal direction="up" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label={tx(language, "Total Entries", "Total Entry")}
               value={stats.total}
@@ -406,13 +394,13 @@ export default function JournalEntryPage() {
               icon={<CircleDollarSign size={14} className="text-primary-500" />}
               accent="bg-primary-500/10"
             />
-          </div>
+          </ScrollReveal>
         )}
 
         {/* ── Filters (list view only) ── */}
         {view.mode === "list" && (
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="left"
             className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center"
           >
             <div className="relative flex-1 min-w-[100%] sm:min-w-48">
@@ -452,12 +440,12 @@ export default function JournalEntryPage() {
                 <X size={12} /> {tx(language, "Reset", "Reset")}
               </button>
             )}
-          </motion.div>
+          </ScrollReveal>
         )}
 
         {/* ── Main Content ── */}
         {view.mode === "list" && (
-          <>
+          <ScrollReveal direction="up">
             <JournalList
               entries={pagination.pageItems}
               loading={loading}
@@ -493,7 +481,7 @@ export default function JournalEntryPage() {
                 ),
               }}
             />
-          </>
+          </ScrollReveal>
         )}
 
         {view.mode === "new" && (
@@ -515,7 +503,7 @@ export default function JournalEntryPage() {
             canDelete={canDelete}
           />
         )}
-      </motion.div>
+      </div>
 
       {/* ── Confirm Dialog ── */}
       <ConfirmDialog

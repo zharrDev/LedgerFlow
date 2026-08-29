@@ -19,6 +19,7 @@ import {
 } from "../services/paymentService";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { useLanguage } from "../hooks/useLanguage";
 import {
   Check,
@@ -329,21 +330,15 @@ export default function PricingPage() {
               ))}
             </span>
           </motion.h1>{" "}
-          <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <ScrollReveal direction="left" className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             {language === "id"
               ? "Mulai gratis, upgrade kapan saja. Semua plan termasuk 15 hari free trial untuk fitur premium."
               : "Start free, upgrade anytime. Every plan includes a 15-day free trial of premium features."}
-          </p>
+          </ScrollReveal>
         </motion.div>
 
         {/* ═══ Billing Toggle ═══ */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ delay: 0.1 }}
-          className="flex justify-center"
-        >
+        <ScrollReveal direction="left" className="flex justify-center">
           <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800">
             <button
               onClick={() => setBillingCycle("monthly")}
@@ -369,7 +364,7 @@ export default function PricingPage() {
               </span>
             </button>
           </div>
-        </motion.div>
+        </ScrollReveal>
 
         {/* ═══ Pricing Cards ═══ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">

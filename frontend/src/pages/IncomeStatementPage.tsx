@@ -6,6 +6,7 @@ import { tx } from "../i18n/tx";
 import { formatCompact } from "../i18n/compactNumber";
 import { reportsService } from "../services/reportsService";
 import { AppShell } from "../components/AppShell";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ExportMenu } from "../components/ExportMenu";
 import {
@@ -23,21 +24,6 @@ import {
 import type { Period } from "../types/reports";
 import { formatCurrency } from "../utils/currency";
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-  },
-};
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
-};
 const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
@@ -79,16 +65,10 @@ export function IncomeStatementPage() {
 
   return (
     <AppShell>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        className="max-w-4xl mx-auto space-y-6"
-      >
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* ── Page Header ── */}
-        <motion.div
-          variants={itemVariants}
+        <ScrollReveal
+          direction="left"
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div>
@@ -152,7 +132,7 @@ export function IncomeStatementPage() {
               </button>
             </div>
           </div>
-        </motion.div>
+        </ScrollReveal>
 
         {/* ── Loading ── */}
         {loading && (
@@ -164,7 +144,7 @@ export function IncomeStatementPage() {
 
         {/* ── Error ── */}
         {error && !loading && (
-          <motion.div variants={itemVariants} className="py-16 text-center">
+          <ScrollReveal direction="fade" className="py-16 text-center">
             <p className="text-red-500 text-sm mb-2">{error}</p>
             <button
               onClick={refetch}
@@ -172,16 +152,15 @@ export function IncomeStatementPage() {
             >
               {tx(language, "Try again", "Coba lagi")}
             </button>
-          </motion.div>
+          </ScrollReveal>
         )}
 
         {/* ── Report ── */}
         {data && !loading && !error && (
           <>
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <motion.div
-                variants={itemVariants}
                 whileHover={{ y: -4 }}
                 className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5"
               >
@@ -199,7 +178,6 @@ export function IncomeStatementPage() {
               </motion.div>
 
               <motion.div
-                variants={itemVariants}
                 whileHover={{ y: -4 }}
                 className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5"
               >
@@ -217,7 +195,6 @@ export function IncomeStatementPage() {
               </motion.div>
 
               <motion.div
-                variants={itemVariants}
                 whileHover={{ y: -4 }}
                 className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5"
               >
@@ -239,11 +216,11 @@ export function IncomeStatementPage() {
                   {formatCompact(language, data.netIncome)}
                 </p>
               </motion.div>
-            </div>
+            </ScrollReveal>
 
             {/* Detail Report */}
-            <motion.div
-              variants={itemVariants}
+            <ScrollReveal
+              direction="up"
               className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden"
             >
               {/* Header */}
@@ -342,8 +319,8 @@ export function IncomeStatementPage() {
                 </div>
 
                 {/* NET INCOME */}
-                <motion.div
-                  variants={itemVariants}
+                <ScrollReveal
+                  direction="fade"
                   className={`mt-6 p-4 sm:p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-base sm:text-lg font-bold border-2 ${
                     data.netIncome >= 0
                       ? "bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border-emerald-500/20 text-emerald-700 dark:text-emerald-400"
@@ -358,9 +335,9 @@ export function IncomeStatementPage() {
                   <span className="text-xl sm:text-2xl tabular-nums break-all sm:break-normal w-full sm:w-auto text-left sm:text-right">
                     {formatRupiah(data.netIncome)}
                   </span>
-                </motion.div>
+                </ScrollReveal>
               </div>
-            </motion.div>
+            </ScrollReveal>
           </>
         )}
 
@@ -371,7 +348,7 @@ export function IncomeStatementPage() {
             <p>{tx(language, "No report data.", "Tidak ada data laporan.")}</p>
           </div>
         )}
-      </motion.div>
+      </div>
     </AppShell>
   );
 }

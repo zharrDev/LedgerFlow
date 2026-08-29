@@ -6,6 +6,7 @@ import { usePagination } from "../hooks/usePagination";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { AppShell } from "../components/AppShell";
+import { ScrollReveal } from "../components/ScrollReveal";
 import {
   PlusCircle,
   Layers,
@@ -43,21 +44,6 @@ import { ExportMenu } from "../components/ExportMenu";
 import type { AccountType, NormalBalance } from "../types/account";
 import { ACCOUNT_TYPES } from "../types/constants";
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
-  },
-};
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
-};
 const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
@@ -311,16 +297,10 @@ export default function ChartOfAccounts() {
 
   return (
     <AppShell>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        className="max-w-7xl mx-auto space-y-8"
-      >
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
-        <motion.div
-          variants={itemVariants}
+        <ScrollReveal
+          direction="left"
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div>
@@ -389,13 +369,10 @@ export default function ChartOfAccounts() {
               className="hidden"
             />
           </div>
-        </motion.div>
+        </ScrollReveal>
 
         {/* Stat Cards */}
-        <motion.div
-          variants={itemVariants}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4"
-        >
+        <ScrollReveal direction="up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
           {statCards.map((card) => (
             <motion.div
               key={card.label}
@@ -413,11 +390,11 @@ export default function ChartOfAccounts() {
               </p>
             </motion.div>
           ))}
-        </motion.div>
+        </ScrollReveal>
 
         {/* Search & Filter Section */}
-        <motion.div
-          variants={itemVariants}
+        <ScrollReveal
+          direction="left"
           className="relative z-30 flex flex-wrap items-center gap-3 bg-white/50 dark:bg-darkBg/50 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700/50 p-4"
         >
           <div className="relative flex-1 min-w-[100%] sm:min-w-[200px]">
@@ -460,10 +437,10 @@ export default function ChartOfAccounts() {
               </button>
             )}
           </div>
-        </motion.div>
+        </ScrollReveal>
 
         {/* Account Table */}
-        <div className="relative z-10">
+        <ScrollReveal direction="up" className="relative z-10">
           <AccountTable
             accounts={pagination.pageItems}
             loading={loading}
@@ -496,8 +473,8 @@ export default function ChartOfAccounts() {
               ),
             }}
           />
-        </div>
-      </motion.div>
+        </ScrollReveal>
+      </div>
 
       {/* Account Modal */}
       <AccountModal

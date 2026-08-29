@@ -25,7 +25,8 @@ export const BalanceSheetStatus = ({
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.3 }}
       className="rounded-2xl p-5 sm:p-6 backdrop-blur-xl bg-white/60 dark:bg-darkCard/40 border border-white/20 dark:border-white/10 shadow-lg"
     >

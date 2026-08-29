@@ -7,23 +7,9 @@ import { tx } from "../i18n/tx";
 import { LedgerFilter } from "../components/ledger/LedgerFilter";
 import { LedgerTable } from "../components/ledger/LedgerTable";
 import { AppShell } from "../components/AppShell";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-  },
-};
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
-};
 const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
@@ -74,15 +60,9 @@ export default function BukuBesarPage() {
 
   return (
     <AppShell>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        className="max-w-6xl mx-auto space-y-6"
-      >
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* ── Page Header ── */}
-        <motion.div variants={itemVariants}>
+        <ScrollReveal direction="left">
           <div className="flex items-center gap-2.5 mb-1">
             <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
               <BookOpen size={20} />
@@ -112,12 +92,12 @@ export default function BukuBesarPage() {
               </p>
             </div>
           </div>
-        </motion.div>
+        </ScrollReveal>
 
         {/* ── Reference data error ── */}
         {refError && (
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="fade"
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/20 text-sm text-red-600 dark:text-red-400"
           >
             <AlertCircle size={16} className="shrink-0" />
@@ -129,11 +109,11 @@ export default function BukuBesarPage() {
             >
               <RefreshCw size={12} /> {tx(language, "Try Again", "Coba Lagi")}
             </button>
-          </motion.div>
+          </ScrollReveal>
         )}
 
         {/* ── Filter ── */}
-        <motion.div variants={itemVariants}>
+        <ScrollReveal direction="left">
           <LedgerFilter
             accounts={accounts}
             periods={periods}
@@ -141,18 +121,18 @@ export default function BukuBesarPage() {
             ledgerLoading={ledgerLoading}
             onSubmit={handleSubmit}
           />
-        </motion.div>
+        </ScrollReveal>
 
         {/* ── Result ── */}
-        <motion.div variants={itemVariants}>
+        <ScrollReveal direction="up">
           <LedgerTable
             result={result}
             loading={ledgerLoading}
             error={ledgerError}
             onRetry={handleRetry}
           />
-        </motion.div>
-      </motion.div>
+        </ScrollReveal>
+      </div>
 
       <style>{`
         @keyframes slideIn {

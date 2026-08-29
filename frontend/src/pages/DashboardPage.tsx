@@ -7,6 +7,7 @@ import { useDashboardData } from "../hooks/useDashboardData";
 import { reportsService } from "../services/reportsService";
 import { journalService } from "../services/journalService";
 import { AppShell } from "../components/AppShell";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { GreetingOwl } from "../components/dashboard/GreetingOwl";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { usePagination } from "../hooks/usePagination";
@@ -38,13 +39,6 @@ import { formatCompact } from "../i18n/compactNumber";
 import { formatDateFull } from "../i18n/dateFormat";
 
 // ─── Animation variants ─────────────────────────────────────────────
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
-  },
-};
 const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -206,15 +200,9 @@ export default function DashboardPage() {
       transition={{ duration: 0.35 }}
     >
     <AppShell>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        className="max-w-7xl mx-auto space-y-8"
-      >
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* ═══ Hero Card — Greeting + Nama + Tanggal (+ Owl desktop) ═══ */}
-        <section className="relative mt-6 lg:mt-8">
+        <ScrollReveal direction="up" className="relative mt-6 lg:mt-8">
           {/* blurred decorations — clipped to the panel */}
           <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <div className="absolute top-0 -right-32 w-72 h-72 bg-primary-500/30 rounded-full blur-3xl" />
@@ -258,12 +246,12 @@ export default function DashboardPage() {
           <div className="hidden lg:block absolute -top-12 lg:-top-14 right-8 xl:right-10 z-10">
             <GreetingOwl size="h-36 lg:h-44" />
           </div>
-        </section>
+        </ScrollReveal>
 
         {/* ═══ Banner sisa kuota jurnal (plan Free) ═══ */}
         {quota && quota.max !== null && quota.max > 0 && (
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="left"
             className={`flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border px-4 py-3 ${
               (quota.left ?? 0) <= 10
                 ? "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40"
@@ -310,12 +298,12 @@ export default function DashboardPage() {
                 {tx(language, "Upgrade to Pro", "Upgrade ke Pro")}
               </Link>
             )}
-          </motion.div>
+          </ScrollReveal>
         )}
 
         {/* ═══ Period Selector Row ═══ */}
-        <motion.div
-          variants={itemVariants}
+        <ScrollReveal
+          direction="left"
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -332,10 +320,10 @@ export default function DashboardPage() {
               />
             </div>
           </div>
-        </motion.div>
+        </ScrollReveal>
 
         {/* ═══ KPI Cards Row ═══ */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {summaryLoading || !summary ? (
             // Skeleton cards
             [...Array(4)].map((_, i) => (
@@ -432,10 +420,10 @@ export default function DashboardPage() {
               />
             </>
           )}
-        </div>
+        </ScrollReveal>
 
         {/* ═══ Financial Health & Cash Flow Monitor ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <ScrollReveal direction="scale" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Financial Health Score */}
           <motion.div
             variants={itemVariants}
@@ -577,10 +565,10 @@ export default function DashboardPage() {
               </div>
             )}
           </motion.div>
-        </div>
+        </ScrollReveal>
 
         {/* ═══ Financial Position (Assets, Liabilities, Equity) ═══ */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
             {
               label: tx(language, "Total Assets", "Total Aset"),
@@ -647,13 +635,13 @@ export default function DashboardPage() {
               </Link>
             </motion.div>
           ))}
-        </div>
+        </ScrollReveal>
 
         {/* ═══ Recent Accounts & Quick Report Access ═══ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Accounts */}
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="up"
             className="lg:col-span-2 rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden"
           >
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
@@ -753,11 +741,11 @@ export default function DashboardPage() {
                 itemLabel={tx(language, "accounts", "akun")}
               />
             )}
-          </motion.div>
+          </ScrollReveal>
 
           {/* Quick Report Access */}
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="left"
             className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-6"
           >
             <div className="flex justify-between items-center mb-4">
@@ -857,9 +845,9 @@ export default function DashboardPage() {
                 />
               </Link>
             </div>
-          </motion.div>
+          </ScrollReveal>
         </div>
-      </motion.div>
+      </div>
     </AppShell>
     </motion.div>
   );

@@ -13,6 +13,7 @@ import {
   Activity,
 } from "lucide-react";
 import { AppShell } from "../components/AppShell";
+import { ScrollReveal } from "../components/ScrollReveal";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { reportsService } from "../services/reportsService";
@@ -31,14 +32,6 @@ import type { Period, CashFlowSection } from "../types/reports";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 const formatIDR = (amount: number) => formatCurrency(amount);
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
 
 const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
@@ -359,18 +352,12 @@ export default function CashFlowPage() {
 
   return (
     <AppShell>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        className="relative max-w-5xl mx-auto space-y-8 py-6"
-      >
+      <div className="relative max-w-5xl mx-auto space-y-8 py-6">
         <AuroraBackground />
         <div className="relative z-10 space-y-8">
           {/* ── Page Header ── */}
-          <motion.div
-            variants={itemVariants}
+          <ScrollReveal
+            direction="left"
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
           >
             <div>
@@ -419,13 +406,14 @@ export default function CashFlowPage() {
                   ]}
                 />
               </div>
+
               <ExportMenu
                 disabled={!data || loading}
                 formats={["pdf", "excel", "word"]}
                 onExport={handleExport}
               />
             </div>
-          </motion.div>
+          </ScrollReveal>
 
           {/* ── Loading ── */}
           {loading && (
@@ -454,7 +442,7 @@ export default function CashFlowPage() {
           {/* ── Data ── */}
           {data && !loading && !error && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <SummaryCard
                   label={tx(language, "Beginning Cash Balance", "Saldo Kas Awal")}
                   value={data.beginningCash}
@@ -482,10 +470,10 @@ export default function CashFlowPage() {
                   trend="up"
                   language={language}
                 />
-              </div>
+              </ScrollReveal>
 
-              <motion.div
-                variants={itemVariants}
+              <ScrollReveal
+                direction="scale"
                 className="rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg p-4 sm:p-5"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -503,11 +491,11 @@ export default function CashFlowPage() {
                   formatValue={formatIDR}
                   height={280}
                 />
-              </motion.div>
+              </ScrollReveal>
 
               {/* Satu panel: Operasi → Investasi → Pendanaan → Net Change */}
-              <motion.div
-                variants={itemVariants}
+              <ScrollReveal
+                direction="up"
                 className="rounded-2xl overflow-hidden bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg"
               >
                 <div className="divide-y divide-white/10 dark:divide-white/5">
@@ -532,7 +520,7 @@ export default function CashFlowPage() {
                     language={language}
                   />
                 </div>
-              </motion.div>
+              </ScrollReveal>
             </>
           )}
 
@@ -545,7 +533,7 @@ export default function CashFlowPage() {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </AppShell>
   );
 }
