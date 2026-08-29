@@ -118,18 +118,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const { language } = useLanguage();
 
-  // Scroll progress for 3D scene — tracks .homepage-scroll container, NOT window.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollProgress = useRef(0);
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      scrollProgress.current = el.scrollTop / el.clientHeight;
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
 
   return (
     <div ref={scrollContainerRef} className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg">
@@ -211,7 +200,7 @@ export default function HomePage() {
                   </div>
                 }
               >
-                <HeroWebGL scrollProgress={scrollProgress} />
+                <HeroWebGL />
               </Suspense>
             )}
           </div>

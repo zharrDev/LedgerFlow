@@ -2,8 +2,9 @@
 // Reconciliation 3D scene — Bank Statement (left) + Internal Ledger (right)
 // fly to center and lock together like puzzle pieces.
 // Once unified: soft green glow = balanced. Lazy-loaded into HomePage only.
+// Animasi berbasis waktu (one-shot saat mount), bukan scroll-driven.
 
-import { useRef, useMemo, useState, useEffect } from "react";
+import { useRef, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -15,13 +16,28 @@ const VIOLET = "#a78bfa";
 const GREEN = "#34d399";
 const GREEN_GLOW = "#10b981";
 
-interface ScrollRef {
-  current: number;
+// ─── Posisi akhir tiap elemen (kompak, saling berselang seperti puzzle) ──
+// Bank di baris atas, Ledger di baris bawah, tiap kolom saling
+// berdekatan (bukan menumpuk di satu titik) supaya efek "lock" terlihat
+// sebagai unit-unit terpisah yang rapat, bukan blob tunggal.
+const COLS = 5;
+const SPACING_X = 0.28;
+
+function getTargetPosition(index: number, side: "bank" | "ledger"): THREE.Vector3 {
+  const xBase = (index - (COLS - 1) / 2) * SPACING_X;
+  const y = side === "bank" ? 0.14 : -0.14;
+  const z = side === "bank" ? 0.05 : -0.05;
+  return new THREE.Vector3(xBase, y, z);
+}
+
+interface ReconcileState {
+  progress: React.RefObject<number>;
+  locked: boolean;
 }
 
 // ─── Reconciliation State ──────────────────────────────────────────
 // 0 = clusters apart, 0–1 = flying together, 1 = locked + green
-function useReconcile() {
+function useReconcile(): ReconcileState {
   const progress = useRef(0);
   const [locked, setLocked] = useState(false);
 
@@ -46,27 +62,23 @@ function BankElement({
   position: [number, number, number];
   size: [number, number, number];
   color: string;
-  reconcile: { progress: THREE.RefObject<number>; locked: boolean };
+  reconcile: ReconcileState;
   index: number;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
   const startPos = useRef(new THREE.Vector3(...position));
-  const targetPos = useRef(new THREE.Vector3(0, 0, 0));
+  const targetPos = useRef(getTargetPosition(index, "bank"));
 
   useFrame(() => {
     if (!ref.current) return;
     const t = reconcile.progress.current ?? 0;
-    // Eased interpolation (mechanical, precise)
     const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-    // Fly from start to center
     ref.current.position.lerpVectors(startPos.current, targetPos.current, ease);
 
-    // Slight rotation during flight
     ref.current.rotation.y = (1 - ease) * 0.3 * (index % 2 === 0 ? 1 : -1);
     ref.current.rotation.x = (1 - ease) * 0.15;
 
-    // Color shift: cyan → green when locked
     const mat = ref.current.material as THREE.MeshStandardMaterial;
     if (reconcile.locked) {
       mat.color.lerp(new THREE.Color(GREEN), 0.05);
@@ -102,12 +114,12 @@ function LedgerElement({
   position: [number, number, number];
   size: [number, number, number];
   color: string;
-  reconcile: { progress: THREE.RefObject<number>; locked: boolean };
+  reconcile: ReconcileState;
   index: number;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
   const startPos = useRef(new THREE.Vector3(...position));
-  const targetPos = useRef(new THREE.Vector3(0, 0, 0));
+  const targetPos = useRef(getTargetPosition(index, "ledger"));
 
   useFrame(() => {
     if (!ref.current) return;
@@ -143,13 +155,12 @@ function LedgerElement({
 }
 
 // ─── Glow Pulse (after lock) ───────────────────────────────────────
-function GlowPulse({ reconcile }: { reconcile: { progress: THREE.RefObject<number>; locked: boolean } }) {
+function GlowPulse({ reconcile }: { reconcile: ReconcileState }) {
   const ref = useRef<THREE.Mesh>(null!);
 
   useFrame(() => {
     if (!ref.current) return;
     const t = reconcile.progress.current ?? 0;
-    // Appear only after lock
     const scale = Math.max(0, (t - 0.8) * 5);
     ref.current.scale.setScalar(scale + Math.sin(performance.now() * 0.003) * 0.1 * scale);
     (ref.current.material as THREE.MeshBasicMaterial).opacity = scale * 0.3;
@@ -163,8 +174,11 @@ function GlowPulse({ reconcile }: { reconcile: { progress: THREE.RefObject<numbe
   );
 }
 
-// �── Connection Lines (after lock) ──────────────────────────────────
-function ConnectionLines({ reconcile }: { reconcile: { progress: THREE.RefObject<number>; locked: boolean } }) {
+// ─── Connection Lines (after lock) ──────────────────────────────────
+// Menghubungkan tiap pasangan bank[i] <-> ledger[i] di posisi akhir
+// aslinya (bukan lingkaran radial arbitrary), supaya benar-benar
+// terlihat sebagai puzzle yang saling mengunci.
+function ConnectionLines({ reconcile }: { reconcile: ReconcileState }) {
   const ref = useRef<THREE.Group>(null!);
 
   useFrame(() => {
@@ -182,12 +196,11 @@ function ConnectionLines({ reconcile }: { reconcile: { progress: THREE.RefObject
   });
 
   const lines = useMemo(() => {
-    const arr: { from: [number, number, number]; to: [number, number, number] }[] = [];
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2;
+    const arr: { from: THREE.Vector3; to: THREE.Vector3 }[] = [];
+    for (let i = 0; i < COLS; i++) {
       arr.push({
-        from: [Math.cos(angle) * 0.5, Math.sin(angle) * 0.5, 0],
-        to: [Math.cos(angle) * 0.8, Math.sin(angle) * 0.8, 0],
+        from: getTargetPosition(i, "bank"),
+        to: getTargetPosition(i, "ledger"),
       });
     }
     return arr;
@@ -197,12 +210,12 @@ function ConnectionLines({ reconcile }: { reconcile: { progress: THREE.RefObject
     <group ref={ref}>
       {lines.map((line, i) => {
         const mid: [number, number, number] = [
-          (line.from[0] + line.to[0]) / 2,
-          (line.from[1] + line.to[1]) / 2,
-          (line.from[2] + line.to[2]) / 2,
+          (line.from.x + line.to.x) / 2,
+          (line.from.y + line.to.y) / 2,
+          (line.from.z + line.to.z) / 2,
         ];
-        const dx = line.to[0] - line.from[0];
-        const dy = line.to[1] - line.from[1];
+        const dx = line.to.x - line.from.x;
+        const dy = line.to.y - line.from.y;
         const len = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx);
         return (
@@ -217,7 +230,7 @@ function ConnectionLines({ reconcile }: { reconcile: { progress: THREE.RefObject
 }
 
 // ─── Scene ─────────────────────────────────────────────────────────
-function Scene({ scroll }: { scroll: ScrollRef }) {
+function Scene() {
   const reconcile = useReconcile();
 
   // Bank Statement elements (left cluster) — cyan/indigo tones
@@ -291,11 +304,9 @@ function Scene({ scroll }: { scroll: ScrollRef }) {
 }
 
 // ─── Main Export ───────────────────────────────────────────────────
-export default function HeroWebGL({
-  scrollProgress,
-}: {
-  scrollProgress: React.RefObject<number>;
-}) {
+// Catatan: prop `scrollProgress` dihapus — animasi berbasis waktu
+// (one-shot saat halaman dimuat), bukan terikat scroll.
+export default function HeroWebGL() {
   return (
     <div className="w-full h-full pointer-events-none">
       <Canvas
@@ -304,7 +315,7 @@ export default function HeroWebGL({
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
       >
-        <Scene scroll={scrollProgress as ScrollRef} />
+        <Scene />
       </Canvas>
     </div>
   );
