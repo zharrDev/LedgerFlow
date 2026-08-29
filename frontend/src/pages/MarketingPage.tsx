@@ -3,6 +3,9 @@ import { ArrowRight, CheckCircle2, Layers, ShieldCheck, Sparkles, type LucideIco
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextReveal } from "../components/TextReveal";
+import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
+import { motion } from "framer-motion";
 
 type Item = { title: string; description: string; icon: LucideIcon };
 type Copy = { eyebrow: string; title: string; description: string; items: Item[] };
@@ -59,11 +62,95 @@ export default function MarketingPage() {
   const page = content[key][language];
   const label = language === "id" ? { home: "Beranda", start: "Mulai gratis", explore: "Jelajahi", benefit: "Yang Anda dapatkan" } : { home: "Home", start: "Start free", explore: "Explore", benefit: "What you get" };
 
-  return <div className="min-h-screen bg-white text-gray-900 dark:bg-darkBg dark:text-white">
-    <Navbar />
-    <main className="pt-20">
-      <section className="relative overflow-hidden px-5 py-20 sm:py-28"><div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl" /><div className="relative mx-auto max-w-4xl text-center"><p className="text-xs font-extrabold tracking-[.22em] text-primary-500">{page.eyebrow}</p><h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">{page.title}</h1><p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-300">{page.description}</p><Link to="/register" className="mt-9 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-6 py-3 font-bold text-white shadow-lg shadow-primary-500/25">{label.start}<ArrowRight size={18} /></Link></div></section>
-      <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-6"><p className="mb-5 text-center text-sm font-bold tracking-widest text-primary-500">{label.explore}</p><div className="grid gap-5 md:grid-cols-3">{page.items.map((item, index) => <Link to={`/${key}/${detailPaths[key][index]}`} key={item.title} className="group relative overflow-hidden rounded-3xl border border-primary-500/15 bg-white p-7 shadow-lg shadow-primary-950/5 transition duration-300 hover:-translate-y-2 hover:border-primary-400/40 hover:shadow-2xl dark:bg-darkCard"><div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 transition group-hover:scale-150" /><item.icon className="relative h-11 w-11 rounded-xl bg-primary-500/10 p-2 text-primary-500 transition group-hover:rotate-3 group-hover:scale-110" /><h2 className="relative mt-5 text-xl font-bold">{item.title}</h2><p className="relative mt-3 leading-relaxed text-gray-600 dark:text-gray-300">{item.description}</p><div className="relative mt-6 flex items-center gap-2 text-sm font-semibold text-primary-500"><CheckCircle2 size={17} /> {label.benefit}<ArrowRight size={16} className="ml-auto transition-transform group-hover:translate-x-1" /></div></Link>)}</div><div className="mt-12 rounded-3xl bg-gray-950 px-7 py-8 text-white sm:flex sm:items-center sm:justify-between sm:px-10"><div><p className="text-sm font-bold text-cyan-300">LedgerFlow</p><h2 className="mt-2 text-2xl font-bold">{language === "id" ? "Siap membuat keuangan lebih sederhana?" : "Ready to make finance simpler?"}</h2></div><Link to="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-950 sm:mt-0">{label.start}<ArrowRight size={16}/></Link></div></section>
-    </main><Footer />
-  </div>;
+  return (
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-darkBg dark:text-white">
+      <Navbar />
+      <main className="pt-20">
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="relative overflow-hidden px-5 py-20 sm:py-28"
+        >
+          <div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl" />
+          <div className="relative mx-auto max-w-4xl text-center">
+            <p className="text-xs font-extrabold tracking-[.22em] text-primary-500">{page.eyebrow}</p>
+            <h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">
+              <TextReveal text={page.title} delay={0.1} />
+            </h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-300"
+            >
+              {page.description}
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <Link to="/register" className="mt-9 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-6 py-3 font-bold text-white shadow-lg shadow-primary-500/25">
+                {label.start}
+                <ArrowRight size={18} />
+              </Link>
+            </motion.div>
+          </div>
+        </motion.section>
+
+        <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-6">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.5 }}
+            className="mb-5 text-center text-sm font-bold tracking-widest text-primary-500"
+          >
+            {label.explore}
+          </motion.p>
+          <div className="grid gap-5 md:grid-cols-3">
+            {page.items.map((item, index) => (
+              <motion.div
+                key={item.title}
+                {...SCROLL_REVEAL_STAGGER(index)}
+                whileHover={{ y: -8, transition: { type: "tween", duration: 0.15 } }}
+              >
+                <Link
+                  to={`/${key}/${detailPaths[key][index]}`}
+                  className="group relative block h-full overflow-hidden rounded-3xl border border-primary-500/15 bg-white p-7 shadow-lg shadow-primary-950/5 transition duration-300 hover:-translate-y-2 hover:border-primary-400/40 hover:shadow-2xl dark:bg-darkCard"
+                >
+                  <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 transition group-hover:scale-150" />
+                  <item.icon className="relative h-11 w-11 rounded-xl bg-primary-500/10 p-2 text-primary-500 transition group-hover:rotate-3 group-hover:scale-110" />
+                  <h2 className="relative mt-5 text-xl font-bold">{item.title}</h2>
+                  <p className="relative mt-3 leading-relaxed text-gray-600 dark:text-gray-300">{item.description}</p>
+                  <div className="relative mt-6 flex items-center gap-2 text-sm font-semibold text-primary-500">
+                    <CheckCircle2 size={17} /> {label.benefit}
+                    <ArrowRight size={16} className="ml-auto transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            {...SCROLL_REVEAL}
+            className="mt-12 rounded-3xl bg-gray-950 px-7 py-8 text-white sm:flex sm:items-center sm:justify-between sm:px-10"
+          >
+            <div>
+              <p className="text-sm font-bold text-cyan-300">LedgerFlow</p>
+              <h2 className="mt-2 text-2xl font-bold">
+                {language === "id" ? "Siap membuat keuangan lebih sederhana?" : "Ready to make finance simpler?"}
+              </h2>
+            </div>
+            <Link to="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-950 sm:mt-0">
+              {label.start}
+              <ArrowRight size={16} />
+            </Link>
+          </motion.div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
 }
