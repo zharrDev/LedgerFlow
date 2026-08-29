@@ -230,10 +230,16 @@ export default function DashboardPage() {
                           ? tx(language, "Evening", "Sore")
                           : tx(language, "Evening", "Malam")}
                   </p>
-                  <h1 className="mt-1 text-3xl lg:text-4xl font-bold text-white tracking-tight truncate">
-                    {user?.name?.split(" ")[0] ||
-                      tx(language, "User", "Pengguna")}
-                  </h1>
+                  <div className="mt-1 flex items-center gap-2">
+                    <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight truncate">
+                      {user?.name?.split(" ")[0] ||
+                        tx(language, "User", "Pengguna")}
+                    </h1>
+                    {/* Mobile owl — inline next to name */}
+                    <span className="lg:hidden shrink-0">
+                      <GreetingOwl variant="static" size="h-10 sm:h-12" />
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
                     <Calendar size="14" className="shrink-0" />
                     <span className="truncate">{formattedDate}</span>

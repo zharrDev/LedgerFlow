@@ -3,27 +3,45 @@ import { useState, useEffect, useRef } from "react";
 import owlMencatat from "../../assets/owl-analisis.webp";
 import owlLaptop from "../../assets/owl-laptop.webp";
 import owlKaca from "../../assets/owl-kacapembesar.webp";
-import owlStatistik from "../../assets/owl-analisis.webp";
 import owlIde from "../../assets/owl-idebolalampu.webp";
 
+// 4 unique poses — owlStatistik removed (was duplicate of owlMencatat)
 const OWL_POSES = [
   { src: owlMencatat, alt: "Owl mencatat" },
   { src: owlLaptop, alt: "Owl di laptop" },
   { src: owlKaca, alt: "Owl dengan kaca pembesar" },
-  { src: owlStatistik, alt: "Owl melihat statistik" },
   { src: owlIde, alt: "Owl punya ide" },
 ];
 
 const CYCLE_INTERVAL = 5000; // 5 seconds
 const FADE_DURATION = 350; // 350ms crossfade
 
-export function GreetingOwl({ size = "h-28 lg:h-36 xl:h-40" }: { size?: string }) {
+interface GreetingOwlProps {
+  size?: string;
+  variant?: "animated" | "static";
+}
+
+export function GreetingOwl({ size = "h-28 lg:h-36 xl:h-40", variant = "animated" }: GreetingOwlProps) {
+  // Static variant: only first pose, no timer, no crossfade
+  if (variant === "static") {
+    return (
+      <div className="pointer-events-none select-none">
+        <img
+          src={OWL_POSES[0].src}
+          alt={OWL_POSES[0].alt}
+          className={`${size} w-auto object-contain`}
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
+  // Animated variant: cycle poses with crossfade
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isActiveRef = useRef(true);
 
-  // Respect prefers-reduced-motion
   const prefersReduced =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -41,7 +59,6 @@ export function GreetingOwl({ size = "h-28 lg:h-36 xl:h-40" }: { size?: string }
     }, CYCLE_INTERVAL);
   };
 
-  // Pause when tab is hidden
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
