@@ -10,21 +10,28 @@ export function useIncomeStatement(initialPeriodId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchReport = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await reportsService.getIncomeStatement(periodId);
-      setData(result);
-    } catch (e) {
-      setError(getErrorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [periodId]);
+  const fetchReport = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await reportsService.getIncomeStatement(periodId, signal);
+        setData(result);
+      } catch (e) {
+        // Request yang dibatalkan (ganti periode / unmount) → abaikan.
+        if (signal?.aborted) return;
+        setError(getErrorMessage(e));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [periodId],
+  );
 
   useEffect(() => {
-    fetchReport();
+    const controller = new AbortController();
+    fetchReport(controller.signal);
+    return () => controller.abort();
   }, [fetchReport]);
 
   return { data, loading, error, periodId, setPeriodId, refetch: fetchReport };

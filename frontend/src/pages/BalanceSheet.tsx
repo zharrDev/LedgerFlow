@@ -145,9 +145,9 @@ export default function BalanceSheet() {
 
   return (
     <AppShell>
-      <div className="relative max-w-7xl mx-auto space-y-6 py-6">
+      <div className="relative min-h-[80vh] overflow-hidden">
         <AuroraBackground />
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 max-w-7xl mx-auto space-y-6 py-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

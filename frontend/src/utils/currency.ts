@@ -24,7 +24,7 @@ export const CURRENCIES: { code: string; label: string }[] = [
 ];
 
 // Locale yang cocok untuk tiap mata uang (agar simbol & format angka sesuai).
-const CURRENCY_LOCALE: Record<string, string> = {
+export const CURRENCY_LOCALE: Record<string, string> = {
   IDR: "id-ID",
   USD: "en-US",
   EUR: "de-DE",

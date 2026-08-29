@@ -352,9 +352,9 @@ export default function CashFlowPage() {
 
   return (
     <AppShell>
-      <div className="relative max-w-5xl mx-auto space-y-8 py-6">
+      <div className="relative min-h-[80vh] overflow-hidden">
         <AuroraBackground />
-        <div className="relative z-10 space-y-8">
+        <div className="relative z-10 max-w-5xl mx-auto space-y-8 py-6">
           {/* ── Page Header ── */}
           <ScrollReveal
             direction="left"

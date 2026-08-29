@@ -9,6 +9,7 @@ import {
   formatNumber,
   formatAbsCurrency,
 } from "../utils/currency";
+import { formatCompact } from "../i18n/compactNumber";
 
 // Normalisasi NBSP (U+00A0) hasil Intl ke spasi biasa supaya assert stabil.
 const norm = (s: string) => s.replace(/\u00A0/g, " ");
@@ -85,5 +86,49 @@ describe("formatNumber & formatAbsCurrency", () => {
     const out = norm(formatAbsCurrency(-2_500));
     expect(out).not.toContain("-");
     expect(out).toContain("2,500");
+  });
+});
+
+describe("formatCompact — simbol mata uang (bukan kode text)", () => {
+  it("IDR memakai simbol Rp, bukan kode IDR", () => {
+    setCurrency("IDR");
+    expect(norm(formatCompact("id", 20_000_000))).toContain("Rp");
+    expect(norm(formatCompact("id", 20_000_000))).not.toContain("IDR");
+    expect(norm(formatCompact("id", 20_000_000))).toContain("jt");
+  });
+
+  it("USD memakai simbol $, bukan kode USD", () => {
+    setCurrency("USD");
+    expect(norm(formatCompact("en", 5_000_000))).toContain("$");
+    expect(norm(formatCompact("en", 5_000_000))).not.toContain("USD");
+  });
+
+  it("EUR memakai simbol €, bukan kode EUR", () => {
+    setCurrency("EUR");
+    expect(norm(formatCompact("en", 3_000_000))).toContain("€");
+    expect(norm(formatCompact("en", 3_000_000))).not.toContain("EUR");
+  });
+
+  it("JPY memakai simbol yen (bukan kode JPY)", () => {
+    setCurrency("JPY");
+    // Locale ja-JP menghasilkan yen lebar ￥ (U+FFE5), bukan ¥ (U+00A5).
+    const out = norm(formatCompact("en", 8_000_000));
+    expect(out).toMatch(/[¥￥]/);
+    expect(out).not.toContain("JPY");
+  });
+
+  it("GBP memakai simbol £ (bukan kode GBP)", () => {
+    setCurrency("GBP");
+    expect(norm(formatCompact("en", 4_000_000))).toContain("£");
+    expect(norm(formatCompact("en", 4_000_000))).not.toContain("GBP");
+  });
+
+  it("skala ribuan (K/rb) juga memakai simbol", () => {
+    setCurrency("IDR");
+    expect(norm(formatCompact("id", 50_000))).toContain("50rb");
+    expect(norm(formatCompact("id", 50_000))).toContain("Rp");
+    setCurrency("USD");
+    expect(norm(formatCompact("en", 50_000))).toContain("50K");
+    expect(norm(formatCompact("en", 50_000))).toContain("$");
   });
 });

@@ -20,14 +20,17 @@ const getCompanyId = () => {
 // Ambil laporan laba rugi
 export const getIncomeStatement = async (
   periodId?: string,
+  signal?: AbortSignal,
 ): Promise<IncomeStatementResponse> => {
   const { data } = await api.get<IncomeStatementResponse>(
     "/api/reports/income-statement",
     {
       params: {
-        period_id: periodId,
+        // Normalisasi "" → undefined agar parameter tidak dikirim kosong.
+        ...(periodId ? { period_id: periodId } : {}),
         company_id: getCompanyId(),
       },
+      signal,
       skipErrorToast: true,
     },
   );

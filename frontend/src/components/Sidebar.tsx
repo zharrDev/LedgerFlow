@@ -1,15 +1,17 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import React, { useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import { useLanguage } from "../hooks/useLanguage";
+import { useSubscription } from "../hooks/useSubscription";
 import { tx } from "../i18n/tx";
 import {
   Building2,
   ChevronRight,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import {
   getDesktopSidebarMenuItems,
@@ -71,6 +73,7 @@ const SidebarContent = ({
 }) => {
   const { user, updateUser } = useAuth();
   const { language } = useLanguage();
+  const { isPro, isEnterprise, isLoading: subLoading } = useSubscription();
   const [companyName, setCompanyName] = React.useState(
     user?.company_name || "",
   );
@@ -198,22 +201,52 @@ const SidebarContent = ({
           </div>
         )}
 
-        {/* Promo banner — inside scroll, always at bottom of menu items */}
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/50">
-          <div className="rounded-xl bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent dark:from-primary-500/15 dark:via-primary-500/5 border border-primary-200/40 dark:border-primary-500/15 p-3">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Sparkles size={14} className="text-primary-500" />
-              <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-300">
-                {language === "id" ? "Upgrade ke Pro" : "Upgrade to Pro"}
+        {/* Promo banner — inside scroll, always at bottom of menu items.
+            Konten dinamis sesuai plan aktif: Free → ajak Pro, Pro → ajak
+            Enterprise, Enterprise → tandai aktif (bukan ajakan upgrade). */}
+        {!subLoading && !isEnterprise && (
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/50">
+            <Link
+              to="/pricing"
+              className="block rounded-xl bg-gradient-to-br from-primary-500/10 via-primary-500/5 to-transparent dark:from-primary-500/15 dark:via-primary-500/5 border border-primary-200/40 dark:border-primary-500/15 p-3 hover:border-primary-400/60 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Sparkles size={14} className="text-primary-500" />
+                <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-300">
+                  {isPro
+                    ? language === "id"
+                      ? "Upgrade ke Enterprise"
+                      : "Upgrade to Enterprise"
+                    : language === "id"
+                      ? "Upgrade ke Pro"
+                      : "Upgrade to Pro"}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                {isPro
+                  ? language === "id"
+                    ? "Multi-perusahaan tak terbatas, akses API, dan dukungan prioritas."
+                    : "Unlimited companies, API access, and priority support."
+                  : language === "id"
+                    ? "Akses AI CFO, laporan lanjutan, dan fitur premium lainnya."
+                    : "Access AI CFO, advanced reports, and other premium features."}
+              </p>
+            </Link>
+          </div>
+        )}
+
+        {!subLoading && isEnterprise && (
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/50">
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-300/40 dark:border-emerald-500/30 px-3 py-2.5">
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                {language === "id"
+                  ? "Plan Enterprise Aktif"
+                  : "Enterprise Plan Active"}
               </span>
             </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-              {language === "id"
-                ? "Akses AI CFO, laporan lanjutan, dan fitur premium lainnya."
-                : "Access AI CFO, advanced reports, and other premium features."}
-            </p>
           </div>
-        </div>
+        )}
       </nav>
 
       {/* Account items (Help & Support) — below menu, outside scroll */}

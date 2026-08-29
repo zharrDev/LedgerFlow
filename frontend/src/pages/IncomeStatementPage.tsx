@@ -46,7 +46,7 @@ const formatRupiah = (val: number) => formatCurrency(val);
 export function IncomeStatementPage() {
   const { language } = useLanguage();
   const { data, loading, error, periodId, setPeriodId, refetch } =
-    useIncomeStatement("");
+    useIncomeStatement(undefined);
   const [periods, setPeriods] = useState<Period[]>([]);
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export function IncomeStatementPage() {
                 onExport={handleExport}
               />
               <button
-                onClick={refetch}
+                onClick={() => refetch()}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-500 hover:border-primary-500/50 transition-colors bg-white dark:bg-darkCard shadow-sm"
                 title={tx(language, "Refresh", "Refresh")}
               >
@@ -147,7 +147,7 @@ export function IncomeStatementPage() {
           <ScrollReveal direction="fade" className="py-16 text-center">
             <p className="text-red-500 text-sm mb-2">{error}</p>
             <button
-              onClick={refetch}
+              onClick={() => refetch()}
               className="text-primary-500 text-sm hover:underline"
             >
               {tx(language, "Try again", "Coba lagi")}
