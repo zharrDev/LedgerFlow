@@ -206,11 +206,13 @@ function SummaryCard({
   value,
   icon,
   trend,
+  language,
 }: {
   label: string;
   value: number;
   icon: React.ReactNode;
   trend?: "up" | "down" | "neutral";
+  language: "en" | "id";
 }) {
   return (
     <motion.div
@@ -270,9 +272,11 @@ function SummaryCard({
 function NetChangeFooter({
   value,
   periodName,
+  language,
 }: {
   value: number;
   periodName: string;
+  language: "en" | "id";
 }) {
   const isPositive = value >= 0;
   return (
@@ -454,6 +458,7 @@ export default function CashFlowPage() {
                   value={data.beginningCash}
                   icon={<Wallet size={16} />}
                   trend="neutral"
+                  language={language}
                 />
                 <SummaryCard
                   label={tx(language, "Cash Change", "Perubahan Kas")}
@@ -466,12 +471,14 @@ export default function CashFlowPage() {
                     )
                   }
                   trend={data.netCashFlow >= 0 ? "up" : "down"}
+                  language={language}
                 />
                 <SummaryCard
                   label={tx(language, "Ending Cash Balance", "Saldo Kas Akhir")}
                   value={data.endingCash}
                   icon={<PieChart size={16} />}
                   trend="up"
+                  language={language}
                 />
               </div>
 
@@ -520,6 +527,7 @@ export default function CashFlowPage() {
                   <NetChangeFooter
                     value={data.netCashFlow}
                     periodName={data.periodName}
+                    language={language}
                   />
                 </div>
               </motion.div>
