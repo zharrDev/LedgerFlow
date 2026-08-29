@@ -81,6 +81,8 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
+      staleTime: 2 * 60 * 1000, // 2 menit — cache sebelum dianggap usang
+      gcTime: 10 * 60 * 1000, // 10 menit — lama data tetap di memory
     },
   },
 });

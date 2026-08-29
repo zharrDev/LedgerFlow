@@ -53,6 +53,11 @@ export const NORMAL_MAX = 300;
 export const AUTH_WINDOW_MS = 15 * 60 * 1000;
 export const AUTH_MAX = 600;
 
+// Tingkat PASSWORD RESET: lebih ketat untuk mencegah brute-force token.
+// 5 percobaan per jam per IP — cukup untuk user normal, ketat untuk attacker.
+export const PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 jam
+export const PASSWORD_RESET_MAX = 5;
+
 const DEFAULT_MESSAGE = "Terlalu banyak permintaan. Coba lagi beberapa menit lagi.";
 
 /** IP klien dari proxy headers (Render/Vercel meneruskan x-forwarded-for). */
@@ -168,4 +173,12 @@ export const userRateLimit = rateLimit({
     }
     return getClientIp(c);
   },
+});
+
+// ── Tingkat PASSWORD RESET: ketat, per IP ──
+export const passwordResetRateLimit = rateLimit({
+  windowMs: PASSWORD_RESET_WINDOW_MS,
+  max: PASSWORD_RESET_MAX,
+  message:
+    "Terlalu banyak percobaan reset password. Coba lagi dalam 1 jam.",
 });

@@ -30,14 +30,15 @@ import uploadRoutes from "./routes/upload.js";
 import healthRoutes from "./routes/health.js";
 import aiRoutes from "./routes/ai.js";
 import notificationsRoutes from "./routes/notifications.js";
-import { normalRateLimit, userRateLimit } from "./middleware/rate-limit.js";
+import { normalRateLimit, userRateLimit, passwordResetRateLimit } from "./middleware/rate-limit.js";
+import { securityHeaders } from "./middleware/security-headers.js";
 
 const app = new Hono();
 
 // Global middleware
-// Global middleware
 app.use("*", logger());
 app.use("*", prettyJSON());
+app.use("*", securityHeaders());
 
 // Izinkan origin dev mana pun di localhost (port bebas; vite bisa naik 5173->5174
 // saat port sebelumnya terpakai) + FRONTEND_URL terkonfigurasi + prod Vercel.
@@ -69,6 +70,8 @@ app.use("*", async (c, next) => {
 // (STRICT per IP+nomor — lihat middleware/rate-limit.ts).
 app.use("/api/auth", normalRateLimit);
 app.use("/api/wa", normalRateLimit);
+app.use("/api/auth/forgot-password", passwordResetRateLimit);
+app.use("/api/auth/reset-password", passwordResetRateLimit);
 app.use("/api/*", userRateLimit);
 
 // Health check
@@ -96,10 +99,25 @@ app.route("/api/notifications", notificationsRoutes);
 // 404 fallback
 app.notFound((c) => c.json({ error: "Route not found" }, 404));
 
-// Error handler — jangan bocorkan detail internal ke client
-app.onError((err, c) => {
-  console.error("GLOBAL ERROR:", err);
+// Error handler — jangan bocorkan detail internal ke client.
+// AppError mengembalikan pesan + status yang sesuai; error lain → 500 generik.
+import { AppError } from "./lib/app-errors.js";
 
+app.onError((err, c) => {
+  // Hono errors (mis. route mismatch) → 404 generik
+  if (err.message === "404 Not Found") {
+    return c.json({ error: "Route not found" }, 404);
+  }
+
+  if (err instanceof AppError) {
+    const body: Record<string, unknown> = { error: err.message };
+    if (process.env.NODE_ENV !== "production") {
+      body.stack = err.stack;
+    }
+    return c.json(body, err.statusCode as any);
+  }
+
+  console.error("[GLOBAL ERROR]", err);
   return c.json({ error: "Internal server error" }, 500);
 });
 
