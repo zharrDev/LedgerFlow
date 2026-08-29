@@ -157,7 +157,8 @@ export default function PeriodManagement() {
       <motion.div
         variants={containerVariants}
         initial="hidden"
-        animate="visible"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
         className="max-w-4xl mx-auto space-y-6"
       >
         {/* Header */}
@@ -169,7 +170,8 @@ export default function PeriodManagement() {
             <motion.h1
               variants={letterContainerVariants}
               initial="hidden"
-              animate="visible"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.5 }}
               className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
               style={{ perspective: "600px" }}
             >
