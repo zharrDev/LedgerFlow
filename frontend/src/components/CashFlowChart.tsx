@@ -10,6 +10,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useLanguage } from "../hooks/useLanguage";
+import { formatCompact } from "../i18n/compactNumber";
 
 // ─────────────────────────────────────────────
 // Types
@@ -327,7 +328,7 @@ export function CashFlowChart({
       </div>
 
       {/* ── Chart ── */}
-      <div className="relative rounded-2xl overflow-hidden">
+      <div className="relative rounded-2xl overflow-hidden w-full min-w-0" style={{ height: height ?? 300 }}>
         {/* Subtle background gradient untuk container chart */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -338,10 +339,10 @@ export function CashFlowChart({
           }}
         />
 
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
-            margin={{ top: 20, right: 16, left: -8, bottom: 0 }}
+            margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
           >
             <defs>
               {/* ── Masuk: Cyan → Indigo ── */}
@@ -414,11 +415,11 @@ export function CashFlowChart({
               dy={8}
             />
             <YAxis
-              tickFormatter={formatValue}
+              tickFormatter={(v: number) => formatCompact(language, v)}
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={50}
+              width={72}
             />
 
             <Tooltip

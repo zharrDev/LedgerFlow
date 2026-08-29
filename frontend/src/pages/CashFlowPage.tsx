@@ -33,15 +33,6 @@ import type { Period, CashFlowSection } from "../types/reports";
 // ─── Helpers ────────────────────────────────────────────────────────
 const formatIDR = (amount: number) => formatCurrency(amount);
 
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
-};
-
 const letterContainerVariants: Variants = {
   hidden: {},
   visible: {
@@ -209,7 +200,6 @@ function SummaryCard({
 }) {
   return (
     <motion.div
-      variants={itemVariants}
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
       className="relative rounded-2xl bg-white/60 dark:bg-darkCard/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-5 overflow-hidden group"
@@ -311,6 +301,8 @@ export default function CashFlowPage() {
     reportsService.getPeriods().then(setPeriods).catch(console.error);
   }, []);
 
+  // Hanya 3 baris (Operating/Investing/Financing) — TANPA "Total"
+  // supaya CashFlowChart.reduce totMasuk/totKeluar/totNet tidak double-count.
   const chartData: CashFlowDatum[] = data
     ? [
         {
@@ -331,12 +323,6 @@ export default function CashFlowPage() {
           keluar: Math.min(0, data.financing.subtotal),
           net: data.financing.subtotal,
         },
-        {
-          name: tx(language, "Total", "Total"),
-          masuk: Math.max(0, data.netCashFlow),
-          keluar: Math.min(0, data.netCashFlow),
-          net: data.netCashFlow,
-        },
       ]
     : [];
 
@@ -352,7 +338,7 @@ export default function CashFlowPage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[80vh] overflow-hidden">
+      <div className="relative min-h-[80vh] overflow-x-hidden">
         <AuroraBackground />
         <div className="relative z-10 max-w-5xl mx-auto space-y-8 py-6">
           {/* ── Page Header ── */}
