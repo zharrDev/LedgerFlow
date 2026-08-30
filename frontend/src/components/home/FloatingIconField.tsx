@@ -107,7 +107,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Planetary orbit ring — dashed circle */}
+      {/* Planetary orbit ring — dashed semicircle (left half visible, right covered by image) */}
       <div
         className="absolute pointer-events-none rounded-full"
         style={{
@@ -119,6 +119,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           borderRadius: "50%",
           opacity: 0.3,
           transform: "translate(-50%, -50%)",
+          clipPath: "inset(0 50% 0 0)",
         }}
       />
 
