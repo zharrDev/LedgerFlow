@@ -33,7 +33,7 @@ const DEFAULT_ICONS: OrbitIconDef[] = [
 ];
 
 const HUB = { top: "48%", left: "48%" };
-const HUB_WIDTH = 220;
+const HUB_WIDTH = 280;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
