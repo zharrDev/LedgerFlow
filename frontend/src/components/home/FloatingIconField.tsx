@@ -125,6 +125,26 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
+      {/* Dashed orbit rings — one per icon radius */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ top: HUB.top, left: HUB.left, width: 0, height: 0 }}
+      >
+        {icons.map((icon, i) => (
+          <circle
+            key={i}
+            cx={0}
+            cy={0}
+            r={icon.orbitRadius}
+            fill="none"
+            stroke={icon.color}
+            strokeOpacity={0.2}
+            strokeWidth={1}
+            strokeDasharray="6 8"
+          />
+        ))}
+      </svg>
+
       {/* Orbit arms — anchored exactly at hub center */}
       <div
         className="absolute"
