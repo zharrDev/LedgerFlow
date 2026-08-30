@@ -35,6 +35,8 @@ const DEFAULT_ICONS: OrbitIconDef[] = [
 
 const HUB = { top: "48%", left: "48%" };
 const HUB_WIDTH = 350;
+const HUB_IMAGE_LEFT = "50%";
+const ARM_CLIP_SIZE = 600;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -109,22 +111,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Device mockup — hub center */}
-      <div
-        className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH }}
-      >
-        <motion.img
-          src={heroDeviceMockup}
-          alt="Tampilan dashboard LedgerFlow di laptop dan ponsel"
-          className="w-full h-auto drop-shadow-2xl select-none rounded-2xl"
-          draggable={false}
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
-      {/* Dashed orbit ring */}
+      {/* Dashed orbit ring — clipped to left semicircle */}
       <svg
         className="absolute pointer-events-none"
         style={{
@@ -135,6 +122,16 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           overflow: "visible",
         }}
       >
+        <defs>
+          <clipPath id="orbit-left-clip">
+            <rect
+              x={-(SHARED_ORBIT_RADIUS + 40)}
+              y={-(SHARED_ORBIT_RADIUS + 40)}
+              width={SHARED_ORBIT_RADIUS + 40}
+              height={2 * (SHARED_ORBIT_RADIUS + 40)}
+            />
+          </clipPath>
+        </defs>
         <circle
           cx={0}
           cy={0}
@@ -144,17 +141,40 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           strokeOpacity={0.3}
           strokeWidth={1.5}
           strokeDasharray="8 6"
+          clipPath="url(#orbit-left-clip)"
         />
       </svg>
 
-      {/* Orbit arms — anchored at hub center */}
+      {/* Orbit arms — anchored at hub center, clipped to left half */}
       <div
-        className="absolute"
-        style={{ top: HUB.top, left: HUB.left, width: 0, height: 0 }}
+        className="absolute overflow-hidden"
+        style={{
+          top: HUB.top,
+          left: HUB.left,
+          width: ARM_CLIP_SIZE,
+          height: ARM_CLIP_SIZE,
+          transform: "translate(-50%, -50%)",
+          clipPath: "inset(0 50% 0 0)",
+        }}
       >
         {icons.map((icon, i) => (
           <OrbitArm key={i} icon={icon} reduced={reduced} />
         ))}
+      </div>
+
+      {/* Device mockup — hub center, shifted slightly right */}
+      <div
+        className="absolute -translate-x-1/2 -translate-y-1/2"
+        style={{ top: HUB.top, left: HUB_IMAGE_LEFT, width: HUB_WIDTH }}
+      >
+        <motion.img
+          src={heroDeviceMockup}
+          alt="Tampilan dashboard LedgerFlow di laptop dan ponsel"
+          className="w-full h-auto drop-shadow-2xl select-none rounded-2xl"
+          draggable={false}
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
     </div>
   );
