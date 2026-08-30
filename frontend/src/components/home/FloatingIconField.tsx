@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp,
@@ -11,30 +11,45 @@ import {
 } from "lucide-react";
 import heroDeviceMockup from "../../assets/Rekomendasi-Laptop-untuk-Finance--1200x900.webp";
 
-interface OrbitIconDef {
+// ── Icon definitions: scattered positions (not uniform circle) ──────
+interface ScatteredIconDef {
   Icon?: LucideIcon;
   imageSrc?: string;
   size: number;
   color: string;
-  orbitRadius: number;
-  orbitDuration: number;
-  startAngle: number;
-  clockwise: boolean;
+  /** x/y offset in px from center — scattered, not symmetrical */
+  x: number;
+  y: number;
+  floatDuration: number;
+  floatDelay: number;
+  floatRange: number;
 }
 
-const SHARED_ORBIT_RADIUS = 260;
-
-const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
-  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 18, startAngle: 60, clockwise: false },
-  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 26, startAngle: 120, clockwise: false },
-  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 20, startAngle: 180, clockwise: false },
-  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 24, startAngle: 240, clockwise: false },
-  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 19, startAngle: 300, clockwise: false },
+const DEFAULT_ICONS: ScatteredIconDef[] = [
+  { Icon: TrendingUp,   size: 46, color: "#0ea5e9", x: -180, y: -140, floatDuration: 4.2, floatDelay: 0,   floatRange: 10 },
+  { Icon: Receipt,      size: 40, color: "#8b5cf6", x:  190, y: -100, floatDuration: 5.1, floatDelay: 0.4, floatRange: 8 },
+  { Icon: Landmark,     size: 44, color: "#d97706", x: -220, y:   60, floatDuration: 4.8, floatDelay: 0.8, floatRange: 12 },
+  { Icon: BarChart3,    size: 42, color: "#059669", x:  210, y:   90, floatDuration: 4.5, floatDelay: 0.2, floatRange: 9 },
+  { Icon: Coins,        size: 38, color: "#d97706", x:  -80, y:  200, floatDuration: 5.4, floatDelay: 0.6, floatRange: 11 },
+  { Icon: ShieldCheck,  size: 36, color: "#0ea5e9", x:  130, y: -220, floatDuration: 4.9, floatDelay: 1,   floatRange: 7 },
 ];
 
-const HUB = { top: "48%", left: "48%" };
-const HUB_WIDTH = 350;
+// Scale factor for small screens so icons don't overflow
+function useScaleFactor(): number {
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 640) setScale(0.45);
+      else if (w < 1024) setScale(0.65);
+      else setScale(1);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return scale;
+}
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -49,61 +64,74 @@ function useReducedMotion(): boolean {
   return reduced;
 }
 
-function OrbitArm({ icon, reduced }: { icon: OrbitIconDef; reduced: boolean }) {
-  const { Icon } = icon;
-  const direction = icon.clockwise ? 360 : -360;
-  const duration = reduced ? icon.orbitDuration * 3 : icon.orbitDuration;
+// ── Hub center ──────────────────────────────────────────────────────
+const HUB_TOP = "48%";
+const HUB_LEFT = "48%";
+const HUB_WIDTH = 350;
 
-  return (
-    <motion.div
-      className="absolute top-1/2 left-1/2 h-px"
-      style={{
-        width: icon.orbitRadius,
-        transformOrigin: "0px 0px",
-      }}
-      initial={{ rotate: icon.startAngle }}
-      animate={{ rotate: icon.startAngle + direction }}
-      transition={{ duration, repeat: Infinity, ease: "linear" }}
-    >
-      {/* Dashed line from center to icon — rotates with the arm */}
-      <div
-        className="absolute inset-y-0 left-0 right-9 border-t border-dashed opacity-40"
-        style={{ borderColor: icon.color }}
-      />
-
-      {/* Icon at arm tip — counter-rotate to stay upright */}
-      <motion.div
-        className="absolute top-1/2 -translate-y-1/2 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
-        style={{
-          right: 0,
-          width: icon.size,
-          height: icon.size,
-          backgroundColor: `${icon.color}33`,
-          border: `1.5px solid ${icon.color}80`,
-        }}
-        initial={{ rotate: -icon.startAngle }}
-        animate={{ rotate: -(icon.startAngle + direction) }}
-        transition={{ duration, repeat: Infinity, ease: "linear" }}
-      >
-        {icon.imageSrc ? (
-          <img src={icon.imageSrc} alt="" className="w-full h-full object-contain p-2" draggable={false} />
-        ) : Icon ? (
-          <Icon size={icon.size * 0.5} color={icon.color} strokeWidth={2.25} />
-        ) : null}
-      </motion.div>
-    </motion.div>
-  );
-}
-
-export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: OrbitIconDef[] }) {
+export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: ScatteredIconDef[] }) {
   const reduced = useReducedMotion();
+  const scaleFactor = useScaleFactor();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hubPixel, setHubPixel] = useState<{ cx: number; cy: number } | null>(null);
+
+  // Calculate hub center in pixels for SVG lines
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setHubPixel({
+        cx: rect.width * 0.48,
+        cy: rect.height * 0.48,
+      });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  const floatMul = reduced ? 0.3 : 1;
 
   return (
-    <div className="relative w-full h-full">
-      {/* Glow hub */}
+    <div ref={containerRef} className="relative w-full h-full overflow-visible">
+      {/* ── Dashed lines: each icon → center ── */}
+      {hubPixel && (
+        <svg
+          className="absolute inset-0 pointer-events-none"
+          style={{ overflow: "visible" }}
+        >
+          {icons.map((icon, i) => {
+            const ix = hubPixel.cx + icon.x * scaleFactor;
+            const iy = hubPixel.cy + icon.y * scaleFactor;
+            return (
+              <line
+                key={i}
+                x1={hubPixel.cx}
+                y1={hubPixel.cy}
+                x2={ix}
+                y2={iy}
+                stroke={icon.color}
+                strokeOpacity={0.3}
+                strokeWidth={1.5}
+                strokeDasharray="6 5"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="0"
+                  to="-22"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+              </line>
+            );
+          })}
+        </svg>
+      )}
+
+      {/* ── Hub: glow + device mockup ── */}
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH * 1.3, height: HUB_WIDTH * 1.3 }}
+        style={{ top: HUB_TOP, left: HUB_LEFT, width: HUB_WIDTH * 1.3, height: HUB_WIDTH * 1.3 }}
       >
         <motion.div
           className="w-full h-full rounded-full bg-primary-500/25 blur-2xl"
@@ -112,10 +140,9 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Device mockup — hub center, float gently */}
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH }}
+        style={{ top: HUB_TOP, left: HUB_LEFT, width: HUB_WIDTH }}
       >
         <motion.img
           src={heroDeviceMockup}
@@ -127,38 +154,49 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Single dashed orbit ring — all icons share this path */}
-      <svg
-        className="absolute pointer-events-none"
-        style={{
-          top: HUB.top,
-          left: HUB.left,
-          width: 0,
-          height: 0,
-          overflow: "visible",
-        }}
-      >
-        <circle
-          cx={0}
-          cy={0}
-          r={SHARED_ORBIT_RADIUS}
-          fill="none"
-          stroke="#94a3b8"
-          strokeOpacity={0.3}
-          strokeWidth={1.5}
-          strokeDasharray="8 6"
-        />
-      </svg>
-
-      {/* Orbit arms — anchored exactly at hub center */}
-      <div
-        className="absolute"
-        style={{ top: HUB.top, left: HUB.left, width: 0, height: 0 }}
-      >
-        {icons.map((icon, i) => (
-          <OrbitArm key={i} icon={icon} reduced={reduced} />
-        ))}
-      </div>
+      {/* ── Scattered icons: positioned absolutely, gentle floating ── */}
+      {icons.map((icon, i) => {
+        const { Icon } = icon;
+        const left = `calc(${HUB_LEFT} + ${icon.x * scaleFactor}px)`;
+        const top = `calc(${HUB_TOP} + ${icon.y * scaleFactor}px)`;
+        return (
+          <div
+            key={i}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left, top, width: icon.size, height: icon.size }}
+          >
+            <motion.div
+              className="w-full h-full rounded-2xl flex items-center justify-center shadow-lg overflow-hidden backdrop-blur-sm"
+              style={{
+                backgroundColor: `${icon.color}33`,
+                border: `1.5px solid ${icon.color}80`,
+              }}
+              animate={{ y: [0, -icon.floatRange * floatMul, 0] }}
+              transition={{
+                duration: icon.floatDuration,
+                delay: icon.floatDelay,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              {icon.imageSrc ? (
+                <img
+                  src={icon.imageSrc}
+                  alt=""
+                  className="w-full h-full object-contain p-2"
+                  draggable={false}
+                />
+              ) : Icon ? (
+                <Icon
+                  size={icon.size * 0.5}
+                  color={icon.color}
+                  strokeWidth={2.25}
+                />
+              ) : null}
+            </motion.div>
+          </div>
+        );
+      })}
     </div>
   );
 }
