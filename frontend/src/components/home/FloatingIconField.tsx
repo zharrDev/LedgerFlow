@@ -9,8 +9,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
-// @ts-expect-error — Vite resolves asset imports
-import heroDeviceMockup from "../../assets/hp&lapropp.webp";
+import heroDeviceMockup from "../../assets/Rekomendasi-Laptop-untuk-Finance--1200x900.jpg";
 
 interface OrbitIconDef {
   Icon?: LucideIcon;
