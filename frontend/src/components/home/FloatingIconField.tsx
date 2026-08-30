@@ -24,11 +24,11 @@ interface OrbitIconDef {
 }
 
 const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: 170, orbitDuration: 22, startAngle: 0, clockwise: true },
+  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: 170, orbitDuration: 22, startAngle: 0, clockwise: false },
   { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: 150, orbitDuration: 18, startAngle: 60, clockwise: false },
-  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: 185, orbitDuration: 26, startAngle: 120, clockwise: true },
+  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: 185, orbitDuration: 26, startAngle: 120, clockwise: false },
   { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: 160, orbitDuration: 20, startAngle: 180, clockwise: false },
-  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: 175, orbitDuration: 24, startAngle: 240, clockwise: true },
+  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: 175, orbitDuration: 24, startAngle: 240, clockwise: false },
   { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: 155, orbitDuration: 19, startAngle: 300, clockwise: false },
 ];
 
