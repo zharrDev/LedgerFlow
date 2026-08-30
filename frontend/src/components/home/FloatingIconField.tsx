@@ -118,7 +118,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         <motion.img
           src={heroDeviceMockup}
           alt="Tampilan dashboard LedgerFlow di laptop dan ponsel"
-          className="w-full h-auto drop-shadow-2xl select-none"
+          className="w-full h-auto drop-shadow-2xl select-none rounded-2xl"
           draggable={false}
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
