@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -34,9 +34,7 @@ import InViewVideo from "../components/home/InViewVideo";
 import { TextReveal } from "../components/TextReveal";
 import ScrollReveal from "../components/ScrollReveal";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
-
-// Lazy-load Three.js — HANYA masuk bundle HomePage, bukan dashboard.
-const HeroWebGL = lazy(() => import("../components/home/HeroWebGL"));
+import FloatingIconField from "../components/home/FloatingIconField";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -52,70 +50,7 @@ try {
   dashboardDemo = "";
 }
 
-// ─── Deteksi dukungan WebGL + preferensi reduced-motion ───────────────
-// Dipakai untuk memutuskan render HeroWebGL (3D) atau fallback statis.
-function supportsWebGL(): boolean {
-  try {
-    const canvas = document.createElement("canvas");
-    return !!(
-      canvas.getContext("webgl") || canvas.getContext("experimental-webgl")
-    );
-  } catch {
-    return false;
-  }
-}
 
-function useCanRender3D(): boolean {
-  const [canRender, setCanRender] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    return !reduced && supportsWebGL();
-  });
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setCanRender(!mq.matches && supportsWebGL());
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  return canRender;
-}
-
-// ─── Fallback statis — dipakai jika WebGL tidak didukung atau
-// prefers-reduced-motion aktif. Komposisi flat, tanpa animasi berat,
-// tetap menceritakan konsep "rekonsiliasi" secara visual sederhana. ──
-function HeroStaticFallback() {
-  return (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="relative flex items-center gap-3">
-        <div className="flex flex-col gap-1.5">
-          {[0.7, 0.55, 0.65, 0.5, 0.45].map((w, i) => (
-            <div
-              key={`bank-${i}`}
-              className="h-3 rounded-sm bg-primary-400/70 dark:bg-primary-500/60"
-              style={{ width: `${w * 60}px` }}
-            />
-          ))}
-        </div>
-        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-          <CheckCircle2 size={20} className="text-emerald-500" />
-        </div>
-        <div className="flex flex-col gap-1.5 items-end">
-          {[0.7, 0.55, 0.65, 0.5, 0.45].map((w, i) => (
-            <div
-              key={`ledger-${i}`}
-              className="h-3 rounded-sm bg-violet-400/70 dark:bg-violet-500/60"
-              style={{ width: `${w * 60}px` }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Type for featureCards (kept inline since it's homepage-specific) ──
 type L = { en: string; id: string };
@@ -182,8 +117,6 @@ export default function HomePage() {
   const { language } = useLanguage();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const canRender3D = useCanRender3D();
-  const [webglLocked, setWebglLocked] = useState(false);
 
   return (
     <div
@@ -202,18 +135,20 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-              <h2 className="text-[2rem] leading-tight sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
-                <TextReveal
-                  text={
-                    language === "id"
-                      ? "Kelola Masa Depan Keuangan Anda"
-                      : "Manage Your Financial Future"
-                  }
-                  delay={0.1}
-                  staggerDelay={0.03}
-                />
-                <br />
-                <span className="bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
+              <h2 className="text-[2rem] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+                {/* EN: "Manage Your" / "Financial Future" — ID: "Kelola Masa Depan" / "Keuangan Anda" */}
+                {language === "id" ? (
+                  <>
+                    <span className="block">Kelola Masa Depan</span>
+                    <span className="block">Keuangan Anda</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="block">Manage Your</span>
+                    <span className="block">Financial Future</span>
+                  </>
+                )}
+                <span className="block bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
                   <TextReveal
                     text={
                       language === "id"
@@ -272,32 +207,9 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            {/* ── 3D Scene Kanan (atau fallback statis) ── */}
+            {/* ── Floating Icons + Device Mockup Kanan ── */}
             <div className="relative h-[40vh] sm:h-[50vh] lg:h-[70vh] lg:min-h-[480px]">
-              {/* Glow lembut — muncul perlahan begitu elemen "terkunci" hijau.
-                Menggantikan sphere 3D solid yang sebelumnya keliatan
-                seperti lingkaran keras tanpa blur. */}
-              <div
-                className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-1000 ${
-                  webglLocked ? "opacity-100" : "opacity-0"
-                }`}
-              >
-                <div className="w-56 h-56 rounded-full bg-emerald-500/25 blur-3xl" />
-              </div>
-
-              {canRender3D ? (
-                <Suspense
-                  fallback={
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-32 h-32 rounded-full bg-primary-500/20 blur-3xl animate-pulse" />
-                    </div>
-                  }
-                >
-                  <HeroWebGL onLocked={() => setWebglLocked(true)} />
-                </Suspense>
-              ) : (
-                <HeroStaticFallback />
-              )}
+              <FloatingIconField />
             </div>
           </div>
 
