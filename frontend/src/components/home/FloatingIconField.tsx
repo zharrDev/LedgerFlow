@@ -22,13 +22,15 @@ interface OrbitIconDef {
   clockwise: boolean;
 }
 
+const SHARED_ORBIT_RADIUS = 260;
+
 const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: 260, orbitDuration: 22, startAngle: 330, clockwise: false },
-  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: 250, orbitDuration: 18, startAngle: 30, clockwise: false },
-  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: 270, orbitDuration: 26, startAngle: 90, clockwise: false },
-  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: 255, orbitDuration: 20, startAngle: 150, clockwise: false },
-  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: 265, orbitDuration: 24, startAngle: 210, clockwise: false },
-  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: 245, orbitDuration: 19, startAngle: 270, clockwise: false },
+  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
+  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 18, startAngle: 60, clockwise: false },
+  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 26, startAngle: 120, clockwise: false },
+  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 20, startAngle: 180, clockwise: false },
+  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 24, startAngle: 240, clockwise: false },
+  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 19, startAngle: 300, clockwise: false },
 ];
 
 const HUB = { top: "48%", left: "48%" };
@@ -125,7 +127,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Dashed orbit rings — centered at hub */}
+      {/* Single dashed orbit ring — all icons share this path */}
       <svg
         className="absolute pointer-events-none"
         style={{
@@ -136,19 +138,16 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           overflow: "visible",
         }}
       >
-        {icons.map((icon, i) => (
-          <circle
-            key={i}
-            cx={0}
-            cy={0}
-            r={icon.orbitRadius}
-            fill="none"
-            stroke={icon.color}
-            strokeOpacity={0.15}
-            strokeWidth={1}
-            strokeDasharray="4 6"
-          />
-        ))}
+        <circle
+          cx={0}
+          cy={0}
+          r={SHARED_ORBIT_RADIUS}
+          fill="none"
+          stroke="#94a3b8"
+          strokeOpacity={0.3}
+          strokeWidth={1.5}
+          strokeDasharray="8 6"
+        />
       </svg>
 
       {/* Orbit arms — anchored exactly at hub center */}
