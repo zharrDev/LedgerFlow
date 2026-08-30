@@ -107,28 +107,20 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Planetary orbit ring — full dashed circle */}
-      <svg
-        className="absolute pointer-events-none"
+      {/* Planetary orbit ring — dashed circle */}
+      <div
+        className="absolute pointer-events-none rounded-full"
         style={{
           top: HUB.top,
           left: HUB.left,
-          width: 0,
-          height: 0,
-          overflow: "visible",
+          width: SHARED_ORBIT_RADIUS * 2,
+          height: SHARED_ORBIT_RADIUS * 2,
+          border: `1.5px dashed #94a3b8`,
+          borderRadius: "50%",
+          opacity: 0.3,
+          transform: "translate(-50%, -50%)",
         }}
-      >
-        <circle
-          cx={0}
-          cy={0}
-          r={SHARED_ORBIT_RADIUS}
-          fill="none"
-          stroke="#94a3b8"
-          strokeOpacity={0.3}
-          strokeWidth={1.5}
-          strokeDasharray="8 6"
-        />
-      </svg>
+      />
 
       {/* Orbit arms — anchored at hub center */}
       <div
