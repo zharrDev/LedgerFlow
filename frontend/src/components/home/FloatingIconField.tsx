@@ -33,7 +33,7 @@ const DEFAULT_ICONS: OrbitIconDef[] = [
 ];
 
 const HUB = { top: "48%", left: "48%" };
-const HUB_WIDTH = 280;
+const HUB_WIDTH = 350;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -115,7 +115,6 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH }}
-      >
         <motion.img
           src={heroDeviceMockup}
           alt="Tampilan dashboard LedgerFlow di laptop dan ponsel"
