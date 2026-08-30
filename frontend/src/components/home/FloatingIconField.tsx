@@ -125,10 +125,16 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Dashed orbit rings — one per icon radius */}
+      {/* Dashed orbit rings — centered at hub, large enough to show full circles */}
       <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ top: HUB.top, left: HUB.left, width: 0, height: 0 }}
+        className="absolute pointer-events-none"
+        style={{
+          top: HUB.top,
+          left: HUB.left,
+          width: 0,
+          height: 0,
+          overflow: "visible",
+        }}
       >
         {icons.map((icon, i) => (
           <circle
@@ -138,9 +144,9 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
             r={icon.orbitRadius}
             fill="none"
             stroke={icon.color}
-            strokeOpacity={0.2}
-            strokeWidth={1}
-            strokeDasharray="6 8"
+            strokeOpacity={0.25}
+            strokeWidth={1.5}
+            strokeDasharray="8 6"
           />
         ))}
       </svg>
