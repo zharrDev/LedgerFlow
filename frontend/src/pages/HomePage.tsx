@@ -126,7 +126,7 @@ export default function HomePage() {
       <Navbar />
       <ScrollCardWrapper>
         {/* ═══ Hero ═══ */}
-        <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
+        <section className="relative min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
           {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
           <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
             {/* ── Teks Kiri ── */}
