@@ -25,12 +25,12 @@ interface OrbitIconDef {
 const SHARED_ORBIT_RADIUS = 260;
 
 const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
-  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 18, startAngle: 60, clockwise: false },
-  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 26, startAngle: 120, clockwise: false },
-  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 20, startAngle: 180, clockwise: false },
-  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 24, startAngle: 240, clockwise: false },
-  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 19, startAngle: 300, clockwise: false },
+  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
+  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 18, startAngle: 240, clockwise: false },
+  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 26, startAngle: 300, clockwise: false },
+  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 20, startAngle: 0, clockwise: false },
+  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 24, startAngle: 60, clockwise: false },
+  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 19, startAngle: 120, clockwise: false },
 ];
 
 const HUB = { top: "48%", left: "48%" };
@@ -56,43 +56,39 @@ function OrbitArm({ icon, reduced }: { icon: OrbitIconDef; reduced: boolean }) {
   const direction = icon.clockwise ? 360 : -360;
   const duration = reduced ? icon.orbitDuration * 3 : icon.orbitDuration;
 
-  return (
-    <motion.div
-      className="absolute top-1/2 left-1/2 h-px"
-      style={{
-        width: icon.orbitRadius,
-        transformOrigin: "0px 0px",
-      }}
-      initial={{ rotate: icon.startAngle }}
-      animate={{ rotate: icon.startAngle + direction }}
-      transition={{ duration, repeat: Infinity, ease: "linear" }}
-    >
-      <div
-        className="absolute inset-y-0 left-0 right-9 border-t border-dashed opacity-40"
-        style={{ borderColor: icon.color }}
-      />
+    return (
       <motion.div
-        className="absolute top-1/2 -translate-y-1/2 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
+        className="absolute top-1/2 left-1/2 h-px"
         style={{
-          right: 0,
-          width: icon.size,
-          height: icon.size,
-          backgroundColor: `${icon.color}33`,
-          border: `1.5px solid ${icon.color}80`,
+          width: icon.orbitRadius,
+          transformOrigin: "0px 0px",
         }}
-        initial={{ rotate: -icon.startAngle }}
-        animate={{ rotate: -(icon.startAngle + direction) }}
+        initial={{ rotate: icon.startAngle }}
+        animate={{ rotate: icon.startAngle + direction }}
         transition={{ duration, repeat: Infinity, ease: "linear" }}
       >
-        {icon.imageSrc ? (
-          <img src={icon.imageSrc} alt="" className="w-full h-full object-contain p-2" draggable={false} />
-        ) : Icon ? (
-          <Icon size={icon.size * 0.5} color={icon.color} strokeWidth={2.25} />
-        ) : null}
+        <motion.div
+          className="absolute top-1/2 -translate-y-1/2 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
+          style={{
+            right: 0,
+            width: icon.size,
+            height: icon.size,
+            backgroundColor: `${icon.color}33`,
+            border: `1.5px solid ${icon.color}80`,
+          }}
+          initial={{ rotate: -icon.startAngle }}
+          animate={{ rotate: -(icon.startAngle + direction) }}
+          transition={{ duration, repeat: Infinity, ease: "linear" }}
+        >
+          {icon.imageSrc ? (
+            <img src={icon.imageSrc} alt="" className="w-full h-full object-contain p-2" draggable={false} />
+          ) : Icon ? (
+            <Icon size={icon.size * 0.5} color={icon.color} strokeWidth={2.25} />
+          ) : null}
+        </motion.div>
       </motion.div>
-    </motion.div>
-  );
-}
+    );
+  }
 
 export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: OrbitIconDef[] }) {
   const reduced = useReducedMotion();
@@ -111,7 +107,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Dashed orbit ring — clipped to left semicircle */}
+      {/* Planetary orbit ring — full dashed circle */}
       <svg
         className="absolute pointer-events-none"
         style={{
@@ -122,16 +118,6 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           overflow: "visible",
         }}
       >
-        <defs>
-          <clipPath id="orbit-left-clip">
-            <rect
-              x={-(SHARED_ORBIT_RADIUS + 40)}
-              y={-(SHARED_ORBIT_RADIUS + 40)}
-              width={SHARED_ORBIT_RADIUS + 40}
-              height={2 * (SHARED_ORBIT_RADIUS + 40)}
-            />
-          </clipPath>
-        </defs>
         <circle
           cx={0}
           cy={0}
@@ -141,11 +127,10 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           strokeOpacity={0.3}
           strokeWidth={1.5}
           strokeDasharray="8 6"
-          clipPath="url(#orbit-left-clip)"
         />
       </svg>
 
-      {/* Orbit arms — anchored at hub center, clipped to left half */}
+      {/* Orbit arms — anchored at hub center */}
       <div
         className="absolute overflow-hidden"
         style={{
@@ -154,7 +139,6 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           width: ARM_CLIP_SIZE,
           height: ARM_CLIP_SIZE,
           transform: "translate(-50%, -50%)",
-          clipPath: "inset(0 50% 0 0)",
         }}
       >
         {icons.map((icon, i) => (
