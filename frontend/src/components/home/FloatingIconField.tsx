@@ -9,8 +9,8 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
-// @ts-expect-error — Vite resolves ?url for non-JS assets
-import heroDeviceMockup from "../../assets/hp&laptop.webp";
+// @ts-expect-error — Vite resolves asset imports
+import heroDeviceMockup from "../../assets/hp&lapropp.webp";
 
 interface IconDef {
   Icon?: LucideIcon;
@@ -25,15 +25,15 @@ interface IconDef {
 }
 
 const DEFAULT_ICONS: IconDef[] = [
-  { Icon: TrendingUp, top: "6%", left: "14%", size: 46, color: "#22d3ee", floatDuration: 4.2, floatDelay: 0, floatRange: 10 },
-  { Icon: Receipt, top: "12%", left: "82%", size: 40, color: "#a78bfa", floatDuration: 5.1, floatDelay: 0.4, floatRange: 8 },
-  { Icon: Landmark, top: "50%", left: "4%", size: 44, color: "#f5c542", floatDuration: 4.8, floatDelay: 0.8, floatRange: 12 },
-  { Icon: BarChart3, top: "78%", left: "84%", size: 42, color: "#34d399", floatDuration: 4.5, floatDelay: 0.2, floatRange: 9 },
-  { Icon: Coins, top: "88%", left: "24%", size: 38, color: "#f5c542", floatDuration: 5.4, floatDelay: 0.6, floatRange: 11 },
-  { Icon: ShieldCheck, top: "4%", left: "52%", size: 36, color: "#22d3ee", floatDuration: 4.9, floatDelay: 1, floatRange: 7 },
+  { Icon: TrendingUp, top: "10%", left: "20%", size: 46, color: "#0ea5e9", floatDuration: 4.2, floatDelay: 0, floatRange: 10 },
+  { Icon: Receipt, top: "8%", left: "70%", size: 40, color: "#8b5cf6", floatDuration: 5.1, floatDelay: 0.4, floatRange: 8 },
+  { Icon: Landmark, top: "45%", left: "8%", size: 44, color: "#d97706", floatDuration: 4.8, floatDelay: 0.8, floatRange: 12 },
+  { Icon: BarChart3, top: "88%", left: "78%", size: 42, color: "#059669", floatDuration: 4.5, floatDelay: 0.2, floatRange: 9 },
+  { Icon: Coins, top: "82%", left: "18%", size: 38, color: "#d97706", floatDuration: 5.4, floatDelay: 0.6, floatRange: 11 },
+  { Icon: ShieldCheck, top: "42%", left: "88%", size: 36, color: "#0ea5e9", floatDuration: 4.9, floatDelay: 1, floatRange: 7 },
 ];
 
-const HUB = { top: "48%", left: "50%" };
+const HUB = { top: "48%", left: "48%" };
 const HUB_WIDTH = 220;
 
 function useReducedMotion(): boolean {
@@ -51,6 +51,7 @@ function useReducedMotion(): boolean {
 
 export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: IconDef[] }) {
   const reduced = useReducedMotion();
+  const floatMultiplier = reduced ? 0.25 : 1;
 
   return (
     <div className="relative w-full h-full">
@@ -64,64 +65,67 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: I
             x2={HUB.left}
             y2={HUB.top}
             stroke="#22d3ee"
-            strokeOpacity={0.25}
+            strokeOpacity={0.35}
             strokeWidth={1.5}
             strokeDasharray="4 5"
           >
-            {!reduced && (
-              <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="1.2s" repeatCount="indefinite" />
-            )}
+            <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="1.2s" repeatCount="indefinite" />
           </line>
         ))}
       </svg>
 
-      {/* Hub glow */}
-      <motion.div
-        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-500/20 blur-2xl"
+      {/* Hub glow — positioning div (non-motion) + motion inner */}
+      <div
+        className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH * 1.3, height: HUB_WIDTH * 1.3 }}
-        animate={reduced ? {} : { scale: [1, 1.08, 1], opacity: [0.5, 0.75, 0.5] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-      />
+      >
+        <motion.div
+          className="w-full h-full rounded-full bg-primary-500/25 blur-2xl"
+          animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.75, 0.5] }}
+          transition={{ duration: 3.2 / floatMultiplier, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
 
-      {/* Hub device mockup */}
-      <motion.div
+      {/* Hub device mockup — positioning div (non-motion) + motion.img inner */}
+      <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH }}
-        animate={reduced ? {} : { y: [0, -8, 0] }}
-        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
       >
-        <img
+        <motion.img
           src={heroDeviceMockup}
           alt="Tampilan dashboard LedgerFlow di laptop dan ponsel"
           className="w-full h-auto drop-shadow-2xl select-none"
           draggable={false}
+          animate={{ y: [0, -8 * floatMultiplier, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
         />
-      </motion.div>
+      </div>
 
-      {/* Floating icons */}
+      {/* Floating icons — positioning div (non-motion) + motion.div inner */}
       {icons.map((icon, i) => {
         const { Icon } = icon;
         return (
-          <motion.div
+          <div
             key={i}
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl flex items-center justify-center shadow-lg backdrop-blur-sm overflow-hidden"
-            style={{
-              top: icon.top,
-              left: icon.left,
-              width: icon.size,
-              height: icon.size,
-              backgroundColor: `${icon.color}1A`,
-              border: `1px solid ${icon.color}40`,
-            }}
-            animate={reduced ? {} : { y: [0, -icon.floatRange, 0], rotate: [0, i % 2 === 0 ? 3 : -3, 0] }}
-            transition={{ duration: icon.floatDuration, delay: icon.floatDelay, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ top: icon.top, left: icon.left, width: icon.size, height: icon.size }}
           >
-            {icon.imageSrc ? (
-              <img src={icon.imageSrc} alt="" className="w-full h-full object-contain p-2" draggable={false} />
-            ) : Icon ? (
-              <Icon size={icon.size * 0.5} color={icon.color} strokeWidth={2} />
-            ) : null}
-          </motion.div>
+            <motion.div
+              className="w-full h-full rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
+              style={{
+                backgroundColor: `${icon.color}33`,
+                border: `1.5px solid ${icon.color}80`,
+              }}
+              animate={{ y: [0, -icon.floatRange * floatMultiplier, 0], rotate: [0, (i % 2 === 0 ? 3 : -3) * floatMultiplier, 0] }}
+              transition={{ duration: icon.floatDuration, delay: icon.floatDelay, repeat: Infinity, ease: "easeInOut" }}
+            >
+              {icon.imageSrc ? (
+                <img src={icon.imageSrc} alt="" className="w-full h-full object-contain p-2" draggable={false} />
+              ) : Icon ? (
+                <Icon size={icon.size * 0.5} color={icon.color} strokeWidth={2.25} />
+              ) : null}
+            </motion.div>
+          </div>
         );
       })}
     </div>
