@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
-import heroDeviceMockup from "../../assets/Rekomendasi-Laptop-untuk-Finance--1200x900.jpg";
+import heroDeviceMockup from "../../assets/Rekomendasi-Laptop-untuk-Finance--1200x900.webp";
 
 interface OrbitIconDef {
   Icon?: LucideIcon;
