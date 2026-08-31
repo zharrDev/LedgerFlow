@@ -218,7 +218,9 @@ export default function HomePage() {
 
             {/* ── Floating Icons + Device Mockup Kanan ── */}
             <div className="relative h-[40vh] sm:h-[50vh] lg:h-[70vh] lg:min-h-[480px]">
-              <FloatingIconField />
+              <div className="absolute inset-0 origin-top-left max-w-[300px] sm:max-w-none scale-[0.6] sm:scale-100">
+                <FloatingIconField />
+              </div>
             </div>
           </div>
 

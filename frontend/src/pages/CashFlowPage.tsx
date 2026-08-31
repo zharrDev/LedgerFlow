@@ -12,7 +12,7 @@ import {
   Sparkles,
   Activity,
 } from "lucide-react";
-import { AppShell } from "../components/AppShell";
+
 import { ScrollReveal } from "../components/ScrollReveal";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
@@ -336,7 +336,6 @@ export default function CashFlowPage() {
   };
 
   return (
-    <AppShell>
       <div className="min-h-[80vh]">
         <div className="max-w-5xl mx-auto space-y-8 py-6">
           {/* ── Page Header ── */}
@@ -518,6 +517,5 @@ export default function CashFlowPage() {
           )}
         </div>
       </div>
-    </AppShell>
   );
 }

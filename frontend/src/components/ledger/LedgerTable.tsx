@@ -172,7 +172,8 @@ export function LedgerTable({
 
       {/* ── Table ── */}
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
@@ -248,6 +249,63 @@ export function LedgerTable({
               />
             </tfoot>
           </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+          {/* Opening balance mobile */}
+          <div className="p-3 bg-gray-50/50 dark:bg-gray-800/20">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 italic">
+              {tx(language, "Opening Balance", "Saldo Awal")}
+            </p>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-gray-400">{formatDateShort(startDate, language)}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
+                {Math.abs(openingBalance) > 0.005 ? formatIDR(Math.abs(openingBalance)) : "—"}
+                {Math.abs(openingBalance) > 0.005 && (
+                  <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-1">
+                    {balanceSideLetter(account.normalBalance, openingBalance)}
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {lines.length === 0 ? (
+            <div className="py-12 text-center text-sm text-gray-400">
+              {tx(language, "No transactions in this period", "Tidak ada transaksi pada periode ini")}
+            </div>
+          ) : (
+            pageLines.map((line) => (
+              <LedgerMobileCard
+                key={line.id}
+                line={line}
+                normalBalance={account.normalBalance}
+                language={language}
+              />
+            ))
+          )}
+
+          {/* Closing mobile */}
+          <div className="p-3 bg-gray-50/50 dark:bg-gray-800/30">
+            <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              {tx(language, "Total / Closing Balance", "Total / Saldo Akhir")}
+            </p>
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-primary-700 dark:text-primary-400 tabular-nums">D: {formatIDR(totalDebit)}</span>
+                <span className="text-xs text-emerald-700 dark:text-emerald-400 tabular-nums">C: {formatIDR(totalCredit)}</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
+                {formatIDR(Math.abs(closingBalance))}
+                {closingBalance !== 0 && (
+                  <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-1">
+                    {balanceSideLetter(account.normalBalance, closingBalance)}
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Pagination */}
@@ -468,6 +526,55 @@ function LedgerRow({
         </span>
       </td>
     </tr>
+  );
+}
+
+// ─── Mobile Card ──────────────────────────────────────────────────────────────
+
+function LedgerMobileCard({
+  line,
+  normalBalance,
+  language,
+}: {
+  line: LedgerLine;
+  normalBalance: NormalBalance;
+  language: "en" | "id";
+}) {
+  const isNormalSide = line.balance >= 0;
+  const balanceColorCls = isNormalSide
+    ? "text-gray-800 dark:text-gray-200"
+    : "text-amber-600 dark:text-amber-400";
+
+  return (
+    <div className="p-3">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <div className="min-w-0">
+          <span className="font-mono text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-1.5 py-0.5 rounded-md border border-primary-200 dark:border-primary-500/20">
+            {line.journalNumber}
+          </span>
+          <p className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-1">{line.description}</p>
+        </div>
+        <span className="text-xs text-gray-400 tabular-nums shrink-0">{formatDateShort(line.date, language)}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-1.5">
+        <div className="flex items-center gap-2">
+          <span className={`text-xs tabular-nums ${line.debit > 0 ? "text-primary-700 dark:text-primary-400 font-medium" : "text-gray-300 dark:text-gray-600"}`}>
+            D: {line.debit > 0 ? formatIDR(line.debit) : "—"}
+          </span>
+          <span className={`text-xs tabular-nums ${line.credit > 0 ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-300 dark:text-gray-600"}`}>
+            C: {line.credit > 0 ? formatIDR(line.credit) : "—"}
+          </span>
+        </div>
+        <span className={`text-xs font-medium tabular-nums ${balanceColorCls}`}>
+          {formatIDR(Math.abs(line.balance))}
+          {line.balance !== 0 && (
+            <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-0.5">
+              {balanceSideLetter(normalBalance, line.balance)}
+            </span>
+          )}
+        </span>
+      </div>
+    </div>
   );
 }
 

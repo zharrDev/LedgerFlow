@@ -17,7 +17,7 @@ import { JournalDetail } from "../components/journal/JournalDetail";
 import { ConfirmDialog } from "../components/journal/ConfirmDialog";
 import { IconJournal } from "../components/journal/JournalShared";
 import { useAuth } from "../context/AuthContext";
-import { AppShell } from "../components/AppShell";
+
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { formatCurrency } from "../utils/currency";
@@ -248,7 +248,7 @@ export default function JournalEntryPage() {
         : tx(language, "Journal Entry", "Entri Jurnal");
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-6xl mx-auto space-y-4">
         {/* ── Page Header ── */}
         <ScrollReveal
@@ -523,6 +523,6 @@ export default function JournalEntryPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-    </AppShell>
+    </>
   );
 }

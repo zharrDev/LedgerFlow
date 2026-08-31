@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { AppShell } from "../components/AppShell";
+
 import {
   HelpCircle,
   Send,
@@ -48,7 +48,6 @@ export default function HelpCenterPage() {
   };
 
   return (
-    <AppShell>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -204,6 +203,5 @@ export default function HelpCenterPage() {
           </AnimatePresence>
         </motion.div>
       </motion.div>
-    </AppShell>
   );
 }

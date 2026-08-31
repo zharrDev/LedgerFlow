@@ -304,7 +304,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
         </div>
 
         <div className="overflow-x-auto">
-          <div className="min-w-[320px]">
+          <div>
             <div className="hidden md:grid md:grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/30">
               {[tx(language, "Account", "Akun"), tx(language, "Description", "Keterangan"), tx(language, "Debit", "Debit"), tx(language, "Credit", "Kredit"), ""].map(
                 (h) => (

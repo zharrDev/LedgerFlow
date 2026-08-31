@@ -74,7 +74,8 @@ export function JournalList({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
@@ -140,6 +141,40 @@ export function JournalList({
               </tbody>
             </table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            {entries.length === 0 ? (
+              <div className="py-16 text-center">
+                <BookOpen size={32} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm text-gray-400 mb-3">
+                  {tx(language, "No journal entries yet", "Belum ada journal entry")}
+                </p>
+                {canPost && (
+                  <button
+                    type="button"
+                    onClick={onNew}
+                    className="px-4 py-2 text-sm bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:shadow-lg transition-all"
+                  >
+                    {tx(language, "Create First Entry", "Buat Entry Pertama")}
+                  </button>
+                )}
+              </div>
+            ) : (
+              entries.map((entry) => (
+                <JournalMobileCard
+                  key={entry.id}
+                  entry={entry}
+                  onView={onView}
+                  onPost={onPost}
+                  onDelete={onDelete}
+                  canPost={canPost}
+                  canDelete={canDelete}
+                />
+              ))
+            )}
+          </div>
+
           {pagination && (
             <TablePagination {...pagination} />
           )}
@@ -231,5 +266,64 @@ function JournalRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+// ─── Mobile Card ──────────────────────────────────────────────────────────────
+
+function JournalMobileCard({
+  entry,
+  onView,
+  onPost,
+  onDelete,
+  canPost,
+  canDelete,
+}: JournalRowProps) {
+  const { language } = useLanguage();
+  const isDraft = entry.status === "draft";
+
+  return (
+    <div
+      className="p-3 cursor-pointer hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors"
+      onClick={() => onView(entry)}
+    >
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <span className="font-mono text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-500/20">
+          {entry.number}
+        </span>
+        <StatusBadge status={entry.status} />
+      </div>
+      <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-1 mb-0.5">
+        {entry.description}
+      </p>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-gray-400">
+          {formatDate(entry.date, language)} · {entry.lines?.length ?? 0} {tx(language, "lines", "baris")}
+        </span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+          {formatIDR(entry.totalDebit)}
+        </span>
+      </div>
+      {isDraft && (canPost || canDelete) && (
+        <div className="flex gap-1.5 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/50" onClick={(e) => e.stopPropagation()}>
+          {canPost && (
+            <ActionButton
+              title={tx(language, "Post to ledger", "Posting ke buku besar")}
+              onClick={() => onPost(entry)}
+              icon={<IconSend size={14} />}
+              variant="primary"
+            />
+          )}
+          {canDelete && (
+            <ActionButton
+              title={tx(language, "Delete draft", "Hapus draft")}
+              onClick={() => onDelete(entry)}
+              icon={<IconTrash size={14} />}
+              variant="danger"
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }

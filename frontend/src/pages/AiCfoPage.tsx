@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Bot, MessageSquarePlus, PanelLeft } from "lucide-react";
-import { AppShell } from "../components/AppShell";
+import { useSetAppShellConfig } from "../context/AppShellConfigContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { AiCfoChatBubble } from "../components/ai/AiCfoChatBubble";
@@ -24,8 +24,15 @@ export default function AiCfoPage() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const { summary } = useDashboardData();
+  const setAppShellConfig = useSetAppShellConfig();
   const userId = user?.id ?? "";
   const companyId = user?.company_id ?? "";
+
+  // Set AppShell config for fullHeight + hideTitle
+  useEffect(() => {
+    setAppShellConfig({ fullHeight: true, hideTitle: true });
+    return () => setAppShellConfig({});
+  }, [setAppShellConfig]);
 
   const [sessions, setSessions] = useState<AiCfoSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -211,16 +218,13 @@ export default function AiCfoPage() {
 
   if (!hydrated) {
     return (
-      <AppShell fullHeight hideTitle>
-        <div className="flex items-center justify-center flex-1">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
-        </div>
-      </AppShell>
+      <div className="flex items-center justify-center flex-1">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+      </div>
     );
   }
 
   return (
-    <AppShell fullHeight hideTitle>
       <div className="flex flex-col flex-1 min-h-0 max-w-5xl mx-auto w-full">
         {/* Toolbar atas */}
         <div className="flex items-center justify-between gap-3 mb-2 shrink-0">
@@ -343,6 +347,5 @@ export default function AiCfoPage() {
           </div>
         </div>
       </div>
-    </AppShell>
   );
 }

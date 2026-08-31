@@ -4,7 +4,7 @@ import { motion, type Variants } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
-import { AppShell } from "../components/AppShell";
+
 import {
   User,
   Mail,
@@ -210,7 +210,6 @@ export default function ProfilePage() {
   };
 
   return (
-    <AppShell>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -491,7 +490,6 @@ export default function ProfilePage() {
           </div>
         </motion.div>
       </motion.div>
-    </AppShell>
   );
 }
 

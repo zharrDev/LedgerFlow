@@ -5,7 +5,7 @@ import { useAccounts } from "../hooks/useAccounts";
 import { usePagination } from "../hooks/usePagination";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
-import { AppShell } from "../components/AppShell";
+
 import { ScrollReveal } from "../components/ScrollReveal";
 import {
   PlusCircle,
@@ -296,7 +296,7 @@ export default function ChartOfAccounts() {
   // Export menu handled by <ExportMenu />
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
         <ScrollReveal
@@ -695,6 +695,6 @@ export default function ChartOfAccounts() {
           </motion.div>
         )}
       </AnimatePresence>
-    </AppShell>
+    </>
   );
 }

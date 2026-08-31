@@ -6,7 +6,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { LedgerFilter } from "../components/ledger/LedgerFilter";
 import { LedgerTable } from "../components/ledger/LedgerTable";
-import { AppShell } from "../components/AppShell";
+
 import { ScrollReveal } from "../components/ScrollReveal";
 import { BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 
@@ -59,7 +59,7 @@ export default function BukuBesarPage() {
   }, [fetchLedger]);
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* ── Page Header ── */}
         <ScrollReveal direction="left">
@@ -140,6 +140,6 @@ export default function BukuBesarPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-    </AppShell>
+    </>
   );
 }

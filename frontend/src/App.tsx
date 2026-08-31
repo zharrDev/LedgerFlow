@@ -11,6 +11,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
 import BrandedLoader from "./components/BrandedLoader";
+import { AppLayout } from "./components/AppLayout";
 
 // Route-based code splitting — setiap halaman hanya dimuat saat dibutuhkan.
 const lazyPage = (factory: () => Promise<{ default: React.ComponentType }>) =>
@@ -267,118 +268,64 @@ function AnimatedRoutes() {
         }
       />
 
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/journal-entries"
-        element={
-          <ProtectedRoute>
-            <JournalEntryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/buku-besar"
-        element={
-          <ProtectedRoute>
-            <BukuBesarPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/help-center"
-        element={
-          <ProtectedRoute>
-            <HelpCenterPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/users-management"
-        element={
-          <RoleRoute roles={["owner"]}>
-            <UserManagementPage />
-          </RoleRoute>
-        }
-      />
-      <Route
-        path="/period-management"
-        element={
-          <RoleRoute roles={["owner"]}>
-            <PeriodManagement />
-          </RoleRoute>
-        }
-      />
-      <Route
-        path="/chart-of-accounts"
-        element={
-          <RoleRoute roles={["owner", "akuntan"]}>
-            <ChartOfAccounts />
-          </RoleRoute>
-        }
-      />
-
-      <Route
-        path="/income-statement"
-        element={
-          <ProtectedRoute>
+      {/* Protected app routes — shared AppShell layout (Sidebar + Header) */}
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/journal-entries" element={<JournalEntryPage />} />
+        <Route path="/buku-besar" element={<BukuBesarPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/help-center" element={<HelpCenterPage />} />
+        <Route
+          path="/users-management"
+          element={
+            <RoleRoute roles={["owner"]}>
+              <UserManagementPage />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/period-management"
+          element={
+            <RoleRoute roles={["owner"]}>
+              <PeriodManagement />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/chart-of-accounts"
+          element={
+            <RoleRoute roles={["owner", "akuntan"]}>
+              <ChartOfAccounts />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/income-statement"
+          element={
             <ProtectedFeature feature="income_statement">
               <IncomeStatementPage />
             </ProtectedFeature>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/balance-sheet"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="/balance-sheet"
+          element={
             <ProtectedFeature feature="balance_sheet">
               <BalanceSheet />
             </ProtectedFeature>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/cash-flow"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cash-flow"
+          element={
             <ProtectedFeature feature="cash_flow">
               <CashFlowPage />
             </ProtectedFeature>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/ai-cfo"
-        element={
-          <ProtectedRoute>
-            <AiCfoPage />
-          </ProtectedRoute>
-        }
-      />
+          }
+        />
+        <Route path="/ai-cfo" element={<AiCfoPage />} />
+      </Route>
 
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/payment/success" element={<PaymentResultPage type="success" />} />

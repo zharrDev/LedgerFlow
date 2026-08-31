@@ -10,7 +10,7 @@ import {
   Lock,
   X,
 } from "lucide-react";
-import { AppShell } from "../components/AppShell";
+import { useSetAppShellConfig } from "../context/AppShellConfigContext";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { api } from "../lib/api";
@@ -43,7 +43,17 @@ export default function UserManagementPage() {
   const { user: me } = useAuth();
   const { toast } = useToast();
   const { language } = useLanguage();
+  const setAppShellConfig = useSetAppShellConfig();
   const myRole = me?.role || "owner";
+
+  // Set AppShell title/description
+  useEffect(() => {
+    setAppShellConfig({
+      title: tx(language, "User Management", "Manajemen User"),
+      description: tx(language, "Manage user roles and access in your company", "Kelola role dan akses user dalam perusahaan Anda"),
+    });
+    return () => setAppShellConfig({});
+  }, [setAppShellConfig, language]);
 
   const ALL_ROLES = [
     { value: "owner", label: tx(language, "Owner", "Pemilik") },
@@ -147,7 +157,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <AppShell title={tx(language, "User Management", "Manajemen User")} description={tx(language, "Manage user roles and access in your company", "Kelola role dan akses user dalam perusahaan Anda")}>
+    <>
       {/* ── Tombol Tambah Anggota ── */}
       <ScrollReveal direction="left" className="flex justify-end mb-4">
         <button
@@ -342,6 +352,6 @@ export default function UserManagementPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </AppShell>
+    </>
   );
 }

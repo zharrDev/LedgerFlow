@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
-import { AppShell } from "../components/AppShell";
+
 import { periodsService } from "../services/periodsService";
 import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
@@ -153,7 +153,6 @@ export default function PeriodManagement() {
     : null;
 
   return (
-    <AppShell>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -561,6 +560,5 @@ export default function PeriodManagement() {
           </motion.div>
         )}
       </motion.div>
-    </AppShell>
   );
 }

@@ -4,17 +4,15 @@ import { Sidebar } from "./Sidebar";
 import { AppNav } from "./AppNav";
 import { getMyCompany } from "../services/companiesService";
 import { getCurrency, setCurrency } from "../utils/currency";
+import { useAppShellConfig } from "../context/AppShellConfigContext";
 
 interface AppShellProps {
   children: React.ReactNode;
-  title?: string;
-  description?: string;
-  /** Kunci tinggi viewport — scroll hanya di dalam children (mis. halaman chat AI) */
-  fullHeight?: boolean;
-  hideTitle?: boolean;
 }
 
-export function AppShell({ children, title, description, fullHeight, hideTitle }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
+  const config = useAppShellConfig();
+  const { title, description, fullHeight, hideTitle } = config;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {

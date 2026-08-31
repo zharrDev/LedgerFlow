@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
-import { AppShell } from "../components/AppShell";
+
 import { useToast } from "../context/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { useLanguage } from "../hooks/useLanguage";
@@ -190,7 +190,6 @@ export default function SettingsPage() {
   ];
 
   return (
-    <AppShell>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -582,6 +581,5 @@ export default function SettingsPage() {
           </button>
         </motion.div>
       </motion.div>
-    </AppShell>
   );
 }

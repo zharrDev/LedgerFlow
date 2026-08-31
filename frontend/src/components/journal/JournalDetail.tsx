@@ -138,7 +138,8 @@ export function JournalDetail({
           </h3>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-800/50">
@@ -230,6 +231,54 @@ export function JournalDetail({
               </tr>
             </tfoot>
           </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+          {(entry.lines ?? []).map((line, idx) => {
+            const isDebit = line.debit > 0;
+            return (
+              <div
+                key={line.id ?? `${line.accountCode}-${idx}`}
+                className="p-3"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="min-w-0">
+                    <span className="font-mono text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-1.5 py-0.5 rounded-md border border-primary-200 dark:border-primary-500/20">
+                      {line.accountCode}
+                    </span>
+                    <p className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 truncate">{line.accountName}</p>
+                  </div>
+                  <span className="text-xs text-gray-300 dark:text-gray-600 tabular-nums shrink-0">#{idx + 1}</span>
+                </div>
+                {line.description && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 line-clamp-1">{line.description}</p>
+                )}
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-medium tabular-nums ${isDebit ? "text-primary-700 dark:text-primary-400" : "text-gray-300 dark:text-gray-600"}`}>
+                    D: {isDebit ? formatIDR(line.debit) : "—"}
+                  </span>
+                  <span className={`text-xs font-medium tabular-nums ${!isDebit ? "text-emerald-700 dark:text-emerald-400" : "text-gray-300 dark:text-gray-600"}`}>
+                    C: {!isDebit ? formatIDR(line.credit) : "—"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          {/* Mobile total */}
+          <div className="p-3 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
+            <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              {tx(language, "Total", "Total")}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-primary-700 dark:text-primary-400 tabular-nums">
+                D: {formatIDR(entry.totalDebit)}
+              </span>
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                C: {formatIDR(entry.totalCredit)}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

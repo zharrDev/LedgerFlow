@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
-import { useIncomeStatement } from "../hooks/useIncomeStatement";
+import { useIncomeStatement, useReportPeriods } from "../hooks/useReports";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { formatCompact } from "../i18n/compactNumber";
-import { reportsService } from "../services/reportsService";
-import { AppShell } from "../components/AppShell";
+
 import { ScrollReveal } from "../components/ScrollReveal";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ExportMenu } from "../components/ExportMenu";
@@ -21,7 +20,6 @@ import {
   RefreshCw,
   Calendar,
 } from "lucide-react";
-import type { Period } from "../types/reports";
 import { formatCurrency } from "../utils/currency";
 
 const letterContainerVariants: Variants = {
@@ -45,13 +43,9 @@ const formatRupiah = (val: number) => formatCurrency(val);
 
 export function IncomeStatementPage() {
   const { language } = useLanguage();
-  const { data, loading, error, periodId, setPeriodId, refetch } =
-    useIncomeStatement(undefined);
-  const [periods, setPeriods] = useState<Period[]>([]);
-
-  useEffect(() => {
-    reportsService.getPeriods().then(setPeriods).catch(console.error);
-  }, []);
+  const [periodId, setPeriodId] = useState<string | undefined>(undefined);
+  const { data, isLoading: loading, error, refetch } = useIncomeStatement(periodId);
+  const { data: periods = [] } = useReportPeriods();
 
   const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
     if (!data) return;
@@ -64,7 +58,6 @@ export function IncomeStatementPage() {
   };
 
   return (
-    <AppShell>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* ── Page Header ── */}
         <ScrollReveal
@@ -145,7 +138,7 @@ export function IncomeStatementPage() {
         {/* ── Error ── */}
         {error && !loading && (
           <ScrollReveal direction="fade" className="py-16 text-center">
-            <p className="text-red-500 text-sm mb-2">{error}</p>
+            <p className="text-red-500 text-sm mb-2">{error instanceof Error ? error.message : String(error)}</p>
             <button
               onClick={() => refetch()}
               className="text-primary-500 text-sm hover:underline"
@@ -349,6 +342,5 @@ export function IncomeStatementPage() {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

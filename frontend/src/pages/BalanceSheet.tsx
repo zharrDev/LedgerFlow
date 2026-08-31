@@ -9,7 +9,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { AppShell } from "../components/AppShell";
+
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
@@ -129,21 +129,18 @@ export default function BalanceSheet() {
 
   if (isLoadingPeriods) {
     return (
-      <AppShell>
-        <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-primary-600 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
               {tx(language, "Loading period data...", "Memuat data periode...")}
             </p>
           </div>
-        </div>
-      </AppShell>
+      </div>
     );
   }
 
   return (
-    <AppShell>
       <div className="min-h-[80vh]">
         <div className="max-w-7xl mx-auto space-y-6 py-6">
         {/* Header */}
@@ -403,6 +400,5 @@ export default function BalanceSheet() {
         )}
         </div>
       </div>
-    </AppShell>
   );
 }

@@ -6,7 +6,7 @@ import { useAccounts } from "../hooks/useAccounts";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { reportsService } from "../services/reportsService";
 import { journalService } from "../services/journalService";
-import { AppShell } from "../components/AppShell";
+
 import { ScrollReveal } from "../components/ScrollReveal";
 import { GreetingOwl } from "../components/dashboard/GreetingOwl";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -142,6 +142,19 @@ export default function DashboardPage() {
     </tr>
   );
 
+  const SkeletonRowMobile = () => (
+    <div className="p-3 animate-pulse">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+      </div>
+      <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded-full mt-2"></div>
+    </div>
+  );
+
   // ─── KPI Card Component ──────────────────────────────────────────
   const KPICard = ({
     label,
@@ -199,7 +212,6 @@ export default function DashboardPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
     >
-    <AppShell>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* ═══ Hero Card — Greeting + Nama + Tanggal (+ Owl desktop) ═══ */}
         <motion.div
@@ -679,7 +691,8 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              {/* Desktop table */}
+              <table className="w-full text-sm hidden sm:table">
                 <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                   <tr>
                     <th className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase min-w-[100px]">
@@ -748,6 +761,45 @@ export default function DashboardPage() {
                   )}
                 </tbody>
               </table>
+
+              {/* Mobile cards */}
+              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+                {accountsLoading ? (
+                  <>
+                    <SkeletonRowMobile />
+                    <SkeletonRowMobile />
+                    <SkeletonRowMobile />
+                  </>
+                ) : accounts.length === 0 ? (
+                  <div className="py-8 text-center text-gray-500">
+                    {tx(language, "No accounts yet. Create your first account!", "Belum ada akun. Buat akun pertama Anda!")}
+                  </div>
+                ) : (
+                  accountsPagination.pageItems.map((acc) => (
+                    <div key={acc.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{acc.code}</span>
+                          <p className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">{acc.name}</p>
+                        </div>
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                            acc.isActive
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          <div className={`w-1 h-1 rounded-full ${acc.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+                          {acc.isActive ? tx(language, "Active", "Aktif") : tx(language, "Inactive", "Nonaktif")}
+                        </span>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 capitalize mt-1 inline-block">
+                        {acc.type || "General"}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
             {!accountsLoading && accounts.length > 0 && (
               <TablePagination
@@ -871,7 +923,6 @@ export default function DashboardPage() {
           </ScrollReveal>
         </div>
       </div>
-    </AppShell>
-    </motion.div>
+      </motion.div>
   );
 }
