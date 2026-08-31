@@ -71,7 +71,7 @@ function OrbitArm({ icon, reduced }: { icon: OrbitIconDef; reduced: boolean }) {
         <motion.div
           className="absolute top-1/2 -translate-y-1/2 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
           style={{
-            right: 0,
+            right: -(icon.size / 2),
             width: icon.size,
             height: icon.size,
             backgroundColor: `${icon.color}33`,
