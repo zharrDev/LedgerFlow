@@ -22,15 +22,15 @@ interface OrbitIconDef {
   clockwise: boolean;
 }
 
-const SHARED_ORBIT_RADIUS = 130;
+const SHARED_ORBIT_RADIUS = 155;
 
 const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
-  { Icon: Receipt, size: 46, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 240, clockwise: false },
-  { Icon: Landmark, size: 46, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 300, clockwise: false },
-  { Icon: BarChart3, size: 46, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
-  { Icon: Coins, size: 46, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 60, clockwise: false },
-  { Icon: ShieldCheck, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 120, clockwise: false },
+  { Icon: TrendingUp, size: 52, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
+  { Icon: Receipt, size: 52, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 240, clockwise: false },
+  { Icon: Landmark, size: 52, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 300, clockwise: false },
+  { Icon: BarChart3, size: 52, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
+  { Icon: Coins, size: 52, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 60, clockwise: false },
+  { Icon: ShieldCheck, size: 52, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 120, clockwise: false },
 ];
 
 const HUB = { top: "48%", left: "48%" };
