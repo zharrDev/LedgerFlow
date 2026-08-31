@@ -41,7 +41,7 @@ const HUB = { top: "48%", left: "48%" };
 const HUB_WIDTH = 350;
 const HUB_IMAGE_LEFT = "60%";
 const ARM_CLIP_SIZE = 600;
-const RING_LEFT = "35%";
+const RING_LEFT = "37%";
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
