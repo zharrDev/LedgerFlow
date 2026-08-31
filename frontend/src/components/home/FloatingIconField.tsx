@@ -37,7 +37,7 @@ const HUB = { top: "48%", left: "48%" };
 const HUB_WIDTH = 350;
 const HUB_IMAGE_LEFT = "50%";
 const ARM_CLIP_SIZE = 600;
-const RING_LEFT = `calc(50% - ${HUB_WIDTH / 2 + SHARED_ORBIT_RADIUS + 24}px)`;
+const RING_LEFT = HUB_IMAGE_LEFT;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -108,7 +108,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Planetary orbit ring — solid circle beside image on left */}
+      {/* Planetary orbit ring — solid semicircle, right half hidden by image */}
       <div
         className="absolute pointer-events-none rounded-full"
         style={{
@@ -122,6 +122,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           borderRadius: "50%",
           opacity: 0.3,
           transform: "translate(-50%, -50%)",
+          clipPath: "inset(0 50% 0 0)",
         }}
       />
 
@@ -141,10 +142,10 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         ))}
       </div>
 
-      {/* Device mockup — hub center, shifted slightly right */}
+      {/* Device mockup — hub center, shifted slightly right, on top */}
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ top: HUB.top, left: HUB_IMAGE_LEFT, width: HUB_WIDTH }}
+        style={{ top: HUB.top, left: HUB_IMAGE_LEFT, width: HUB_WIDTH, zIndex: 10 }}
       >
         <motion.img
           src={heroDeviceMockup}
