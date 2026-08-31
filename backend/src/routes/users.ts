@@ -7,6 +7,22 @@ const users = new Hono();
 // Semua route users wajib login
 users.use("*", authMiddleware);
 
+function sanitizeAvatarUrl(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    const expectedPrefix = `${process.env.SUPABASE_URL}/storage/v1/object/public/avatars/`;
+    if (url.origin !== new URL(process.env.SUPABASE_URL!).origin) return null;
+    if (!url.pathname.startsWith("/storage/v1/object/public/avatars/")) return null;
+    return trimmed;
+  } catch {
+    return null;
+  }
+}
+
 // GET /api/users/:id
 // Ambil profil user. Hanya boleh mengambil profil DIRI SENDIRI.
 // (Daftar anggota tim ditangani oleh /api/users-management.)
@@ -56,7 +72,13 @@ users.put("/:id", async (c) => {
 
   const updates: Record<string, any> = {};
   if (body.name !== undefined) updates.name = body.name;
-  if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url;
+  if (body.avatar_url !== undefined) {
+    const sanitized = sanitizeAvatarUrl(body.avatar_url);
+    if (body.avatar_url !== null && sanitized === null) {
+      return c.json({ error: "URL avatar tidak valid." }, 400);
+    }
+    updates.avatar_url = sanitized;
+  }
 
   if (Object.keys(updates).length > 0) {
     const { error: updErr } = await supabase

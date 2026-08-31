@@ -305,6 +305,7 @@ export default function CashFlowPage() {
 
   const isInitialLoad = isLoading && !data;
   const isRefetching = isFetching && !!data;
+  const loading = isLoading;
   const pageTitle = tx(language, "Cash Flow Statement", "Laporan Arus Kas");
 
   // Hanya 3 baris (Operating/Investing/Financing) — TANPA "Total"

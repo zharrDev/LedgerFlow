@@ -4,16 +4,57 @@ import { authMiddleware } from "../middleware/auth.js";
 import { dbErrorResponse } from "../lib/errors.js";
 import { createAIGraph } from "../ai/graph/graph.js";
 import { AI_GRAPH_TIMEOUT_MS } from "../ai/models/provider.js";
+import { supabase } from "../lib/supabase.js";
 
 const ai = new Hono();
 
 ai.use("*", authMiddleware);
+
+async function requireAIAccess(c: any) {
+  const userId = c.get("user").sub;
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("*, plans(*)")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!sub) {
+    return c.json({ error: "Forbidden — no subscription" }, 403);
+  }
+
+  const now = new Date();
+  const isTrialActive =
+    sub.status === "trialing" && sub.trial_end && new Date(sub.trial_end) > now;
+  const isSubActive =
+    sub.status === "active" &&
+    sub.current_period_end &&
+    new Date(sub.current_period_end) > now;
+
+  if (!isTrialActive && !isSubActive) {
+    return c.json({ error: "Forbidden — subscription expired" }, 403);
+  }
+
+  const planName = sub.plans?.name;
+  const AI_PLANS = ["pro", "enterprise"];
+  const hasAccess = isTrialActive || AI_PLANS.includes(planName);
+  if (!hasAccess) {
+    return c.json(
+      { error: "Forbidden — upgrade required", required_plan: "pro" },
+      403,
+    );
+  }
+
+  return null;
+}
 
 // POST /api/ai/chat
 // Tanya AI CFO. companyId SELALU dari JWT — tidak pernah dari body.
 // Error OpenRouter (429/timeout) diterjemahkan ke pesan yang jelas — TIDAK
 // pernah gagal diam-diam (pelajaran dari bug email OTP sebelumnya).
 ai.post("/chat", async (c) => {
+  const paywall = await requireAIAccess(c);
+  if (paywall) return paywall;
+
   let message: unknown;
   try {
     ({ message } = await c.req.json());

@@ -224,6 +224,7 @@ function AnimatedRoutes() {
       <Route path="/resources/:slug" element={<ResourceDetailPage />} />
       <Route path="/company/:slug" element={<CompanyDetailPage />} />
       <Route path="/:section/:item" element={<MarketingDetailPage />} />
+      <Route path="/404" element={<NotFoundPage />} />
       <Route path="/:section" element={<MarketingPage />} />
       <Route
         path="/login"

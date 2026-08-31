@@ -39,9 +39,58 @@ function isCashAccount(code: string, name: string, type: string): boolean {
   );
 }
 
+// Paywall check: samakan dengan GET /api/payments/check-access
+const FEATURE_ACCESS: Record<string, string[]> = {
+  income_statement: ["pro", "enterprise"],
+  balance_sheet: ["pro", "enterprise"],
+  cash_flow: ["pro", "enterprise"],
+};
+
+async function requireReportAccess(c: any, feature: string) {
+  const userId = c.get("user").sub;
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("*, plans(*)")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!sub) {
+    return c.json({ error: "Forbidden — no subscription" }, 403);
+  }
+
+  const now = new Date();
+  const isTrialActive =
+    sub.status === "trialing" && sub.trial_end && new Date(sub.trial_end) > now;
+  const isSubActive =
+    sub.status === "active" &&
+    sub.current_period_end &&
+    new Date(sub.current_period_end) > now;
+
+  if (!isTrialActive && !isSubActive) {
+    return c.json({ error: "Forbidden — subscription expired" }, 403);
+  }
+
+  const planName = sub.plans?.name;
+  const requiredPlans = FEATURE_ACCESS[feature];
+  if (!requiredPlans) return null; // fitur tidak dibatasi
+
+  const hasAccess = isTrialActive || requiredPlans.includes(planName);
+  if (!hasAccess) {
+    return c.json(
+      { error: "Forbidden — upgrade required", required_plan: requiredPlans[0] },
+      403,
+    );
+  }
+
+  return null;
+}
+
 // INCOME STATEMENT
 // Menghitung pendapatan, beban, dan laba bersih dari jurnal posted
 reports.get("/income-statement", async (c) => {
+  const paywall = await requireReportAccess(c, "income_statement");
+  if (paywall) return paywall;
+
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
 
@@ -136,6 +185,9 @@ reports.get("/income-statement", async (c) => {
 // BALANCE SHEET
 // Menghitung aset, liabilitas, ekuitas, lalu memasukkan laba bersih ke equity
 reports.get("/balance-sheet", async (c) => {
+  const paywall = await requireReportAccess(c, "balance_sheet");
+  if (paywall) return paywall;
+
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
 
@@ -169,6 +221,9 @@ reports.get("/balance-sheet", async (c) => {
 // CASH FLOW (INDIRECT METHOD)
 // Menghitung arus kas operasi, investasi, dan pendanaan
 reports.get("/cash-flow", async (c) => {
+  const paywall = await requireReportAccess(c, "cash_flow");
+  if (paywall) return paywall;
+
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
 

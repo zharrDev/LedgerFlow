@@ -151,6 +151,9 @@ export default function RegisterForm({
       <div className="flex justify-center mb-6">
         <img src={logo} alt="LedgerFlow" className="w-12 h-12" />
       </div>
+      <h1 className="sm:hidden text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
+        {id ? "Buat Akun" : "Create Account"}
+      </h1>
       <motion.h1
         initial="hidden"
         animate="visible"
@@ -160,7 +163,7 @@ export default function RegisterForm({
             transition: { staggerChildren: 0.05, delayChildren: 0.4 },
           },
         }}
-        className="text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent flex items-center justify-center flex-wrap"
+        className="hidden sm:flex text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent items-center justify-center flex-wrap"
         style={{ perspective: "600px" }}
       >
         {(id ? "Buat Akun" : "Create Account").split("").map((char, i) => (

@@ -63,11 +63,14 @@ payments.get("/plans", async (c) => {
 //   - Apakah lagi development atau udah production
 // ═══════════════════════════════════════════════════════════════════════
 payments.get("/is-sandbox", async (c) => {
-  // Cek env var: kalau MIDTRANS_IS_PRODUCTION BUKAN "true", berarti lagi sandbox
-  // Default-nya sandbox (karena env var biasanya belum diset pas development)
-  const isSandbox = process.env.MIDTRANS_IS_PRODUCTION !== "true";
+  const isProduction = process.env.NODE_ENV === "production";
+  const midtrxProduction = process.env.MIDTRANS_IS_PRODUCTION === "true";
+  const explicitAllow = process.env.ALLOW_SANDBOX_IN_PROD === "true";
 
-  // Return boolean ke frontend
+  const isSandbox = !(isProduction && midtrxProduction) && !(isProduction && !explicitAllow)
+    ? process.env.MIDTRANS_IS_PRODUCTION !== "true"
+    : false;
+
   return c.json({ is_sandbox: isSandbox });
 });
 

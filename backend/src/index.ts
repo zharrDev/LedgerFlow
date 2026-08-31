@@ -52,7 +52,7 @@ const isAllowedOrigin = (origin: string): boolean => {
 app.use(
   "*",
   cors({
-    origin: (origin) => (origin ? (isAllowedOrigin(origin) ? origin : undefined) : "*"),
+    origin: (origin) => (origin && isAllowedOrigin(origin) ? origin : undefined),
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   })

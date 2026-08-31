@@ -12,8 +12,6 @@ import {
   getPlans,
   subscribe,
   openSnapPayment,
-  testComplete,
-  isSandboxMode,
   formatPrice,
   type Plan,
 } from "../services/paymentService";
@@ -177,39 +175,16 @@ export default function PricingPage() {
     setSubscribing(planName);
     try {
       const result = await subscribe(planName, billingCycle);
-      const sandboxMode = await isSandboxMode();
 
       openSnapPayment(result.snap_token, {
         onSuccess: () =>
           navigate("/payment/success?order_id=" + result.order_id),
-        onPending: async () => {
-          // ─── SANDBOX: Auto-force complete payment ──────────────────
-          // In sandbox, VA/bank transfer stays "pending" forever because
-          // the webhook never fires. So we auto-complete it so the user
-          // can immediately try the upgraded features.
-          if (sandboxMode) {
-            console.log(
-              "[Pricing] Sandbox mode — auto-completing payment:",
-              result.order_id,
-            );
-            try {
-              await testComplete(result.order_id);
-              navigate("/payment/success?order_id=" + result.order_id);
-              return;
-            } catch (err) {
-              console.warn(
-                "[Pricing] Test-complete failed, falling back to pending page:",
-                err,
-              );
-            }
-          }
-          // Production: normal flow — wait for webhook
+        onPending: () => {
           navigate("/payment/pending?order_id=" + result.order_id);
         },
         onError: () =>
           navigate("/payment/failed?order_id=" + result.order_id),
         onClose: () => setSubscribing(null),
-        // Fallback kalau popup Snap gagal dibuka → redirect langsung ke Midtrans
       }, result.redirect_url);
     } catch (err: any) {
       console.error("Subscribe error:", err);

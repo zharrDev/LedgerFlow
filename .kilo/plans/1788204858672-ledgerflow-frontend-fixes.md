@@ -1,148 +1,130 @@
-# LedgerFlow Frontend — Responsif + Loading Laporan + i18n Fixes
+# LedgerFlow — Live Crash + Security + Responsive Fixes
 
-## Ringkasan Audit
-Berdasarkan pembacaan source code, beberapa masalah yang dilaporkan **sudah ter-fix** di codebase saat ini:
-- `RouteSuspenseFallback` di `BrandedLoader.tsx` sudah kecil (`min-h-[40vh]`), bukan full screen.
-- `useSubscription.ts` sudah punya cache module-scope + `isLoading` awal `!cachedSubscription`.
-- `ProtectedFeature.tsx` sudah hanya show spinner jika `isLoading && !subscription`.
-- `useReports.ts` (`useIncomeStatement`, `useCashFlow`, `useBalanceSheet`) sudah pakai `placeholderData: keepPreviousData` — data lama tetap terlihat saat refetch.
-- `IncomeStatementPage.tsx` & `CashFlowPage.tsx` sudah pakai pola `isInitialLoad` → `ReportSkeleton`, `isRefetching` → `ReportRefetchBar`.
+## Konteks
+- Commit sebelumnya (`6ceae97`) sudah memperbaiki 404 routing, TextReveal i18n, BalanceSheet loading, layout 300px, Onboarding i18n, AuthPage i18n.
+- Live Vercel (`ledger-flow-frontend-azure.vercel.app`) masih crash di `/balance-sheet` dan `/cash-flow` karena perubahan belum deploy + ada issue baru di HomePage.
+- Backend security issues dilaporkan: paywall hanya FE, sandbox production, CORS `*`, smtp-test leak, avatar_url longgar.
 
-**Yang masih bermasalah:**
-- `BalanceSheet.tsx` tidak pakai hook dari `useReports.ts`, pakai fetch manual + early return `min-h-screen` + skip fetch diam-diam.
-- Layout 300px: Header, Navbar, AppShell, HoverDropdown, CashFlowChart, judul letter-split.
-- i18n: Onboarding hardcoded ID, AuthPage "Back to Home" hardcoded EN, Navbar "Financial Platform" hardcoded EN.
-- 404 routing: 5 detail page navigate ke `/404` yang tidak ada.
-- TextReveal key tidak include language → animasi bentrok saat ganti bahasa.
+## Batas yang Tidak Bisa Dilewati
+- Jangan pindah token dari sessionStorage ke localStorage.
+- Jangan ubah mekanisme test-complete/webhook signature/IDOR profil yang sudah fail-closed.
+- Jangan ubah homepage 3D/hero video.
+- Jangan ubah BrandedLoader saat `useAuth().loading`.
+- Jangan rusak desktop `lg+` sidebar card layout.
+- Jangan refactor di luar file terdampak.
 
 ---
 
-## Tugas Berprioritas
+## P0 — Live Crash (wajib, sudah diverifikasi di browser)
 
-### P0 — Compile-safe & Routing (tidak merusak build)
-1. **Fix 404 routing** di 5 detail pages:
-   - `SolutionDetailPage.tsx`, `ProductDetailPage.tsx`, `ToolDetailPage.tsx`, `ResourceDetailPage.tsx`, `CompanyDetailPage.tsx`
-   - Ganti `<Navigate to="/404" replace />` → `<Navigate to="/not-found" replace />`
-   - File: `frontend/src/pages/*DetailPage.tsx` (5 file)
+### 1) `/balance-sheet` crash: `useState is not defined`
+- File: `frontend/src/pages/BalanceSheet.tsx`
+- Gejala bundle live: `[n,c]=useState("")` tanpa import (bare identifier).
+- Perbaiki: pastikan `import { useState, useEffect } from "react"` ada DAN tidak ada pemanggilan `useState` di luar hook/import.
+- Validasi: `tsc` lolos + buka `/balance-sheet` render laporan, bukan ErrorPage.
 
-2. **TextReveal language key fix**:
-   - File: `frontend/src/components/TextReveal.tsx`
-   - Ganti `key={`c${ci}`}` → `key={`c${ci}-${language}`}` (butuh prop `language` masuk)
-   - Alternatif lebih aman: tambah prop `language` ke TextReveal, atau pakai `key={text}` di span word + `key={`${text}-${ci}-${language}`}` di char
-   - Catatan: Homepage, MarketingPage, PricingPage, Income/CashFlow/BalanceSheet, BukuBesar, JournalEntry semua pakai letter-split manual atau TextReveal. Yang pakai TextReveal perlu update. Yang manual perlu ditambahkan language key.
+### 2) `/cash-flow` crash: `loading is not defined`
+- File: `frontend/src/pages/CashFlowPage.tsx` + `frontend/src/hooks/useCashFlow.ts`
+- Gejala bundle live: destructure `isLoading:p` tapi JSX pakai `loading` (variabel tidak ada).
+- Samakan nama: pakai `isLoading` (atau alias `loading: isLoading`) di SEMUA cabang:
+  - ExportMenu `disabled`
+  - Spinner
+  - Error state
+  - Empty state
+- Hapus sisa `useState` lama jika ada.
 
-### P1 — Loading Laporan (BalanceSheet)
-3. **Refactor BalanceSheet.tsx** agar:
-   - Tidak ada early return `min-h-screen` saat loading periods.
-   - Pakai `useReportPeriods()` dan `useBalanceSheet(periodId, companyId)` dari `useReports.ts`.
-   - First load: tampilkan `ReportSkeleton` di body (bukan full screen spinner).
-   - Header + filter tetap terlihat selama loading.
-   - Ganti periode: data lama tetap kelihatan, muncul `ReportRefetchBar`.
-   - Fetch tetap jalan meski `periodId` kosong (backend return all periods).
-   - Hapus `overflow-hidden` dari wrapper, ganti `overflow-x-hidden`.
-   - Tambah language key pada letter-split animation.
-
-### P2 — Layout 300px (Header, AppShell, Navbar, Dropdown, Chart)
-4. **Header.tsx** — mobile 300px:
-   - `px-4` → `px-3` (atau `px-2.5` di base, `sm:px-4`).
-   - Sembunyikan teks "LedgerFlow" dan subtitle "Financial Platform" di bawah `sm` (`hidden sm:block` untuk subtitle, `hidden sm:inline` untuk wordmark? — minimal logo saja di <360px).
-   - Perketat `gap` di right-side icons: `gap-1 sm:gap-2 lg:gap-3`.
-   - Pastikan search bell theme avatar tidak overflow.
-
-5. **AppShell.tsx** — mobile padding:
-   - `p-4 sm:p-6 pb-24` → `p-3 sm:p-6 pb-24`.
-   - Tambah `min-w-0 overflow-x-hidden` pada wrapper mobile `<main>`.
-   - Pastikan desktop tidak berubah.
-
-6. **Navbar.tsx** — mobile 300px:
-   - Logo + wordmark: sembunyikan wordmark & subtitle di bawah `sm` (`hidden sm:block`).
-   - Subtitle "Financial Platform" hardcoded EN → wrap dengan `tx(language, "Financial Platform", "Platform Keuangan")`.
-   - `px-4` → `px-3` di inner container, `sm:px-6`.
-   - Pastikan right-side (lang + theme + auth + hamburger) muat di satu baris.
-
-7. **CashFlowChart.tsx** — overflow:
-   - Wrapper chart: `overflow-hidden` → `overflow-x-hidden` (atau hapus entirely).
-   - Pastikan Y-axis width 72 + formatCompact tetap muat.
-
-8. **HoverDropdown.tsx** — width safety:
-   - Sudah ada clamp viewport di `updatePosition()`. Pastikan container `inline-block` tidak bikin overflow di flex parent. Tambah `min-w-0` pada container jika diperlukan.
-
-9. **Judul letter-split di pages** — tambah language key:
-   - `BalanceSheet.tsx`: `key={i}` → `key={`${language}-${i}`}`
-   - `BukuBesarPage.tsx`: sama
-   - `JournalEntryPage.tsx`: jika ada letter-split, sama
-   - `IncomeStatementPage.tsx` & `CashFlowPage.tsx`: sudah ada `key={`${language}-${i}`}` — OK.
-
-### P3 — i18n Hardcode
-10. **OnboardingPage.tsx**:
-    - Semua string hardcode ID → pakai `useLanguage()` + `tx()`.
-    - Card padding: `p-8 sm:p-10` → `p-5 sm:p-8` (agar nyaman di 300px).
-
-11. **AuthPage.tsx**:
-    - "Back to Home" → `tx(language, "Back to Home", "Kembali ke Beranda")`.
-
-12. **Navbar.tsx** Financial Platform subtitle — sudah disebutkan di P2.
-
-### P4 — Finishing Responsif & Safety
-13. **Currency break-words di semua pages**:
-    - Pastikan semua baris flex dengan angka pakai `tabular-nums break-words min-w-0 max-w-[45%]` (atau `shrink-0` + `text-right`).
-    - Cek: `IncomeStatementPage.tsx`, `CashFlowPage.tsx`, `DashboardPage.tsx`, `BalanceSheet.tsx` (setelah refactor), `BukuBesarPage.tsx`.
-
-14. **ScrollReveal amount margin**:
-    - Saat ini `amount: 0.18` di `ScrollReveal.tsx` dan `scrollAnimations.ts`. Ini aman untuk homepage. Jangan ubah global. Jika ada laporan yang kepotong, turunkan amount di instance laporan saja.
-
-15. **PricingPage.tsx** billing toggle wrap:
-    - Cek elemen "Hemat 15%" / billing cycle toggle di 300px. Pastikan `flex-wrap` atau `text-center` agar tidak overflow.
-
-16. **HomePage.tsx** hero text overflow:
-    - `TextReveal` di hero pakai `whitespace-nowrap` per word. Di 300px bisa overflow. Pastikan parent `overflow-x-hidden` atau hapus `whitespace-nowrap` dari TextReveal words.
+### 3) `HomePage.tsx` missing imports
+- File: `frontend/src/pages/HomePage.tsx`
+- Gejala: `useState` / `useScroll` / `useTransform` dipakai, import React hanya `useEffect, useRef, Suspense, lazy`.
+- Perbaiki: tambah import yang kurang ATAU hapus state video mati.
+- Jangan pecah hero yang sudah jalan di live (foto + copy ID/EN).
 
 ---
 
-## File Dampak & Risiko
+## P0 — Security (backend)
 
-| File | Perubahan | Risiko |
-|---|---|---|
-| `*DetailPage.tsx` (5) | Navigate /404 → /not-found | Rendering 404 benar; tidak ada route /404 |
-| `TextReveal.tsx` | Tambah prop language, update keys | Perlu update semua pemanggil |
-| `BalanceSheet.tsx` | Refactor besar: hook + skeleton + refetch | Perlu test fetch periods + report |
-| `Header.tsx` | Hide wordmark <360px, px-3, gap ketat | Desktop tidak berubah |
-| `AppShell.tsx` | p-3, min-w-0, overflow-x-hidden mobile | Desktop aman |
-| `Navbar.tsx` | Hide wordmark <360px, translate subtitle, px-3 | Public pages aman |
-| `CashFlowChart.tsx` | overflow-hidden → overflow-x-hidden | Chart tidak lagi di-clip |
-| `OnboardingPage.tsx` | i18n semua string, p-5 | Copy lengkap harus di-{en,id} |
-| `AuthPage.tsx` | "Back to Home" → i18n | 1 baris |
-| `BalanceSheet.tsx`, `BukuBesarPage.tsx`, `JournalEntryPage.tsx` | Language key di letter-split | Animasi tetap jalan |
+### 4) Paywall hanya di FE → pindah ke backend
+- File: `backend/src/routes/reports.ts` + `backend/src/routes/ai.ts`
+- Saat ini hanya `authMiddleware`. Owner demo plan pro jadi lolos.
+- Tambah cek plan/trial yang sama dengan `GET /api/payments/check-access` untuk:
+  - `income_statement`, `balance_sheet`, `cash_flow`
+  - `POST /api/ai/chat`
+- JWT Free tanpa trial → 403.
 
-### Risiko Utama
-- **Cache subscription stale**: `useSubscription` cache module-scope bertahan selama page hidup. Jika user upgrade/downgrade di tab lain, data bisa stale sampai refresh. Solusi: existing `refresh()` sudah ada, dan `useSubscription` memanggil background fetch. Cukup pastikan tidak ada logic yang menghapus cache secara tiba-tiba.
-- **Desktop mundur**: Semua perubahan menggunakan responsive prefix (`sm:`, `md:`, `lg:`). Desktop `lg:` tetap `p-4` ke atas, wordmark tetap terlihat, sidebar card layout tetap.
-- **BalanceSheet refactor**: Ganti dari manual fetch ke `useReports.ts` hook. Harus pastikan `enabled: !!companyId` tidak skip fetch secara diam-diam — akan ditangani dengan kondisi render di page.
+### 5) Production mengaku sandbox
+- File: `backend/src/routes/payments.ts` + env config
+- Live `GET /api/payments/is-sandbox` → `{ is_sandbox: true }` karena `MIDTRANS_IS_PRODUCTION !== "true"`.
+- Set env production. FE jangan auto `test-complete`.
+- Endpoint tetap fail-closed tanpa `ALLOW_TEST_COMPLETE=true`.
+
+### 6) CORS origin kosong = `*`
+- File: `backend/src/index.ts`
+- Saat ini: `origin: (origin) => (origin ? … : "*")`
+- Live `GET /health` tanpa Origin → ACAO `*`.
+- Jangan kirim `*` untuk request tanpa Origin (terutama credentialed).
+- Tetap izinkan `localhost` + Vercel + `FRONTEND_URL`. Origin jahat sudah ditolak — pertahankan.
+
+### 7) smtp-test info leak
+- File: `backend/src/routes/health.ts`
+- `GET /api/health/smtp-test` sebagai owner demo → 200 berisi host, user, port, status auth_failed.
+- Jangan kembalikan host/user SMTP ke client. Cukup `ok/fail` generik.
+- `net-test` tetap anti-SSRF private IP; jangan buka POST body arbitrary.
+
+### 8) Upload `avatar_url`
+- File: `backend/src/routes/users.ts`
+- `PUT /api/users/:id` menerima `avatar_url` mentah; upload dataUrl longgar.
+- Batasi MIME+ukuran; `avatar_url` hanya URL bucket avatars.
 
 ---
 
-## Urutan Eksekusi (untuk agent implementasi)
-1. Build check: jalankan `npm run build` di `frontend/` untuk baseline.
-2. Fix P0: 5 detail pages + TextReveal language key.
-3. Build check.
-4. Fix P1: Refactor BalanceSheet.tsx.
-5. Build check + manual test: klik Balance Sheet, ganti periode, pastikan skeleton + refetch bar bekerja.
-6. Fix P2: Header, AppShell, Navbar, CashFlowChart, letter-split keys.
-7. Build check + manual test di viewport 300px (devtools).
-8. Fix P3: Onboarding i18n, AuthPage i18n.
-9. Build check.
-10. Fix P4: Currency break-words, Pricing toggle, Home hero.
-11. Final build check + lint (`npm run lint`).
+## P1 — Responsive + Routing (screenshot live 300px)
+
+### 9) Navbar 300px overlap
+- File: `frontend/src/components/Navbar.tsx`
+- `<360px` sembunyikan wordmark + subtitle; sisakan logo | lang compact | theme | hamburger.
+- `w-[calc(100%-2rem)]` di 300px terlalu sempit untuk semua kontrol.
+- Pastikan tidak ada horizontal overflow visual.
+
+### 10) Login/Register 300px judul letter-split
+- File: `frontend/src/pages/AuthPage.tsx`
+- Judul letter-split ("Welcome Back") hanya huruf "W" kelihatan (tiap huruf block).
+- JANGAN split huruf di HP; `h1` text normal wrap.
+- Input `min-w-0`, text tidak overflow.
+
+### 11) `/:section` menelan 404
+- File: `frontend/src/App.tsx`
+- Tes: `/this-page-does-not-exist-xyz` dan `/404` menampilkan marketing "Every finance tool in one workflow". `/solutions/small-businesses` menampilkan Page Not Found.
+- Route `/:section` terlalu greedy.
+- Unknown path → `NotFoundPage`.
+- `*DetailPage` jangan `Navigate to="/404"` (tertangkap marketing).
+- Daftarkan 404 eksplisit SEBELUM atau ganti pola section ke whitelist slug.
+
+### 12) Income 375px: 2 spinner terdeteksi
+- File: `frontend/src/pages/IncomeStatementPage.tsx` + `frontend/src/components/ProtectedFeature.tsx`
+- First load skeleton sekali; refetch jangan unmount data.
+- Pastikan `isInitialLoad` vs `isRefetching` tidak sama-sama render spinner.
 
 ---
 
-## Checklist Validasi Akhir
-- [ ] `npm run build` lolos, no unused imports, `verbatimModuleSyntax`/`noUnusedLocals` terpenuhi.
-- [ ] Klik Income / Balance / Cash Flow: maksimal 1 indikator loading; header/nav tetap.
-- [ ] Ganti periode: data lama tetap kelihatan sampai data baru datang.
-- [ ] Viewport 300px: tidak scroll horizontal; dropdown/filter/judul/angka/chart muat.
-- [ ] Desktop 1280px: tidak mundur.
-- [ ] Ganti ID/EN: teks tidak blank, tidak ada typewriter 2 detik.
-- [ ] Slug detail salah → NotFoundPage (`/not-found`), bukan MarketingPage.
-- [ ] Onboarding tampil dalam bahasa yang benar.
-- [ ] Semua public + app page tidak scroll-x di 300px.
+## Urutan Eksekusi
+1. P0 crash: BalanceSheet import + CashFlow variable name + HomePage import.
+2. Build check + verify `/balance-sheet` dan `/cash-flow` render.
+3. P0 security: backend paywall + sandbox env + CORS + smtp-test + avatar_url.
+4. Build check backend + curl test: `test-complete` 403, `users/:id` IDOR 403, `is-sandbox` false.
+5. P1 responsive: Navbar 300px + AuthPage letter-split fix + App.tsx 404 routing.
+6. Build check + screenshot 300px home/login/dashboard/income/balance/cash-flow.
+7. Validasi akhir: Income 375px single spinner.
+
+---
+
+## Validasi Akhir
+- [ ] `/balance-sheet` dan `/cash-flow` tidak ErrorPage.
+- [ ] `tsc` / build frontend lolos; `HomePage.tsx` tidak reference `useState` tanpa import.
+- [ ] Reviewer login owner@demo.com → dashboard ada seed README; akuntan@demo.com tidak 403 unverified.
+- [ ] Reports/AI 403 untuk Free tanpa trial.
+- [ ] `is-sandbox` false di production env; `test-complete` tetap 403.
+- [ ] CORS tidak `*` untuk no-origin.
+- [ ] Navbar 300px tidak overlap; login 300px judul utuh.
+- [ ] URL acak = `NotFoundPage`, bukan marketing.
+- [ ] Screenshot 300px: home, login, dashboard, income, balance, cash-flow.
+- [ ] `curl` test-complete 403 dan users IDOR 403.

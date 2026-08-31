@@ -109,7 +109,7 @@ const Navbar = () => {
             <img src={logo} alt="LedgerFlow" className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0" />
             <div className="flex flex-col justify-center leading-none min-w-0">
               <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-gray-900 dark:text-white hidden sm:inline-block min-w-0">LedgerFlow</span>
-              <span className="text-[7px] xs:inline-block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mt-0.5">{tx(language, "Financial Platform", "Platform Keuangan")}</span>
+              <span className="hidden sm:inline-block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mt-0.5">{tx(language, "Financial Platform", "Platform Keuangan")}</span>
             </div>
           </Link>
         <div className="hidden lg:flex items-center gap-1">

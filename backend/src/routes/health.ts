@@ -10,10 +10,13 @@ const health = new Hono();
 // Kirim email uji untuk mendiagnosis konfigurasi SMTP (admin/owner saja).
 // Bisa pakai ?to=email@example.com untuk menargetkan alamat lain.
 health.get("/smtp-test", authMiddleware, requireRole("owner"), async (c) => {
-  const user = c.get("user");
-  const to = c.req.query("to") || user.email || "";
-  const result = await probeSmtp(to);
-  return c.json({ to, ...result });
+  const result = await probeSmtp(c.req.query("to") || "");
+  const ok = result.status === "sent";
+  return c.json({
+    ok,
+    status: result.status,
+    message: ok ? "SMTP configured and test email sent." : `SMTP test failed: ${result.status}`,
+  });
 });
 
 // ── Anti-SSRF: cek bahwa URL aman untuk di-fetch dari jaringan server ──

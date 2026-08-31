@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, Navigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, Layers, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
@@ -9,6 +9,9 @@ import { motion } from "framer-motion";
 
 type Item = { title: string; description: string; icon: LucideIcon };
 type Copy = { eyebrow: string; title: string; description: string; items: Item[] };
+
+const VALID_SECTIONS = ["solutions", "products", "resources", "tools", "company"] as const;
+type ValidSection = typeof VALID_SECTIONS[number];
 
 const detailPaths = {
   solutions: ["small-businesses", "mid-market-companies", "accountants-firms"],
@@ -56,11 +59,16 @@ const content: Record<"solutions" | "products" | "resources", Record<"id" | "en"
 };
 
 export default function MarketingPage() {
-  const { section = "products" } = useParams();
-  const key = section in content ? section as keyof typeof content : "products";
+  const { section = "products" } = useParams<{ section: string }>();
+  const validSection = VALID_SECTIONS.includes(section as ValidSection) ? (section as ValidSection) : null;
+  const key = validSection && validSection in content ? validSection as keyof typeof content : "products";
   const { language } = useLanguage();
   const page = content[key][language];
   const label = language === "id" ? { home: "Beranda", start: "Mulai gratis", explore: "Jelajahi", benefit: "Yang Anda dapatkan" } : { home: "Home", start: "Start free", explore: "Explore", benefit: "What you get" };
+
+  if (!validSection) {
+    return <Navigate to="/not-found" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-darkBg dark:text-white">
