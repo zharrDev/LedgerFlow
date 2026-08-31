@@ -37,6 +37,7 @@ const HUB = { top: "48%", left: "48%" };
 const HUB_WIDTH = 350;
 const HUB_IMAGE_LEFT = "50%";
 const ARM_CLIP_SIZE = 600;
+const RING_LEFT = `calc(50% - ${HUB_WIDTH / 2 + SHARED_ORBIT_RADIUS + 24}px)`;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -98,7 +99,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
       {/* Glow hub */}
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ top: HUB.top, left: HUB.left, width: HUB_WIDTH * 1.3, height: HUB_WIDTH * 1.3 }}
+        style={{ top: HUB.top, left: HUB_IMAGE_LEFT, width: HUB_WIDTH * 1.3, height: HUB_WIDTH * 1.3 }}
       >
         <motion.div
           className="w-full h-full rounded-full bg-primary-500/25 blur-2xl"
@@ -107,12 +108,12 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Planetary orbit ring — solid semicircle (left half visible, right covered by image) */}
+      {/* Planetary orbit ring — solid circle beside image on left */}
       <div
         className="absolute pointer-events-none rounded-full"
         style={{
           top: HUB.top,
-          left: HUB.left,
+          left: RING_LEFT,
           width: SHARED_ORBIT_RADIUS * 2,
           height: SHARED_ORBIT_RADIUS * 2,
           borderWidth: 1.5,
@@ -121,16 +122,15 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           borderRadius: "50%",
           opacity: 0.3,
           transform: "translate(-50%, -50%)",
-          clipPath: "inset(0 50% 0 0)",
         }}
       />
 
-      {/* Orbit arms — anchored at hub center */}
+      {/* Orbit arms — anchored at ring center */}
       <div
         className="absolute overflow-hidden"
         style={{
           top: HUB.top,
-          left: HUB.left,
+          left: RING_LEFT,
           width: ARM_CLIP_SIZE,
           height: ARM_CLIP_SIZE,
           transform: "translate(-50%, -50%)",
