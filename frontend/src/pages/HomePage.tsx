@@ -157,6 +157,7 @@ export default function HomePage() {
                 )}
                 <span className="block bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
                   <TextReveal
+                    key={`confidence-${language}`}
                     text={
                       language === "id"
                         ? "Dengan Percaya Diri"
