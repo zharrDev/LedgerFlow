@@ -25,12 +25,12 @@ interface OrbitIconDef {
 const SHARED_ORBIT_RADIUS = 130;
 
 const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
-  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 18, startAngle: 240, clockwise: false },
-  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 26, startAngle: 300, clockwise: false },
-  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 20, startAngle: 0, clockwise: false },
-  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 24, startAngle: 60, clockwise: false },
-  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 19, startAngle: 120, clockwise: false },
+  { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: 50, orbitDuration: 18, startAngle: 180, clockwise: false },
+  { Icon: Receipt, size: 40, color: "#8b5cf6", orbitRadius: 90, orbitDuration: 20, startAngle: 240, clockwise: false },
+  { Icon: Landmark, size: 44, color: "#d97706", orbitRadius: 130, orbitDuration: 22, startAngle: 300, clockwise: false },
+  { Icon: BarChart3, size: 42, color: "#059669", orbitRadius: 170, orbitDuration: 24, startAngle: 0, clockwise: false },
+  { Icon: Coins, size: 38, color: "#d97706", orbitRadius: 210, orbitDuration: 26, startAngle: 60, clockwise: false },
+  { Icon: ShieldCheck, size: 36, color: "#0ea5e9", orbitRadius: 250, orbitDuration: 28, startAngle: 120, clockwise: false },
 ];
 
 const HUB = { top: "48%", left: "48%" };
