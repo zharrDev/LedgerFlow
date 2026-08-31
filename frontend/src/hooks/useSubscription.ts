@@ -9,6 +9,10 @@ import {
 } from "../services/paymentService";
 import { getErrorMessage } from "../lib/errorMessage";
 
+// Module-scope cache — subsequent mounts reuse data, refresh in background.
+let cachedSubscription: Subscription | null = null;
+let inflightFetch: Promise<Subscription | null> | null = null;
+
 // Mapping fitur ke plan minimum yang boleh mengaksesnya
 const FEATURE_PLAN: Record<string, string[]> = {
   income_statement: ["pro", "enterprise"],
@@ -22,20 +26,40 @@ const FEATURE_PLAN: Record<string, string[]> = {
   api_access: ["enterprise"],
 };
 
+async function loadSubscription(): Promise<Subscription | null> {
+  if (inflightFetch) return inflightFetch;
+  inflightFetch = getSubscription()
+    .then((data) => {
+      cachedSubscription = data;
+      return data;
+    })
+    .catch((err) => {
+      console.error("[useSubscription] Error:", err);
+      throw err;
+    })
+    .finally(() => {
+      inflightFetch = null;
+    });
+  return inflightFetch;
+}
+
 // Hook subscription: ambil data langganan user dan bantu cek hak akses fitur
 export function useSubscription() {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [subscription, setSubscription] = useState<Subscription | null>(
+    cachedSubscription,
+  );
+  const [isLoading, setIsLoading] = useState(!cachedSubscription);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSubscription = useCallback(async () => {
-    try {
+  const fetchSubscription = useCallback(async (background = false) => {
+    if (!background && !cachedSubscription) {
       setIsLoading(true);
-      setError(null);
-      const data = await getSubscription();
+    }
+    setError(null);
+    try {
+      const data = await loadSubscription();
       setSubscription(data);
     } catch (err) {
-      console.error("[useSubscription] Error:", err);
       setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
@@ -43,7 +67,11 @@ export function useSubscription() {
   }, []);
 
   useEffect(() => {
-    fetchSubscription();
+    if (cachedSubscription) {
+      fetchSubscription(true);
+    } else {
+      fetchSubscription(false);
+    }
   }, [fetchSubscription]);
 
   // Computed properties agar komponen cukup pakai hasil siap pakai
@@ -56,14 +84,9 @@ export function useSubscription() {
   const isPro = planName === "pro";
   const isEnterprise = planName === "enterprise";
 
-  // Cek akses fitur di sisi client berdasarkan plan aktif user
-  // NB: user yang lagi trial aktif = boleh akses SEMUA fitur (full access)
-  // supaya bisa nyobain semua fitur berbayar sebelum upgrade.
   const canAccess = useCallback(
     (feature: string): boolean => {
       if (!isActive) return false;
-
-      // Sedang trial aktif → full akses semua fitur
       if (isTrial) return true;
 
       const allowedPlans = FEATURE_PLAN[feature];
@@ -73,13 +96,11 @@ export function useSubscription() {
     [isActive, isTrial, planName],
   );
 
-  // Ambil plan minimum yang dibutuhkan untuk fitur tertentu
   const getRequiredPlan = useCallback((feature: string): string | null => {
     const plans = FEATURE_PLAN[feature];
     return plans ? plans[0] : null;
   }, []);
 
-  // Ringkasan subscription yang siap dipakai di UI
   const subscriptionSummary = useMemo(() => {
     if (!subscription) return null;
 
@@ -108,6 +129,6 @@ export function useSubscription() {
     trialDaysLeft,
     canAccess,
     getRequiredPlan,
-    refresh: fetchSubscription,
+    refresh: () => fetchSubscription(true),
   };
 }

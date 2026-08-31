@@ -8,7 +8,7 @@ export default function ProductDetailPage() {
   const content = slug ? productContent[slug] : undefined;
 
   if (!content) {
-    return <Navigate to="/404" replace />;
+    return <Navigate to="/not-found" replace />;
   }
 
   return (

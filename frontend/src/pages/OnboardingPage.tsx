@@ -11,30 +11,44 @@ import {
   Building,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 const steps = [
   {
     icon: Building,
-    title: "Selamat Datang di LedgerFlow!",
-    desc: "Platform akuntansi digital yang membantu Anda mencatat keuangan perusahaan dengan mudah.",
+    title: { id: "Selamat Datang di LedgerFlow!", en: "Welcome to LedgerFlow!" },
+    desc: {
+      id: "Platform akuntansi digital yang membantu Anda mencatat keuangan perusahaan dengan mudah.",
+      en: "A digital accounting platform that helps you record company finances with ease.",
+    },
     color: "from-primary-600 to-primary-500",
   },
   {
     icon: BookOpen,
-    title: "1. Buat Chart of Accounts",
-    desc: "Mulai dengan membuat daftar akun (Chart of Accounts). Ini adalah kerangka dasar pencatatan keuangan Anda.",
+    title: { id: "1. Buat Chart of Accounts", en: "1. Create Chart of Accounts" },
+    desc: {
+      id: "Mulai dengan membuat daftar akun (Chart of Accounts). Ini adalah kerangka dasar pencatatan keuangan Anda.",
+      en: "Start by creating your account list (Chart of Accounts). This is the foundation of your financial recording.",
+    },
     color: "from-blue-600 to-blue-500",
   },
   {
     icon: FileText,
-    title: "2. Input Jurnal",
-    desc: "Catat transaksi harian menggunakan sistem double-entry. Setiap transaksi akan otomatis tercatat di Buku Besar.",
+    title: { id: "2. Input Jurnal", en: "2. Input Journal" },
+    desc: {
+      id: "Catat transaksi harian menggunakan sistem double-entry. Setiap transaksi akan otomatis tercatat di Buku Besar.",
+      en: "Record daily transactions using double-entry system. Each transaction is automatically posted to the General Ledger.",
+    },
     color: "from-emerald-600 to-emerald-500",
   },
   {
     icon: TrendingUp,
-    title: "3. Lihat Laporan Keuangan",
-    desc: "Setelah jurnal diposting, lihat laporan Laba Rugi, Neraca, dan Arus Kas secara real-time.",
+    title: { id: "3. Lihat Laporan Keuangan", en: "3. View Financial Reports" },
+    desc: {
+      id: "Setelah jurnal diposting, lihat laporan Laba Rugi, Neraca, dan Arus Kas secara real-time.",
+      en: "After posting journals, view Income Statement, Balance Sheet, and Cash Flow reports in real-time.",
+    },
     color: "from-purple-600 to-purple-500",
   },
 ];
@@ -47,6 +61,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const isLast = step === steps.length - 1;
   const isFirst = step === 0;
 
@@ -71,7 +86,7 @@ export default function OnboardingPage() {
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-primary-500/20 rounded-3xl shadow-2xl p-8 sm:p-10 text-center">
+            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-primary-500/20 rounded-3xl shadow-2xl p-5 sm:p-8 text-center">
               <div
                 className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${steps[step].color} flex items-center justify-center shadow-lg`}
               >
@@ -82,10 +97,10 @@ export default function OnboardingPage() {
               </div>
 
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                {steps[step].title}
+                {steps[step].title[language]}
               </h2>
               <p className="text-gray-500 dark:text-gray-400 text-base leading-relaxed mb-8">
-                {steps[step].desc}
+                {steps[step].desc[language]}
               </p>
 
               <div className="flex items-center justify-center gap-2 mb-8">
@@ -107,7 +122,7 @@ export default function OnboardingPage() {
                   onClick={finish}
                   className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition px-2 py-2"
                 >
-                  Lewati
+                  {tx(language, "Skip", "Lewati")}
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -118,7 +133,7 @@ export default function OnboardingPage() {
                       className="inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                     >
                       <ArrowLeft size={16} />
-                      Kembali
+                      {tx(language, "Back", "Kembali")}
                     </button>
                   )}
                   <button
@@ -128,11 +143,11 @@ export default function OnboardingPage() {
                   >
                     {isLast ? (
                       <>
-                        Mulai <CheckCircle size={18} />
+                        {tx(language, "Start", "Mulai")} <CheckCircle size={18} />
                       </>
                     ) : (
                       <>
-                        Lanjut <ArrowRight size={18} />
+                        {tx(language, "Next", "Lanjut")} <ArrowRight size={18} />
                       </>
                     )}
                   </button>

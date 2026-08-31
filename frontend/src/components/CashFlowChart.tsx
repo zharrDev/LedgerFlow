@@ -328,7 +328,7 @@ export function CashFlowChart({
       </div>
 
       {/* ── Chart ── */}
-      <div className="relative rounded-2xl overflow-hidden w-full min-w-0" style={{ height: height ?? 300 }}>
+      <div className="relative rounded-2xl overflow-x-hidden w-full min-w-0" style={{ height: height ?? 300 }}>
         {/* Subtle background gradient untuk container chart */}
         <div
           className="absolute inset-0 pointer-events-none"

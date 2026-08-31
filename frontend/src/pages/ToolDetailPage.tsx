@@ -8,7 +8,7 @@ export default function ToolDetailPage() {
   const content = slug ? toolsContent[slug] : undefined;
 
   if (!content) {
-    return <Navigate to="/404" replace />;
+    return <Navigate to="/not-found" replace />;
   }
 
   return (

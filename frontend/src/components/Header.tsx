@@ -349,9 +349,9 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 transition-all duration-300">
-      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16 w-full">
+      <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 h-16 w-full">
         {/* ── Left ── */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={onMenuClick}
             className="lg:hidden p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/50"
@@ -360,18 +360,18 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
           </button>
           <Link
             to="/dashboard"
-            className="flex items-center gap-2 sm:gap-3 group"
+            className="flex items-center gap-1.5 sm:gap-2 group"
           >
             <img
               src={logo}
               alt="LedgerFlow"
-              className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shrink-0"
+              className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shrink-0"
             />
-            <div className="flex flex-col justify-center leading-none">
-              <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-all">
+            <div className="flex flex-col justify-center leading-none min-w-0">
+              <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-gray-900 dark:text-white transition-all hidden sm:inline-block min-w-0">
                 LedgerFlow
               </span>
-              <span className="hidden md:block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-blue-500 transition-all mt-0.5">
+              <span className="hidden xs:inline-block text-[7px] sm:text-[8px] lg:text-[9px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-blue-500 transition-all mt-0.5">
                 {tx(language, "Financial Platform", "Platform Keuangan")}
               </span>
             </div>

@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Calendar,
 } from "lucide-react";
+import { ReportSkeleton, ReportRefetchBar } from "../components/reports/ReportSkeleton";
 import { formatCurrency } from "../utils/currency";
 
 const letterContainerVariants: Variants = {
@@ -44,8 +45,18 @@ const formatRupiah = (val: number) => formatCurrency(val);
 export function IncomeStatementPage() {
   const { language } = useLanguage();
   const [periodId, setPeriodId] = useState<string | undefined>(undefined);
-  const { data, isLoading: loading, error, refetch } = useIncomeStatement(periodId);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useIncomeStatement(periodId);
   const { data: periods = [] } = useReportPeriods();
+
+  const isInitialLoad = isLoading && !data;
+  const isRefetching = isFetching && !!data;
+  const pageTitle = tx(language, "Income Statement", "Laporan Laba Rugi");
 
   const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
     if (!data) return;
@@ -58,28 +69,32 @@ export function IncomeStatementPage() {
   };
 
   return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 min-w-0">
         {/* ── Page Header ── */}
         <ScrollReveal
           direction="left"
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
+              <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500 shrink-0">
                 <FileText size={20} />
               </div>
+              <h1 className="sm:hidden text-xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words">
+                {pageTitle}
+              </h1>
               <motion.h1
+                key={`${language}-${pageTitle}`}
                 variants={letterContainerVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.5 }}
-                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
+                className="hidden sm:flex text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight items-center flex-wrap min-w-0"
                 style={{ perspective: "600px" }}
               >
-                {tx(language, "Income Statement", "Laporan Laba Rugi").split("").map((char, i) => (
+                {pageTitle.split("").map((char, i) => (
                   <motion.span
-                    key={i}
+                    key={`${language}-${i}`}
                     variants={letterVariants}
                     className="inline-block"
                     style={{ transformOrigin: "bottom center" }}
@@ -93,12 +108,13 @@ export function IncomeStatementPage() {
               {tx(language, "Revenue and expenses from posted journals", "Pendapatan dan beban dari jurnal yang sudah di-post")}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <div className="w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto min-w-0">
+            <div className="w-full sm:w-auto min-w-0">
               <HoverDropdown
                 value={periodId || ""}
                 onChange={setPeriodId}
                 icon={<Calendar size={14} />}
+                fullWidth
                 minWidth={210}
                 options={[
                   { value: "", label: tx(language, "All Periods (YTD)", "Semua Periode (YTD)") },
@@ -108,7 +124,7 @@ export function IncomeStatementPage() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <ExportMenu
-                disabled={!data || loading}
+                disabled={!data || isFetching}
                 formats={["pdf", "excel", "word"]}
                 onExport={handleExport}
               />
@@ -119,7 +135,7 @@ export function IncomeStatementPage() {
               >
                 <RefreshCw
                   size={16}
-                  className={loading ? "animate-spin" : ""}
+                  className={isFetching ? "animate-spin" : ""}
                 />
                 <span className="text-sm font-medium sm:hidden">{tx(language, "Refresh", "Refresh")}</span>
               </button>
@@ -127,18 +143,21 @@ export function IncomeStatementPage() {
           </div>
         </ScrollReveal>
 
-        {/* ── Loading ── */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-gray-400">{tx(language, "Loading report...", "Memuat laporan...")}</p>
-          </div>
+        {isRefetching && (
+          <ReportRefetchBar
+            label={tx(language, "Loading report...", "Memuat laporan...")}
+          />
         )}
 
+        {/* ── First load skeleton ── */}
+        {isInitialLoad && <ReportSkeleton cards={3} />}
+
         {/* ── Error ── */}
-        {error && !loading && (
+        {error && !isInitialLoad && (
           <ScrollReveal direction="fade" className="py-16 text-center">
-            <p className="text-red-500 text-sm mb-2">{error instanceof Error ? error.message : String(error)}</p>
+            <p className="text-red-500 text-sm mb-2">
+              {error instanceof Error ? error.message : String(error)}
+            </p>
             <button
               onClick={() => refetch()}
               className="text-primary-500 text-sm hover:underline"
@@ -149,7 +168,7 @@ export function IncomeStatementPage() {
         )}
 
         {/* ── Report ── */}
-        {data && !loading && !error && (
+        {data && (
           <>
             {/* Summary Cards */}
             <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -165,7 +184,7 @@ export function IncomeStatementPage() {
                     <TrendingUp size={16} className="text-emerald-500" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                <p className="text-xl sm:text-2xl font-bold tabular-nums break-words min-w-0 max-w-[45%] text-emerald-600 dark:text-emerald-400">
                   {formatCompact(language, data.totalRevenue)}
                 </p>
               </motion.div>
@@ -182,7 +201,7 @@ export function IncomeStatementPage() {
                     <TrendingDown size={16} className="text-rose-500" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                <p className="text-xl sm:text-2xl font-bold tabular-nums break-words min-w-0 max-w-[45%] text-rose-600 dark:text-rose-400">
                   {formatCompact(language, data.totalExpense)}
                 </p>
               </motion.div>
@@ -200,7 +219,7 @@ export function IncomeStatementPage() {
                   </div>
                 </div>
                 <p
-                  className={`text-2xl font-bold tabular-nums ${
+                  className={`text-xl sm:text-2xl font-bold tabular-nums break-words min-w-0 max-w-[45%] ${
                     data.netIncome >= 0
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-rose-600 dark:text-rose-400"
@@ -255,7 +274,7 @@ export function IncomeStatementPage() {
                             </span>
                             {item.accountName}
                           </span>
-                          <span className="shrink-0 font-medium text-gray-900 dark:text-white tabular-nums">
+                          <span className="shrink-0 font-medium text-gray-900 dark:text-white tabular-nums break-words min-w-0 max-w-[45%]">
                             {formatRupiah(item.amount)}
                           </span>
                         </div>
@@ -294,7 +313,7 @@ export function IncomeStatementPage() {
                             </span>
                             {item.accountName}
                           </span>
-                          <span className="shrink-0 font-medium text-gray-900 dark:text-white tabular-nums">
+                          <span className="shrink-0 font-medium text-gray-900 dark:text-white tabular-nums break-words min-w-0 max-w-[45%]">
                             {formatRupiah(item.amount)}
                           </span>
                         </div>
@@ -335,7 +354,7 @@ export function IncomeStatementPage() {
         )}
 
         {/* ── Empty ── */}
-        {!data && !loading && !error && (
+        {!data && !isInitialLoad && !error && (
           <div className="py-24 text-center text-gray-400">
             <FileText size={48} className="mx-auto mb-4 opacity-40" />
             <p>{tx(language, "No report data.", "Tidak ada data laporan.")}</p>

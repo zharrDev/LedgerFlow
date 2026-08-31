@@ -5,7 +5,7 @@
 //   const { data, isLoading } = useIncomeStatement(periodId)
 //   const { data: periods } = useReportPeriods()
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { reportsService } from "../services/reportsService";
 
 /** Laporan laba rugi */
@@ -15,6 +15,7 @@ export function useIncomeStatement(periodId?: string) {
     queryFn: ({ signal }) =>
       reportsService.getIncomeStatement(periodId, signal),
     staleTime: 3 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -24,7 +25,8 @@ export function useBalanceSheet(periodId: string, companyId: string) {
     queryKey: ["reports", "balance-sheet", periodId, companyId],
     queryFn: () => reportsService.getBalanceSheet(periodId, companyId),
     staleTime: 3 * 60 * 1000,
-    enabled: !!periodId && !!companyId,
+    enabled: !!companyId,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -34,6 +36,7 @@ export function useCashFlow(periodId?: string) {
     queryKey: ["reports", "cash-flow", periodId],
     queryFn: () => reportsService.getCashFlow(periodId),
     staleTime: 3 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 

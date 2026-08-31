@@ -12,6 +12,7 @@ import ThemeSwitcher from "./ThemeSwitcher";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 import logo from "../assets/ledgerflow.webp";
 
 import { siteLinks, getLinkHref, type SiteLinkItem } from "../data/siteLinks";
@@ -103,14 +104,14 @@ const Navbar = () => {
 
   return (
     <header className={`fixed top-2 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[999] bg-white/80 dark:bg-darkCard/80 backdrop-blur-md rounded-xl border border-primary-500/20 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-none"}`}>
-      <div className="w-full px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
-          <img src={logo} alt="LedgerFlow" className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0" />
-          <div className="flex flex-col justify-center leading-none">
-            <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-gray-900 dark:text-white">LedgerFlow</span>
-            <span className="text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-600 dark:text-cyan-400 mt-0.5">Financial Platform</span>
-          </div>
-        </Link>
+<div className="w-full px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between min-w-0">
+          <Link to="/" className="flex items-center gap-1.5 sm:gap-2 group min-w-0">
+            <img src={logo} alt="LedgerFlow" className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0" />
+            <div className="flex flex-col justify-center leading-none min-w-0">
+              <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-gray-900 dark:text-white hidden sm:inline-block min-w-0">LedgerFlow</span>
+              <span className="text-[7px] xs:inline-block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mt-0.5">{tx(language, "Financial Platform", "Platform Keuangan")}</span>
+            </div>
+          </Link>
         <div className="hidden lg:flex items-center gap-1">
           {menuItems.map((item) => (
             <div key={item.key} className="relative group" onMouseEnter={() => openMenu(item.key)} onMouseLeave={scheduleCloseMenu}>

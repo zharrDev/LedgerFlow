@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
-import BrandedLoader from "./components/BrandedLoader";
+import BrandedLoader, { RouteSuspenseFallback } from "./components/BrandedLoader";
 import { AppLayout } from "./components/AppLayout";
 
 // Route-based code splitting — setiap halaman hanya dimuat saat dibutuhkan.
@@ -215,7 +215,7 @@ function AnimatedRoutes() {
   }, [user, loading, location.pathname]);
 
   return (
-    <Suspense fallback={<BrandedLoader />}>
+    <Suspense fallback={<RouteSuspenseFallback />}>
       <Routes location={location}>
       <Route path="/" element={<HomePage />} />
       <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
@@ -333,6 +333,7 @@ function AnimatedRoutes() {
       <Route path="/payment/failed" element={<PaymentResultPage type="failed" />} />
 
       <Route path="/error/:code" element={<ErrorPage />} />
+      <Route path="/not-found" element={<NotFoundPage />} />
       <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <AiCfoFabGate />

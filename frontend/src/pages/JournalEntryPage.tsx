@@ -279,7 +279,7 @@ export default function JournalEntryPage() {
               >
                 {pageTitle.split("").map((char, i) => (
                   <motion.span
-                    key={`${pageTitle}-${i}`}
+                    key={`${language}-${pageTitle}-${i}`}
                     variants={letterVariants}
                     className="inline-block"
                     style={{ transformOrigin: "bottom center" }}

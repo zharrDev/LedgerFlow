@@ -16,8 +16,7 @@ import {
 import { ScrollReveal } from "../components/ScrollReveal";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
-import { reportsService } from "../services/reportsService";
-import { useCashFlow } from "../hooks/useCashFlow";
+import { useCashFlow, useReportPeriods } from "../hooks/useReports";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ExportMenu } from "../components/ExportMenu";
 import { CashFlowChart, type CashFlowDatum } from "../components/CashFlowChart";
@@ -27,7 +26,8 @@ import {
   exportCashFlowWord,
 } from "../utils/exportPDF";
 import { formatCurrency } from "../utils/currency";
-import type { Period, CashFlowSection } from "../types/reports";
+import type { CashFlowSection } from "../types/reports";
+import { ReportSkeleton, ReportRefetchBar } from "../components/reports/ReportSkeleton";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 const formatIDR = (amount: number) => formatCurrency(amount);
@@ -293,12 +293,19 @@ function NetChangeFooter({
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function CashFlowPage() {
   const { language } = useLanguage();
-  const { data, loading, error, periodId, setPeriodId } = useCashFlow();
-  const [periods, setPeriods] = useState<Period[]>([]);
+  const [periodId, setPeriodId] = useState<string | undefined>(undefined);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useCashFlow(periodId);
+  const { data: periods = [] } = useReportPeriods();
 
-  useEffect(() => {
-    reportsService.getPeriods().then(setPeriods).catch(console.error);
-  }, []);
+  const isInitialLoad = isLoading && !data;
+  const isRefetching = isFetching && !!data;
+  const pageTitle = tx(language, "Cash Flow Statement", "Laporan Arus Kas");
 
   // Hanya 3 baris (Operating/Investing/Financing) — TANPA "Total"
   // supaya CashFlowChart.reduce totMasuk/totKeluar/totNet tidak double-count.
@@ -336,29 +343,33 @@ export default function CashFlowPage() {
   };
 
   return (
-      <div className="min-h-[80vh]">
-        <div className="max-w-5xl mx-auto space-y-8 py-6">
+      <div className="min-h-[80vh] overflow-x-hidden">
+        <div className="max-w-5xl mx-auto space-y-8 py-6 min-w-0">
           {/* ── Page Header ── */}
           <ScrollReveal
             direction="left"
             className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
           >
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shrink-0">
                   <Wallet size={20} />
                 </div>
+                <h1 className="sm:hidden text-xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words">
+                  {pageTitle}
+                </h1>
                 <motion.h1
+                  key={`${language}-${pageTitle}`}
                   variants={letterContainerVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.5 }}
-                  className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
+                  className="hidden sm:flex text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight items-center flex-wrap min-w-0"
                   style={{ perspective: "600px" }}
                 >
-                  {tx(language, "Cash Flow Statement", "Laporan Arus Kas").split("").map((char, i) => (
+                  {pageTitle.split("").map((char, i) => (
                     <motion.span
-                      key={i}
+                      key={`${language}-${i}`}
                       variants={letterVariants}
                       className="inline-block"
                       style={{ transformOrigin: "bottom center" }}

@@ -78,7 +78,7 @@ export default function BukuBesarPage() {
               >
                 {tx(language, "General Ledger", "Buku Besar").split("").map((char, i) => (
                   <motion.span
-                    key={i}
+                    key={`${language}-${i}`}
                     variants={letterVariants}
                     className="inline-block"
                     style={{ transformOrigin: "bottom center" }}

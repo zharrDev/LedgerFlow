@@ -7,6 +7,8 @@ import LoginForm from "../components/auth/LoginForm";
 import RegisterForm from "../components/auth/RegisterForm";
 import { api } from "../lib/api";
 import { getSessionToken } from "../lib/session";
+import { useLanguage } from "../hooks/useLanguage";
+import { tx } from "../i18n/tx";
 
 export default function AuthPage({
   initialMode,
@@ -17,6 +19,7 @@ export default function AuthPage({
   const [isHovered, setIsHovered] = useState(false);
   const [showUI, setShowUI] = useState(false);
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   useEffect(() => {
     setShowUI(true);
@@ -77,7 +80,7 @@ export default function AuthPage({
             to="/"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 mb-6 transition"
           >
-            <ArrowLeft size={16} /> Back to Home
+            <ArrowLeft size={16} /> {tx(language, "Back to Home", "Kembali ke Beranda")}
           </Link>
 
           <AuthFlipCard

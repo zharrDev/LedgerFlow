@@ -8,7 +8,7 @@ export default function CompanyDetailPage() {
   const content = slug ? companyContent[slug] : undefined;
 
   if (!content) {
-    return <Navigate to="/404" replace />;
+    return <Navigate to="/not-found" replace />;
   }
 
   return (

@@ -157,7 +157,6 @@ export default function HomePage() {
                 )}
                 <span className="block bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
                   <TextReveal
-                    key={`confidence-${language}`}
                     text={
                       language === "id"
                         ? "Dengan Percaya Diri"
@@ -165,6 +164,7 @@ export default function HomePage() {
                     }
                     delay={0.4}
                     staggerDelay={0.03}
+                    language={language}
                   />
                 </span>
               </h2>
@@ -251,6 +251,7 @@ export default function HomePage() {
                       ? "Dipercaya bisnis modern"
                       : "Trusted by modern businesses"
                   }
+                  language={language}
                 />
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-2">
@@ -390,6 +391,7 @@ export default function HomePage() {
                     text={
                       language === "id" ? "Lihat LedgerFlow" : "See LedgerFlow"
                     }
+                    language={language}
                   />
                   <span className="block bg-gradient-to-r from-blue-600 via-cyan-500 to-sky-400 bg-clip-text text-transparent">
                     <TextReveal
@@ -397,6 +399,7 @@ export default function HomePage() {
                         language === "id" ? "Secara Real-Time" : "In Real-Time"
                       }
                       delay={0.15}
+                      language={language}
                     />
                   </span>
                 </h2>
@@ -479,6 +482,7 @@ export default function HomePage() {
                   ? "Jelajahi Fitur di Dalamnya"
                   : "Explore What's Inside"
               }
+              language={language}
             />
           </h2>
           <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
@@ -500,6 +504,7 @@ export default function HomePage() {
                       ? "Semua yang Anda butuhkan untuk berkembang"
                       : "Everything you need to scale"
                   }
+                  language={language}
                 />
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mt-3">
@@ -563,6 +568,7 @@ export default function HomePage() {
                         ? "Ambil Kendali Keuangan Anda Hari Ini"
                         : "Take Control of Your Finances Today"
                     }
+                    language={language}
                   />
                 </h2>
                 <p className="mt-4 text-primary-100 text-base sm:text-lg">

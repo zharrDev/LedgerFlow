@@ -21,6 +21,12 @@ type TextRevealProps = {
   /** jarak antar huruf (detik) */
   staggerDelay?: number;
   once?: boolean;
+  /**
+   * Opsional: sertakan bahasa saat ini agar huruf-huruf di-render ulang
+   * ketika user mengganti ID ↔ EN (animasi tidak stuck dan tidak
+   * ter-reset secara membingungkan).
+   */
+  language?: "en" | "id";
 };
 
 export function TextReveal({
@@ -29,20 +35,24 @@ export function TextReveal({
   delay = 0,
   staggerDelay = 0.035,
   once = true,
+  language,
 }: TextRevealProps) {
   const words = text.split(" ");
 
   return (
     <span className={className} aria-label={text}>
       {words.map((word, wi) => (
-        <span key={`w${wi}`} className="inline-block whitespace-nowrap">
+        <span
+          key={`w${wi}-${language ?? ""}`}
+          className="inline-block whitespace-nowrap"
+        >
           {word.split("").map((char, ci) => {
             const charIndex = words
               .slice(0, wi)
               .reduce((acc, w) => acc + w.length + 1, 0) + ci;
             return (
               <motion.span
-                key={`c${ci}`}
+                key={`c${ci}-${language ?? ""}`}
                 className="inline-block"
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}

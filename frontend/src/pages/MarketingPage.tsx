@@ -76,7 +76,7 @@ export default function MarketingPage() {
           <div className="relative mx-auto max-w-4xl text-center">
             <p className="text-xs font-extrabold tracking-[.22em] text-primary-500">{page.eyebrow}</p>
             <h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">
-              <TextReveal text={page.title} delay={0.1} />
+              <TextReveal text={page.title} delay={0.1} language={language} />
             </h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}

@@ -64,11 +64,11 @@ export function AppShell({ children }: AppShellProps) {
           {/* Main content card */}
           <div className="flex-1 min-h-0 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
             <main
-              className={`flex-1 overflow-x-hidden ${
-                fullHeight
-                  ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
-                  : "overflow-y-auto app-scroll p-4 sm:p-6 lg:p-8 pb-8"
-              }`}
+className={`flex-1 overflow-x-hidden min-w-0 ${
+                  fullHeight
+                    ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
+                    : "overflow-y-auto app-scroll p-3 sm:p-6 lg:p-8 pb-24"
+                }`}
             >
             {!hideTitle && (title || description) && (
               <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>
