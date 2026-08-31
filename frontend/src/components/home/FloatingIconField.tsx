@@ -27,14 +27,14 @@ interface OrbitIconDef {
 const SHARED_ORBIT_RADIUS = 135;
 
 const DEFAULT_ICONS: OrbitIconDef[] = [
-  { Icon: TrendingUp, size: 52, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
-  { Icon: Receipt, size: 52, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 225, clockwise: false },
-  { Icon: Landmark, size: 52, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 270, clockwise: false },
-  { Icon: BarChart3, size: 52, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 315, clockwise: false },
-  { Icon: Coins, size: 52, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
-  { Icon: ShieldCheck, size: 52, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 45, clockwise: false },
-  { Icon: CreditCard, size: 52, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 90, clockwise: false },
-  { Icon: FileText, size: 52, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 135, clockwise: false },
+  { Icon: TrendingUp, size: 50, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
+  { Icon: Receipt, size: 50, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 225, clockwise: false },
+  { Icon: Landmark, size: 50, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 270, clockwise: false },
+  { Icon: BarChart3, size: 50, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 315, clockwise: false },
+  { Icon: Coins, size: 50, color: "#d97706", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 0, clockwise: false },
+  { Icon: ShieldCheck, size: 50, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 45, clockwise: false },
+  { Icon: CreditCard, size: 50, color: "#8b5cf6", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 90, clockwise: false },
+  { Icon: FileText, size: 50, color: "#059669", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 135, clockwise: false },
 ];
 
 const HUB = { top: "48%", left: "48%" };
