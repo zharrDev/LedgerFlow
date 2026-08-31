@@ -116,7 +116,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           left: RING_LEFT,
           width: SHARED_ORBIT_RADIUS * 2,
           height: SHARED_ORBIT_RADIUS * 2,
-          borderWidth: 1,
+          borderWidth: 0.5,
           borderStyle: "solid",
           borderColor: "#94a3b8",
           borderRadius: "50%",
