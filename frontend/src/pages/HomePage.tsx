@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -21,7 +21,6 @@ import {
   Download,
   FileBarChart,
   UsersRound,
-  CheckCircle2,
 } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
 import Footer from "../components/Footer";
@@ -135,8 +134,16 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-              <h2 className="text-[2rem] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
-                {/* EN: "Manage Your" / "Financial Future" — ID: "Kelola Masa Depan" / "Keuangan Anda" */}
+              <BorderBeamBadge
+                text={
+                  language === "id"
+                    ? "Akuntansi Modern"
+                    : "Modern Accounting"
+                }
+                icon={<Sparkles size={14} />}
+              />
+
+              <h2 className="mt-5 text-[2rem] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                 {language === "id" ? (
                   <>
                     <span className="block">Kelola Masa Depan</span>
@@ -161,17 +168,17 @@ export default function HomePage() {
                 </span>
               </h2>
 
-              <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg leading-relaxed">
+              <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
                 {language === "id"
                   ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
                   : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
+              <div className="mt-8 flex flex-wrap items-center gap-3">
                 {user ? (
                   <Link
                     to="/dashboard"
-                    className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                    className="px-7 py-3.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
                   >
                     {language === "id" ? "Buka Dashboard" : "Go to Dashboard"}{" "}
                     <ChevronRight size={18} />
@@ -180,20 +187,21 @@ export default function HomePage() {
                   <>
                     <Link
                       to="/register"
-                      className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+                      className="px-7 py-3.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
                     >
                       {language === "id"
-                        ? "Coba gratis 15 hari"
-                        : "15-day free trial"}{" "}
-                      <ChevronRight size={18} />
+                        ? "Coba Gratis 15 Hari"
+                        : "15-Day Free Trial"}{" "}
+                      <ArrowRight size={18} />
                     </Link>
                     <Link
                       to="/login"
-                      className="px-6 py-3 border border-gray-300 dark:border-white/30 rounded-xl text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                      className="px-7 py-3.5 border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
                     >
+                      <PlayCircle size={18} className="opacity-60" />
                       {language === "id"
-                        ? "Lihat cara kerjanya"
-                        : "See how it works"}
+                        ? "Lihat Cara Kerjanya"
+                        : "See How It Works"}
                     </Link>
                   </>
                 )}
