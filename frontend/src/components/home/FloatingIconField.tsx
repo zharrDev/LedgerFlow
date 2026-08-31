@@ -22,7 +22,7 @@ interface OrbitIconDef {
   clockwise: boolean;
 }
 
-const SHARED_ORBIT_RADIUS = 260;
+const SHARED_ORBIT_RADIUS = 130;
 
 const DEFAULT_ICONS: OrbitIconDef[] = [
   { Icon: TrendingUp, size: 46, color: "#0ea5e9", orbitRadius: SHARED_ORBIT_RADIUS, orbitDuration: 22, startAngle: 180, clockwise: false },
@@ -107,7 +107,7 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
         />
       </div>
 
-      {/* Planetary orbit ring — dashed semicircle (left half visible, right covered by image) */}
+      {/* Planetary orbit ring — solid semicircle (left half visible, right covered by image) */}
       <div
         className="absolute pointer-events-none rounded-full"
         style={{
@@ -115,7 +115,9 @@ export default function FloatingIconField({ icons = DEFAULT_ICONS }: { icons?: O
           left: HUB.left,
           width: SHARED_ORBIT_RADIUS * 2,
           height: SHARED_ORBIT_RADIUS * 2,
-          border: `1.5px dashed #94a3b8`,
+          borderWidth: 1.5,
+          borderStyle: "solid",
+          borderColor: "#94a3b8",
           borderRadius: "50%",
           opacity: 0.3,
           transform: "translate(-50%, -50%)",
