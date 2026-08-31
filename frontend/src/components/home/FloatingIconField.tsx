@@ -35,7 +35,7 @@ const DEFAULT_ICONS: OrbitIconDef[] = [
 
 const HUB = { top: "48%", left: "48%" };
 const HUB_WIDTH = 350;
-const HUB_IMAGE_LEFT = "50%";
+const HUB_IMAGE_LEFT = "40%";
 const ARM_CLIP_SIZE = 600;
 const RING_LEFT = HUB_IMAGE_LEFT;
 
