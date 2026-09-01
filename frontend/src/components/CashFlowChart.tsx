@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Cell,
 } from "recharts";
 import { useLanguage } from "../hooks/useLanguage";
 import { formatCompact } from "../i18n/compactNumber";
@@ -29,7 +30,7 @@ interface CashFlowChartProps {
 }
 
 // ─────────────────────────────────────────────
-// Palette — selaras Indigo / Violet / Cyan
+// Palette — same as before (Indigo / Violet / Cyan)
 // ─────────────────────────────────────────────
 const P = {
   indigo: "#6366f1",
@@ -85,7 +86,7 @@ function AnimatedNumber({
 
     const step = (now: number) => {
       const t = Math.min((now - start) / duration, 1);
-      const ease = 1 - Math.pow(1 - t, 3); // ease-out-cubic
+      const ease = 1 - Math.pow(1 - t, 3);
       setDisplay(from + (to - from) * ease);
       if (t < 1) raf.current = requestAnimationFrame(step);
     };
@@ -121,7 +122,6 @@ function SummaryCard({
 }) {
   return (
     <div className="relative flex flex-col gap-1 rounded-2xl px-4 py-3 overflow-hidden flex-1 min-w-0">
-      {/* background gradient blob */}
       <div
         className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] rounded-2xl"
         style={{
@@ -187,7 +187,6 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
         WebkitBackdropFilter: "blur(16px)",
       }}
     >
-      {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <span
           className="w-1.5 h-5 rounded-full"
@@ -231,7 +230,6 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
         })}
       </div>
 
-      {/* Footer shimmer bar */}
       <div
         className="mt-3 h-0.5 rounded-full"
         style={{
@@ -244,34 +242,7 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
 }
 
 // ─────────────────────────────────────────────
-// Custom Dot untuk Area Line
-// ─────────────────────────────────────────────
-function CustomDot(props: any) {
-  const { cx, cy, stroke } = props;
-  if (cx == null || cy == null) return null;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={5} fill={stroke} opacity={0.25} />
-      <circle cx={cx} cy={cy} r={3} fill={stroke} />
-      <circle cx={cx} cy={cy} r={1.5} fill="#fff" />
-    </g>
-  );
-}
-
-function CustomActiveDot(props: any) {
-  const { cx, cy, stroke } = props;
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={10} fill={stroke} opacity={0.15} />
-      <circle cx={cx} cy={cy} r={6} fill={stroke} opacity={0.35} />
-      <circle cx={cx} cy={cy} r={3.5} fill={stroke} />
-      <circle cx={cx} cy={cy} r={1.5} fill="#fff" />
-    </g>
-  );
-}
-
-// ─────────────────────────────────────────────
-// Main Chart
+// Main Chart — BarChart
 // ─────────────────────────────────────────────
 export function CashFlowChart({
   data,
@@ -282,7 +253,6 @@ export function CashFlowChart({
   const { language } = useLanguage();
   const id = language === "id";
 
-  // Derived totals untuk summary cards
   const totMasuk = data.reduce((s, d) => s + d.masuk, 0);
   const totKeluar = data.reduce((s, d) => s + Math.abs(d.keluar), 0);
   const totNet = data.reduce((s, d) => s + d.net, 0);
@@ -329,7 +299,6 @@ export function CashFlowChart({
 
       {/* ── Chart ── */}
       <div className="relative rounded-2xl overflow-x-hidden w-full min-w-0" style={{ height: height ?? 300 }}>
-        {/* Subtle background gradient untuk container chart */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -340,59 +309,25 @@ export function CashFlowChart({
         />
 
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
+          <BarChart
             data={data}
             margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
+            barGap={4}
+            barCategoryGap="20%"
           >
             <defs>
-              {/* ── Masuk: Cyan → Indigo ── */}
-              <linearGradient id="gradMasuk" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.cyan} stopOpacity={0.5} />
-                <stop offset="60%" stopColor={P.cyanLight} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={P.cyan} stopOpacity={0.02} />
+              <linearGradient id="barMasuk" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.cyan} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={P.cyan} stopOpacity={0.5} />
               </linearGradient>
-
-              {/* ── Keluar: Rose → Violet ── */}
-              <linearGradient id="gradKeluar" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.rose} stopOpacity={0} />
-                <stop offset="40%" stopColor={P.rose} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={P.rose} stopOpacity={0.45} />
+              <linearGradient id="barKeluar" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.rose} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={P.rose} stopOpacity={0.5} />
               </linearGradient>
-
-              {/* ── Net: Indigo → Violet ── */}
-              <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.4} />
-                <stop offset="55%" stopColor={P.violet} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={P.violet} stopOpacity={0} />
+              <linearGradient id="barNet" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={P.indigo} stopOpacity={0.5} />
               </linearGradient>
-
-              {/* Glow filter untuk stroke */}
-              <filter
-                id="glowCyan"
-                x="-20%"
-                y="-40%"
-                width="140%"
-                height="180%"
-              >
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <filter
-                id="glowIndigo"
-                x="-20%"
-                y="-40%"
-                width="140%"
-                height="180%"
-              >
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
 
             <CartesianGrid
@@ -424,61 +359,57 @@ export function CashFlowChart({
 
             <Tooltip
               cursor={{
-                stroke: isDark
-                  ? "rgba(99,102,241,0.3)"
-                  : "rgba(99,102,241,0.15)",
-                strokeWidth: 1.5,
-                strokeDasharray: "4 3",
+                fill: isDark
+                  ? "rgba(99,102,241,0.08)"
+                  : "rgba(99,102,241,0.06)",
               }}
               content={
                 <CustomTooltip formatValue={formatValue} isDark={isDark} />
               }
             />
 
-            {/* ── Area Masuk ── */}
-            <Area
-              type="monotone"
+            {/* ── Bar Inflow ── */}
+            <Bar
               dataKey="masuk"
               name={id ? "Arus Masuk" : "Inflow"}
-              stroke={P.cyan}
-              strokeWidth={2.5}
-              fill="url(#gradMasuk)"
-              dot={<CustomDot stroke={P.cyan} />}
-              activeDot={<CustomActiveDot stroke={P.cyan} />}
-              filter="url(#glowCyan)"
+              fill="url(#barMasuk)"
+              radius={[6, 6, 0, 0]}
               animationDuration={1200}
               animationEasing="ease-out"
-            />
+            >
+              {data.map((_entry, index) => (
+                <Cell key={`masuk-${index}`} />
+              ))}
+            </Bar>
 
-            {/* ── Area Keluar (mirror ke bawah) ── */}
-            <Area
-              type="monotone"
+            {/* ── Bar Outflow ── */}
+            <Bar
               dataKey="keluar"
               name={id ? "Arus Keluar" : "Outflow"}
-              stroke={P.rose}
-              strokeWidth={2.5}
-              fill="url(#gradKeluar)"
-              dot={<CustomDot stroke={P.rose} />}
-              activeDot={<CustomActiveDot stroke={P.rose} />}
+              fill="url(#barKeluar)"
+              radius={[6, 6, 0, 0]}
               animationDuration={1400}
               animationEasing="ease-out"
-            />
+            >
+              {data.map((_entry, index) => (
+                <Cell key={`keluar-${index}`} />
+              ))}
+            </Bar>
 
-            {/* ── Area Net ── */}
-            <Area
-              type="monotone"
+            {/* ── Bar Net ── */}
+            <Bar
               dataKey="net"
               name={id ? "Saldo Bersih" : "Net Balance"}
-              stroke={P.indigo}
-              strokeWidth={3}
-              fill="url(#gradNet)"
-              dot={<CustomDot stroke={P.indigo} />}
-              activeDot={<CustomActiveDot stroke={P.indigo} />}
-              filter="url(#glowIndigo)"
+              fill="url(#barNet)"
+              radius={[6, 6, 0, 0]}
               animationDuration={1000}
               animationEasing="ease-out"
-            />
-          </AreaChart>
+            >
+              {data.map((_entry, index) => (
+                <Cell key={`net-${index}`} />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
 
@@ -491,30 +422,9 @@ export function CashFlowChart({
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
             <span
-              className="relative flex items-center justify-center"
-              style={{ width: 28, height: 12 }}
-            >
-              {/* Line */}
-              <span
-                className="absolute inset-y-1/2 left-0 right-0 h-0.5 rounded-full"
-                style={{
-                  background: item.color,
-                  transform: "translateY(-50%)",
-                  opacity: 0.8,
-                }}
-              />
-              {/* Dot center */}
-              <span
-                className="absolute w-2.5 h-2.5 rounded-full border-2"
-                style={{
-                  background: isDark ? P.slate900 : "#fff",
-                  borderColor: item.color,
-                  left: "50%",
-                  top: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            </span>
+              className="w-3 h-3 rounded-sm"
+              style={{ background: item.color, opacity: 0.85 }}
+            />
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               {item.label}
             </span>

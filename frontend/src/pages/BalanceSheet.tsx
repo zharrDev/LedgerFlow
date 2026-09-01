@@ -124,7 +124,7 @@ export default function BalanceSheet() {
   const headerTitle = pageTitle.split("");
 
   return (
-    <div className="min-h-[80vh] overflow-x-hidden">
+    <div>
       <div className="max-w-7xl mx-auto space-y-6 py-6">
         {/* Header */}
         <motion.div

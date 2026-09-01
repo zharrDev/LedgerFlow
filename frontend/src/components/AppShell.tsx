@@ -67,7 +67,7 @@ export function AppShell({ children }: AppShellProps) {
 className={`flex-1 overflow-x-hidden min-w-0 ${
                   fullHeight
                     ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
-                    : "overflow-y-auto app-scroll p-3 sm:p-6 lg:p-8 pb-24"
+                    : "overflow-y-auto app-scroll p-2 sm:p-4 lg:p-8 pb-24"
                 }`}
             >
             {!hideTitle && (title || description) && (
@@ -114,7 +114,7 @@ className={`flex-1 overflow-x-hidden min-w-0 ${
           className={`flex-1 ${
             fullHeight
               ? "h-[calc(100dvh-4rem)] overflow-hidden flex flex-col p-3 sm:p-4"
-              : "overflow-x-hidden p-4 sm:p-6 pb-24 lg:pb-8"
+              : "overflow-x-hidden p-3 sm:p-5 pb-24 lg:pb-8"
           }`}
         >
           {!hideTitle && (title || description) && (

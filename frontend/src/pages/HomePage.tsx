@@ -144,17 +144,27 @@ export default function HomePage() {
               />
 
               <h2 className="mt-5 text-[2rem] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
-                {language === "id" ? (
-                  <>
-                    <span className="block">Kelola Masa Depan</span>
-                    <span className="block">Keuangan Anda</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="block">Manage Your</span>
-                    <span className="block">Financial Future</span>
-                  </>
-                )}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={language}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {language === "id" ? (
+                      <>
+                        <span className="block">Kelola Masa Depan</span>
+                        <span className="block">Keuangan Anda</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="block">Manage Your</span>
+                        <span className="block">Financial Future</span>
+                      </>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
                 <span className="block bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
                   <TextReveal
                     text={
@@ -169,11 +179,20 @@ export default function HomePage() {
                 </span>
               </h2>
 
-              <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
-                {language === "id"
-                  ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
-                  : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={language}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
+                  className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed"
+                >
+                  {language === "id"
+                    ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
+                    : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
+                </motion.p>
+              </AnimatePresence>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 {user ? (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import {
   Wallet,
@@ -305,7 +305,6 @@ export default function CashFlowPage() {
 
   const isInitialLoad = isLoading && !data;
   const isRefetching = isFetching && !!data;
-  const loading = isLoading;
   const pageTitle = tx(language, "Cash Flow Statement", "Laporan Arus Kas");
 
   // Hanya 3 baris (Operating/Investing/Financing) — TANPA "Total"
@@ -344,8 +343,7 @@ export default function CashFlowPage() {
   };
 
   return (
-      <div className="min-h-[80vh] overflow-x-hidden">
-        <div className="max-w-5xl mx-auto space-y-8 py-6 min-w-0">
+      <div className="max-w-5xl mx-auto space-y-8 py-6 min-w-0">
           {/* ── Page Header ── */}
           <ScrollReveal
             direction="left"
@@ -403,7 +401,7 @@ export default function CashFlowPage() {
               </div>
 
               <ExportMenu
-                disabled={!data || loading}
+                disabled={!data || isFetching}
                 formats={["pdf", "excel", "word"]}
                 onExport={handleExport}
               />
@@ -411,7 +409,7 @@ export default function CashFlowPage() {
           </ScrollReveal>
 
           {/* ── Loading ── */}
-          {loading && (
+          {isInitialLoad && (
             <div className="flex flex-col items-center justify-center py-24 gap-3">
               <div className="relative w-12 h-12">
                 <div className="absolute inset-0 rounded-full border-4 border-primary-500/20" />
@@ -422,7 +420,7 @@ export default function CashFlowPage() {
           )}
 
           {/* ── Error ── */}
-          {error && !loading && (
+          {error && !isRefetching && (
             <div className="py-16 text-center">
               <p className="text-rose-500 text-sm mb-2">{error}</p>
               <button
@@ -435,7 +433,7 @@ export default function CashFlowPage() {
           )}
 
           {/* ── Data ── */}
-          {data && !loading && !error && (
+          {data && !error && (
             <>
               <ScrollReveal direction="up" className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <SummaryCard
@@ -519,7 +517,7 @@ export default function CashFlowPage() {
             </>
           )}
 
-          {!data && !loading && !error && (
+          {!data && !error && isInitialLoad && (
             <div className="py-24 text-center text-gray-400">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/10 mb-4">
                 <Wallet size={32} className="opacity-50" />
@@ -528,6 +526,5 @@ export default function CashFlowPage() {
             </div>
           )}
         </div>
-      </div>
   );
 }
