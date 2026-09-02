@@ -43,21 +43,6 @@ const itemVariants: Variants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.045, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 type ThemeOption = "light" | "dark" | "system";
 type CurrencyOption = (typeof CURRENCIES)[number]["code"];
@@ -199,28 +184,18 @@ export default function SettingsPage() {
       >
         {/* Header */}
         <motion.div variants={itemVariants}>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 min-w-0">
             <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
               <Settings size={20} />
             </div>
             <motion.h1
-              variants={letterContainerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.5 }}
-              className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
-              style={{ perspective: "600px" }}
+              key={`${language}-settings`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
             >
-              {tx(language, "Settings", "Pengaturan").split("").map((char, i) => (
-                <motion.span
-                  key={i}
-                  variants={letterVariants}
-                  className="inline-block"
-                  style={{ transformOrigin: "bottom center" }}
-                >
-                  {char === " " ? "\u00A0" : char}
-                </motion.span>
-              ))}
+              {tx(language, "Settings", "Pengaturan")}
             </motion.h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">

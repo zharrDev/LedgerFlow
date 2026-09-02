@@ -123,7 +123,7 @@ export default function HomePage() {
         {/* ═══ Hero ═══ */}
         <section className="relative min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
           {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
-          <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
             {/* ── Teks Kiri ── */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
@@ -139,7 +139,7 @@ export default function HomePage() {
                 icon={<Sparkles size={14} />}
               />
 
-              <h2 className="mt-5 text-[2rem] leading-[1.1] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <h2 className="mt-5 text-[1.75rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={language}
@@ -231,11 +231,11 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            {/* ── Floating Icons + Device Mockup Kanan ── */}
-            <div className="relative h-[40vh] sm:h-[50vh] lg:h-[70vh] lg:min-h-[480px]">
-              <div className="absolute inset-0 origin-top-left max-w-[300px] sm:max-w-none scale-[0.6] sm:scale-100">
-                <FloatingIconField />
-              </div>
+            {/* ── Floating Icons + Device Mockup Kanan ──
+                Hidden below lg: pixel-locked orbit (350px image, 600px arms)
+                tidak muat di viewport sempit — teks full-width lebih rapih. */}
+            <div className="hidden lg:block relative h-[70vh] min-h-[480px]">
+              <FloatingIconField />
             </div>
           </div>
 
@@ -567,10 +567,10 @@ export default function HomePage() {
               <OwlMascot />
             </div>
 
-            <div className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-cyan-900 rounded-[2.5rem] py-16 sm:py-20 md:py-24 px-6 sm:px-10 md:px-16 text-center text-white shadow-2xl">
+            <div className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-cyan-900 rounded-[1.75rem] sm:rounded-[2.5rem] py-16 sm:py-20 md:py-24 px-6 sm:px-10 md:px-16 text-center text-white shadow-2xl">
               {/* Dekorasi glow latar — dipotong di layer sendiri supaya
                 kartu tidak perlu overflow-hidden (owl bebas keluar atap) */}
-              <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
+              <div className="absolute inset-0 rounded-[1.75rem] sm:rounded-[2.5rem] overflow-hidden pointer-events-none">
                 <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-[100px]" />
                 <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-[100px]" />
               </div>

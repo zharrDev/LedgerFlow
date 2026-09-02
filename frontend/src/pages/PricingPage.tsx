@@ -242,67 +242,20 @@ export default function PricingPage() {
             {language === "id" ? "Harga yang Transparan" : "Transparent Pricing"}
           </div>
           <motion.h1
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.5 }}
-            variants={{
-              hidden: {},
-              visible: {
-                transition: { staggerChildren: 0.035, delayChildren: 0.2 },
-              },
-            }}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center"
+            key={`pricing-hero-${language}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center min-w-0 break-words"
           >
             {/* Baris 1 */}
             <span className="block text-gray-900 dark:text-white">
-              {(language === "id" ? "Pilih Plan yang Tepat" : "Choose the Right Plan").split("").map((char, i) => (
-                <motion.span
-                  key={`a-${i}`}
-                  variants={{
-                    hidden: { y: 40, opacity: 0, rotateX: -90 },
-                    visible: {
-                      y: 0,
-                      opacity: 1,
-                      rotateX: 0,
-                      transition: {
-                        type: "spring",
-                        stiffness: 200,
-                        damping: 18,
-                      },
-                    },
-                  }}
-                  className="inline-block"
-                  style={{ transformOrigin: "bottom center" }}
-                >
-                  {char === " " ? "\u00A0" : char}
-                </motion.span>
-              ))}
+              {language === "id" ? "Pilih Plan yang Tepat" : "Choose the Right Plan"}
             </span>
 
             {/* Baris 2 — gradient */}
             <span className="block mt-2 bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent">
-              {(language === "id" ? "untuk Bisnis Anda" : "for Your Business").split("").map((char, i) => (
-                <motion.span
-                  key={`b-${i}`}
-                  variants={{
-                    hidden: { y: 40, opacity: 0, rotateX: -90 },
-                    visible: {
-                      y: 0,
-                      opacity: 1,
-                      rotateX: 0,
-                      transition: {
-                        type: "spring",
-                        stiffness: 200,
-                        damping: 18,
-                      },
-                    },
-                  }}
-                  className="inline-block"
-                  style={{ transformOrigin: "bottom center" }}
-                >
-                  {char === " " ? "\u00A0" : char}
-                </motion.span>
-              ))}
+              {language === "id" ? "untuk Bisnis Anda" : "for Your Business"}
             </span>
           </motion.h1>{" "}
           <ScrollReveal direction="left" className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
@@ -314,7 +267,7 @@ export default function PricingPage() {
 
         {/* ═══ Billing Toggle ═══ */}
         <ScrollReveal direction="left" className="flex justify-center">
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800">
+          <div className="inline-flex flex-wrap justify-center items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800 max-w-full">
             <button
               onClick={() => setBillingCycle("monthly")}
               className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -334,7 +287,7 @@ export default function PricingPage() {
               }`}
             >
               {language === "id" ? "Tahunan" : "Yearly"}
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold whitespace-nowrap">
                 {language === "id" ? "Hemat 15%" : "Save 15%"}
               </span>
             </button>

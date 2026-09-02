@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import type { LedgerQueryParams } from "../types/ledger";
 import { useLedger } from "../hooks/useLedger";
 import { useLanguage } from "../hooks/useLanguage";
@@ -9,22 +9,6 @@ import { LedgerTable } from "../components/ledger/LedgerTable";
 
 import { ScrollReveal } from "../components/ScrollReveal";
 import { BookOpen, AlertCircle, RefreshCw } from "lucide-react";
-
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 export default function BukuBesarPage() {
   const { language } = useLanguage();
@@ -63,29 +47,19 @@ export default function BukuBesarPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* ── Page Header ── */}
         <ScrollReveal direction="left">
-          <div className="flex items-center gap-2.5 mb-1">
+          <div className="flex items-center gap-2.5 mb-1 min-w-0">
             <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
               <BookOpen size={20} />
             </div>
-            <div>
+            <div className="min-w-0">
               <motion.h1
-                variants={letterContainerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
-                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
-                style={{ perspective: "600px" }}
+                key={`${language}-${tx(language, "General Ledger", "Buku Besar")}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
               >
-                {tx(language, "General Ledger", "Buku Besar").split("").map((char, i) => (
-                  <motion.span
-                    key={`${language}-${i}`}
-                    variants={letterVariants}
-                    className="inline-block"
-                    style={{ transformOrigin: "bottom center" }}
-                  >
-                    {char === " " ? "\u00A0" : char}
-                  </motion.span>
-                ))}
+                {tx(language, "General Ledger", "Buku Besar")}
               </motion.h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 {tx(language, "Running balance and mutations per account from posted transactions", "Mutasi dan saldo berjalan per akun dari transaksi yang sudah di-posting")}

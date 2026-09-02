@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { useIncomeStatement, useReportPeriods } from "../hooks/useReports";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
@@ -22,22 +22,6 @@ import {
 } from "lucide-react";
 import { ReportSkeleton, ReportRefetchBar } from "../components/reports/ReportSkeleton";
 import { formatCurrency } from "../utils/currency";
-
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 // Format uang mengikuti mata uang aktif user (Settings → Regional).
 const formatRupiah = (val: number) => formatCurrency(val);
@@ -76,32 +60,18 @@ export function IncomeStatementPage() {
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 min-w-0">
               <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500 shrink-0">
                 <FileText size={20} />
               </div>
-              <h1 className="sm:hidden text-xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words">
-                {pageTitle}
-              </h1>
               <motion.h1
                 key={`${language}-${pageTitle}`}
-                variants={letterContainerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
-                className="hidden sm:flex text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight items-center flex-wrap min-w-0"
-                style={{ perspective: "600px" }}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
               >
-                {pageTitle.split("").map((char, i) => (
-                  <motion.span
-                    key={`${language}-${i}`}
-                    variants={letterVariants}
-                    className="inline-block"
-                    style={{ transformOrigin: "bottom center" }}
-                  >
-                    {char === " " ? "\u00A0" : char}
-                  </motion.span>
-                ))}
+                {pageTitle}
               </motion.h1>
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">

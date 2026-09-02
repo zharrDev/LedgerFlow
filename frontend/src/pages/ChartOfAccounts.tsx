@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useAccounts } from "../hooks/useAccounts";
 import { usePagination } from "../hooks/usePagination";
@@ -43,22 +43,6 @@ import { ExportMenu } from "../components/ExportMenu";
 
 import type { AccountType, NormalBalance } from "../types/account";
 import { ACCOUNT_TYPES } from "../types/constants";
-
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 export default function ChartOfAccounts() {
   const { language } = useLanguage();
@@ -304,28 +288,18 @@ export default function ChartOfAccounts() {
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 min-w-0">
               <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
                 <Layers size={20} />
               </div>
               <motion.h1
-                variants={letterContainerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
-                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
-                style={{ perspective: "600px" }}
+                key={`${language}-${tx(language, "Chart of Accounts", "Bagan Akun")}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
               >
-                {tx(language, "Chart of Accounts", "Bagan Akun").split("").map((char, i) => (
-                  <motion.span
-                    key={i}
-                    variants={letterVariants}
-                    className="inline-block"
-                    style={{ transformOrigin: "bottom center" }}
-                  >
-                    {char === " " ? "\u00A0" : char}
-                  </motion.span>
-                ))}
+                {tx(language, "Chart of Accounts", "Bagan Akun")}
               </motion.h1>
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -372,20 +346,20 @@ export default function ChartOfAccounts() {
         </ScrollReveal>
 
         {/* Stat Cards */}
-        <ScrollReveal direction="up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+        <ScrollReveal direction="up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
           {statCards.map((card) => (
             <motion.div
               key={card.label}
               whileHover={{ y: -4 }}
-              className="group relative rounded-xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all p-4"
+              className="group relative rounded-xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all p-3 sm:p-4"
             >
               <div className="flex items-center justify-between mb-2">
                 <card.icon size={16} className={`text-${card.color}-500`} />
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                   {card.value}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide sm:tracking-wider leading-tight">
                 {card.label}
               </p>
             </motion.div>

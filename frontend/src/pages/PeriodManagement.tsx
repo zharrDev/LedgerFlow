@@ -36,21 +36,6 @@ const itemVariants: Variants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 export default function PeriodManagement() {
   const { language } = useLanguage();
@@ -162,28 +147,18 @@ export default function PeriodManagement() {
       >
         {/* Header */}
         <motion.div variants={itemVariants}>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 min-w-0">
             <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
               <CalendarClock size={20} />
             </div>
             <motion.h1
-              variants={letterContainerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.5 }}
-              className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
-              style={{ perspective: "600px" }}
+              key={`${language}-${tx(language, "Period Management", "Manajemen Periode")}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
             >
-              {tx(language, "Period Management", "Manajemen Periode").split("").map((char, i) => (
-                <motion.span
-                  key={i}
-                  variants={letterVariants}
-                  className="inline-block"
-                  style={{ transformOrigin: "bottom center" }}
-                >
-                  {char === " " ? "\u00A0" : char}
-                </motion.span>
-              ))}
+              {tx(language, "Period Management", "Manajemen Periode")}
             </motion.h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -457,7 +432,7 @@ export default function PeriodManagement() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
                 <button
                   onClick={() => setConfirmYearFar(false)}
                   className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
@@ -539,7 +514,7 @@ export default function PeriodManagement() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex flex-wrap items-center justify-end gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
                 <button
                   onClick={() => setConfirmClose(null)}
                   className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"

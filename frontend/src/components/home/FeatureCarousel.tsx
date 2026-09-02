@@ -99,7 +99,7 @@ export default function FeatureCarousel() {
         {...SCROLL_REVEAL}
         className="relative mx-auto w-[96%] max-w-[1700px]"
       >
-        <div className="relative mx-auto w-[70%] sm:w-[78%] lg:w-[80%] h-[280px] sm:h-[400px] lg:h-[550px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900">
+        <div className="relative mx-auto w-[82%] sm:w-[78%] lg:w-[80%] h-[280px] sm:h-[400px] lg:h-[550px] rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900">
           <AnimatePresence initial={false}>
             <motion.div
               key={n}

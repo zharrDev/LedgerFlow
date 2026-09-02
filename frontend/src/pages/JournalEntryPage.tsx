@@ -21,6 +21,7 @@ import { useAuth } from "../context/AuthContext";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { formatCurrency } from "../utils/currency";
+import { formatCompact } from "../i18n/compactNumber";
 import {
   ArrowLeft,
   Search,
@@ -46,21 +47,6 @@ const itemVariants: Variants = {
     transition: { type: "spring", stiffness: 300, damping: 24 },
   },
 };
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 // ─── Stat Card ──────────────────────────────────────────────────────
 function StatCard({
@@ -80,7 +66,7 @@ function StatCard({
     <motion.div
       variants={itemVariants}
       whileHover={{ y: -4 }}
-      className={`group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all p-5 overflow-hidden`}
+      className={`group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all p-3 sm:p-5 overflow-hidden`}
     >
       <div
         className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-40 group-hover:opacity-80 transition-opacity ${accent}`}
@@ -190,8 +176,10 @@ export default function JournalEntryPage() {
     };
   }, [entries]);
 
-  const fmtIDR = (n: number) =>
-    n === 0 ? formatCurrency(0) : formatCurrency(n);
+  // Stat cards memakai format compact (Rp 12,3 jt) — full IDR tidak muat di kartu grid-cols-2 300px.
+  // fmtIDR (full) tetap dipakai untuk baris tabel/list.
+  const fmtIDR = (n: number) => formatCurrency(n);
+  const fmtCompact = (n: number) => formatCompact(language, n);
 
   // ── Handlers ──
   const handleSave = async (
@@ -265,28 +253,18 @@ export default function JournalEntryPage() {
                 <ArrowLeft size={12} /> {tx(language, "Journal Entry", "Entri Jurnal")}
               </button>
             )}
-            <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex items-center gap-2.5 mb-1 min-w-0">
               <div className="p-2 rounded-xl bg-primary-500/10 text-primary-500">
                 <IconJournal size={20} />
               </div>
               <motion.h1
-                variants={letterContainerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
-                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center flex-wrap"
-                style={{ perspective: "600px" }}
+                key={`${language}-${pageTitle}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
               >
-                {pageTitle.split("").map((char, i) => (
-                  <motion.span
-                    key={`${language}-${pageTitle}-${i}`}
-                    variants={letterVariants}
-                    className="inline-block"
-                    style={{ transformOrigin: "bottom center" }}
-                  >
-                    {char === " " ? "\u00A0" : char}
-                  </motion.span>
-                ))}
+                {pageTitle}
               </motion.h1>
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -389,7 +367,7 @@ export default function JournalEntryPage() {
             />
             <StatCard
               label={tx(language, "Total Posted", "Total Diposting")}
-              value={fmtIDR(stats.totalPostedDebit)}
+              value={fmtCompact(stats.totalPostedDebit)}
               sub={tx(language, "Total Debit", "Total Debit")}
               icon={<CircleDollarSign size={14} className="text-primary-500" />}
               accent="bg-primary-500/10"

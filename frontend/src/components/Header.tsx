@@ -371,7 +371,7 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
               <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-gray-900 dark:text-white transition-all hidden sm:inline-block min-w-0">
                 LedgerFlow
               </span>
-              <span className="hidden xs:inline-block text-[7px] sm:text-[8px] lg:text-[9px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-blue-500 transition-all mt-0.5">
+              <span className="hidden md:inline-block text-[7px] sm:text-[8px] lg:text-[9px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-blue-500 transition-all mt-0.5">
                 {tx(language, "Financial Platform", "Platform Keuangan")}
               </span>
             </div>

@@ -557,15 +557,15 @@ function LedgerMobileCard({
         <span className="text-xs text-gray-400 tabular-nums shrink-0">{formatDateShort(line.date, language)}</span>
       </div>
       <div className="flex items-center justify-between gap-2 mt-1.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span className={`text-xs tabular-nums ${line.debit > 0 ? "text-primary-700 dark:text-primary-400 font-medium" : "text-gray-300 dark:text-gray-600"}`}>
-            D: {line.debit > 0 ? formatIDR(line.debit) : "—"}
+            D: {line.debit > 0 ? formatIDRCompact(line.debit) : "—"}
           </span>
           <span className={`text-xs tabular-nums ${line.credit > 0 ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-300 dark:text-gray-600"}`}>
-            C: {line.credit > 0 ? formatIDR(line.credit) : "—"}
+            C: {line.credit > 0 ? formatIDRCompact(line.credit) : "—"}
           </span>
         </div>
-        <span className={`text-xs font-medium tabular-nums ${balanceColorCls}`}>
+        <span className={`text-xs font-medium tabular-nums break-all ${balanceColorCls}`}>
           {formatIDR(Math.abs(line.balance))}
           {line.balance !== 0 && (
             <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 ml-0.5">

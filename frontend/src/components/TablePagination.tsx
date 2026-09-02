@@ -38,9 +38,11 @@ export function TablePagination({
   const resolvedItemLabel = itemLabel ?? (id ? "data" : "items");
   if (totalItems === 0) return null;
 
-  // Buat daftar nomor halaman ringkas (maks 5 tombol di sekitar halaman aktif)
+  // Buat daftar nomor halaman ringkas — 3 tombol di mobile (<640px, biar muat
+  // di ~244px konten), 5 di layar lebih lebar.
   const pages: number[] = [];
-  const windowSize = 5;
+  const windowSize =
+    typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 5;
   let start = Math.max(1, page - Math.floor(windowSize / 2));
   let end = Math.min(totalPages, start + windowSize - 1);
   start = Math.max(1, end - windowSize + 1);

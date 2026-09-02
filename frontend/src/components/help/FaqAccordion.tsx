@@ -39,7 +39,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 pl-15 text-sm text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-100 dark:border-gray-800 pt-3 ml-10">
+            <div className="px-5 pb-4 text-sm text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-100 dark:border-gray-800 pt-3 ml-10">
               {a}
             </div>
           </motion.div>

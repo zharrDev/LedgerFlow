@@ -112,43 +112,14 @@ export default function LoginForm({
       <div className="flex justify-center mb-6">
         <img src={logo} alt="LedgerFlow" className="w-12 h-12" />
       </div>
-      <h1 className="sm:hidden text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
-        {id ? "Selamat Datang Kembali" : "Welcome Back"}
-      </h1>
       <motion.h1
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: {},
-          visible: {
-            transition: { staggerChildren: 0.05, delayChildren: 0.4 },
-          },
-        }}
-        className="hidden sm:flex text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent items-center justify-center flex-wrap"
-        style={{ perspective: "600px" }}
+        key={`${language}-${id ? "Selamat Datang Kembali" : "Welcome Back"}`}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="text-2xl font-bold text-center bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent tracking-tight min-w-0 break-words"
       >
-        {(id ? "Selamat Datang Kembali" : "Welcome Back").split("").map((char, i) => (
-          <motion.span
-            key={i}
-            variants={{
-              hidden: { y: 40, opacity: 0, rotateX: -90 },
-              visible: {
-                y: 0,
-                opacity: 1,
-                rotateX: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 18,
-                },
-              },
-            }}
-            className="inline-block"
-            style={{ transformOrigin: "bottom center" }}
-          >
-            {char === " " ? "\u00A0" : char}
-          </motion.span>
-        ))}
+        {id ? "Selamat Datang Kembali" : "Welcome Back"}
       </motion.h1>
       <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">
         {step === "phone"

@@ -17,7 +17,7 @@
 //   </FeatureGate>
 // ============================================================================
 
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Lock,
@@ -54,34 +54,6 @@ const PLAN_NAMES: Record<string, string> = {
 const PLAN_COLORS: Record<string, string> = {
   pro: "from-blue-600 to-cyan-500",
   enterprise: "from-purple-600 to-pink-500",
-};
-
-// ─── Animation Variants (hoisted — created once, not per render) ────
-// Per-CHARACTER animation. `spaceVariants` separately so spaces don't
-// rotate (they're invisible anyway, rotating them can cause layout jitter).
-const titleContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.025, delayChildren: 0.2 },
-  },
-};
-
-const charVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 220, damping: 18 },
-  },
-};
-
-const spaceVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.2, delay: 0.1 },
-  },
 };
 
 // ─── Default Highlights ─────────────────────────────────────────────
@@ -221,31 +193,14 @@ export function Paywall({
           </motion.div>
         </div>
 
-        {/* Title — per-CHARACTER stagger animation */}
+        {/* Title */}
         <motion.h2
-          initial="hidden"
-          animate="visible"
-          variants={titleContainerVariants}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight"
-          style={{ perspective: "600px" }}
         >
-          {resolvedTitle.split("").map((char, i) => {
-            const isSpace = char === " ";
-            return (
-              <motion.span
-                key={i}
-                variants={isSpace ? spaceVariants : charVariants}
-                className="inline-block align-baseline"
-                style={{
-                  transformOrigin: "bottom center",
-                  // spaces get a stable width so they don't shift layout during fade
-                  ...(isSpace && { width: "0.3em" }),
-                }}
-              >
-                {isSpace ? "\u00A0" : char}
-              </motion.span>
-            );
-          })}
+          {resolvedTitle}
         </motion.h2>
 
         {/* Description */}
