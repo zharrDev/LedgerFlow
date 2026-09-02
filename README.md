@@ -808,7 +808,7 @@ npm run dev:frontend  # http://localhost:5173
 **Backend (`backend/.env`)** — tambahkan untuk AI CFO & WhatsApp OTP:
 ```env
 OPENROUTER_API_KEY=sk-or-v1-...        # dari https://openrouter.ai/keys
-OPENROUTER_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
+OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 FONNTE_TOKEN=<token Fonnte>            # dari https://fonnte.com — WA gateway (wajib untuk WA OTP)
 
 # Opsional — nomor WA untuk akun demo (lihat bagian Akun Demo):
@@ -896,8 +896,8 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - **Kuota jurnal plan Free divalidasi di backend** (`journal.ts`): jurnal ke-51 di bulan yang sama ditolak dengan HTTP 403 — Pro/Enterprise unlimited. Sisa kuota tampil sebagai banner di halaman Journal Entry (`GET /api/journal/quota`)
 
 ### 8. Autentikasi
-- Register dengan email & password, atau **WhatsApp OTP** (tanpa password)
-- Login email & password, atau **WhatsApp OTP** (2-step: kirim kode → verifikasi)
+- Register via **WhatsApp OTP** (2-step: kirim kode → verifikasi, tanpa password) atau **Google One-Click**
+- Login via **WhatsApp OTP** (2-step: kirim kode → verifikasi) atau **Google One-Click** — endpoint email & password (`/api/auth/login`) tetap tersedia di API untuk keperluan internal/seed, tapi tidak diekspos di UI login
 - Google One-Click Login (OAuth 2.0)
 - OTP WA: cooldown 60 detik, berlaku 5 menit, max 5 percobaan per kode, kode hanya dikirim via WhatsApp
 - Role-based access
@@ -937,19 +937,18 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 
 Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang kali). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 2 user, 26 akun, 12 periode, dan 54 jurnal (6 bulan pertama tahun berjalan).
 
-| Role | Email | Password | No. WhatsApp (default) |
-|---|---|---|---|
-| Owner | `owner@demo.com` | `Demo123!` | `081234567890` |
-| Akuntan | `akuntan@demo.com` | `Demo123!` | `081245678901` |
+| Role | Email (identitas seed) | No. WhatsApp (default) |
+|---|---|---|
+| Owner | `owner@demo.com` | `081234567890` |
+| Akuntan | `akuntan@demo.com` | `081245678901` |
 
 > Kedua akun demo berada di company yang sama (`PT-DEMO-001`), sehingga owner bisa melihat keduanya lewat halaman **User Management** dan langsung mencoba fitur ubah role.
 
 ### Cara Login
 
-Ada **dua metode** di halaman login:
+Halaman login menggunakan **dua metode**:
 
-1. **Email & Password** — pilih tab *Email*, masukkan email + password dari tabel di atas.
-2. **WhatsApp OTP** — pilih tab *WhatsApp*, masukkan nomor WA sesuai tabel. Kode 6 digit dikirim ke WhatsApp (butuh `FONNTE_TOKEN` aktif di backend). ⚠️ **Penting:** OTP hanya sampai ke nomor **asli** yang bisa menerima pesan — nomor default di atas hanyalah placeholder. Untuk memakai nomor sendiri, set env lalu jalankan ulang seed:
+1. **WhatsApp OTP** (utama) — masukkan nomor WA sesuai tabel di atas. Kode 6 digit dikirim ke WhatsApp (butuh `FONNTE_TOKEN` aktif di backend). ⚠️ **Penting:** OTP hanya sampai ke nomor **asli** yang bisa menerima pesan — nomor default di atas hanyalah placeholder. Untuk memakai nomor sendiri, set env lalu jalankan ulang seed:
 
 ```env
 # backend/.env
@@ -960,6 +959,10 @@ DEMO_AKUNTAN_PHONE=08xxxxxxxxxx
 ```bash
 cd backend && npm run seed
 ```
+
+2. **Google** — login dengan akun Google apa pun; otomatis membuat akun + company baru (data demo tidak berlaku untuk jalur ini).
+
+> Email `owner@demo.com` / `akuntan@demo.com` hanya identitas akun demo di database (seed) — form email+password tidak tersedia di UI login; gunakan WhatsApp OTP (atau Demo Mode di bawah) untuk masuk sebagai akun demo.
 
 ### DEMO MODE — Login Cepat Tanpa WA (khusus reviewer demo)
 

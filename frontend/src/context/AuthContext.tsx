@@ -35,12 +35,6 @@ type AuthContextType = {
   loading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
-  register: (data: {
-    name: string;
-    email: string;
-    password: string;
-    company_name: string;
-  }) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   requestWaOtp: (payload: WaPayload) => Promise<void>;
   verifyWaOtp: (payload: WaPayload) => Promise<void>;
@@ -84,20 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
 
     window.location.href = "/login";
-  };
-
-  const register = async (data: {
-    name: string;
-    email: string;
-    password: string;
-    company_name: string;
-  }) => {
-    try {
-      const response = await api.post("/api/auth/register", data);
-      login(response.data.token, response.data.user);
-    } catch (err) {
-      throw new Error(getErrorMessage(err));
-    }
   };
 
   const loginWithGoogle = async () => {
@@ -157,7 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         logout,
-        register,
         loginWithGoogle,
         requestWaOtp,
         verifyWaOtp,

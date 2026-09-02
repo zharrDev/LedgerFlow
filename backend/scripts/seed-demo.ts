@@ -216,42 +216,68 @@ async function main() {
       .single();
 
     if (existing) {
-      const { error: phoneErr } = await supabase
+      // Repair existing profile: pastikan verified + ter-attach ke PT Demo.
+      // (Profile lama bisa email_verified=false dari seed sebelumnya, atau
+      // ter-attach ke company kosong hasil auto-heal login — "Perusahaan X".)
+      const { error: repairErr } = await supabase
         .from("users")
-        .update({ phone })
+        .update({ phone, email_verified: true, company_id: company!.id })
         .eq("id", existing.id);
-      if (phoneErr) {
-        console.error(`  ! Gagal update phone ${du.email}: ${phoneErr.message}`);
+      if (repairErr) {
+        console.error(`  ! Gagal update phone ${du.email}: ${repairErr.message}`);
       } else {
-        console.log(`  User sudah ada: ${du.email} (phone ${phone})`);
+        console.log(`  User sudah ada (di-repair verified+company): ${du.email} (phone ${phone})`);
       }
       userIds[du.email] = existing.id;
       continue;
     }
 
-    const { data: authData, error: authErr } =
-      await supabase.auth.admin.createUser({
+    // Auth user bisa saja sudah ada (seed sebelumnya) tapi profilnya hilang.
+    // Cari by email supaya bisa reattach, bukan biarkan auto-heal login
+    // bikin company kosong baru ("Perusahaan X").
+    let authUserId: string | undefined;
+    let existingAuthUser: { id: string } | undefined;
+    try {
+      const list = await supabase.auth.admin.listUsers();
+      existingAuthUser = list.data.users.find((u) => u.email === du.email);
+    } catch {
+      existingAuthUser = undefined;
+    }
+
+    let authErr: { message: string } | null = null;
+    if (existingAuthUser) {
+      authUserId = existingAuthUser.id;
+    } else {
+      const res = await supabase.auth.admin.createUser({
         email: du.email,
         password: DEMO_PASSWORD,
         email_confirm: true,
         user_metadata: { full_name: du.name },
       });
-    if (authErr) {
-      console.error(`  ! Gagal buat auth user ${du.email}: ${authErr.message}`);
+      authErr = res.error;
+      if (res.data.user) authUserId = res.data.user.id;
+    }
+
+    if (authErr || !authUserId) {
+      console.error(`  ! Gagal siapkan auth user ${du.email}:`, authErr?.message);
       continue;
     }
-    console.log(`  Auth user dibuat: ${du.email}`);
+    console.log(`  Auth user siap: ${du.email}`);
 
     const { data: user, error: userErr } = await supabase
       .from("users")
-      .insert({
-        id: authData.user.id,
-        company_id: company!.id,
-        email: du.email,
-        name: du.name,
-        role: du.role,
-        phone,
-      })
+      .upsert(
+        {
+          id: authUserId,
+          company_id: company!.id,
+          email: du.email,
+          name: du.name,
+          role: du.role,
+          phone,
+          email_verified: true,
+        },
+        { onConflict: "id" },
+      )
       .select()
       .single();
     if (userErr) {

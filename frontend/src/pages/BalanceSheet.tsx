@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp,
@@ -45,22 +45,6 @@ function toExportData(bs: BalanceSheetResponse): BalanceSheetData {
     is_balanced: bs.is_balanced,
   };
 }
-
-const letterContainerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 export default function BalanceSheet() {
   const { user } = useAuth();
@@ -121,7 +105,6 @@ export default function BalanceSheet() {
   };
 
   const pageTitle = tx(language, "Balance Sheet", "Neraca");
-  const headerTitle = pageTitle.split("");
 
   return (
     <div>
@@ -138,26 +121,15 @@ export default function BalanceSheet() {
               <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex-shrink-0">
                 <FileText className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <motion.h1
                   key={`${language}-${pageTitle}`}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, amount: 0.5 }}
-                  variants={letterContainerVariants}
-                  className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center flex-wrap"
-                  style={{ perspective: "600px" }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
                 >
-                  {headerTitle.map((char, i) => (
-                    <motion.span
-                      key={`${language}-${i}`}
-                      variants={letterVariants}
-                      className="inline-block"
-                      style={{ transformOrigin: "bottom center" }}
-                    >
-                      {char === " " ? "\u00A0" : char}
-                    </motion.span>
-                  ))}
+                  {pageTitle}
                 </motion.h1>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {tx(

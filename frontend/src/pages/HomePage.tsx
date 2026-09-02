@@ -1,5 +1,4 @@
 // src/pages/HomePage.tsx
-import { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -115,11 +114,8 @@ export default function HomePage() {
   const { user } = useAuth();
   const { language } = useLanguage();
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
   return (
     <div
-      ref={scrollContainerRef}
       className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg"
     >
       <Navbar />

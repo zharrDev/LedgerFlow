@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../hooks/useLanguage";
 import GoogleAuthButton from "./GoogleAuthButton";
@@ -172,9 +172,7 @@ export default function LoginForm({
             <input
               type="tel"
               inputMode="numeric"
-              placeholder={
-                id ? "No. WhatsApp (08xxxxxxxxxx)" : "WhatsApp number (08xxxxxxxxxx)"
-              }
+              placeholder={id ? "No. WhatsApp" : "WhatsApp number"}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className={`w-full px-4 py-3 rounded-xl
@@ -192,6 +190,9 @@ export default function LoginForm({
               required
               autoComplete="off"
             />
+            <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+              {id ? "Contoh: 081234567890" : "Example: 081234567890"}
+            </p>
           </div>
 
           <button
@@ -215,14 +216,6 @@ export default function LoginForm({
                 ? "Kirim Kode via WhatsApp"
                 : "Send Code via WhatsApp"}
           </button>
-          <div className="text-center">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
-            >
-              {id ? "Lupa Password (akun email)?" : "Forgot password (email account)?"}
-            </Link>
-          </div>
         </form>
       ) : (
         <form onSubmit={handleVerify} className="mt-6 space-y-4">

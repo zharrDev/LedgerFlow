@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Wallet,
   TrendingUp,
@@ -31,22 +31,6 @@ import { ReportSkeleton, ReportRefetchBar } from "../components/reports/ReportSk
 
 // ─── Helpers ────────────────────────────────────────────────────────
 const formatIDR = (amount: number) => formatCurrency(amount);
-
-const letterContainerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04, delayChildren: 0.3 },
-  },
-};
-const letterVariants: Variants = {
-  hidden: { y: 40, opacity: 0, rotateX: -90 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: { type: "spring", stiffness: 200, damping: 18 },
-  },
-};
 
 // ─── Section Config (satu keluarga warna — tint primary) ────────────
 const SECTION_CONFIG = {
@@ -354,28 +338,14 @@ export default function CashFlowPage() {
                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shrink-0">
                   <Wallet size={20} />
                 </div>
-                <h1 className="sm:hidden text-xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words">
-                  {pageTitle}
-                </h1>
                 <motion.h1
                   key={`${language}-${pageTitle}`}
-                  variants={letterContainerVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, amount: 0.5 }}
-                  className="hidden sm:flex text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight items-center flex-wrap min-w-0"
-                  style={{ perspective: "600px" }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
                 >
-                  {pageTitle.split("").map((char, i) => (
-                    <motion.span
-                      key={`${language}-${i}`}
-                      variants={letterVariants}
-                      className="inline-block"
-                      style={{ transformOrigin: "bottom center" }}
-                    >
-                      {char === " " ? "\u00A0" : char}
-                    </motion.span>
-                  ))}
+                  {pageTitle}
                 </motion.h1>
               </div>
               <p className="text-gray-500 dark:text-gray-400 text-sm ml-1">
@@ -408,23 +378,22 @@ export default function CashFlowPage() {
             </div>
           </ScrollReveal>
 
-          {/* ── Loading ── */}
-          {isInitialLoad && (
-            <div className="flex flex-col items-center justify-center py-24 gap-3">
-              <div className="relative w-12 h-12">
-                <div className="absolute inset-0 rounded-full border-4 border-primary-500/20" />
-                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-500 animate-spin" />
-              </div>
-              <p className="text-sm text-gray-400">{tx(language, "Loading report...", "Memuat laporan...")}</p>
-            </div>
+          {/* ── Refetch indicator (data lama tetap terlihat) ── */}
+          {isRefetching && (
+            <ReportRefetchBar
+              label={tx(language, "Loading report...", "Memuat laporan...")}
+            />
           )}
+
+          {/* ── First load skeleton ── */}
+          {isInitialLoad && <ReportSkeleton cards={3} />}
 
           {/* ── Error ── */}
           {error && !isRefetching && (
             <div className="py-16 text-center">
-              <p className="text-rose-500 text-sm mb-2">{error}</p>
+              <p className="text-rose-500 text-sm mb-2">{error instanceof Error ? error.message : String(error)}</p>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => refetch()}
                 className="text-primary-500 text-sm hover:underline font-medium"
               >
                 {tx(language, "Try again", "Coba lagi")}
@@ -517,7 +486,7 @@ export default function CashFlowPage() {
             </>
           )}
 
-          {!data && !error && isInitialLoad && (
+          {!data && !isInitialLoad && !error && (
             <div className="py-24 text-center text-gray-400">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/10 mb-4">
                 <Wallet size={32} className="opacity-50" />

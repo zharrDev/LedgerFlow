@@ -252,9 +252,7 @@ export default function RegisterForm({
               name="phone"
               type="tel"
               inputMode="numeric"
-              placeholder={
-                id ? "No. WhatsApp (08xxxxxxxxxx)" : "WhatsApp number (08xxxxxxxxxx)"
-              }
+              placeholder={id ? "No. WhatsApp" : "WhatsApp number"}
               value={phone}
               onChange={(e) => {
                 setPhone(e.target.value);
@@ -265,6 +263,11 @@ export default function RegisterForm({
               required
               autoComplete="off"
             />
+            {!fieldErrors.phone && (
+              <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                {id ? "Contoh: 081234567890" : "Example: 081234567890"}
+              </p>
+            )}
             {fieldErrors.phone && (
               <p className="text-red-500 dark:text-red-400 text-xs mt-1">
                 {fieldErrors.phone}

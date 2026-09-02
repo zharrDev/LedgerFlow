@@ -23,7 +23,7 @@ export function loadEnv() {
 
   // AI CFO (OpenRouter) — opsional; endpoint /api/ai/chat menolak jika key kosong.
   // OPENROUTER_MODEL: ganti manual bila model :free di-deprecate OpenRouter.
-  // Default kode: nvidia/nemotron-3-nano-30b-a3b:free (lihat DEFAULT_OPENROUTER_MODEL di provider.ts).
+  // Default kode: nvidia/nemotron-3-super-120b-a12b:free (lihat DEFAULT_OPENROUTER_MODEL di provider.ts).
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     console.warn(
       "[env] OPENROUTER_API_KEY belum diset — fitur AI CFO tidak akan berfungsi.",
@@ -31,7 +31,7 @@ export function loadEnv() {
   }
   if (!process.env.OPENROUTER_MODEL?.trim()) {
     console.info(
-      "[env] OPENROUTER_MODEL kosong — memakai default nvidia/nemotron-3-nano-30b-a3b:free.",
+      "[env] OPENROUTER_MODEL kosong — memakai default nvidia/nemotron-3-super-120b-a12b:free.",
     );
   }
   if (!process.env.FONNTE_TOKEN?.trim()) {

@@ -16,8 +16,8 @@ export const AI_GRAPH_TIMEOUT_MS = 95_000;
 /**
  * Default model :free spesifik (bukan openrouter/free auto-router).
  *
- * nvidia/nemotron-3-nano-30b-a3b:free — MoE 30B (3B aktif), support tool-calling,
- * dirancang untuk agent, relatif ringan vs nemotron-ultra.
+ * nvidia/nemotron-3-super-120b-a12b:free — MoE 120B (12B aktif → respons cepat),
+ * support tool-calling, dirancang untuk agent (ReAct AI CFO).
  *
  * TRADE-OFF vs "openrouter/free":
  * - Spesifik: kecepatan & perilaku lebih predictable; cocok ReAct + tools.
@@ -26,7 +26,7 @@ export const AI_GRAPH_TIMEOUT_MS = 95_000;
  *
  * Cek model :free aktif: https://openrouter.ai/models?order=pricing-low-to-high
  */
-export const DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
+export const DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
 
 // Provider LLM terpusat: OpenRouter (endpoint kompatibel OpenAI).
 // Model dibaca dari env OPENROUTER_MODEL — jangan hardcode di runtime production.

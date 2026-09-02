@@ -18,13 +18,22 @@ export default function AuthFlipCard({
   const [height, setHeight] = useState<number>(0);
 
   useLayoutEffect(() => {
-    const el = frontRef.current;
-    if (!el) return;
-    const measure = () =>
-      setHeight(Math.min(el.scrollHeight, Math.max(320, window.innerHeight - 112)));
+    // Ukur KEDUA sisi — sisi register lebih tinggi dari login; kalau hanya
+    // front yang diukur, Google button di form register terpotong overflow-hidden.
+    const measure = () => {
+      const frontH = frontRef.current?.scrollHeight ?? 0;
+      const backH = backRef.current?.scrollHeight ?? 0;
+      setHeight(
+        Math.min(
+          Math.max(frontH, backH),
+          Math.max(320, window.innerHeight - 112),
+        ),
+      );
+    };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(el);
+    if (frontRef.current) ro.observe(frontRef.current);
+    if (backRef.current) ro.observe(backRef.current);
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
