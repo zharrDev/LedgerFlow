@@ -109,8 +109,8 @@ export default function LoginForm({
         showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
       }`}
     >
-      <div className="flex justify-center mb-6">
-        <img src={logo} alt="LedgerFlow" className="w-12 h-12" />
+      <div className="flex justify-center mb-4 sm:mb-6">
+        <img src={logo} alt="LedgerFlow" className="w-10 h-10 sm:w-12 sm:h-12" />
       </div>
       <motion.h1
         key={`${language}-${id ? "Selamat Datang Kembali" : "Welcome Back"}`}
