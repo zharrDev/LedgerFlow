@@ -56,20 +56,10 @@ function toNavItem(item: SiteLinkItem, lang: "en" | "id", category: keyof typeof
 
 const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-function AnimateDropdown({ open, children, onMouseEnter, onMouseLeave }: { open: boolean; children: React.ReactNode; onMouseEnter?: () => void; onMouseLeave?: () => void }) {
-  return (
-    <motion.div
-      initial={false}
-      animate={open ? { opacity: 1, y: 0, scale: 1, pointerEvents: "auto" as const } : { opacity: 0, y: -8, scale: 0.96, pointerEvents: "none" as const }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      style={{ visibility: open ? "visible" : "hidden" }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      {children}
-    </motion.div>
-  );
-}
+// Panel dropdown BERSAMA — satu elemen fixed yang meluncur + morph lebar
+// saat kursor pindah antar menu (Solutions → Products → Resources), bukan
+// tutup-buka per item. Konten di dalamnya crossfade (AnimatePresence keyed).
+const HOVER_PANEL_SPRING = { type: "spring" as const, stiffness: 350, damping: 30 };
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -79,6 +69,9 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
+
+  // Ref tombol tiap menu — untuk mengukur posisi panel mengikuti tombol aktif
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -102,6 +95,19 @@ const Navbar = () => {
     { name: language === "id" ? "Sumber daya" : "Resources", key: "resources" as const, items: siteLinks.resources.map(i => toNavItem(i, language, "resources")) },
   ];
 
+  const activeMenu = menuItems.find((m) => m.key === openDropdown) ?? null;
+
+  // Posisi panel: center terhadap tombol menu aktif, clamp 8px dari tepi viewport
+  const panelWidth = activeMenu ? (activeMenu.items.length > 4 ? 480 : 280) : 280;
+  const triggerEl = openDropdown ? triggerRefs.current[openDropdown] : null;
+  const triggerRect = triggerEl?.getBoundingClientRect();
+  const navLeft = document.getElementById("navbar-desktop-menu")?.getBoundingClientRect().left ?? 0;
+  const navRight = document.getElementById("navbar-desktop-menu")?.getBoundingClientRect().right ?? window.innerWidth;
+  const idealLeft = triggerRect ? triggerRect.left + triggerRect.width / 2 - panelWidth / 2 : 0;
+  const panelLeft = Math.min(Math.max(8, idealLeft), Math.max(8, window.innerWidth - panelWidth - 8));
+  // Panel tidak boleh melewat tepi container menu (kanan area link)
+  const clampedLeft = Math.min(panelLeft, Math.max(8, navRight - panelWidth));
+
   return (
     <header className={`fixed top-2 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[999] bg-white/80 dark:bg-darkCard/80 backdrop-blur-md rounded-xl border border-primary-500/20 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-none"}`}>
 <div className="w-full px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between min-w-0">
@@ -112,24 +118,17 @@ const Navbar = () => {
               <span className="hidden sm:inline-block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mt-0.5">{tx(language, "Financial Platform", "Platform Keuangan")}</span>
             </div>
           </Link>
-        <div className="hidden lg:flex items-center gap-1">
+        <div id="navbar-desktop-menu" className="hidden lg:flex items-center gap-1">
           {menuItems.map((item) => (
-            <div key={item.key} className="relative group" onMouseEnter={() => openMenu(item.key)} onMouseLeave={scheduleCloseMenu}>
-              <button onClick={() => navigate(`/${item.key}`)} className="relative text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10">
-                {item.name} <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === item.key ? "rotate-180" : ""}`} />
+            <div key={item.key} className="relative" onMouseEnter={() => openMenu(item.key)} onMouseLeave={scheduleCloseMenu}>
+              <button
+                ref={(el) => { triggerRefs.current[item.key] = el; }}
+                onClick={() => navigate(`/${item.key}`)}
+                className="relative text-sm font-medium transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10"
+              >
+                <span className={openDropdown === item.key ? "text-primary-600 dark:text-primary-400" : "text-gray-600 dark:text-gray-200"}>{item.name}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === item.key ? "rotate-180 text-primary-500" : ""}`} />
               </button>
-              <AnimateDropdown open={openDropdown === item.key} onMouseEnter={() => openMenu(item.key)} onMouseLeave={scheduleCloseMenu}>
-                <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 py-3 z-50 ${item.items.length > 4 ? "w-[480px] grid grid-cols-2 gap-0.5 px-3" : "w-[280px] px-2"}`}>
-                  {item.items.map((sub) => {
-                    const isComingSoon = sub.comingSoon;
-                    const className = `flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors group/sub ${isComingSoon ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-500/10 dark:hover:bg-primary-900/20"}`;
-                    const content = (<><div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 group-hover/sub:bg-primary-500/20 transition-colors"><sub.icon size={16} /></div><div><p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">{sub.title[language]}{isComingSoon && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-normal">Coming Soon</span>}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{sub.desc[language]}</p></div></>);
-                    if (isComingSoon) return (<div key={sub.title.en} className={className}>{content}</div>);
-                    if (sub.href) return (<Link key={sub.title.en} to={sub.href} className={className}>{content}</Link>);
-                    return (<Link key={sub.title.en} to={`/${item.key}/${toSlug(sub.title.en)}`} className={className}>{content}</Link>);
-                  })}
-                </div>
-              </AnimateDropdown>
             </div>
           ))}
           <Link to="/pricing" className="text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-primary-500/10">{language === "id" ? "Harga" : "Pricing"}</Link>
@@ -166,6 +165,51 @@ const Navbar = () => {
               </div>
               {user && <button onClick={logout} className="mt-2 w-full rounded-xl py-2 text-sm font-semibold text-rose-600 dark:text-rose-400">{language === "id" ? "Keluar" : "Logout"}</button>}
             </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Panel dropdown BERSAMA (desktop) ──
+          Satu panel fixed yang meluncur & morph lebar saat pindah antar menu.
+          Konten crossfade. Hover di panel mempertahankan menu terbuka. */}
+      <AnimatePresence>
+        {openDropdown && activeMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            style={{ position: "fixed", top: (triggerRect?.bottom ?? 64) + 8, left: 0, right: 0, zIndex: 998, pointerEvents: "none" }}
+            onMouseEnter={() => openMenu(openDropdown)}
+            onMouseLeave={scheduleCloseMenu}
+          >
+            <motion.div
+              animate={{ left: clampedLeft, width: panelWidth }}
+              transition={HOVER_PANEL_SPRING}
+              style={{ position: "absolute", pointerEvents: "auto" }}
+              className="bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 py-3 z-50 overflow-hidden"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={openDropdown}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                >
+                  <div className={activeMenu.items.length > 4 ? "grid grid-cols-2 gap-0.5 px-3" : "px-2"}>
+                    {activeMenu.items.map((sub) => {
+                      const isComingSoon = sub.comingSoon;
+                      const className = `flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors group/sub ${isComingSoon ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-500/10 dark:hover:bg-primary-900/20"}`;
+                      const content = (<><div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 group-hover/sub:bg-primary-500/20 transition-colors"><sub.icon size={16} /></div><div><p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">{sub.title[language]}{isComingSoon && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-normal">Coming Soon</span>}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{sub.desc[language]}</p></div></>);
+                      if (isComingSoon) return (<div key={sub.title.en} className={className}>{content}</div>);
+                      if (sub.href) return (<Link key={sub.title.en} to={sub.href} className={className}>{content}</Link>);
+                      return (<Link key={sub.title.en} to={`/${openDropdown}/${toSlug(sub.title.en)}`} className={className}>{content}</Link>);
+                    })}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
