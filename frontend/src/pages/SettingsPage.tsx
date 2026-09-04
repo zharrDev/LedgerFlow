@@ -190,8 +190,8 @@ export default function SettingsPage() {
             </div>
             <motion.h1
               key={`${language}-settings`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight min-w-0 break-words"
             >

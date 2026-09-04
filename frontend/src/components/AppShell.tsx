@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { AppNav } from "./AppNav";
@@ -73,9 +74,15 @@ className={`flex-1 overflow-x-hidden min-w-0 ${
             {!hideTitle && (title || description) && (
               <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>
                 {title && (
-                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  <motion.h1
+                    key={title}
+                    initial={{ opacity: 0, x: -40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight"
+                  >
                     {title}
-                  </h1>
+                  </motion.h1>
                 )}
                 {description && (
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
@@ -120,9 +127,15 @@ className={`flex-1 overflow-x-hidden min-w-0 ${
           {!hideTitle && (title || description) && (
             <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>
               {title && (
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                <motion.h1
+                  key={title}
+                  initial={{ opacity: 0, x: -40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight"
+                >
                   {title}
-                </h1>
+                </motion.h1>
               )}
               {description && (
                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">

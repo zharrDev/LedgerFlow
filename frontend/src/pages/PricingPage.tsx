@@ -243,8 +243,8 @@ export default function PricingPage() {
           </div>
           <motion.h1
             key={`pricing-hero-${language}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
             className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center min-w-0 break-words"
           >
