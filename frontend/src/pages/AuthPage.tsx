@@ -58,7 +58,7 @@ export default function AuthPage({
   }, [navigate]);
 
   return (
-    <div className="h-[100dvh] flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-hidden">
+    <div className="min-h-[100dvh] lg:h-[100dvh] flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-y-auto lg:overflow-hidden">
       {/* LEFT PANEL */}
       <div
         className="hidden lg:flex flex-col bg-gradient-to-br from-darkBg via-[#111827] to-primary-900/40 p-8 transition-all duration-500 ease-in-out relative z-10 overflow-hidden"
@@ -70,7 +70,7 @@ export default function AuthPage({
       </div>
 
       {/* RIGHT FORM AREA */}
-      <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-6 relative">
+      <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-6 py-10 sm:py-12 lg:py-6 relative">
         <div
           className={`w-full max-w-md mx-auto transition-all duration-700 ${
             showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
