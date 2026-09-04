@@ -19,12 +19,19 @@ export default function AuthFlipCard({
 
   useLayoutEffect(() => {
     // Ukur sisi AKTIF saja — tinggi card "pas" dengan kontennya, jadi
-    // login & register sama-sama rapi tanpa ruang kosong. Tanpa cap scroll
-    // internal; bila card melebihi viewport, halaman (AuthPage) yang discroll.
+    // login & register sama-sama rapi tanpa ruang kosong. Bila konten
+    // melebihi viewport, tinggi di-cap dan sisi card scroll INTERNAL
+    // (page tidak discroll — lihat AuthPage yang locked 100dvh).
+    // Cap mobile dikurangi lebih banyak (link "Back to Home" + py-10).
     const measure = () => {
       const frontH = frontRef.current?.scrollHeight ?? 0;
       const backH = backRef.current?.scrollHeight ?? 0;
-      setHeight(mode === "login" ? frontH : backH);
+      const activeH = mode === "login" ? frontH : backH;
+      const cap =
+        window.innerWidth >= 1024
+          ? Math.max(320, window.innerHeight - 112)
+          : Math.max(320, window.innerHeight - 180);
+      setHeight(Math.min(activeH, cap));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -55,7 +62,11 @@ export default function AuthFlipCard({
           {/* Sisi depan: Login */}
           <div
             ref={frontRef}
-            className={mode === "login" ? "" : "pointer-events-none"}
+            className={
+              mode === "login"
+                ? "overflow-y-auto scrollbar-thin pr-3.5"
+                : "pointer-events-none"
+            }
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -67,7 +78,11 @@ export default function AuthFlipCard({
           {/* Sisi belakang: Register (menumpuk, diputar 180°) */}
           <div
             ref={backRef}
-            className={mode === "register" ? "" : "pointer-events-none"}
+            className={
+              mode === "register"
+                ? "overflow-y-auto scrollbar-thin pr-3.5"
+                : "pointer-events-none"
+            }
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
