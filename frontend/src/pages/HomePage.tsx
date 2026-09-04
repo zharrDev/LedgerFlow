@@ -123,7 +123,7 @@ export default function HomePage() {
         {/* ═══ Hero ═══ */}
         <section className="relative min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
           {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 lg:pt-24 min-h-screen flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-24 min-h-[100svh] flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
             {/* ── Teks Kiri ── */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
@@ -139,7 +139,7 @@ export default function HomePage() {
                 icon={<Sparkles size={14} />}
               />
 
-              <h2 className="mt-5 text-[1.75rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <h2 className="mt-4 sm:mt-5 text-[1.6rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={language}
@@ -190,11 +190,11 @@ export default function HomePage() {
                 </motion.p>
               </AnimatePresence>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center sm:flex-wrap gap-3">
                 {user ? (
                   <Link
                     to="/dashboard"
-                    className="px-7 py-3.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
+                    className="justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
                   >
                     {language === "id" ? "Buka Dashboard" : "Go to Dashboard"}{" "}
                     <ChevronRight size={18} />
@@ -203,7 +203,7 @@ export default function HomePage() {
                   <>
                     <Link
                       to="/register"
-                      className="px-7 py-3.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
+                      className="justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
                     >
                       {language === "id"
                         ? "Coba Gratis 15 Hari"
@@ -212,7 +212,7 @@ export default function HomePage() {
                     </Link>
                     <Link
                       to="/login"
-                      className="px-7 py-3.5 border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
+                      className="justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
                     >
                       <PlayCircle size={18} className="opacity-60" />
                       {language === "id"
@@ -223,7 +223,7 @@ export default function HomePage() {
                 )}
               </div>
 
-              <p className="mt-5 text-xs sm:text-sm text-gray-400 flex items-center gap-2">
+              <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-gray-400 flex items-center gap-2">
                 <Lock size={14} className="flex-shrink-0" />
                 {language === "id"
                   ? "Keamanan kelas enterprise dengan enkripsi penuh"
