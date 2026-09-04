@@ -66,6 +66,9 @@ const Navbar = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState<string | null>(null);
+  // Item yang sedang di-hover (3 menu dropdown + Pricing) — pill highlight
+  // meluncur antar item via layoutId framer-motion.
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const { user, logout } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -130,20 +133,49 @@ const Navbar = () => {
               <span className="hidden sm:inline-block text-[8px] sm:text-[9px] lg:text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mt-0.5">{tx(language, "Financial Platform", "Platform Keuangan")}</span>
             </div>
           </Link>
-        <div id="navbar-desktop-menu" className="hidden lg:flex items-center gap-1">
+        <div
+          id="navbar-desktop-menu"
+          className="hidden lg:flex items-center gap-1"
+          onMouseLeave={() => setHoveredKey(null)}
+        >
           {menuItems.map((item) => (
-            <div key={item.key} className="relative" onMouseEnter={() => openMenu(item.key)} onMouseLeave={scheduleCloseMenu}>
+            <div
+              key={item.key}
+              className="relative"
+              onMouseEnter={() => { setHoveredKey(item.key); openMenu(item.key); }}
+              onMouseLeave={scheduleCloseMenu}
+            >
               <button
                 ref={(el) => { triggerRefs.current[item.key] = el; }}
                 onClick={() => navigate(`/${item.key}`)}
-                className="relative text-sm font-medium transition-all duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary-500/10"
+                className="relative isolate text-sm font-medium text-gray-600 dark:text-gray-200 transition-colors duration-200 inline-flex items-center gap-1 px-3 py-2 rounded-lg"
               >
-                <span className={openDropdown === item.key ? "text-primary-600 dark:text-primary-400" : "text-gray-600 dark:text-gray-200"}>{item.name}</span>
-                <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === item.key ? "rotate-180 text-primary-500" : ""}`} />
+                {hoveredKey === item.key && (
+                  <motion.span
+                    layoutId="navbar-menu-hover-pill"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    className="absolute inset-0 -z-10 rounded-lg bg-primary-500/10 pointer-events-none"
+                  />
+                )}
+                <span className={openDropdown === item.key ? "text-primary-600 dark:text-primary-400" : "text-inherit"}>{item.name}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${openDropdown === item.key ? "rotate-180 text-primary-500" : "opacity-70"}`} />
               </button>
             </div>
           ))}
-          <Link to="/pricing" className="text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 px-3 py-2 rounded-lg hover:bg-primary-500/10">{language === "id" ? "Harga" : "Pricing"}</Link>
+          <Link
+            to="/pricing"
+            onMouseEnter={() => setHoveredKey("pricing")}
+            className="relative isolate text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 px-3 py-2 rounded-lg"
+          >
+            {hoveredKey === "pricing" && (
+              <motion.span
+                layoutId="navbar-menu-hover-pill"
+                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                className="absolute inset-0 -z-10 rounded-lg bg-primary-500/10 pointer-events-none"
+              />
+            )}
+            {language === "id" ? "Harga" : "Pricing"}
+          </Link>
           <Link to="/login" className="text-sm font-medium text-primary-600 dark:text-primary-400 border-l border-gray-200 dark:border-white/20 pl-4 ml-2 hover:text-primary-500 dark:hover:text-primary-300 transition">{language === "id" ? "Lihat Demonya" : "See it in action"}</Link>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
