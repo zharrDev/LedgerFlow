@@ -999,7 +999,8 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
         </div>
         {plans.length === 0 ? <EmptyState error={error} text={tx(language, "No plans yet.", "Belum ada plan.")} /> : (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/30">
                   <tr>{[tx(language, "Name", "Nama"), tx(language, "Monthly Price", "Harga Bulanan"), tx(language, "Yearly Price", "Harga Tahunan"), tx(language, "Max Companies", "Max perusahaan"), tx(language, "Max Journals", "Max jurnal"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
@@ -1034,6 +1035,37 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+              {pagination.pageItems.map((p) => (
+                <div key={p.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{p.display_name || p.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">{p.name}</p>
+                    </div>
+                    {p.is_active ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0"><Power size={10} /> {tx(language, "Active", "Aktif")}</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400 shrink-0"><PowerOff size={10} /> {tx(language, "Inactive", "Nonaktif")}</span>
+                    )}
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="tabular-nums truncate">{tx(language, "Monthly:", "Bulanan:")} {formatRp(p.price_monthly)}</span>
+                    <span className="tabular-nums truncate">{tx(language, "Yearly:", "Tahunan:")} {formatRp(p.price_yearly)}</span>
+                    <span>{tx(language, "Companies:", "Company:")} {p.max_companies}</span>
+                    <span>{tx(language, "Journals:", "Jurnal:")} {p.max_journals}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-end gap-1">
+                    <button onClick={() => openEdit(p)} title={tx(language, "Edit", "Edit")} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"><Pencil size={14} /></button>
+                    {p.is_active && (
+                      <button onClick={() => handleDeactivate(p)} title={tx(language, "Deactivate", "Nonaktifkan")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><PowerOff size={14} /></button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
             <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="plan" />
           </>
