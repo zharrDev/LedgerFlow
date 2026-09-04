@@ -705,7 +705,8 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
           <EmptyState error={fetchError || error} text={query || statusFilter ? tx(language, "No matching records.", "Tidak ada catatan yang cocok.") : tx(language, "No recorded attempts yet.", "Belum ada percobaan tercatat.")} />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Time", "Waktu"), "IP", tx(language, "Status", "Status")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -718,6 +719,21 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+              {pagination.pageItems.map((log) => (
+                <div key={log.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs text-gray-600 dark:text-gray-300 break-all">{log.ip}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(log.created_at).toLocaleString(language === "id" ? "id-ID" : "en-US")}</p>
+                    </div>
+                    <span className="shrink-0">{statusBadge(log.status)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
             <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="percobaan" />
           </>
