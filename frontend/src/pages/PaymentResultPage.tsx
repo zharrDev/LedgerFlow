@@ -281,7 +281,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ delay: 0.5, duration: 0.4 }}
-                  className="mt-6 grid grid-cols-3 gap-2.5"
+                  className="mt-6 grid grid-cols-3 sm:gap-2.5 gap-2"
                 >
                   {[
                     {
