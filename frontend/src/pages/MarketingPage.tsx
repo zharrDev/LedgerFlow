@@ -83,7 +83,7 @@ export default function MarketingPage() {
           <div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl" />
           <div className="relative mx-auto max-w-4xl text-center">
             <p className="text-xs font-extrabold tracking-[.22em] text-primary-500">{page.eyebrow}</p>
-            <h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">
+            <h1 className="mt-5 text-3xl font-bold leading-tight sm:text-6xl">
               <TextReveal text={page.title} delay={0.1} language={language} />
             </h1>
             <motion.p
