@@ -354,12 +354,12 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 {tx(language, "Theme", "Tema")}
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {themeOptions.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => applyTheme(opt.value)}
-                    className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                    className={`relative flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
                       theme === opt.value
                         ? "border-primary-500 bg-primary-50 dark:bg-primary-500/10 shadow-sm"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
@@ -371,7 +371,7 @@ export default function SettingsPage() {
                       {opt.icon}
                     </div>
                     <span
-                      className={`text-sm font-medium ${theme === opt.value ? "text-primary-600 dark:text-primary-400" : "text-gray-600 dark:text-gray-400"}`}
+                      className={`text-xs sm:text-sm font-medium ${theme === opt.value ? "text-primary-600 dark:text-primary-400" : "text-gray-600 dark:text-gray-400"}`}
                     >
                       {opt.label}
                     </span>
