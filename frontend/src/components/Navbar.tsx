@@ -97,16 +97,28 @@ const Navbar = () => {
 
   const activeMenu = menuItems.find((m) => m.key === openDropdown) ?? null;
 
-  // Posisi panel: center terhadap tombol menu aktif, clamp 8px dari tepi viewport
+  // Posisi panel: center terhadap tombol menu aktif, clamp 8px dari tepi
+  // viewport & tepi kanan container menu. Dihitung di effect (bukan saat
+  // render) karena membaca DOM rect ref.
   const panelWidth = activeMenu ? (activeMenu.items.length > 4 ? 480 : 280) : 280;
-  const triggerEl = openDropdown ? triggerRefs.current[openDropdown] : null;
-  const triggerRect = triggerEl?.getBoundingClientRect();
-  const navLeft = document.getElementById("navbar-desktop-menu")?.getBoundingClientRect().left ?? 0;
-  const navRight = document.getElementById("navbar-desktop-menu")?.getBoundingClientRect().right ?? window.innerWidth;
-  const idealLeft = triggerRect ? triggerRect.left + triggerRect.width / 2 - panelWidth / 2 : 0;
-  const panelLeft = Math.min(Math.max(8, idealLeft), Math.max(8, window.innerWidth - panelWidth - 8));
-  // Panel tidak boleh melewat tepi container menu (kanan area link)
-  const clampedLeft = Math.min(panelLeft, Math.max(8, navRight - panelWidth));
+  const [panelPos, setPanelPos] = useState<{ left: number; top: number }>({ left: 0, top: 72 });
+
+  useEffect(() => {
+    if (!openDropdown) return;
+    const el = triggerRefs.current[openDropdown];
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const navRight = document.getElementById("navbar-desktop-menu")?.getBoundingClientRect().right ?? window.innerWidth;
+      const idealLeft = rect.left + rect.width / 2 - panelWidth / 2;
+      const byViewport = Math.min(Math.max(8, idealLeft), Math.max(8, window.innerWidth - panelWidth - 8));
+      const left = Math.min(byViewport, Math.max(8, navRight - panelWidth));
+      setPanelPos({ left, top: rect.bottom + 8 });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [openDropdown, panelWidth]);
 
   return (
     <header className={`fixed top-2 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[999] bg-white/80 dark:bg-darkCard/80 backdrop-blur-md rounded-xl border border-primary-500/20 transition-all duration-300 ${scrolled ? "shadow-lg" : "shadow-none"}`}>
@@ -179,12 +191,12 @@ const Navbar = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.97 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            style={{ position: "fixed", top: (triggerRect?.bottom ?? 64) + 8, left: 0, right: 0, zIndex: 998, pointerEvents: "none" }}
+            style={{ position: "fixed", top: panelPos.top, left: 0, right: 0, zIndex: 998, pointerEvents: "none" }}
             onMouseEnter={() => openMenu(openDropdown)}
             onMouseLeave={scheduleCloseMenu}
           >
             <motion.div
-              animate={{ left: clampedLeft, width: panelWidth }}
+              animate={{ left: panelPos.left, width: panelWidth }}
               transition={HOVER_PANEL_SPRING}
               style={{ position: "absolute", pointerEvents: "auto" }}
               className="bg-white/95 dark:bg-darkCard/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 py-3 z-50 overflow-hidden"
