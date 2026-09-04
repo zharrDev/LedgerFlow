@@ -108,7 +108,7 @@ const SidebarContent = ({
   }, [user?.company_id, user?.company_name, updateUser]);
 
   const navLinkClass = (isActive: boolean, compact?: boolean, fill?: boolean) =>
-    `group relative flex items-center gap-2.5 ${fill ? "flex-1" : ""} ${
+    `group relative isolate flex items-center gap-2.5 ${fill ? "flex-1" : ""} ${
       compact ? "px-3" : "pl-4 pr-3"
     } py-2 text-xs rounded-xl transition-all duration-200 ${
       isActive
@@ -118,12 +118,14 @@ const SidebarContent = ({
 
   // Pill highlight hover — meluncur antar item via layoutId framer-motion.
   // Di-skip untuk item aktif (sudah punya gradient bg sendiri).
+  // Pill dirender DI BELAKANG konten (-z-10 + isolate di link) supaya ikon
+  // & teks tetap tajam — tidak tertutup latar semi-transparan di dark mode.
   const hoverPill = (path: string, isActive: boolean) =>
     hoveredPath === path && !isActive ? (
       <motion.span
         layoutId={`sidebar-hover-pill-${mode}`}
         transition={{ type: "spring", stiffness: 400, damping: 32 }}
-        className="absolute inset-0 rounded-xl bg-gray-50 dark:bg-darkCard/50 pointer-events-none"
+        className="absolute inset-0 -z-10 rounded-xl bg-gray-50 dark:bg-darkCard pointer-events-none"
       />
     ) : null;
 
