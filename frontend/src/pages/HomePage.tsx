@@ -124,11 +124,13 @@ export default function HomePage() {
         <section className="relative min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
           {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-24 min-h-[100svh] flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
-            {/* ── Teks Kiri ── */}
+            {/* ── Teks Kiri ──
+                Mobile: center; Desktop (lg): rata kiri dalam grid 2 kolom */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="text-center lg:text-left flex flex-col items-center lg:items-start"
             >
               <BorderBeamBadge
                 text={
@@ -182,7 +184,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-                  className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed"
+                  className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed"
                 >
                   {language === "id"
                     ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
@@ -238,18 +240,6 @@ export default function HomePage() {
               <FloatingIconField />
             </div>
           </div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 1 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-          >
-            <div className="w-6 h-10 rounded-full border-2 border-gray-400 dark:border-white/40 flex justify-center">
-              <div className="w-1 h-2 bg-gray-400 dark:bg-white/60 rounded-full mt-2 animate-bounce" />
-            </div>
-          </motion.div>
         </section>
 
         {/* ═══ Security ═══ */}
