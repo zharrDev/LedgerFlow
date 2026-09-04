@@ -18,20 +18,20 @@ export default function AuthFlipCard({
   const [height, setHeight] = useState<number>(0);
 
   useLayoutEffect(() => {
-    // Ukur sisi AKTIF saja — tinggi card "pas" dengan kontennya, jadi
-    // login & register sama-sama rapi tanpa ruang kosong. Bila konten
-    // melebihi viewport, tinggi di-cap dan sisi card scroll INTERNAL
-    // (page tidak discroll — lihat AuthPage yang locked 100dvh).
-    // Cap mobile dikurangi lebih banyak (link "Back to Home" + py-10).
+    // Ukur KEDUA sisi dan ambil yang tertinggi — tinggi card IDENTIK di
+    // login & register, jadi pas flip tidak ada perubahan ukuran sama
+    // sekali (sisi login yang lebih pendek hanya menyisakan ruang kosong
+    // bawah). Bila konten melebihi viewport, tinggi di-cap dan sisi aktif
+    // scroll INTERNAL (page tidak discroll — AuthPage locked 100dvh).
     const measure = () => {
       const frontH = frontRef.current?.scrollHeight ?? 0;
       const backH = backRef.current?.scrollHeight ?? 0;
-      const activeH = mode === "login" ? frontH : backH;
+      const maxH = Math.max(frontH, backH);
       const cap =
         window.innerWidth >= 1024
           ? Math.max(320, window.innerHeight - 112)
           : Math.max(320, window.innerHeight - 180);
-      setHeight(Math.min(activeH, cap));
+      setHeight(Math.min(maxH, cap));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -42,7 +42,7 @@ export default function AuthFlipCard({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [mode]);
+  }, []);
 
   return (
     <div
