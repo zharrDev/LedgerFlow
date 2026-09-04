@@ -828,7 +828,8 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
       </div>
       {companies.length === 0 ? <EmptyState error={error} text={tx(language, "No companies yet.", "Belum ada company.")} /> : (
         <>
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), tx(language, "Currency", "Mata Uang"), tx(language, "Created", "Dibuat"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -853,6 +854,32 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            {pagination.pageItems.map((c) => (
+              <div key={c.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{c.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      {c.currency} · {new Date(c.created_at).toLocaleDateString(language === "id" ? "id-ID" : "en-US")}
+                    </p>
+                  </div>
+                  {entityStatusBadge(c.status, language)}
+                </div>
+                <div className="mt-2 flex items-center justify-end gap-1">
+                  <button onClick={() => onView(c)} title={tx(language, "View detail", "Lihat detail")} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition"><Eye size={14} /></button>
+                  {c.status === "suspended" ? (
+                    <button onClick={() => onUnsuspend(c)} title={tx(language, "Activate", "Aktifkan")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
+                  ) : (
+                    <button onClick={() => onSuspend(c)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
+                  )}
+                  <button onClick={() => onDelete(c)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            ))}
           </div>
           <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="company" />
         </>
