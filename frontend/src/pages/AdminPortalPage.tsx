@@ -755,7 +755,8 @@ function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }
       </div>
       {users.length === 0 ? <EmptyState error={error} text={tx(language, "No users yet.", "Belum ada user.")} /> : (
         <>
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), "Email / No. HP", tx(language, "Company", "Company"), tx(language, "Role", "Role"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -780,6 +781,33 @@ function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            {pagination.pageItems.map((u) => (
+              <div key={u.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{u.email || u.phone || "—"}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{u.companies?.name || "—"}</p>
+                  </div>
+                  {entityStatusBadge(u.status, language)}
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadge[u.role] || ""}`}>{u.role}</span>
+                  <div className="flex items-center gap-1">
+                    {u.status === "suspended" ? (
+                      <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
+                    ) : (
+                      <button onClick={() => onSuspend(u)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
+                    )}
+                    <button onClick={() => onDelete(u)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
           <TablePagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} canPrev={pagination.canPrev} canNext={pagination.canNext} onPrev={pagination.prev} onNext={pagination.next} onGoTo={pagination.goTo} itemLabel="user" />
         </>
