@@ -58,7 +58,7 @@ export default function AuthPage({
   }, [navigate]);
 
   return (
-    <div className="min-h-[100dvh] lg:h-[100dvh] flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-y-auto lg:overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-white dark:bg-darkBg overflow-y-auto">
       {/* LEFT PANEL */}
       <div
         className="hidden lg:flex flex-col bg-gradient-to-br from-darkBg via-[#111827] to-primary-900/40 p-8 transition-all duration-500 ease-in-out relative z-10 overflow-hidden"

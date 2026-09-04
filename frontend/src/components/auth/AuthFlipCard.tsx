@@ -18,20 +18,13 @@ export default function AuthFlipCard({
   const [height, setHeight] = useState<number>(0);
 
   useLayoutEffect(() => {
-    // Ukur sisi AKTIF saja — tinggi card "pas" dengan kontennya (mode login
-    // tidak mewarisi tinggi register yang lebih tinggi, jadi tak ada ruang
-    // kosong di bawah link "Sign up"). Cap tinggi hanya di desktop (viewport
-    // pendek → sisi card scroll internal); di mobile card tumbuh penuh dan
-    // halaman yang discroll (lihat AuthPage).
+    // Ukur sisi AKTIF saja — tinggi card "pas" dengan kontennya, jadi
+    // login & register sama-sama rapi tanpa ruang kosong. Tanpa cap scroll
+    // internal; bila card melebihi viewport, halaman (AuthPage) yang discroll.
     const measure = () => {
       const frontH = frontRef.current?.scrollHeight ?? 0;
       const backH = backRef.current?.scrollHeight ?? 0;
-      const activeH = mode === "login" ? frontH : backH;
-      const cap =
-        window.innerWidth >= 1024
-          ? Math.max(320, window.innerHeight - 112)
-          : Number.POSITIVE_INFINITY;
-      setHeight(Math.min(activeH, cap));
+      setHeight(mode === "login" ? frontH : backH);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -62,11 +55,7 @@ export default function AuthFlipCard({
           {/* Sisi depan: Login */}
           <div
             ref={frontRef}
-            className={`pr-3.5 scrollbar-thin ${
-              mode === "login"
-                ? "overflow-y-auto"
-                : "overflow-visible pointer-events-none"
-            }`}
+            className={mode === "login" ? "" : "pointer-events-none"}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -78,11 +67,7 @@ export default function AuthFlipCard({
           {/* Sisi belakang: Register (menumpuk, diputar 180°) */}
           <div
             ref={backRef}
-            className={`pr-3.5 scrollbar-thin ${
-              mode === "register"
-                ? "overflow-y-auto"
-                : "overflow-visible pointer-events-none"
-            }`}
+            className={mode === "register" ? "" : "pointer-events-none"}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
