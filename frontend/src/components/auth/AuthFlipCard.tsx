@@ -18,17 +18,20 @@ export default function AuthFlipCard({
   const [height, setHeight] = useState<number>(0);
 
   useLayoutEffect(() => {
-    // Ukur KEDUA sisi — sisi register lebih tinggi dari login; kalau hanya
-    // front yang diukur, Google button di form register terpotong overflow-hidden.
+    // Ukur sisi AKTIF saja — tinggi card "pas" dengan kontennya (mode login
+    // tidak mewarisi tinggi register yang lebih tinggi, jadi tak ada ruang
+    // kosong di bawah link "Sign up"). Cap tinggi hanya di desktop (viewport
+    // pendek → sisi card scroll internal); di mobile card tumbuh penuh dan
+    // halaman yang discroll (lihat AuthPage).
     const measure = () => {
       const frontH = frontRef.current?.scrollHeight ?? 0;
       const backH = backRef.current?.scrollHeight ?? 0;
-      setHeight(
-        Math.min(
-          Math.max(frontH, backH),
-          Math.max(320, window.innerHeight - 112),
-        ),
-      );
+      const activeH = mode === "login" ? frontH : backH;
+      const cap =
+        window.innerWidth >= 1024
+          ? Math.max(320, window.innerHeight - 112)
+          : Number.POSITIVE_INFINITY;
+      setHeight(Math.min(activeH, cap));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -39,7 +42,7 @@ export default function AuthFlipCard({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, []);
+  }, [mode]);
 
   return (
     <div
@@ -59,7 +62,11 @@ export default function AuthFlipCard({
           {/* Sisi depan: Login */}
           <div
             ref={frontRef}
-            className="overflow-y-auto scrollbar-thin pr-3.5"
+            className={`pr-3.5 scrollbar-thin ${
+              mode === "login"
+                ? "overflow-y-auto"
+                : "overflow-visible pointer-events-none"
+            }`}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
@@ -71,7 +78,11 @@ export default function AuthFlipCard({
           {/* Sisi belakang: Register (menumpuk, diputar 180°) */}
           <div
             ref={backRef}
-            className="overflow-y-auto scrollbar-thin pr-3.5"
+            className={`pr-3.5 scrollbar-thin ${
+              mode === "register"
+                ? "overflow-y-auto"
+                : "overflow-visible pointer-events-none"
+            }`}
             style={{
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
