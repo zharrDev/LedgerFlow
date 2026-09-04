@@ -125,12 +125,13 @@ export default function HomePage() {
           {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-24 min-h-[100svh] flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
             {/* ── Teks Kiri ──
-                Mobile: center; Desktop (lg): rata kiri dalam grid 2 kolom */}
+                Default rata kiri; hanya <400px (HP sempit) center agar rapi.
+                Desktop (lg): rata kiri dalam grid 2 kolom. */}
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="text-center lg:text-left flex flex-col items-center lg:items-start"
+              className="text-left flex flex-col items-start max-[399px]:text-center max-[399px]:items-center"
             >
               <BorderBeamBadge
                 text={
@@ -141,7 +142,7 @@ export default function HomePage() {
                 icon={<Sparkles size={14} />}
               />
 
-              <h2 className="mt-4 sm:mt-5 text-[1.6rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <h2 className="mt-4 sm:mt-5 text-[1.8rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={language}
@@ -184,7 +185,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-                  className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed"
+                  className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg max-[399px]:mx-auto leading-relaxed"
                 >
                   {language === "id"
                     ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
@@ -225,7 +226,7 @@ export default function HomePage() {
                 )}
               </div>
 
-              <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-gray-400 flex items-center gap-2">
+              <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-gray-400 flex items-center gap-2 max-[399px]:justify-center">
                 <Lock size={14} className="flex-shrink-0" />
                 {language === "id"
                   ? "Keamanan kelas enterprise dengan enkripsi penuh"
