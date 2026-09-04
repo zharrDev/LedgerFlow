@@ -573,7 +573,8 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
         {subTab === "subs" ? (
           subscriptions.length === 0 ? <EmptyState error={error} text={tx(language, "No subscriptions yet.", "Belum ada subscription.")} /> : (
             <>
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800/30">
                     <tr>{[tx(language, "User", "User"), tx(language, "Plan", "Paket"), tx(language, "Cycle", "Siklus"), tx(language, "Status", "Status"), tx(language, "Period Ends", "Periode Berakhir")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
@@ -591,12 +592,36 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile cards */}
+              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+                {subPagination.pageItems.map((s) => (
+                  <div key={s.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{s.users?.name || "—"}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{s.users?.email || s.users?.phone || ""}</p>
+                      </div>
+                      <SubBadge status={s.status} />
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {s.plans?.display_name || s.plans?.name || "—"} · {s.billing_cycle === "yearly" ? tx(language, "Yearly", "Tahunan") : tx(language, "Monthly", "Bulanan")}
+                      </span>
+                      <span className="text-gray-400 dark:text-gray-500 shrink-0">
+                        {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString(language === "id" ? "id-ID" : "en-US") : "—"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
               <TablePagination page={subPagination.page} totalPages={subPagination.totalPages} totalItems={subPagination.totalItems} startIndex={subPagination.startIndex} endIndex={subPagination.endIndex} canPrev={subPagination.canPrev} canNext={subPagination.canNext} onPrev={subPagination.prev} onNext={subPagination.next} onGoTo={subPagination.goTo} itemLabel="subscription" />
             </>
           )
         ) : payments.length === 0 ? <EmptyState error={error} text={tx(language, "No payments yet.", "Belum ada pembayaran.")} /> : (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/30">
                   <tr>{[tx(language, "Order ID", "Order ID"), tx(language, "User", "User"), tx(language, "Amount", "Jumlah"), tx(language, "Status", "Status"), tx(language, "Time", "Waktu")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
@@ -608,11 +633,31 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
                       <td className="px-4 py-2.5"><p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{p.users?.name || "—"}</p><p className="text-xs text-gray-400 dark:text-gray-500">{p.users?.email || p.users?.phone || ""}</p></td>
                       <td className="px-4 py-2.5 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap tabular-nums">{formatRp(p.amount, p.currency)}</td>
                         <td className="px-4 py-2.5">{<PayBadge status={p.status} />}</td>
-                        <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{new Date(p.paid_at || p.created_at).toLocaleString(language === "id" ? "id-ID" : "en-US")}</td>
+                      <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{new Date(p.paid_at || p.created_at).toLocaleString(language === "id" ? "id-ID" : "en-US")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+              {payPagination.pageItems.map((p) => (
+                <div key={p.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{p.users?.name || "—"}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{p.users?.email || p.users?.phone || ""}</p>
+                      <p className="font-mono text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">{p.order_id}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 tabular-nums">{formatRp(p.amount, p.currency)}</p>
+                      <div className="mt-1"><PayBadge status={p.status} /></div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">{new Date(p.paid_at || p.created_at).toLocaleString(language === "id" ? "id-ID" : "en-US")}</p>
+                </div>
+              ))}
             </div>
             <TablePagination page={payPagination.page} totalPages={payPagination.totalPages} totalItems={payPagination.totalItems} startIndex={payPagination.startIndex} endIndex={payPagination.endIndex} canPrev={payPagination.canPrev} canNext={payPagination.canNext} onPrev={payPagination.prev} onNext={payPagination.next} onGoTo={payPagination.goTo} itemLabel="pembayaran" />
           </>
