@@ -64,8 +64,8 @@ const Footer = () => {
   return (
     <footer className="border-t border-gray-800 bg-gray-950 text-gray-300">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-[1.45fr_repeat(5,1fr)]">
-          <div>
+        <div className="grid gap-10 grid-cols-2 md:grid-cols-[1.45fr_repeat(5,1fr)]">
+          <div className="col-span-2 md:col-span-1">
             <Link to="/" className="inline-flex items-center gap-2">
               <img src={logo} alt="LedgerFlow" loading="lazy" decoding="async" className="h-10 w-10" />
               <span className="text-xl font-bold text-white">LedgerFlow</span>
