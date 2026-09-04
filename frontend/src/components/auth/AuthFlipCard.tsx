@@ -57,13 +57,15 @@ export default function AuthFlipCard({
           animate={{ rotateY: mode === "login" ? 0 : 180 }}
           transition={{ type: "spring", stiffness: 80, damping: 14 }}
           style={{ transformStyle: "preserve-3d" }}
+          className="h-full"
         >
-          {/* Sisi depan: Login */}
+          {/* Sisi depan: Login — max-h-full agar terkonstrain tinggi card
+              (bisa scroll internal saat konten melebihi cap viewport) */}
           <div
             ref={frontRef}
             className={
               mode === "login"
-                ? "overflow-y-auto scrollbar-thin pr-3.5"
+                ? "max-h-full overflow-y-auto scrollbar-thin pr-3.5"
                 : "pointer-events-none"
             }
             style={{
