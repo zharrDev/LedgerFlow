@@ -7,3 +7,6 @@ dist/
 .DS_Store
 GOOGLE_OAUTH_SETUP.md
 *.log.commandcode/
+
+# screenshot uji breakpoint
+hero-*.png
