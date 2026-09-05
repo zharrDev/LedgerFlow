@@ -528,4 +528,98 @@ auth.post("/logout", authMiddleware, async (c) => {
   return c.json({ message: "Logout berhasil." });
 });
 
+// GET /api/auth/my-companies
+// Daftar SEMUA company yang tergabung dengan user ini (dari company_members,
+// join companies untuk nama — satu query). Dipakai dropdown pindah company
+// di sidebar; user multi-company mendapat lebih dari satu baris.
+auth.get("/my-companies", authMiddleware, async (c) => {
+  const { sub } = c.get("user");
+
+  const { data: memberships, error } = await supabase
+    .from("company_members")
+    .select("company_id, role, status, created_at, companies(name)")
+    .eq("user_id", sub)
+    .order("created_at", { ascending: true });
+
+  if (error) return dbErrorResponse(c, error);
+
+  return c.json({
+    data: (memberships ?? []).map((m) => ({
+      company_id: m.company_id,
+      name:
+        (m.companies as unknown as { name?: string } | null)?.name ?? "",
+      role: m.role,
+      status: m.status,
+      joined_at: m.created_at,
+    })),
+  });
+});
+
+// POST /api/auth/switch-company — body { company_id }
+// Pindah company aktif: validasi user member AKTIF di company tujuan, lalu
+// keluarkan JWT BARU dengan company_id + role sesuai company tersebut (role
+// bisa berbeda per company — dibaca dari company_members, bukan token lama).
+auth.post("/switch-company", authMiddleware, async (c) => {
+  const current = c.get("user");
+  let body: { company_id?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Body JSON tidak valid" }, 400);
+  }
+  const companyId = typeof body.company_id === "string" ? body.company_id : "";
+  if (!companyId) {
+    return c.json({ error: "company_id wajib diisi." }, 400);
+  }
+
+  const { data: membership, error: memberError } = await supabase
+    .from("company_members")
+    .select("company_id, role, companies(name)")
+    .eq("user_id", current.sub)
+    .eq("company_id", companyId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (memberError) return dbErrorResponse(c, memberError);
+  if (!membership) {
+    return c.json(
+      { error: "Anda bukan anggota aktif perusahaan tersebut." },
+      403,
+    );
+  }
+
+  const companyName =
+    (membership.companies as unknown as { name?: string } | null)?.name ?? "";
+
+  const token = await signToken({
+    sub: current.sub,
+    email: current.email,
+    role: membership.role as "owner" | "akuntan",
+    company_id: membership.company_id,
+  });
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("id, name, email, avatar_url")
+    .eq("id", current.sub)
+    .single();
+
+  console.log(
+    `[auth] switch-company: ${current.sub} ${current.company_id} -> ${membership.company_id} (role=${membership.role})`,
+  );
+
+  return c.json({
+    token,
+    user: {
+      id: profile?.id ?? current.sub,
+      name: profile?.name ?? "",
+      email: profile?.email ?? current.email,
+      role: membership.role,
+      company_id: membership.company_id,
+      company_name: companyName,
+      avatar_url: profile?.avatar_url ?? null,
+    },
+  });
+});
+
 export default auth;

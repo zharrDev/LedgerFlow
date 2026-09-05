@@ -9,15 +9,26 @@ import { useSubscription } from "../hooks/useSubscription";
 import { tx } from "../i18n/tx";
 import {
   Building2,
+  ChevronDown,
   ChevronRight,
   Sparkles,
   CheckCircle2,
+  Check,
+  Loader2,
 } from "lucide-react";
 import {
   getDesktopSidebarMenuItems,
   getDesktopSidebarAccountItems,
   getMobileDrawerItems,
 } from "../data/navigation";
+
+// Company lain milik user (dari /api/auth/my-companies)
+type MyCompany = {
+  company_id: string;
+  name: string;
+  role: string;
+  status: "active" | "suspended";
+};
 
 interface SidebarProps {
   mobileMenuOpen?: boolean;
@@ -71,7 +82,7 @@ const SidebarContent = ({
   mode: SidebarMode;
   onLinkClick?: () => void;
 }) => {
-  const { user, updateUser } = useAuth();
+  const { user, login, updateUser } = useAuth();
   const { language } = useLanguage();
   const { isPro, isEnterprise, isLoading: subLoading } = useSubscription();
   // Item yang sedang di-hover — pill highlight meluncur antar item (layoutId)
@@ -107,6 +118,49 @@ const SidebarContent = ({
       .catch(() => {});
   }, [user?.company_id, user?.company_name, updateUser]);
 
+  // ── Multi-company: daftar company milik user + mekanisme pindah ──
+  const [myCompanies, setMyCompanies] = React.useState<MyCompany[]>([]);
+  const [companyMenuOpen, setCompanyMenuOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState("");
+
+  React.useEffect(() => {
+    if (!user) return;
+    api
+      .get("/api/auth/my-companies")
+      .then(({ data }) => setMyCompanies(data?.data ?? []))
+      .catch(() => {});
+  }, [user?.company_id, user?.id]);
+
+  const switchCompany = async (companyId: string) => {
+    if (switching || companyId === user?.company_id) {
+      setCompanyMenuOpen(false);
+      return;
+    }
+    setSwitching(true);
+    setSwitchError("");
+    try {
+      const { data } = await api.post("/api/auth/switch-company", {
+        company_id: companyId,
+      });
+      // Simpan JWT baru + profil user sesuai company yang dipilih, lalu
+      // reload agar seluruh data aplikasi dimuat ulang dengan company baru.
+      login(data.token, data.user);
+      window.location.reload();
+    } catch (err: any) {
+      setSwitchError(
+        err?.response?.data?.error ||
+          (language === "id"
+            ? "Gagal pindah perusahaan."
+            : "Failed to switch company."),
+      );
+      setSwitching(false);
+    }
+  };
+
+  // Dropdown hanya muncul kalau user member LEBIH dari 1 company.
+  const hasMultipleCompanies = myCompanies.length > 1;
+
   const navLinkClass = (isActive: boolean, compact?: boolean, fill?: boolean) =>
     `group relative isolate flex items-center gap-2.5 ${fill ? "flex-1" : ""} ${
       compact ? "px-3" : "pl-4 pr-3"
@@ -131,10 +185,31 @@ const SidebarContent = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Company badge */}
+      {/* Company badge — jadi DROPDOWN kalau user member lebih dari 1
+          company; kalau cuma 1, tampilan tetap statis seperti sebelumnya. */}
       {user && (
-        <div className="px-3 pt-3 pb-2">
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-primary-50 to-primary-50/50 dark:from-primary-900/20 dark:to-primary-900/10 border border-primary-200/50 dark:border-primary-800/30">
+        <div className="px-3 pt-3 pb-2 relative">
+          {companyMenuOpen && (
+            <div
+              className="fixed inset-0 z-20 cursor-default"
+              onClick={() => setCompanyMenuOpen(false)}
+            />
+          )}
+          <div
+            role={hasMultipleCompanies ? "button" : undefined}
+            aria-haspopup={hasMultipleCompanies ? "listbox" : undefined}
+            aria-expanded={hasMultipleCompanies ? companyMenuOpen : undefined}
+            onClick={() =>
+              hasMultipleCompanies && !switching
+                ? setCompanyMenuOpen((o) => !o)
+                : undefined
+            }
+            className={`relative z-30 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-primary-50 to-primary-50/50 dark:from-primary-900/20 dark:to-primary-900/10 border border-primary-200/50 dark:border-primary-800/30 ${
+              hasMultipleCompanies
+                ? "cursor-pointer hover:border-primary-400/70 hover:shadow-sm transition-all select-none"
+                : ""
+            }`}
+          >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
               {initials}
             </div>
@@ -146,8 +221,74 @@ const SidebarContent = ({
                 {user.role || "owner"} · {user.name?.split(" ")[0] || "User"}
               </p>
             </div>
-            <Building2 size={14} className="text-primary-400 shrink-0" />
+            {switching ? (
+              <Loader2 size={14} className="text-primary-400 shrink-0 animate-spin" />
+            ) : hasMultipleCompanies ? (
+              <ChevronDown
+                size={14}
+                className={`text-primary-400 shrink-0 transition-transform duration-200 ${
+                  companyMenuOpen ? "rotate-180" : ""
+                }`}
+              />
+            ) : (
+              <Building2 size={14} className="text-primary-400 shrink-0" />
+            )}
           </div>
+
+          {/* Dropdown daftar company */}
+          {companyMenuOpen && hasMultipleCompanies && (
+            <div
+              role="listbox"
+              className="absolute left-3 right-3 top-full mt-1 z-40 rounded-xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-darkCard shadow-xl overflow-hidden"
+            >
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
+                {language === "id" ? "Pilih Perusahaan" : "Switch Company"}
+              </p>
+              <div className="max-h-56 overflow-y-auto pb-1.5">
+                {myCompanies.map((co) => {
+                  const isCurrent = co.company_id === user.company_id;
+                  return (
+                    <button
+                      key={co.company_id}
+                      type="button"
+                      role="option"
+                      aria-selected={isCurrent}
+                      disabled={switching}
+                      onClick={() => switchCompany(co.company_id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors disabled:opacity-60 ${
+                        isCurrent
+                          ? "bg-primary-50/80 dark:bg-primary-900/20"
+                          : "hover:bg-gray-50 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
+                        <Building2 size={13} />
+                      </div>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-medium text-gray-800 dark:text-gray-100 truncate leading-tight">
+                          {co.name || tx(language, "My Company", "Perusahaan Saya")}
+                        </span>
+                        <span className="block text-[10px] text-gray-400 dark:text-gray-500 capitalize leading-tight mt-0.5">
+                          {co.role}
+                          {co.status === "suspended"
+                            ? ` · ${tx(language, "suspended", "suspend")}`
+                            : ""}
+                        </span>
+                      </span>
+                      {isCurrent && (
+                        <Check size={14} className="text-primary-500 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {switchError && (
+                <p className="px-3 py-2 text-[11px] text-rose-500 border-t border-gray-100 dark:border-gray-800/60">
+                  {switchError}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
