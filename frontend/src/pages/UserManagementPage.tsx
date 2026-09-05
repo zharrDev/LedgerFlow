@@ -9,6 +9,9 @@ import {
   Plus,
   Lock,
   X,
+  Ban,
+  RotateCcw,
+  Phone,
 } from "lucide-react";
 import { useSetAppShellConfig } from "../context/AppShellConfigContext";
 import { ScrollReveal } from "../components/ScrollReveal";
@@ -20,11 +23,15 @@ import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 
+type MemberStatus = "active" | "suspended";
+
 type UserData = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   role: string;
+  status: MemberStatus;
   avatar_url: string | null;
   created_at: string;
 };
@@ -37,6 +44,13 @@ const roleIcons: Record<string, typeof Shield> = {
 const roleColors: Record<string, string> = {
   owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+};
+
+const statusColors: Record<MemberStatus, string> = {
+  active:
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  suspended:
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
 };
 
 export default function UserManagementPage() {
@@ -65,7 +79,7 @@ export default function UserManagementPage() {
   const [error, setError] = useState("");
 
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "akuntan" });
+  const [form, setForm] = useState({ name: "", phone: "", role: "akuntan" });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -109,7 +123,7 @@ export default function UserManagementPage() {
 
   const handleDelete = async (userId: string, userName: string) => {
     if (
-      !window.confirm(tx(language, `Delete user "${userName}"? This action cannot be undone.`, `Hapus user "${userName}"? Tindakan ini tidak bisa dibatalkan.`))
+      !window.confirm(tx(language, `Remove user "${userName}" from this company? Their account stays intact — including access to other companies.`, `Hapus user "${userName}" dari perusahaan ini? Akunnya tetap utuh — termasuk akses ke perusahaan lain.`))
     )
       return;
     try {
@@ -117,13 +131,49 @@ export default function UserManagementPage() {
       await fetchUsers();
       toast({
         variant: "success",
-        title: tx(language, "User deleted", "User dihapus"),
+        title: tx(language, "User removed", "User dihapus"),
         message: tx(language, `${userName} has been removed from the company.`, `${userName} berhasil dihapus dari perusahaan.`),
       });
     } catch (err: any) {
       toast({
         variant: "error",
-        title: tx(language, "Failed to delete user", "Gagal menghapus user"),
+        title: tx(language, "Failed to remove user", "Gagal menghapus user"),
+        message: getErrorMessage(err),
+      });
+    }
+  };
+
+  const handleSuspend = async (userId: string, userName: string) => {
+    try {
+      await api.patch(`/api/users-management/${userId}/suspend`);
+      await fetchUsers();
+      toast({
+        variant: "success",
+        title: tx(language, "User suspended", "User dinonaktifkan"),
+        message: tx(language, `${userName} has been deactivated in this company. Their session is revoked immediately.`, `${userName} dinonaktifkan di perusahaan ini. Sesi-nya langsung dicabut.`),
+      });
+    } catch (err: any) {
+      toast({
+        variant: "error",
+        title: tx(language, "Failed to suspend user", "Gagal menonaktifkan user"),
+        message: getErrorMessage(err),
+      });
+    }
+  };
+
+  const handleReactivate = async (userId: string, userName: string) => {
+    try {
+      await api.patch(`/api/users-management/${userId}/reactivate`);
+      await fetchUsers();
+      toast({
+        variant: "success",
+        title: tx(language, "User reactivated", "User diaktifkan kembali"),
+        message: tx(language, `${userName} is active again in this company.`, `${userName} kembali aktif di perusahaan ini.`),
+      });
+    } catch (err: any) {
+      toast({
+        variant: "error",
+        title: tx(language, "Failed to reactivate user", "Gagal mengaktifkan user"),
         message: getErrorMessage(err),
       });
     }
@@ -131,23 +181,24 @@ export default function UserManagementPage() {
 
   const handleAddMember = async () => {
     setFormError("");
-    if (!form.name.trim() || !form.email.trim()) {
-      setFormError(tx(language, "Name and email are required.", "Nama dan email wajib diisi."));
+    const digits = form.phone.replace(/[\s\-().+]/g, "");
+    if (!form.name.trim() || !digits) {
+      setFormError(tx(language, "Name and WhatsApp number are required.", "Nama dan nomor WhatsApp wajib diisi."));
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setFormError(tx(language, "Invalid email format.", "Format email tidak valid."));
+    if (!/^\d{8,15}$/.test(digits)) {
+      setFormError(tx(language, "Enter a valid WhatsApp number, e.g. 081234567890.", "Masukkan nomor WhatsApp yang valid, cth. 081234567890."));
       return;
     }
     setSubmitting(true);
     try {
       await api.post("/api/users-management", {
         name: form.name.trim(),
-        email: form.email.trim(),
+        phone: form.phone.trim(),
         role: form.role,
       });
       setShowModal(false);
-      setForm({ name: "", email: "", role: "akuntan" });
+      setForm({ name: "", phone: "", role: "akuntan" });
       await fetchUsers();
     } catch (err: any) {
       setFormError(getErrorMessage(err));
@@ -210,14 +261,15 @@ export default function UserManagementPage() {
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate">
+                    <p className={`font-semibold text-gray-900 dark:text-white truncate ${user.status === "suspended" ? "opacity-60" : ""}`}>
                       {user.name}
                       {user.role === "owner" && myRole !== "owner" && (
                         <Lock size={12} className="inline ml-1.5 text-gray-400 -mt-0.5" />
                       )}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {user.email}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                      <Phone size={11} className="shrink-0" />
+                      {user.phone || user.email || "—"}
                     </p>
                   </div>
                 </div>
@@ -228,6 +280,15 @@ export default function UserManagementPage() {
                   >
                     <RoleIcon size={14} />
                     {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </span>
+
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusColors[user.status] || statusColors.active}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.status === "suspended" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                    {user.status === "suspended"
+                      ? tx(language, "Suspended", "Suspend")
+                      : tx(language, "Active", "Aktif")}
                   </span>
 
                   {editable ? (
@@ -245,11 +306,31 @@ export default function UserManagementPage() {
                     </span>
                   )}
 
+                  {editable && user.id !== me?.id && (
+                    user.status === "suspended" ? (
+                      <button
+                        onClick={() => handleReactivate(user.id, user.name)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
+                        title={tx(language, "Reactivate", "Aktifkan kembali")}
+                      >
+                        <RotateCcw size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSuspend(user.id, user.name)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"
+                        title={tx(language, "Suspend", "Nonaktifkan sementara")}
+                      >
+                        <Ban size={16} />
+                      </button>
+                    )
+                  )}
+
                   {editable && (
                     <button
                       onClick={() => handleDelete(user.id, user.name)}
                       className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                      title={tx(language, "Delete user", "Hapus user")}
+                      title={tx(language, "Remove from company", "Hapus dari perusahaan")}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -307,15 +388,22 @@ export default function UserManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                    Email
+                    {tx(language, "WhatsApp Number", "Nomor WhatsApp")}
                   </label>
                   <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder={tx(language, "e.g. budi@company.com", "cth: budi@perusahaan.com")}
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder={tx(language, "e.g. 081234567890", "cth: 081234567890")}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 outline-none transition"
                   />
+                  <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                    {tx(
+                      language,
+                      "Already registered on another company? They'll be added to this one too — no new account needed.",
+                      "Sudah terdaftar di perusahaan lain? Nomor ini langsung ditambahkan ke perusahaan ini — tanpa buat akun baru.",
+                    )}
+                  </p>
                 </div>
 
                 <div>
@@ -330,7 +418,7 @@ export default function UserManagementPage() {
                     fullWidth
                   />
                   <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-                    {tx(language, "New members automatically receive an email with a link to set their password.", "Anggota baru otomatis menerima email berisi link untuk mengatur kata sandi.")}
+                    {tx(language, "The invited member receives a WhatsApp invitation and logs in with an OTP code.", "Anggota yang diundang menerima notifikasi WhatsApp dan login dengan kode OTP.")}
                   </p>
                 </div>
 
