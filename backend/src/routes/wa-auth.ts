@@ -160,15 +160,6 @@ async function verifyOtp(
 
 // --- helpers provisi akun (meniru alur register email lama) ---
 
-async function getCompanyName(companyId: string): Promise<string> {
-  const { data } = await supabase
-    .from("companies")
-    .select("name")
-    .eq("id", companyId)
-    .single();
-  return data?.name || "";
-}
-
 async function createCompany(companyName: string): Promise<{ id: string }> {
   const { data, error } = await supabase
     .from("companies")
@@ -283,16 +274,19 @@ function normalizeOr400(c: any, raw: any): { phone: string } | { errorResponse: 
   }
 }
 
-// Payload sukses login — dipakai jalur normal & demo agar satu bentuk respons.
-// Company & role di-resolve dari company_members (sumber kebenaran): user
-// bisa tergabung di lebih dari satu company — login mendarat di company
-// default legacy (users.company_id) bila membership-nya masih aktif, kalau
-// tidak di membership aktif tertua. Melempar Error("no_active_membership")
-// bila user tidak tergabung aktif di company mana pun.
+// Payload sukses login — dipakai jalur normal, demo, & register verify agar
+// satu bentuk respons. Company & role di-resolve dari company_members (sumber
+// kebenaran): user bisa tergabung di lebih dari satu company — login mendarat
+// di company default legacy (users.company_id) bila membership-nya masih
+// aktif, kalau tidak di membership aktif tertua. Nama company di-embed dalam
+// SATU query (FK company_members.company_id -> companies) supaya verifikasi
+// OTP terasa cepat — tanpa round-trip tambahan.
+// Melempar Error("no_active_membership") bila user tidak tergabung aktif di
+// company mana pun.
 async function buildLoginPayload(user: any) {
   const { data: memberships, error: memberError } = await supabase
     .from("company_members")
-    .select("company_id, role")
+    .select("company_id, role, companies(name)")
     .eq("user_id", user.id)
     .eq("status", "active")
     .order("created_at", { ascending: true });
@@ -303,7 +297,11 @@ async function buildLoginPayload(user: any) {
     memberships?.[0];
   if (!membership) throw new Error("no_active_membership");
 
-  const companyName = await getCompanyName(membership.company_id);
+  const companyName =
+    (membership.companies as any)?.name ||
+    (Array.isArray(membership.companies) ? membership.companies[0]?.name : "") ||
+    "";
+
   const token = await signToken({
     sub: user.id,
     email: user.email ?? undefined,
@@ -438,11 +436,17 @@ waAuth.post("/register/verify", async (c) => {
 
     // Provisi akun dengan rollback: bila salah satu langkah gagal, semua
     // yang sudah dibuat dihancurkan kembali (tidak ada data yatim).
-    const company = await createCompany(String(company_name).trim());
+    // Company & auth user TIDAK saling bergantung → dibuat paralel agar
+    // verifikasi OTP tidak terasa lambat (hemat 1 round-trip Supabase).
+    let createdCompanyId: string | undefined;
     let authUserId: string | undefined;
     let userId: string | undefined;
     try {
-      const authUser = await createPhoneAuthUser(phone);
+      const [company, authUser] = await Promise.all([
+        createCompany(String(company_name).trim()),
+        createPhoneAuthUser(phone),
+      ]);
+      createdCompanyId = company.id;
       authUserId = authUser.id;
       const user = await createUserProfile(
         authUser.id,
@@ -461,32 +465,11 @@ waAuth.post("/register/verify", async (c) => {
         });
       if (memberErr) throw new Error(`insert_member: ${fmtError(memberErr)}`);
 
-      const companyName = await getCompanyName(user.company_id);
-      const token = await signToken({
-        sub: user.id,
-        email: user.email ?? undefined,
-        role: user.role,
-        company_id: user.company_id,
-      });
-
-      return c.json(
-        {
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            phone: user.phone,
-            email: user.email,
-            role: user.role,
-            company_id: user.company_id,
-            company_name: companyName,
-            avatar_url: user.avatar_url || null,
-          },
-        },
-        201,
-      );
+      // Respons + JWT via buildLoginPayload (membership + nama company dalam
+      // 1 query) — tanpa getCompanyName tambahan.
+      return c.json(await buildLoginPayload(user), 201);
     } catch (err: any) {
-      await rollbackProvision({ companyId: company.id, authUserId, userId });
+      await rollbackProvision({ companyId: createdCompanyId, authUserId, userId });
       throw err;
     }
   } catch (err: any) {

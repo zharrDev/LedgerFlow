@@ -72,7 +72,7 @@ export default function AuthPage({
       {/* RIGHT FORM AREA */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex items-center justify-center p-4 sm:p-6 py-10 sm:py-12 lg:py-6 relative">
         <div
-          className={`w-full max-w-md mx-auto transition-all duration-700 ${
+          className={`w-full max-w-md mx-auto transition-all duration-300 {
             showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >

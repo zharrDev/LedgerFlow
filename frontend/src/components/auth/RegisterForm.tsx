@@ -144,7 +144,7 @@ export default function RegisterForm({
 
   return (
     <div
-      className={`transition-all duration-700 ${
+      className={`transition-all duration-300 {
         showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
       }`}
     >

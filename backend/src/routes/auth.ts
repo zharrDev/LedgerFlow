@@ -30,16 +30,6 @@ const loginSchema = z.object({
   password: z.string().min(1, "password wajib diisi"),
 });
 
-// Helper: ambil nama company dari company_id
-async function getCompanyName(companyId: string): Promise<string> {
-  const { data } = await supabase
-    .from("companies")
-    .select("name")
-    .eq("id", companyId)
-    .single();
-  return data?.name || "";
-}
-
 // Helper: terjemahkan User-Agent menjadi info perangkat yang mudah dibaca
 function parseUserAgent(ua: string): string {
   if (!ua) return "Perangkat tidak dikenal";
@@ -125,24 +115,34 @@ async function notifyCompanyOwners(
 // kebenaran role & company). User bisa punya banyak company — kalau ada,
 // pilih yang cocok dengan company default legacy di profil (users.company_id)
 // supaya user lama mendarat di company yang sama seperti sebelumnya; kalau
-// tidak ada/ tidak aktif, pakai membership aktif tertua.
+// tidak ada/ tidak aktif, pakai membership aktif tertua. Nama company di-
+// embed (FK ke companies) supaya tanpa query tambahan — login lebih cepat.
 async function resolveActiveMembership(
   userId: string,
   preferredCompanyId?: string | null,
-): Promise<{ company_id: string; role: "owner" | "akuntan" } | null> {
+): Promise<{
+  company_id: string;
+  role: "owner" | "akuntan";
+  company_name: string;
+} | null> {
   const { data: memberships, error } = await supabase
     .from("company_members")
-    .select("company_id, role")
+    .select("company_id, role, companies(name)")
     .eq("user_id", userId)
     .eq("status", "active")
     .order("created_at", { ascending: true });
 
   if (error) throw error;
   if (!memberships?.length) return null;
-  return (
-    memberships.find((m) => m.company_id === preferredCompanyId) ??
-    memberships[0]
-  );
+  const m =
+    memberships.find((x) => x.company_id === preferredCompanyId) ??
+    memberships[0];
+  const companies = m.companies as unknown as { name?: string } | null;
+  return {
+    company_id: m.company_id,
+    role: m.role as "owner" | "akuntan",
+    company_name: companies?.name ?? "",
+  };
 }
 
 // Rate-limit kasar per-IP untuk login/register email-password (in-memory;
@@ -238,7 +238,9 @@ auth.post("/register", validateBody(registerSchema), async (c) => {
       console.error("SEND WELCOME EMAIL GAGAL:", err);
     });
 
-    const companyName = await getCompanyName(user.company_id);
+    // Nama company sudah didapat dari hasil insert — tanpa query tambahan
+    // supaya register terasa cepat.
+    const companyName = company.name;
 
     const token = await signToken({
       sub: user.id,
@@ -342,7 +344,11 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
 
   // ── Resolve company & role dari company_members (sumber kebenaran) ──
   // User multi-company login ke company default-nya (membership aktif).
-  let membership: { company_id: string; role: "owner" | "akuntan" } | null;
+  let membership: {
+    company_id: string;
+    role: "owner" | "akuntan";
+    company_name: string;
+  } | null;
   try {
     membership = await resolveActiveMembership(user.id, user.company_id);
   } catch (err) {
@@ -358,7 +364,7 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
     );
   }
 
-  const companyName = await getCompanyName(membership.company_id);
+  const companyName = membership.company_name;
 
   const token = await signToken({
     sub: user.id,
@@ -448,7 +454,11 @@ auth.post("/exchange-token", async (c) => {
     }
 
     // ── Resolve company & role dari company_members (sumber kebenaran) ──
-    let membership: { company_id: string; role: "owner" | "akuntan" } | null;
+    let membership: {
+      company_id: string;
+      role: "owner" | "akuntan";
+      company_name: string;
+    } | null;
     try {
       membership = await resolveActiveMembership(user.id, user.company_id);
     } catch (err) {
@@ -464,7 +474,7 @@ auth.post("/exchange-token", async (c) => {
       );
     }
 
-    const companyName = await getCompanyName(membership.company_id);
+    const companyName = membership.company_name;
 
     const token = await signToken({
       sub: user.id,
