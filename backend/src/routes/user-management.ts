@@ -2,12 +2,11 @@ import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
-import { sendAccountCreatedEmail } from "../lib/email.js";
+import { normalizePhoneNumber, sendWhatsAppInviteNotification } from "../lib/whatsapp.js";
 import {
   createNotification,
   createNotificationsForUsers,
 } from "../lib/notify.js";
-import crypto from "node:crypto";
 
 const userMgmt = new Hono();
 
@@ -47,140 +46,248 @@ async function getCompanyName(companyId: string): Promise<string> {
 }
 
 // POST /api/users-management
-// Tambah anggota baru ke perusahaan (owner only).
-// Anggota baru selalu dibuat sebagai akuntan — role owner hanya bisa
-// diberikan lewat route ganti role oleh owner.
+// Undang anggota via NOMOR WHATSAPP (bukan email). Anggota baru selalu dibuat
+// sebagai akuntan — role owner hanya bisa diberikan lewat route ganti role.
+// Multi-company: nomor yang SUDAH punya akun (member di company lain) tetap
+// bisa diundang ke company ini — cukup tambah baris membership baru di
+// company_members untuk kombinasi (user, company) ini.
 userMgmt.post("/", requireRole("owner"), async (c) => {
   try {
     const { company_id: companyId, sub: myId } = c.get("user");
-    const { name, email, role } = await c.req.json();
+    const { name, phone, role } = await c.req.json();
 
-    if (!name || !email || !role) {
-      return c.json({ error: "Nama, email, dan role wajib diisi." }, 400);
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return c.json({ error: "Format email tidak valid." }, 400);
+    if (!name || !phone || !role) {
+      return c.json(
+        { error: "Nama, nomor WhatsApp, dan role wajib diisi." },
+        400,
+      );
     }
     if (role !== "akuntan") {
       return c.json({ error: "Anggota baru hanya bisa dibuat dengan role akuntan." }, 400);
     }
 
-    const { data: existing, error: findErr } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
-
-    if (findErr) return c.json({ error: "Gagal memeriksa email." }, 500);
-    if (existing) {
-      return c.json(
-        { error: "Email sudah terdaftar di sistem. Pilih email lain." },
-        400,
-      );
-    }
-
-    const tempPassword = crypto.randomBytes(16).toString("hex");
-
-    const { data: authData, error: authError } =
-      await supabase.auth.admin.createUser({
-        email,
-        password: tempPassword,
-        email_confirm: true,
-      });
-
-    if (authError) {
-      // Jangan bocorkan detail Supabase Auth; pesan generik saja.
-      return c.json(
-        { error: "Gagal membuat akun. Periksa kembali email yang dimasukkan." },
-        400,
-      );
+    let normalizedPhone: string;
+    try {
+      normalizedPhone = normalizePhoneNumber(phone);
+    } catch (err: any) {
+      return c.json({ error: err.message }, 400);
     }
 
     const companyName = await getCompanyName(companyId);
 
-    const { data: user, error: userError } = await supabase
+    // ── Kasus 1: nomor SUDAH punya akun (profil ada di users) ──
+    const { data: existingProfile, error: findErr } = await supabase
+      .from("users")
+      .select("id, name, email, phone, avatar_url")
+      .eq("phone", normalizedPhone)
+      .maybeSingle();
+
+    if (findErr) {
+      console.error("[user-mgmt] lookup profile error:", findErr);
+      return c.json({ error: "Gagal memeriksa nomor." }, 500);
+    }
+
+    if (existingProfile) {
+      // Sudah jadi member COMPANY INI spesifik? → tolak dengan pesan jelas.
+      const { data: existingMembership } = await supabase
+        .from("company_members")
+        .select("id, status")
+        .eq("user_id", existingProfile.id)
+        .eq("company_id", companyId)
+        .maybeSingle();
+
+      if (existingMembership) {
+        return c.json(
+          { error: "Nomor ini sudah jadi anggota perusahaan ini." },
+          400,
+        );
+      }
+
+      // BELUM member company ini (tapi sudah punya akun / member company
+      // lain) → INSERT membership baru. INI yang membuat multi-company
+      // beneran jalan: akun sama, company berbeda, role independen.
+      const { error: memberError } = await supabase
+        .from("company_members")
+        .insert({
+          user_id: existingProfile.id,
+          company_id: companyId,
+          role,
+          status: "active",
+        });
+
+      if (memberError) {
+        console.error("[user-mgmt] insert membership error:", memberError);
+        return c.json({ error: "Gagal menambahkan anggota." }, 500);
+      }
+
+      const displayName = existingProfile.name || name;
+      sendWhatsAppInviteNotification(
+        normalizedPhone,
+        displayName,
+        companyName,
+        role,
+      ).catch((err) =>
+        console.error("[user-mgmt] kirim WA undangan gagal:", err?.message ?? err),
+      );
+
+      createNotification({
+        userId: existingProfile.id,
+        companyId,
+        type: "member_invited",
+        title: "Anda Ditambahkan ke Perusahaan Baru",
+        message: `Anda ditambahkan sebagai ${role} di ${companyName || "perusahaan baru"}. Pindahkan perusahaan dari menu di sidebar.`,
+        link: "/dashboard",
+      }).catch(console.error);
+
+      await notifyOtherOwners(companyId, myId, {
+        title: "Anggota Baru Ditambahkan",
+        message: `${displayName} (${normalizedPhone}) telah ditambahkan sebagai ${role}.`,
+      });
+
+      console.log(
+        `[user-mgmt] Member EXISTING ditambahkan oleh ${myId}: ${normalizedPhone} (role=${role}) company=${companyId}`,
+      );
+
+      return c.json(
+        {
+          id: existingProfile.id,
+          name: displayName,
+          email: existingProfile.email ?? null,
+          phone: normalizedPhone,
+          role,
+          status: "active",
+          avatar_url: existingProfile.avatar_url ?? null,
+        },
+        201,
+      );
+    }
+
+    // ── Kasus 2: nomor BELUM punya akun sama sekali ──
+    // Pola sama dengan register WA-OTP: buat auth user dengan phone.
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        phone: `+${normalizedPhone}`,
+        phone_confirm: true,
+      });
+
+    if (authError) {
+      console.error("[user-mgmt] create auth user error:", authError);
+      // Jangan bocorkan detail Supabase Auth; pesan generik saja.
+      return c.json(
+        { error: "Gagal membuat akun. Periksa kembali nomor yang dimasukkan." },
+        400,
+      );
+    }
+
+    const { data: profile, error: profileError } = await supabase
       .from("users")
       .insert({
         id: authData.user.id,
-        company_id: companyId,
-        email,
+        company_id: companyId, // legacy default-company; sumber kebenaran = company_members
+        phone: normalizedPhone,
         name,
-        role,
+        role, // legacy, tidak dipercaya untuk otorisasi
+        email: null,
         email_verified: true,
       })
-      .select("id, name, email, role, avatar_url, created_at")
+      .select("id, name, phone, avatar_url, created_at")
       .single();
 
-    if (userError) {
+    if (profileError) {
+      console.error("[user-mgmt] insert profile error:", profileError);
+      // Kompensasi: auth user yang baru dibuat jangan dibiarkan yatim.
+      await supabase.auth.admin.deleteUser(authData.user.id).catch(console.error);
       return c.json({ error: "Gagal menyimpan anggota." }, 500);
     }
 
-    await supabase.from("company_members").insert({
-      user_id: user.id,
-      company_id: companyId,
-      role,
-    });
+    const { error: memberError } = await supabase
+      .from("company_members")
+      .insert({
+        user_id: profile.id,
+        company_id: companyId,
+        role,
+        status: "active",
+      });
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    await supabase.from("password_resets").insert({
-      user_id: user.id,
-      token: resetToken,
-      expires_at: expiresAt.toISOString(),
-    });
+    if (memberError) {
+      console.error("[user-mgmt] insert membership error:", memberError);
+      // Kompensasi: batalkan profil & auth user agar tidak ada data yatim.
+      await supabase.from("users").delete().eq("id", profile.id);
+      await supabase.auth.admin.deleteUser(authData.user.id).catch(console.error);
+      return c.json({ error: "Gagal menyimpan anggota." }, 500);
+    }
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
-
-    sendAccountCreatedEmail(
-      user.email,
-      user.name,
+    sendWhatsAppInviteNotification(
+      normalizedPhone,
+      name,
       companyName,
-      resetLink,
-    ).catch(console.error);
+      role,
+    ).catch((err) =>
+      console.error("[user-mgmt] kirim WA undangan gagal:", err?.message ?? err),
+    );
 
-    // Notifikasi in-app (fire-and-forget):
-    //   1. Anggota baru → sambutan agar notifikasi pertamanya relevan.
-    //   2. Owner lain (kecuali yang melakukan invite) → info anggota baru.
     createNotification({
-      userId: user.id,
+      userId: profile.id,
       companyId,
       type: "member_invited",
       title: "Selamat Datang di LedgerFlow",
-      message: `Anda ditambahkan sebagai ${role} di ${companyName || "perusahaan baru"}. Periksa email untuk mengatur password Anda.`,
+      message: `Anda ditambahkan sebagai ${role} di ${companyName || "perusahaan baru"}. Login dengan OTP WhatsApp untuk mulai.`,
       link: "/dashboard",
     }).catch(console.error);
 
-    const { data: otherOwners } = await supabase
-      .from("users")
-      .select("id")
-      .eq("company_id", companyId)
-      .eq("role", "owner")
-      .neq("id", myId);
-
-    if (otherOwners?.length) {
-      createNotificationsForUsers(
-        otherOwners.map((o) => o.id),
-        {
-          companyId,
-          type: "member_invited",
-          title: "Anggota Baru Ditambahkan",
-          message: `${name} (${email}) telah ditambahkan sebagai ${role}.`,
-          link: "/settings",
-        },
-      ).catch(console.error);
-    }
+    await notifyOtherOwners(companyId, myId, {
+      title: "Anggota Baru Ditambahkan",
+      message: `${name} (${normalizedPhone}) telah ditambahkan sebagai ${role}.`,
+    });
 
     console.log(
-      `[user-mgmt] Member added by ${myId}: ${user.email} (role=${role}) company=${companyId}`,
+      `[user-mgmt] Member NEW dibuat oleh ${myId}: ${normalizedPhone} (role=${role}) company=${companyId}`,
     );
 
-    return c.json(user, 201);
+    return c.json(
+      {
+        id: profile.id,
+        name: profile.name,
+        email: null,
+        phone: profile.phone,
+        role,
+        status: "active",
+        avatar_url: profile.avatar_url ?? null,
+        created_at: profile.created_at,
+      },
+      201,
+    );
   } catch (err) {
     console.error("ADD MEMBER CRASH:", err);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
+
+// Notifikasi in-app untuk owner AKTIF lain (kecuali yang melakukan invite).
+// Owner diambil dari company_members (sumber kebenaran).
+async function notifyOtherOwners(
+  companyId: string,
+  actorId: string,
+  payload: { title: string; message: string },
+) {
+  try {
+    const { data: memberships } = await supabase
+      .from("company_members")
+      .select("user_id")
+      .eq("company_id", companyId)
+      .eq("role", "owner")
+      .eq("status", "active")
+      .neq("user_id", actorId);
+
+    if (!memberships?.length) return;
+    createNotificationsForUsers(
+      memberships.map((m) => m.user_id),
+      { companyId, type: "member_invited", ...payload, link: "/settings" },
+    ).catch(console.error);
+  } catch (err) {
+    console.error("[user-mgmt] notifyOtherOwners error:", err);
+  }
+}
 
 // GET / (list) — hanya owner
 // Sumber data: company_members (sumber kebenaran keanggotaan) + profil user
@@ -326,6 +433,12 @@ userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
 });
 
 // DELETE /:id — hanya owner
+// HAPUS DARI COMPANY, BUKAN HAPUS AKUN: yang dihapus hanya baris
+// company_members untuk kombinasi (user_id, company_id) ini. Akun Supabase
+// Auth & profil user TETAP UTUH — user yang juga member company lain tidak
+// kehilangan akses di company tersebut. Penghapusan akun total (bila user
+// tidak lagi member di company mana pun) adalah langkah OPSIONAL TERPISAH
+// lewat portal admin, tidak digabung di sini.
 userMgmt.delete("/:id", requireRole("owner"), async (c) => {
   const { company_id, sub: myId } = c.get("user");
   const id = c.req.param("id");
@@ -334,30 +447,139 @@ userMgmt.delete("/:id", requireRole("owner"), async (c) => {
     return c.json({ error: "Tidak bisa menghapus akun sendiri." }, 400);
   }
 
-  const { data: targetUser } = await supabase
-    .from("users")
-    .select("id, company_id, role")
-    .eq("id", id)
-    .single();
+  const { data: membership } = await supabase
+    .from("company_members")
+    .select("id, role, user_id")
+    .eq("user_id", id)
+    .eq("company_id", company_id)
+    .maybeSingle();
 
-  if (!targetUser) return c.json({ error: "User tidak ditemukan" }, 404);
-  if (targetUser.company_id !== company_id) {
-    return c.json({ error: "Forbidden" }, 403);
+  if (!membership) {
+    return c.json({ error: "User bukan anggota perusahaan ini" }, 404);
   }
 
-  if (targetUser.role === "owner") {
+  // Proteksi owner terakhir: hanya owner AKTIF yang dihitung.
+  if (membership.role === "owner") {
     const owners = await countOwners(company_id);
     if (owners <= 1) {
-      return c.json({ error: "Tidak bisa menghapus owner terakhir." }, 400);
+      return c.json(
+        { error: "Tidak bisa menghapus satu-satunya Owner." },
+        400,
+      );
     }
   }
 
-  const { error: authErr } = await supabase.auth.admin.deleteUser(id);
-  if (authErr) {
-    return dbErrorResponse(c, authErr);
+  const { error: deleteError } = await supabase
+    .from("company_members")
+    .delete()
+    .eq("user_id", id)
+    .eq("company_id", company_id);
+
+  if (deleteError) return dbErrorResponse(c, deleteError);
+
+  // Info (tidak fatal): sisa membership user di company lain. Dipakai untuk
+  // log & respons — keputusan menghapus akun Auth sepenuhnya TIDAK diambil
+  // otomatis di endpoint ini (langkah opsional terpisah via portal admin).
+  const { count: remainingMemberships } = await supabase
+    .from("company_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", id);
+
+  const lastCompany = (remainingMemberships ?? 0) === 0;
+  if (lastCompany) {
+    console.log(
+      `[user-mgmt] user ${id} tidak lagi member di company mana pun. Akun Auth dibiarkan ada (opsi hapus total tersedia via portal admin).`,
+    );
   }
 
-  return c.json({ message: "User berhasil dihapus" });
+  console.log(
+    `[user-mgmt] member ${id} dihapus dari company ${company_id} oleh ${myId} (sisa membership: ${remainingMemberships ?? 0})`,
+  );
+
+  return c.json({
+    message: lastCompany
+      ? "User berhasil dihapus dari perusahaan ini. Akunnya tidak lagi terhubung ke perusahaan mana pun."
+      : "User berhasil dihapus dari perusahaan ini.",
+    remaining_companies: remainingMemberships ?? 0,
+  });
+});
+
+// PATCH /:id/suspend & /:id/reactivate — hanya owner
+// Nonaktifkan-aktifkan sementara anggota untuk COMPANY INI SAJA: yang diubah
+// kolom `status` di company_members untuk kombinasi (user_id, company_id)
+// milik owner yang login. Sifatnya per-company — user yang juga member di
+// company lain TIDAK terpengaruh di sana. (Suspend global lintas-company
+// tetap menjadi wewenang admin aplikasi via portal admin / users.status.)
+// Token user yang di-suspend langsung ditolak authMiddleware pada request
+// berikutnya (cek membership aktif per request).
+
+userMgmt.patch("/:id/suspend", requireRole("owner"), async (c) => {
+  const { company_id, sub: myId } = c.get("user");
+  const id = c.req.param("id");
+
+  if (id === myId) {
+    return c.json({ error: "Tidak bisa menonaktifkan akun sendiri." }, 400);
+  }
+
+  const { data: membership } = await supabase
+    .from("company_members")
+    .select("role, status")
+    .eq("user_id", id)
+    .eq("company_id", company_id)
+    .maybeSingle();
+
+  if (!membership) {
+    return c.json({ error: "User bukan anggota perusahaan ini" }, 404);
+  }
+  if (membership.status === "suspended") {
+    return c.json({ error: "User sudah dalam status suspend." }, 400);
+  }
+  if (membership.role === "owner") {
+    const owners = await countOwners(company_id);
+    if (owners <= 1) {
+      return c.json(
+        { error: "Tidak bisa menonaktifkan satu-satunya Owner." },
+        400,
+      );
+    }
+  }
+
+  const { error } = await supabase
+    .from("company_members")
+    .update({ status: "suspended" })
+    .eq("user_id", id)
+    .eq("company_id", company_id);
+
+  if (error) return dbErrorResponse(c, error);
+  return c.json({ message: "User dinonaktifkan dari perusahaan ini.", status: "suspended" });
+});
+
+userMgmt.patch("/:id/reactivate", requireRole("owner"), async (c) => {
+  const { company_id } = c.get("user");
+  const id = c.req.param("id");
+
+  const { data: membership } = await supabase
+    .from("company_members")
+    .select("status")
+    .eq("user_id", id)
+    .eq("company_id", company_id)
+    .maybeSingle();
+
+  if (!membership) {
+    return c.json({ error: "User bukan anggota perusahaan ini" }, 404);
+  }
+  if (membership.status === "active") {
+    return c.json({ error: "User sudah aktif." }, 400);
+  }
+
+  const { error } = await supabase
+    .from("company_members")
+    .update({ status: "active" })
+    .eq("user_id", id)
+    .eq("company_id", company_id);
+
+  if (error) return dbErrorResponse(c, error);
+  return c.json({ message: "User diaktifkan kembali.", status: "active" });
 });
 
 export default userMgmt;

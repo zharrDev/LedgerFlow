@@ -99,3 +99,23 @@ export async function sendWhatsAppLoginAlert(
   const json = await sendFonnte(buildPayload(phone, message));
   console.log("[whatsapp] alert login terkirim ke", phone, "| id:", json?.id ?? "?");
 }
+
+// Notifikasi undangan anggota baru (pengganti email undangan). Dipanggil
+// fire-and-tolerate oleh endpoint invite: gagal kirim TIDAK membatalkan
+// membership yang sudah dibuat, tapi tetap dicatat di log (anti-silent-fail).
+export async function sendWhatsAppInviteNotification(
+  phone: string,
+  name: string,
+  companyName: string,
+  roleName: string,
+): Promise<void> {
+  const message = [
+    `*${appBase}* — Anda diundang ke sebuah perusahaan!`,
+    "",
+    `Halo ${name || "Kak"}, Anda ditambahkan sebagai *${roleName}* di perusahaan *${companyName || "baru"}*.`,
+    "",
+    "Login dengan nomor WhatsApp ini (kode OTP akan dikirim ke chat ini) untuk mulai mencatat transaksi.",
+  ].join("\n");
+  const json = await sendFonnte(buildPayload(phone, message));
+  console.log("[whatsapp] undangan terkirim ke", phone, "| id:", json?.id ?? "?");
+}

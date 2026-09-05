@@ -491,34 +491,45 @@ adminGate.get("/payments", requireAdminGate, async (c) => {
 
 // ── Moderasi (satu-satunya aksi mutasi admin) ──────────────────────────
 
-// DELETE /api/admin-gate/users/:id — hapus user bermasalah.
-// Proteksi: owner terakhir sebuah company tidak bisa dihapus.
+// DELETE /api/admin-gate/users/:id — hapus user bermasalah (moderasi admin:
+// satu-satunya alur penghapusan akun Auth total). Proteksi: user tidak boleh
+// dihapus bila ia SATU-SATUNYA owner AKTIF di company mana pun (dicek dari
+// company_members, sumber kebenaran).
 adminGate.delete("/users/:id", requireAdminGate, async (c) => {
   const id = c.req.param("id");
 
-  const { data: target } = await supabase
+  const { data: memberships, error: memberErr } = await supabase
+    .from("company_members")
+    .select("company_id, role")
+    .eq("user_id", id);
+
+  if (memberErr) {
+    console.error("[admin-gate] memberships lookup error:", memberErr);
+    return c.json({ error: "Gagal memeriksa keanggotaan user" }, 500);
+  }
+
+  const { data: profile } = await supabase
     .from("users")
-    .select("id, role, company_id")
+    .select("id")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
-  if (!target) return c.json({ error: "User tidak ditemukan" }, 404);
+  if (!profile && (!memberships || memberships.length === 0)) {
+    return c.json({ error: "User tidak ditemukan" }, 404);
+  }
 
-  if (target.role === "owner") {
-    const owners = await countOwners(target.company_id);
+  for (const m of memberships ?? []) {
+    if (m.role !== "owner") continue;
+    const owners = await countOwners(m.company_id);
     if (owners <= 1) {
       console.error(
         "[admin-gate] blokir hapus owner:",
-        JSON.stringify({
-          userId: id,
-          companyId: target.company_id,
-          countedOwners: owners,
-        }),
+        JSON.stringify({ userId: id, companyId: m.company_id, countedOwners: owners }),
       );
       return c.json(
         {
           error:
-            "Tidak bisa menghapus owner terakhir dari company-nya. Masih ada user lain ber-role owner di company ini? Pastikan role-nya tersimpan dengan benar.",
+            "User ini satu-satunya owner aktif di salah satu company-nya. Tambahkan owner lain dulu di company tersebut.",
         },
         400,
       );
