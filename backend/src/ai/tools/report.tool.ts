@@ -44,7 +44,8 @@ export function createGetMonthlyCashFlowTool(companyId: string) {
           .eq("journal_entries.company_id", companyId)
           .eq("journal_entries.status", "posted")
           .eq("journal_entries.period_id", p.id)
-          .is("journal_entries.deleted_at", null);
+          .is("journal_entries.deleted_at", null)
+          .is("journal_entries.voided_at", null);
 
         let masuk = 0;
         let keluar = 0;

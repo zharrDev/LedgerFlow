@@ -106,7 +106,7 @@ reports.get("/income-statement", async (c) => {
       )
       .eq("journal_entries.company_id", companyId)
       .eq("journal_entries.status", "posted")
-      .is("journal_entries.deleted_at", null);
+      .is("journal_entries.deleted_at", null).is("journal_entries.voided_at", null);
 
     if (periodId) query = query.eq("journal_entries.period_id", periodId);
 
@@ -203,7 +203,7 @@ reports.get("/balance-sheet", async (c) => {
       )
       .eq("journal_entries.company_id", companyId)
       .eq("journal_entries.status", "posted")
-      .is("journal_entries.deleted_at", null);
+      .is("journal_entries.deleted_at", null).is("journal_entries.voided_at", null);
 
     if (periodId) query = query.eq("journal_entries.period_id", periodId);
 
@@ -274,7 +274,7 @@ reports.get("/cash-flow", async (c) => {
       )
       .eq("journal_entries.company_id", companyId)
       .eq("journal_entries.status", "posted")
-      .is("journal_entries.deleted_at", null);
+      .is("journal_entries.deleted_at", null).is("journal_entries.voided_at", null);
 
     if (periodId)
       periodQuery = periodQuery.eq("journal_entries.period_id", periodId);
@@ -302,7 +302,7 @@ reports.get("/cash-flow", async (c) => {
         .eq("journal_entries.company_id", companyId)
         .eq("journal_entries.status", "posted")
         .in("journal_entries.period_id", beforePeriodIds)
-        .is("journal_entries.deleted_at", null);
+        .is("journal_entries.deleted_at", null).is("journal_entries.voided_at", null);
 
       for (const line of beforeLines || []) {
         const account = line.accounts as any;

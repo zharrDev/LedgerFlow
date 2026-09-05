@@ -19,7 +19,8 @@ export function createGetTopExpenseAccountsTool(companyId: string) {
         )
         .eq("journal_entries.company_id", companyId)
         .eq("journal_entries.status", "posted")
-        .is("journal_entries.deleted_at", null);
+        .is("journal_entries.deleted_at", null)
+        .is("journal_entries.voided_at", null);
 
       if (periodId) query = query.eq("journal_entries.period_id", periodId);
 

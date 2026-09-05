@@ -13,14 +13,29 @@ import {
   RefreshCw,
   ChevronDown,
   XCircle,
+  Ban,
 } from "lucide-react";
 import type { JournalStatus, Toast } from "../../types/journal";
 import { STATUS_CONFIG } from "../../types/constants";
 import { formatCurrency } from "../../utils/currency";
 
 // ─── StatusBadge ──────────────────────────────────────────────────────
-export function StatusBadge({ status }: { status: JournalStatus }) {
-  const cfg = STATUS_CONFIG[status];
+// Entry yang di-void tampil dengan badge merah "Voided" — tetap terlihat di
+// riwayat, bukan disembunyikan.
+export function StatusBadge({
+  status,
+  voided,
+}: {
+  status: JournalStatus;
+  voided?: boolean;
+}) {
+  const cfg = voided
+    ? {
+        label: "Voided",
+        badge: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20",
+        dot: "bg-rose-500",
+      }
+    : STATUS_CONFIG[status];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.badge}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -38,6 +53,7 @@ export function SpinnerIcon({ className = "w-5 h-5" }: { className?: string }) {
 export const IconPlus = ({ size = 16 }: { size?: number }) => <Plus size={size} />;
 export const IconTrash = ({ size = 14 }: { size?: number }) => <Trash2 size={size} />;
 export const IconSend = ({ size = 14 }: { size?: number }) => <Send size={size} />;
+export const IconVoid = ({ size = 14 }: { size?: number }) => <Ban size={size} />;
 export const IconEdit = ({ size = 14 }: { size?: number }) => <Pencil size={size} />;
 export const IconArrowLeft = ({ size = 16 }: { size?: number }) => <ArrowLeft size={size} />;
 export const IconJournal = ({ size = 18 }: { size?: number }) => <BookOpen size={size} />;

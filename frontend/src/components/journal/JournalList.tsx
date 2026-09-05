@@ -6,6 +6,7 @@ import {
   IconEdit,
   IconSend,
   IconTrash,
+  IconVoid,
   formatIDR,
   formatDate,
 } from "./JournalShared";
@@ -23,10 +24,12 @@ interface JournalListProps {
   onView: (entry: JournalEntry) => void;
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
+  onVoid?: (entry: JournalEntry) => void;
   pagination?: TablePaginationProps;
-  /** Izin sesuai role (backend): post/edit = owner/akuntan, delete = owner. */
+  /** Izin sesuai role (backend): post/edit = owner/akuntan, delete & void = owner. */
   canPost?: boolean;
   canDelete?: boolean;
+  canVoid?: boolean;
 }
 
 export function JournalList({
@@ -38,9 +41,11 @@ export function JournalList({
   onView,
   onPost,
   onDelete,
+  onVoid,
   pagination,
   canPost = true,
   canDelete = true,
+  canVoid = false,
 }: JournalListProps) {
   const { language } = useLanguage();
 
@@ -133,8 +138,10 @@ export function JournalList({
                       onView={onView}
                       onPost={onPost}
                       onDelete={onDelete}
+                      onVoid={onVoid}
                       canPost={canPost}
                       canDelete={canDelete}
+                      canVoid={canVoid}
                     />
                   ))
                 )}
@@ -168,8 +175,10 @@ export function JournalList({
                   onView={onView}
                   onPost={onPost}
                   onDelete={onDelete}
+                  onVoid={onVoid}
                   canPost={canPost}
                   canDelete={canDelete}
+                  canVoid={canVoid}
                 />
               ))
             )}
@@ -191,8 +200,10 @@ interface JournalRowProps {
   onView: (e: JournalEntry) => void;
   onPost: (e: JournalEntry) => void;
   onDelete: (e: JournalEntry) => void;
+  onVoid?: (e: JournalEntry) => void;
   canPost: boolean;
   canDelete: boolean;
+  canVoid?: boolean;
 }
 
 function JournalRow({
@@ -200,15 +211,20 @@ function JournalRow({
   onView,
   onPost,
   onDelete,
+  onVoid,
   canPost,
   canDelete,
+  canVoid,
 }: JournalRowProps) {
   const { language } = useLanguage();
   const isDraft = entry.status === "draft";
+  const isVoided = !!entry.voided_at;
 
   return (
     <tr
-      className="hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors cursor-pointer"
+      className={`hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors cursor-pointer ${
+        isVoided ? "opacity-50" : ""
+      }`}
       onClick={() => onView(entry)}
     >
       <td className="px-4 py-3 whitespace-nowrap">
@@ -228,10 +244,10 @@ function JournalRow({
         </span>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <StatusBadge status={entry.status} />
+        <StatusBadge status={entry.status} voided={isVoided} />
       </td>
       <td className="px-4 py-3 text-right whitespace-nowrap">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+        <span className={`text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums ${isVoided ? "line-through decoration-rose-400/70" : ""}`}>
           {formatIDR(entry.totalDebit)}
         </span>
       </td>
@@ -263,6 +279,14 @@ function JournalRow({
               )}
             </>
           )}
+          {!isDraft && !isVoided && canVoid && onVoid && (
+            <ActionButton
+              title={tx(language, "Void entry", "Void entry")}
+              onClick={() => onVoid(entry)}
+              icon={<IconVoid size={14} />}
+              variant="danger"
+            />
+          )}
         </div>
       </td>
     </tr>
@@ -276,22 +300,27 @@ function JournalMobileCard({
   onView,
   onPost,
   onDelete,
+  onVoid,
   canPost,
   canDelete,
+  canVoid,
 }: JournalRowProps) {
   const { language } = useLanguage();
   const isDraft = entry.status === "draft";
+  const isVoided = !!entry.voided_at;
 
   return (
     <div
-      className="p-3 cursor-pointer hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors"
+      className={`p-3 cursor-pointer hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors ${
+        isVoided ? "opacity-50" : ""
+      }`}
       onClick={() => onView(entry)}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <span className="font-mono text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-2 py-0.5 rounded-md border border-primary-200 dark:border-primary-500/20">
           {entry.number}
         </span>
-        <StatusBadge status={entry.status} />
+        <StatusBadge status={entry.status} voided={isVoided} />
       </div>
       <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-1 mb-0.5">
         {entry.description}
@@ -300,13 +329,14 @@ function JournalMobileCard({
         <span className="text-xs text-gray-400">
           {formatDate(entry.date, language)} · {entry.lines?.length ?? 0} {tx(language, "lines", "baris")}
         </span>
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums">
+        <span className={`text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums ${isVoided ? "line-through decoration-rose-400/70" : ""}`}>
           {formatIDR(entry.totalDebit)}
         </span>
       </div>
-      {isDraft && (canPost || canDelete) && (
+      {(isDraft && (canPost || canDelete)) ||
+      (!isDraft && !isVoided && canVoid && onVoid) ? (
         <div className="flex gap-1.5 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/50" onClick={(e) => e.stopPropagation()}>
-          {canPost && (
+          {isDraft && canPost && (
             <ActionButton
               title={tx(language, "Post to ledger", "Posting ke buku besar")}
               onClick={() => onPost(entry)}
@@ -314,7 +344,7 @@ function JournalMobileCard({
               variant="primary"
             />
           )}
-          {canDelete && (
+          {isDraft && canDelete && (
             <ActionButton
               title={tx(language, "Delete draft", "Hapus draft")}
               onClick={() => onDelete(entry)}
@@ -322,8 +352,16 @@ function JournalMobileCard({
               variant="danger"
             />
           )}
+          {!isDraft && !isVoided && canVoid && onVoid && (
+            <ActionButton
+              title={tx(language, "Void entry", "Void entry")}
+              onClick={() => onVoid(entry)}
+              icon={<IconVoid size={14} />}
+              variant="danger"
+            />
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

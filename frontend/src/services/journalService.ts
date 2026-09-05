@@ -9,6 +9,8 @@ function mapJournal(j: any): JournalEntry {
     description: j.description ?? "",
     status: j.status,
     createdAt: j.created_at,
+    voided_at: j.voided_at ?? null,
+    void_reason: j.void_reason ?? null,
 
     lines: (j.journal_entry_lines ?? []).map((line: any) => ({
       id: line.id,
@@ -83,5 +85,15 @@ export const journalService = {
 
   remove: async (id: string): Promise<void> => {
     await api.delete(`/api/journal/${id}`, { skipErrorToast: true });
+  },
+
+  // Void jurnal posted — data tidak dihapus, hanya ditandai + alasan.
+  void: async (id: string, reason: string): Promise<JournalEntry> => {
+    const { data } = await api.post(
+      `/api/journal/${id}/void`,
+      { reason },
+      { skipErrorToast: true },
+    );
+    return mapJournal(data);
   },
 };

@@ -685,7 +685,78 @@ journal.post("/:id/post", requireRole("owner", "akuntan"), async (c) => {
   return c.json(data);
 });
 
+// POST /api/journal/:id/void — batalkan jurnal yang sudah diposting (owner).
+// Pengganti hard-delete: data asli TIDAK dihapus, hanya ditandai void
+// (voided_at, voided_by, void_reason). Entry void tetap tampil di riwayat
+// (badge "Voided") tapi TIDAK ikut terhitung di laporan — semua query
+// laporan/buku besar mengecualikan voided_at IS NOT NULL.
+// Periode closed TETAP boleh di-void: void tidak mengubah/menghapus data,
+// dan ini satu-satunya cara koreksi jurnal posted (justru menjaga integritas
+// audit trail dibanding menghapus).
+const voidEntrySchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Alasan void wajib diisi (minimal 3 karakter)")
+    .max(500, "Alasan void maksimal 500 karakter"),
+});
+
+journal.post(
+  "/:id/void",
+  validateBody(voidEntrySchema),
+  requireRole("owner"),
+  async (c) => {
+    const { company_id, sub: voidedBy } = c.get("user");
+    const id = c.req.param("id");
+    const { reason } = c.get("validatedBody") as z.infer<typeof voidEntrySchema>;
+
+    const { data: entry } = await supabase
+      .from("journal_entries")
+      .select("id, status, voided_at, deleted_at")
+      .eq("id", id)
+      .eq("company_id", company_id)
+      .is("deleted_at", null)
+      .single();
+
+    if (!entry) return c.json({ error: "Entry tidak ditemukan" }, 404);
+    if (entry.status !== "posted") {
+      return c.json(
+        {
+          error:
+            "Hanya jurnal yang sudah diposting yang di-void. Draft cukup dihapus.",
+        },
+        400,
+      );
+    }
+    if (entry.voided_at) {
+      return c.json({ error: "Entry sudah di-void sebelumnya." }, 400);
+    }
+
+    const now = new Date().toISOString();
+    const { data: updated, error } = await supabase
+      .from("journal_entries")
+      .update({
+        voided_at: now,
+        voided_by: voidedBy,
+        void_reason: reason,
+      })
+      .eq("id", id)
+      .eq("company_id", company_id)
+      .select()
+      .single();
+
+    if (error) return dbErrorResponse(c, error);
+
+    console.log(
+      `[journal] entry ${id} VOIDED oleh ${voidedBy} — alasan: ${reason}`,
+    );
+    return c.json(updated);
+  },
+);
+
 // DELETE /api/journal/:id — soft delete (set deleted_at, tidak hapus permanen)
+// HANYA untuk draft yang belum pernah diposting. Jurnal posted tidak boleh
+// dihapus — koreksinya lewat POST /:id/void (data asli tetap tercatat).
 journal.delete("/:id", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");

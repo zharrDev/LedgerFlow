@@ -11,6 +11,10 @@ export interface JournalEntry {
   lines: JournalLine[];
   totalDebit: number;
   totalCredit: number;
+  // Void (pembatalan) — entry tetap tampil di riwayat tapi tidak dihitung
+  // di laporan. voided_at non-null = sudah dibatalkan.
+  voided_at?: string | null;
+  void_reason?: string | null;
 }
 
 export interface JournalLine {

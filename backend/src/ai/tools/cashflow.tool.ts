@@ -56,7 +56,8 @@ async function getPostedLines(
     )
     .eq("journal_entries.company_id", companyId)
     .eq("journal_entries.status", "posted")
-    .is("journal_entries.deleted_at", null);
+    .is("journal_entries.deleted_at", null)
+    .is("journal_entries.voided_at", null);
 
   if (periodIds && periodIds.length > 0) {
     query = query.in("journal_entries.period_id", periodIds);

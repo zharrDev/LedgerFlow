@@ -97,6 +97,24 @@ export function useJournal() {
     [addToast],
   );
 
+  // Void jurnal posted (pembatalan tanpa hapus data)
+  const voidEntry = useCallback(
+    async (id: string, reason: string): Promise<boolean> => {
+      try {
+        const updated = await journalService.void(id, reason);
+        setEntries((prev) =>
+          sortByEntryNumber(prev.map((e) => (e.id === id ? updated : e))),
+        );
+        addToast("Entry berhasil di-void");
+        return true;
+      } catch (e) {
+        addToast(getErrorMessage(e), "error");
+        return false;
+      }
+    },
+    [addToast],
+  );
+
   // Hapus jurnal
   const deleteEntry = useCallback(
     async (id: string): Promise<boolean> => {
@@ -124,5 +142,6 @@ export function useJournal() {
     createEntry,
     postEntry,
     deleteEntry,
+    voidEntry,
   };
 }

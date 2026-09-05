@@ -7,6 +7,7 @@ import {
   IconArrowLeft,
   IconSend,
   IconTrash,
+  IconVoid,
   formatIDR,
   formatDate,
 } from "./JournalShared";
@@ -19,9 +20,11 @@ interface JournalDetailProps {
   onBack: () => void;
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
-  /** Izin sesuai role (backend): post = owner/akuntan, delete = owner. */
+  onVoid?: (entry: JournalEntry) => void;
+  /** Izin sesuai role (backend): post = owner/akuntan, delete & void = owner. */
   canPost?: boolean;
   canDelete?: boolean;
+  canVoid?: boolean;
 }
 
 export function JournalDetail({
@@ -30,18 +33,21 @@ export function JournalDetail({
   onBack,
   onDelete,
   onPost,
+  onVoid,
   canPost = true,
   canDelete = true,
+  canVoid = false,
 }: JournalDetailProps) {
   const { language } = useLanguage();
   const isDraft = entry.status === "draft";
+  const isVoided = !!entry.voided_at;
   const isBalanced = Math.abs(entry.totalDebit - entry.totalCredit) < 0.005;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col gap-5"
+      className={`flex flex-col gap-5 ${isVoided ? "opacity-90" : ""}`}
     >
       {/* Header card */}
       <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md p-5">
@@ -51,7 +57,7 @@ export function JournalDetail({
               <span className="font-mono text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-2 py-0.5 rounded-lg border border-primary-200 dark:border-primary-500/20">
                 {entry.number}
               </span>
-              <StatusBadge status={entry.status} />
+              <StatusBadge status={entry.status} voided={isVoided} />
             </div>
             <h2 className="text-base font-medium text-gray-800 dark:text-gray-200">
               {entry.description}
@@ -95,8 +101,41 @@ export function JournalDetail({
                 )}
               </>
             )}
+            {!isDraft && !isVoided && canVoid && onVoid && (
+              <button
+                type="button"
+                onClick={() => onVoid(entry)}
+                title={tx(language, "Void entry", "Void entry")}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+              >
+                <IconVoid size={14} />
+                {tx(language, "Void", "Void")}
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Voided banner — alasan pembatalan tetap tampil (audit trail) */}
+        {isVoided && (
+          <div className="mt-4 rounded-xl border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 px-4 py-3">
+            <p className="text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+              <IconVoid size={13} />
+              {tx(language, "This entry is VOIDED and excluded from reports", "Entry ini sudah di-VOID dan tidak ikut terhitung di laporan")}
+            </p>
+            {entry.void_reason && (
+              <p className="mt-1 text-xs text-rose-600/80 dark:text-rose-400/80">
+                {tx(language, "Reason: ", "Alasan: ")}
+                {entry.void_reason}
+              </p>
+            )}
+            {entry.voided_at && (
+              <p className="mt-0.5 text-[11px] text-rose-500/70 dark:text-rose-400/60">
+                {tx(language, "Voided on: ", "Di-void pada: ")}
+                {formatDate(entry.voided_at, language)}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Summary chips */}
         <div className="flex gap-3 mt-4 flex-wrap">

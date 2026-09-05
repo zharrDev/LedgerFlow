@@ -103,15 +103,17 @@ export default function JournalEntryPage() {
     createEntry,
     postEntry,
     deleteEntry,
+    voidEntry,
   } = useJournal();
 
   const { language } = useLanguage();
   const { user } = useAuth();
   const myRole = user?.role || "";
-  // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus = owner only.
+  // Izin sesuai backend: buat/edit/post = owner & akuntan; hapus & void = owner only.
   // Disembunyikan di frontend agar tidak muncul tombol yang pasti ditolak 403.
   const canCreatePost = myRole === "owner" || myRole === "akuntan";
   const canDelete = myRole === "owner";
+  const canVoid = myRole === "owner";
 
   const location = useLocation();
   const [view, setView] = useState<ViewState>({ mode: "list" });
@@ -143,9 +145,14 @@ export default function JournalEntryPage() {
 
   // Confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmMode, setConfirmMode] = useState<"post" | "delete">("post");
+  const [confirmMode, setConfirmMode] = useState<
+    "post" | "delete" | "void"
+  >("post");
   const [confirmEntry, setConfirmEntry] = useState<JournalEntry | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  // Alasan void (wajib, dikirim ke backend & tampil di riwayat)
+  const [voidReason, setVoidReason] = useState("");
+  const [voidReasonError, setVoidReasonError] = useState("");
 
   // ── Filter ──
   const filtered = useMemo(() => {
@@ -165,13 +172,14 @@ export default function JournalEntryPage() {
   // Pagination client-side untuk list view
   const pagination = usePagination(filtered, 5);
 
-  // ── Stats ──
+  // ── Stats ── (entry void tidak ikut dihitung — konsisten dengan laporan)
   const stats = useMemo(() => {
-    const posted = entries.filter((e) => e.status === "posted");
+    const posted = entries.filter((e) => e.status === "posted" && !e.voided_at);
     return {
       total: entries.length,
       posted: posted.length,
       draft: entries.filter((e) => e.status === "draft").length,
+      voided: entries.filter((e) => !!e.voided_at).length,
       totalPostedDebit: posted.reduce((s, e) => s + e.totalDebit, 0),
     };
   }, [entries]);
@@ -189,14 +197,24 @@ export default function JournalEntryPage() {
     return result !== null;
   };
 
-  const openConfirm = (mode: "post" | "delete", entry: JournalEntry) => {
+  const openConfirm = (mode: "post" | "delete" | "void", entry: JournalEntry) => {
     setConfirmMode(mode);
     setConfirmEntry(entry);
+    if (mode === "void") {
+      setVoidReason("");
+      setVoidReasonError("");
+    }
     setConfirmOpen(true);
   };
 
   const handleConfirm = async () => {
     if (!confirmEntry) return;
+    if (confirmMode === "void" && voidReason.trim().length < 3) {
+      setVoidReasonError(
+        tx(language, "Void reason is required (min. 3 characters).", "Alasan void wajib diisi (minimal 3 karakter)."),
+      );
+      return;
+    }
     setConfirmLoading(true);
     try {
       if (confirmMode === "post") {
@@ -210,6 +228,17 @@ export default function JournalEntryPage() {
                 }
               : v,
           );
+        }
+      } else if (confirmMode === "void") {
+        const ok = await voidEntry(confirmEntry.id, voidReason.trim());
+        if (ok) {
+          const fresh = await journalService.getById(confirmEntry.id).catch(() => null);
+          setView((v) =>
+            v.mode === "detail" && v.entry.id === confirmEntry.id
+              ? { mode: "detail", entry: fresh ?? v.entry }
+              : v,
+          );
+          if (!fresh) setView({ mode: "list" });
         }
       } else {
         const ok = await deleteEntry(confirmEntry.id);
@@ -434,8 +463,10 @@ export default function JournalEntryPage() {
               onView={handleViewEntry}
               onPost={(entry) => openConfirm("post", entry)}
               onDelete={(entry) => openConfirm("delete", entry)}
+              onVoid={(entry) => openConfirm("void", entry)}
               canPost={canCreatePost}
               canDelete={canDelete}
+              canVoid={canVoid}
               pagination={{
                 page: pagination.page,
                 totalPages: pagination.totalPages,
@@ -478,8 +509,10 @@ export default function JournalEntryPage() {
             onBack={() => setView({ mode: "list" })}
             onPost={(entry) => openConfirm("post", entry)}
             onDelete={(entry) => openConfirm("delete", entry)}
+            onVoid={(entry) => openConfirm("void", entry)}
             canPost={canCreatePost}
             canDelete={canDelete}
+            canVoid={canVoid}
           />
         )}
       </div>
@@ -491,6 +524,12 @@ export default function JournalEntryPage() {
         entry={confirmEntry}
         loading={confirmLoading}
         onConfirm={handleConfirm}
+        reason={voidReason}
+        onReasonChange={(v) => {
+          setVoidReason(v);
+          if (v.trim().length >= 3) setVoidReasonError("");
+        }}
+        reasonError={voidReasonError}
         onClose={() => {
           if (!confirmLoading) setConfirmOpen(false);
         }}

@@ -122,13 +122,15 @@ ledger.get("/", async (c) => {
     );
   }
 
-  // Query 1: ambil semua jurnal posted sampai endDate (abaikan yang soft-deleted)
+  // Query 1: ambil semua jurnal posted sampai endDate (abaikan yang
+  // soft-deleted & yang di-void — void tidak ikut saldo buku besar)
   const { data: entries, error: entriesErr } = await supabase
     .from("journal_entries")
     .select("id, entry_date, entry_number, description")
     .eq("company_id", company_id)
     .eq("status", "posted")
     .is("deleted_at", null)
+    .is("voided_at", null)
     .lte("entry_date", endDate);
 
   if (entriesErr) {

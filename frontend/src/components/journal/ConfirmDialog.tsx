@@ -3,7 +3,7 @@ import { SpinnerIcon } from "./JournalShared";
 import { useLanguage } from "../../hooks/useLanguage";
 import { tx } from "../../i18n/tx";
 
-type DialogMode = "post" | "delete";
+type DialogMode = "post" | "delete" | "void";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -12,6 +12,10 @@ interface ConfirmDialogProps {
   loading: boolean;
   onConfirm: () => void;
   onClose: () => void;
+  /** Mode "void": alasan pembatalan (wajib, min 3 karakter). */
+  reason?: string;
+  onReasonChange?: (value: string) => void;
+  reasonError?: string;
 }
 
 const POST_ICON = (
@@ -47,6 +51,22 @@ const DELETE_ICON = (
   </svg>
 );
 
+const VOID_ICON = (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#d97706"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+  </svg>
+);
+
 export function ConfirmDialog({
   open,
   mode,
@@ -54,6 +74,9 @@ export function ConfirmDialog({
   loading,
   onConfirm,
   onClose,
+  reason,
+  onReasonChange,
+  reasonError,
 }: ConfirmDialogProps) {
   const { language } = useLanguage();
   if (!open || !entry) return null;
@@ -68,14 +91,23 @@ export function ConfirmDialog({
           btnLabel: tx(language, "Yes, Post Now", "Ya, Post Sekarang"),
           loadingLabel: tx(language, "Posting...", "Memposting..."),
         }
-      : {
-          icon: DELETE_ICON,
-          iconBg: "bg-red-50 dark:bg-red-500/10",
-          title: tx(language, "Delete Draft?", "Hapus Draft?"),
-          btnCls: "bg-red-600 hover:bg-red-700",
-          btnLabel: tx(language, "Yes, Delete", "Ya, Hapus"),
-          loadingLabel: tx(language, "Deleting...", "Menghapus..."),
-        };
+      : mode === "void"
+        ? {
+            icon: VOID_ICON,
+            iconBg: "bg-amber-50 dark:bg-amber-500/10",
+            title: tx(language, "Void This Entry?", "Void Entry Ini?"),
+            btnCls: "bg-amber-600 hover:bg-amber-700",
+            btnLabel: tx(language, "Yes, Void It", "Ya, Void"),
+            loadingLabel: tx(language, "Voiding...", "Memproses..."),
+          }
+        : {
+            icon: DELETE_ICON,
+            iconBg: "bg-red-50 dark:bg-red-500/10",
+            title: tx(language, "Delete Draft?", "Hapus Draft?"),
+            btnCls: "bg-red-600 hover:bg-red-700",
+            btnLabel: tx(language, "Yes, Delete", "Ya, Hapus"),
+            loadingLabel: tx(language, "Deleting...", "Menghapus..."),
+          };
 
   return (
     <div
@@ -107,6 +139,14 @@ export function ConfirmDialog({
               </span>{" "}
               {tx(language, "will be posted to the ledger and cannot be reversed.", "akan diposting ke buku besar dan tidak dapat diubah kembali.")}
             </>
+          ) : mode === "void" ? (
+            <>
+              {tx(language, "Entry ", "Entry ")}
+              <span className="font-medium text-gray-700 dark:text-gray-200">
+                {entry.number}
+              </span>{" "}
+              {tx(language, "will be voided — the data stays in history but is excluded from all reports.", "akan di-void — datanya tetap ada di riwayat tapi tidak ikut terhitung di laporan.")}
+            </>
           ) : (
             <>
               {tx(language, "Draft ", "Draft ")}
@@ -117,6 +157,41 @@ export function ConfirmDialog({
             </>
           )}
         </p>
+
+        {mode === "void" && (
+          <div className="mb-5">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+              {tx(language, "Void Reason (required)", "Alasan Void (wajib)")}
+            </label>
+            <textarea
+              value={reason ?? ""}
+              onChange={(e) => onReasonChange?.(e.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder={tx(
+                language,
+                "e.g. Wrong amount, duplicate entry...",
+                "cth: Nominal salah, input ganda...",
+              )}
+              className={`w-full px-3 py-2 text-sm rounded-xl border bg-white dark:bg-darkBg text-gray-800 dark:text-gray-200 outline-none focus:ring-2 transition resize-none ${
+                reasonError
+                  ? "border-rose-400 focus:ring-rose-400/40"
+                  : "border-gray-200 dark:border-gray-700 focus:ring-amber-500/40 focus:border-amber-500"
+              }`}
+            />
+            {reasonError ? (
+              <p className="mt-1 text-[11px] text-rose-500">{reasonError}</p>
+            ) : (
+              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                {tx(
+                  language,
+                  "The entry stays in history with a \"Voided\" badge for audit trail.",
+                  "Entry tetap tampil di riwayat dengan badge \"Voided\" untuk jejak audit.",
+                )}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2.5">
           <button
