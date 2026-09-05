@@ -23,6 +23,43 @@ function sanitizeAvatarUrl(raw: unknown): string | null {
   }
 }
 
+// Helper: role & company_name di-resolve dari JWT company. Role dibaca dari
+// company_members (sumber kebenaran), BUKAN dari users.role (kolom legacy).
+// authMiddleware sudah menjamin membership aktif ada, jadi cukup .single().
+async function buildProfilePayload(userId: string, companyId: string) {
+  const { data: profile, error: profileError } = await supabase
+    .from("users")
+    .select("id, name, email, phone, avatar_url, created_at")
+    .eq("id", userId)
+    .single();
+
+  if (profileError) {
+    console.error("[Users] profile error:", profileError);
+    return null;
+  }
+
+  const { data: membership } = await supabase
+    .from("company_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("company_id", companyId)
+    .single();
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("name")
+    .eq("id", companyId)
+    .single();
+
+  return {
+    ...profile,
+    avatar_url: profile.avatar_url || null,
+    role: membership?.role ?? null,
+    company_id: companyId,
+    company_name: company?.name || "",
+  };
+}
+
 // GET /api/users/:id
 // Ambil profil user. Hanya boleh mengambil profil DIRI SENDIRI.
 // (Daftar anggota tim ditangani oleh /api/users-management.)
@@ -34,28 +71,11 @@ users.get("/:id", async (c) => {
     return c.json({ error: "Forbidden" }, 403);
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, name, email, role, company_id, avatar_url, created_at")
-    .eq("id", user.sub)
-    .single();
-
-  if (error) {
-    console.error("[Users] GET error:", error);
+  const payload = await buildProfilePayload(user.sub, user.company_id);
+  if (!payload) {
     return c.json({ error: "User tidak ditemukan" }, 404);
   }
-
-  const { data: company } = await supabase
-    .from("companies")
-    .select("name")
-    .eq("id", data.company_id)
-    .single();
-
-  return c.json({
-    ...data,
-    avatar_url: data.avatar_url || null,
-    company_name: company?.name || "",
-  });
+  return c.json(payload);
 });
 
 // PUT /api/users/:id
@@ -92,28 +112,11 @@ users.put("/:id", async (c) => {
     }
   }
 
-  const { data: freshData, error: freshErr } = await supabase
-    .from("users")
-    .select("id, name, email, role, company_id, avatar_url")
-    .eq("id", user.sub)
-    .single();
-
-  if (freshErr) {
-    console.error("[Users] PUT fresh fetch error:", freshErr);
+  const payload = await buildProfilePayload(user.sub, user.company_id);
+  if (!payload) {
     return c.json({ error: "Gagal memuat profil" }, 500);
   }
-
-  const { data: company } = await supabase
-    .from("companies")
-    .select("name")
-    .eq("id", freshData.company_id)
-    .single();
-
-  return c.json({
-    ...freshData,
-    avatar_url: freshData.avatar_url || null,
-    company_name: company?.name || "",
-  });
+  return c.json(payload);
 });
 
 export default users;

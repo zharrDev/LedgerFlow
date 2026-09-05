@@ -77,23 +77,37 @@ function getClientIp(c: any): string {
   );
 }
 
-// Helper: beri tahu owner perusahaan jika member lain login
+// Helper: beri tahu owner perusahaan jika member lain login.
+// Owner diambil dari company_members (sumber kebenaran) — company_members
+// menunjuk auth.users (bukan public.users) sehingga join via PostgREST tidak
+// bisa; profil owner diambil lewat query terpisah lalu digabung manual.
 async function notifyCompanyOwners(
   companyId: string,
   actor: { id: string; name: string; email: string },
   meta: { device: string; ip: string },
 ) {
   try {
+    const { data: memberships, error: memberErr } = await supabase
+      .from("company_members")
+      .select("user_id")
+      .eq("company_id", companyId)
+      .eq("role", "owner")
+      .eq("status", "active")
+      .neq("user_id", actor.id);
+
+    if (memberErr) throw memberErr;
+    if (!memberships?.length) return;
+
+    const ownerIds = memberships.map((m) => m.user_id);
     const { data: owners } = await supabase
       .from("users")
       .select("id, name, email")
-      .eq("company_id", companyId)
-      .eq("role", "owner")
-      .neq("id", actor.id);
+      .in("id", ownerIds);
 
     if (!owners?.length) return;
 
     for (const owner of owners) {
+      if (!owner.email) continue; // anggota WA-only tidak bisa dinotifikasi email
       sendMemberLoginNotification(
         owner.email,
         owner.name,
@@ -105,6 +119,30 @@ async function notifyCompanyOwners(
   } catch (err) {
     console.error("notifyCompanyOwners error:", err);
   }
+}
+
+// Helper: resolve membership AKTIF user dari company_members (sumber
+// kebenaran role & company). User bisa punya banyak company — kalau ada,
+// pilih yang cocok dengan company default legacy di profil (users.company_id)
+// supaya user lama mendarat di company yang sama seperti sebelumnya; kalau
+// tidak ada/ tidak aktif, pakai membership aktif tertua.
+async function resolveActiveMembership(
+  userId: string,
+  preferredCompanyId?: string | null,
+): Promise<{ company_id: string; role: "owner" | "akuntan" } | null> {
+  const { data: memberships, error } = await supabase
+    .from("company_members")
+    .select("company_id, role")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  if (!memberships?.length) return null;
+  return (
+    memberships.find((m) => m.company_id === preferredCompanyId) ??
+    memberships[0]
+  );
 }
 
 // Rate-limit kasar per-IP untuk login/register email-password (in-memory;
@@ -302,13 +340,31 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
     );
   }
 
-  const companyName = await getCompanyName(user.company_id);
+  // ── Resolve company & role dari company_members (sumber kebenaran) ──
+  // User multi-company login ke company default-nya (membership aktif).
+  let membership: { company_id: string; role: "owner" | "akuntan" } | null;
+  try {
+    membership = await resolveActiveMembership(user.id, user.company_id);
+  } catch (err) {
+    return dbErrorResponse(c, err);
+  }
+  if (!membership) {
+    return c.json(
+      {
+        error:
+          "Anda belum terhubung ke perusahaan mana pun. Minta pemilik perusahaan mengundang Anda kembali.",
+      },
+      403,
+    );
+  }
+
+  const companyName = await getCompanyName(membership.company_id);
 
   const token = await signToken({
     sub: user.id,
     email: user.email,
-    role: user.role,
-    company_id: user.company_id,
+    role: membership.role,
+    company_id: membership.company_id,
   });
 
   sendLoginNotification(user.email, user.name, {
@@ -318,7 +374,7 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
   }).catch(console.error);
 
   notifyCompanyOwners(
-    user.company_id,
+    membership.company_id,
     { id: user.id, name: user.name, email: user.email },
     {
       device: parseUserAgent(c.req.header("user-agent") || ""),
@@ -332,8 +388,8 @@ auth.post("/login", validateBody(loginSchema), async (c) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
-      company_id: user.company_id,
+      role: membership.role,
+      company_id: membership.company_id,
       company_name: companyName,
       avatar_url: user.avatar_url || null,
     },
@@ -391,13 +447,30 @@ auth.post("/exchange-token", async (c) => {
       }
     }
 
-    const companyName = await getCompanyName(user.company_id);
+    // ── Resolve company & role dari company_members (sumber kebenaran) ──
+    let membership: { company_id: string; role: "owner" | "akuntan" } | null;
+    try {
+      membership = await resolveActiveMembership(user.id, user.company_id);
+    } catch (err) {
+      return dbErrorResponse(c, err);
+    }
+    if (!membership) {
+      return c.json(
+        {
+          error:
+            "Anda belum terhubung ke perusahaan mana pun. Minta pemilik perusahaan mengundang Anda kembali.",
+        },
+        403,
+      );
+    }
+
+    const companyName = await getCompanyName(membership.company_id);
 
     const token = await signToken({
       sub: user.id,
       email: user.email,
-      role: user.role,
-      company_id: user.company_id,
+      role: membership.role,
+      company_id: membership.company_id,
     });
 
     sendLoginNotification(user.email, user.name, {
@@ -407,7 +480,7 @@ auth.post("/exchange-token", async (c) => {
     }).catch(console.error);
 
     notifyCompanyOwners(
-      user.company_id,
+      membership.company_id,
       { id: user.id, name: user.name, email: user.email },
       {
         device: parseUserAgent(c.req.header("user-agent") || ""),
@@ -423,8 +496,8 @@ auth.post("/exchange-token", async (c) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        company_id: user.company_id,
+        role: membership.role,
+        company_id: membership.company_id,
         company_name: companyName,
         avatar_url: user.avatar_url || null,
       },

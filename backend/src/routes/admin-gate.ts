@@ -182,43 +182,69 @@ adminGate.get("/logs", requireAdminGate, async (c) => {
 // biasa).
 // ────────────────────────────────────────────────────────────────────────
 
-// Hitung jumlah owner di sebuah company (proteksi owner terakhir).
-// Role tersimpan di DUA tabel (users.role + company_members.role) yang bisa
-// tidak sinkron (mis. data lama sebelum sinkronisasi role). Agar TIDAK pernah
-// salah memblokir user yang bukan owner terakhir, hitung MAX dari kedua
-// sumber — nilai terbesar = jumlah owner paling akurat.
+// Hitung jumlah owner AKTIF di sebuah company (proteksi owner terakhir).
+// Sumber tunggal: company_members — users.role kini kolom legacy yang tidak
+// dipercaya lagi (company_members = sumber kebenaran role & keanggotaan).
 async function countOwners(companyId: string): Promise<number> {
-  const { count: memberCount, error: memberErr } = await supabase
+  const { count, error } = await supabase
     .from("company_members")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
-    .eq("role", "owner");
+    .eq("role", "owner")
+    .eq("status", "active");
 
-  const { count: userCount, error: userErr } = await supabase
-    .from("users")
-    .select("id", { count: "exact", head: true })
-    .eq("company_id", companyId)
-    .eq("role", "owner");
-
-  const a = !memberErr ? (memberCount ?? 0) : 0;
-  const b = !userErr ? (userCount ?? 0) : 0;
-  return Math.max(a, b);
+  if (error) {
+    console.error("[admin-gate] countOwners error:", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
-// GET /api/admin-gate/users — semua user lintas company + nama company
-// (read-only: admin hanya boleh melihat)
+// GET /api/admin-gate/users — semua keanggotaan lintas company (read-only).
+// Satu baris per MEMBERSHIP (user multi-company muncul per company-nya):
+// role & company diambil dari company_members, profil dari users. Tidak ada
+// join PostgREST — company_members.user_id menunjuk auth.users — jadi profil
+// & nama company digabung manual.
 adminGate.get("/users", requireAdminGate, async (c) => {
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, name, email, phone, role, company_id, status, created_at, companies(name)")
+  const { data: memberships, error } = await supabase
+    .from("company_members")
+    .select("user_id, company_id, role, status, created_at, companies(name)")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(500);
 
   if (error) {
     console.error("[admin-gate] users error:", error);
     return c.json({ error: "Gagal memuat user" }, 500);
   }
-  return c.json(data ?? []);
+
+  const rows = memberships ?? [];
+  const userIds = [...new Set(rows.map((m) => m.user_id))];
+
+  const { data: profiles } = userIds.length
+    ? await supabase
+        .from("users")
+        .select("id, name, email, phone, status, created_at")
+        .in("id", userIds)
+    : { data: [] };
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return c.json(
+    rows.map((m) => {
+      const p = (profileMap.get(m.user_id) ?? {}) as any;
+      return {
+        id: m.user_id, // id user (aksi moderasi menarget user, bukan membership)
+        company_id: m.company_id,
+        role: m.role,
+        membership_status: m.status,
+        name: p.name ?? "",
+        email: p.email ?? null,
+        phone: p.phone ?? null,
+        status: p.status ?? "active", // status suspend global (moderasi admin)
+        created_at: p.created_at ?? m.created_at,
+        companies: m.companies ?? null,
+      };
+    }),
+  );
 });
 
 // GET /api/admin-gate/companies — semua company (read-only)

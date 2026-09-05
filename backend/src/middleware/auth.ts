@@ -52,15 +52,39 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       );
     }
 
-    // ── Revalidasi role & company_id dari database (anti stale-JWT) ──
-    // Role/company di-bake ke token selama 1 hari. Jika user di-demote,
-    // dihapus, atau dipindah company, token lama masih membawa role lama
-    // sampai expire — itu celah privilege escalation. Karena itu, cek ulang
-    // setiap request: user harus masih ada, dan role/company_id di token
-    // harus sama dengan yang tersimpan saat ini. Kalau beda → tolak (401).
+    // ── Verifikasi membership dari company_members (SUMBER KEBENARAN) ──
+    // Role & keanggotaan TIDAK lagi dibaca dari tabel users (yang kini murni
+    // profil). Setiap request: user harus masih terdaftar dengan status
+    // 'active' di company yang tercantum di token. Ini menutup celah token
+    // lama yang masih valid setelah user dihapus dari company, di-suspend,
+    // atau role-nya berubah — semuanya terdeteksi real-time di sini (token
+    // berlaku 1 hari; tanpa cek ini token itu tetap hidup sampai expire).
+    // Role di context diambil dari DB (bukan dari JWT) sehingga stale role di
+    // token lama tidak bisa dipakai untuk privilege escalation.
+    const { data: membership, error: memberError } = await supabase
+      .from("company_members")
+      .select("role, status")
+      .eq("user_id", user.sub)
+      .eq("company_id", user.company_id)
+      .maybeSingle();
+
+    if (memberError) {
+      console.error("AUTH MEMBERSHIP CHECK ERROR =", memberError);
+      return c.json({ error: "Internal server error" }, 500);
+    }
+
+    if (!membership || membership.status !== "active") {
+      return c.json({ error: "Sesi tidak valid, silakan login ulang" }, 401);
+    }
+
+    // ── Cek status suspend GLOBAL (moderasi admin aplikasi) ──
+    // Berbeda dari suspend per-company di company_members (di atas), ini
+    // menonaktifkan user di seluruh aplikasi. Kolom `status` ada sejak
+    // migrasi migration-admin-suspend.sql; jika kolom belum ada (undefined)
+    // → fail-open (perilaku lama) agar tidak mengunci semua user.
     const { data: freshUser, error: dbError } = await supabase
       .from("users")
-      .select("id, role, company_id, status")
+      .select("status")
       .eq("id", user.sub)
       .maybeSingle();
 
@@ -73,16 +97,6 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       return c.json({ error: "Invalid or expired token" }, 401);
     }
 
-    if (freshUser.role !== user.role || freshUser.company_id !== user.company_id) {
-      return c.json({ error: "Invalid or expired token" }, 401);
-    }
-
-    // ── Cek status suspend (moderasi admin) ──
-    // User yang dinonaktifkan admin, atau anggota company yang dinonaktifkan,
-    // langsung ditolak di lapisan ini (menyasar SEMUA endpoint, tidak perlu
-    // cek ulang per route). Kolom `status` ada sejak migrasi
-    // migration-admin-suspend.sql; jika kolom belum ada (undefined) →
-    // fail-open (perilaku lama) agar tidak mengunci semua user.
     if (freshUser.status === "suspended") {
       return c.json(
         {
@@ -116,9 +130,8 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
     c.set("user", {
       ...user,
-      role: freshUser.role,
-      company_id: freshUser.company_id,
-    }); // simpan payload user (role/company segar dari DB) ke context
+      role: membership.role, // role segar dari company_members, bukan dari JWT
+    }); // simpan payload user (role segar dari DB) ke context
     await next(); // lanjut ke middleware/handler selanjutnya
   } catch (err) {
     console.error("JWT ERROR =", err);

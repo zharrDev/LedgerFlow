@@ -18,27 +18,23 @@ userMgmt.use("*", authMiddleware);
 // pemilik aplikasi yang masuk lewat gerbang terpisah, read-only + moderasi.)
 const ALLOWED_ROLES = ["akuntan", "owner"] as const;
 
-// Hitung jumlah owner di sebuah perusahaan (untuk proteksi owner terakhir).
-// Role tersimpan di DUA tabel (users.role + company_members.role) yang bisa
-// tidak sinkron (mis. data lama sebelum sinkronisasi role). Agar TIDAK pernah
-// salah memblokir user yang bukan owner terakhir, hitung MAX dari kedua
-// sumber — nilai terbesar = jumlah owner paling akurat.
+// Hitung jumlah owner AKTIF di sebuah perusahaan (untuk proteksi owner
+// terakhir). Sumber tunggal: company_members — tabel users tidak lagi
+// dihitung (kolom users.role kini legacy; company_members satu-satunya
+// sumber kebenaran role & keanggotaan).
 async function countOwners(companyId: string): Promise<number> {
-  const { count: memberCount, error: memberErr } = await supabase
+  const { count, error } = await supabase
     .from("company_members")
     .select("id", { count: "exact", head: true })
     .eq("company_id", companyId)
-    .eq("role", "owner");
+    .eq("role", "owner")
+    .eq("status", "active");
 
-  const { count: userCount, error: userErr } = await supabase
-    .from("users")
-    .select("id", { count: "exact", head: true })
-    .eq("company_id", companyId)
-    .eq("role", "owner");
-
-  const a = !memberErr ? (memberCount ?? 0) : 0;
-  const b = !userErr ? (userCount ?? 0) : 0;
-  return Math.max(a, b);
+  if (error) {
+    console.error("[user-management] countOwners error:", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 async function getCompanyName(companyId: string): Promise<string> {
@@ -187,37 +183,101 @@ userMgmt.post("/", requireRole("owner"), async (c) => {
 });
 
 // GET / (list) — hanya owner
+// Sumber data: company_members (sumber kebenaran keanggotaan) + profil user
+// dari users. company_members.user_id menunjuk auth.users (bukan public.users)
+// sehingga join via PostgREST tidak bisa — profil diambil query terpisah lalu
+// digabung manual (pola sama dengan admin-gate).
 userMgmt.get("/", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
-  const { search, sort, role, page, limit } = c.req.query();
+  const { search, sort, role, status, page, limit } = c.req.query();
+
+  // Search (nama/email/telepon) butuh id profil dulu — ilike hanya ada di
+  // tabel users. Batasi 1000 id agar query .in tetap ringan.
+  let searchIds: string[] | null = null;
+  if (search) {
+    const { data: matched, error: searchErr } = await supabase
+      .from("users")
+      .select("id")
+      .or(
+        `name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`,
+      )
+      .limit(1000);
+    if (searchErr) return dbErrorResponse(c, searchErr);
+    searchIds = (matched ?? []).map((u) => u.id);
+    if (searchIds.length === 0) {
+      return c.json({ data: [], total: 0, page: 1, limit: parseInt(limit || "20") });
+    }
+  }
 
   let query = supabase
-    .from("users")
-    .select("id, name, email, role, avatar_url, created_at", { count: "exact" })
+    .from("company_members")
+    .select("user_id, role, status, created_at", { count: "exact" })
     .eq("company_id", company_id);
 
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
-  }
   if (role) query = query.eq("role", role);
+  if (status) query = query.eq("status", status);
+  if (searchIds) query = query.in("user_id", searchIds);
 
-  const sortField = sort?.startsWith("-") ? sort.slice(1) : sort || "created_at";
+  // Sort di level membership: created_at & role. Sort by name dilakukan di
+  // JS setelah profil digabung (halaman maks 100 baris, tetap ringan).
+  const sortFieldRaw = sort?.startsWith("-") ? sort.slice(1) : sort || "created_at";
   const sortDir = sort?.startsWith("-") ? ("desc" as const) : ("asc" as const);
-  query = query.order(sortField, { ascending: sortDir === "asc" });
+  const jsSort = sortFieldRaw === "name";
+  const dbSortField = jsSort ? "created_at" : sortFieldRaw;
+  query = query.order(dbSortField, { ascending: sortDir === "asc" });
 
   const pageNum = Math.max(1, parseInt(page || "1"));
   const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20")));
   const offset = (pageNum - 1) * limitNum;
   query = query.range(offset, offset + limitNum - 1);
 
-  const { data, error, count } = await query;
+  const { data: memberships, error, count } = await query;
   if (error) return dbErrorResponse(c, error);
+
+  const memberRows = memberships ?? [];
+  const userIds = memberRows.map((m) => m.user_id);
+
+  const { data: profiles } = userIds.length
+    ? await supabase
+        .from("users")
+        .select("id, name, email, phone, avatar_url, created_at")
+        .in("id", userIds)
+    : { data: [] };
+  const profileMap = new Map<string, any>(
+    (profiles ?? []).map((p) => [(p as any).id, p]),
+  );
+
+  let data = memberRows.map((m) => {
+    const p = (profileMap.get(m.user_id) ?? {}) as any;
+    return {
+      id: m.user_id,
+      name: p.name ?? "",
+      email: p.email ?? null,
+      phone: p.phone ?? null,
+      role: m.role,
+      status: m.status,
+      avatar_url: p.avatar_url ?? null,
+      member_since: m.created_at,
+      created_at: p.created_at ?? m.created_at,
+    };
+  });
+
+  if (jsSort) {
+    data.sort((a, b) =>
+      sortDir === "asc"
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name),
+    );
+  }
+
   return c.json({ data, total: count || 0, page: pageNum, limit: limitNum });
 });
 
 // PUT /:id/role — hanya owner
 // Owner boleh mengubah role siapa pun antara akuntan <-> owner,
 // dengan proteksi: owner terakhir tidak boleh didemote.
+// Target & penulisan role murni di company_members (sumber kebenaran),
+// untuk kombinasi (user_id, company_id) milik owner yang login.
 userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
   const { company_id } = c.get("user");
   const id = c.req.param("id");
@@ -230,18 +290,21 @@ userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
     );
   }
 
-  const { data: targetUser } = await supabase
-    .from("users")
-    .select("id, company_id, role")
-    .eq("id", id)
-    .single();
+  const { data: membership } = await supabase
+    .from("company_members")
+    .select("user_id, role")
+    .eq("user_id", id)
+    .eq("company_id", company_id)
+    .maybeSingle();
 
-  if (!targetUser) return c.json({ error: "User tidak ditemukan" }, 404);
-  if (targetUser.company_id !== company_id) {
-    return c.json({ error: "Forbidden" }, 403);
+  if (!membership) {
+    return c.json(
+      { error: "User bukan anggota perusahaan ini" },
+      404,
+    );
   }
 
-  if (targetUser.role === "owner" && role !== "owner") {
+  if (membership.role === "owner" && role !== "owner") {
     const owners = await countOwners(company_id);
     if (owners <= 1) {
       return c.json(
@@ -251,26 +314,13 @@ userMgmt.put("/:id/role", requireRole("owner"), async (c) => {
     }
   }
 
-  // Role tersimpan di DUA tempat (users.role + company_members.role) dan
-  // wajib sinkron. Kalau hanya users yang di-update, company_members
-  // ketinggalan → perhitungan "jumlah owner" (countOwners) bisa salah dan
-  // user yang bukan owner terakhir ikut terblokir.
   const { error } = await supabase
-    .from("users")
-    .update({ role })
-    .eq("id", id);
-  if (error) return dbErrorResponse(c, error);
-
-  const { error: memberErr } = await supabase
     .from("company_members")
     .update({ role })
     .eq("user_id", id)
     .eq("company_id", company_id);
-  // Gagal sinkron member bukan kegagalan fatal — users sudah ter-update,
-  // tapi dicatat supaya bisa didiagnosis.
-  if (memberErr) {
-    console.error("[user-management] sync company_members role error:", memberErr);
-  }
+
+  if (error) return dbErrorResponse(c, error);
 
   return c.json({ message: "Role berhasil diubah" });
 });

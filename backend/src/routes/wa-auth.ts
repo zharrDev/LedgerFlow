@@ -284,13 +284,31 @@ function normalizeOr400(c: any, raw: any): { phone: string } | { errorResponse: 
 }
 
 // Payload sukses login — dipakai jalur normal & demo agar satu bentuk respons.
+// Company & role di-resolve dari company_members (sumber kebenaran): user
+// bisa tergabung di lebih dari satu company — login mendarat di company
+// default legacy (users.company_id) bila membership-nya masih aktif, kalau
+// tidak di membership aktif tertua. Melempar Error("no_active_membership")
+// bila user tidak tergabung aktif di company mana pun.
 async function buildLoginPayload(user: any) {
-  const companyName = await getCompanyName(user.company_id);
+  const { data: memberships, error: memberError } = await supabase
+    .from("company_members")
+    .select("company_id, role")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+  if (memberError) throw new Error(`lookup_membership: ${fmtError(memberError)}`);
+
+  const membership =
+    memberships?.find((m) => m.company_id === user.company_id) ??
+    memberships?.[0];
+  if (!membership) throw new Error("no_active_membership");
+
+  const companyName = await getCompanyName(membership.company_id);
   const token = await signToken({
     sub: user.id,
     email: user.email ?? undefined,
-    role: user.role,
-    company_id: user.company_id,
+    role: membership.role,
+    company_id: membership.company_id,
   });
   return {
     token,
@@ -299,8 +317,8 @@ async function buildLoginPayload(user: any) {
       name: user.name,
       phone: user.phone,
       email: user.email,
-      role: user.role,
-      company_id: user.company_id,
+      role: membership.role,
+      company_id: membership.company_id,
       company_name: companyName,
       avatar_url: user.avatar_url || null,
     },
@@ -439,6 +457,7 @@ waAuth.post("/register/verify", async (c) => {
           user_id: user.id,
           company_id: company.id,
           role: "owner",
+          status: "active",
         });
       if (memberErr) throw new Error(`insert_member: ${fmtError(memberErr)}`);
 
@@ -617,6 +636,17 @@ waAuth.post("/login/verify", async (c) => {
     return c.json(await buildLoginPayload(user));
   } catch (err: any) {
     console.error("WA LOGIN VERIFY ERROR:", err);
+    // User valid tapi tidak tergabung aktif di company mana pun (mis. sudah
+    // dihapus dari satu-satunya company-nya) — bukan kegagalan sistem.
+    if (err?.message === "no_active_membership") {
+      return c.json(
+        {
+          error:
+            "Akun Anda belum terhubung ke perusahaan mana pun. Minta pemilik perusahaan mengundang Anda kembali.",
+        },
+        403,
+      );
+    }
     return c.json({ error: "Gagal masuk. Coba lagi beberapa saat." }, 500);
   }
 });
