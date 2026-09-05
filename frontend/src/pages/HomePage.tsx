@@ -142,7 +142,7 @@ export default function HomePage() {
                 icon={<Sparkles size={14} />}
               />
 
-              <h2 className="mt-4 sm:mt-5 text-[1.8rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <h2 className="mt-4 sm:mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.15] sm:leading-[1.12] font-bold tracking-tight text-gray-900 dark:text-white">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={language}
@@ -206,7 +206,7 @@ export default function HomePage() {
                   <>
                     <Link
                       to="/register"
-                      className="justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
+                      className="w-full sm:w-auto justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
                     >
                       {language === "id"
                         ? "Coba Gratis 15 Hari"
@@ -215,7 +215,7 @@ export default function HomePage() {
                     </Link>
                     <Link
                       to="/login"
-                      className="justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
+                      className="w-full sm:w-auto justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
                     >
                       <PlayCircle size={18} className="opacity-60" />
                       {language === "id"
@@ -234,9 +234,18 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            {/* ── Floating Icons + Device Mockup Kanan ──
-                Hidden below lg: pixel-locked orbit (350px image, 600px arms)
-                tidak muat di viewport sempit — teks full-width lebih rapih. */}
+            {/* ── Floating Icons + Device Mockup — MOBILE & TABLET ──
+                Tidak lagi hidden: visual yang sama di-STACK di bawah teks
+                (flex-col default). Kanvas 600px di-scale turun (50% mobile /
+                70% tablet) supaya pas di layar sempit tanpa overflow. */}
+            <div className="lg:hidden relative w-full h-[300px] sm:h-[420px] overflow-hidden pointer-events-none">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 origin-top scale-50 sm:scale-75 w-[600px] h-[600px]">
+                <FloatingIconField />
+              </div>
+            </div>
+
+            {/* ── Floating Icons + Device Mockup Kanan — DESKTOP ──
+                Grid 2 kolom: visual di kanan teks dengan orbit full-size. */}
             <div className="hidden lg:block relative h-[70vh] min-h-[480px]">
               <FloatingIconField />
             </div>
