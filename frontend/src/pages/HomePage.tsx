@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -33,6 +33,7 @@ import { TextReveal } from "../components/TextReveal";
 import ScrollReveal from "../components/ScrollReveal";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 import FloatingIconField from "../components/home/FloatingIconField";
+import { TextFlipWords } from "../components/TextFlipWords";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -142,56 +143,51 @@ export default function HomePage() {
                 icon={<Sparkles size={14} />}
               />
 
-              <h2 className="mt-4 sm:mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.15] sm:leading-[1.12] font-bold tracking-tight text-gray-900 dark:text-white">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={language}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    {language === "id" ? (
-                      <>
-                        <span className="block">Kelola Masa Depan</span>
-                        <span className="block">Keuangan Anda</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="block">Manage Your</span>
-                        <span className="block">Financial Future</span>
-                      </>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-                <span className="block bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent">
-                  <TextReveal
+              {/* Heading gaya Editorial Finance: ukuran max dikendalikan
+                  (52-56px), leading & tracking rapat, aksen serif italic
+                  gradient — hierarchy jelas tanpa mendominasi layar. */}
+              <h2 className="mt-4 sm:mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] leading-[1.06] tracking-[-0.02em] font-bold text-gray-900 dark:text-white">
+                <span className="block">
+                  <TextFlipWords
+                    text={language === "id" ? "Kelola Masa Depan" : "Manage Your"}
+                    language={language}
+                  />
+                </span>
+                <span className="block">
+                  <TextFlipWords
+                    text={
+                      language === "id" ? "Keuangan Anda" : "Financial Future"
+                    }
+                    language={language}
+                    delay={0.06}
+                  />
+                </span>
+                <span className="block font-serif italic pr-1">
+                  <TextFlipWords
                     text={
                       language === "id"
                         ? "Dengan Percaya Diri"
                         : "With Confidence"
                     }
-                    delay={0.4}
-                    staggerDelay={0.03}
                     language={language}
+                    delay={0.12}
+                    wordClassName="bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent"
                   />
                 </span>
               </h2>
 
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={language}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-                  className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-lg max-[399px]:mx-auto leading-relaxed"
-                >
-                  {language === "id"
-                    ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
-                    : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."}
-                </motion.p>
-              </AnimatePresence>
+              <p className="mt-6 text-base sm:text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-xl max-[399px]:mx-auto leading-relaxed">
+                <TextFlipWords
+                  text={
+                    language === "id"
+                      ? "LedgerFlow menghilangkan pembukuan manual, mempercepat tutup buku bulanan, dan menyajikan kondisi keuangan secara real-time."
+                      : "LedgerFlow eliminates manual bookkeeping, speeds up month-end close, and gives you real-time financials."
+                  }
+                  language={language}
+                  delay={0.2}
+                  stagger={0.015}
+                />
+              </p>
 
               <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center sm:flex-wrap gap-3">
                 {user ? (
@@ -208,9 +204,15 @@ export default function HomePage() {
                       to="/register"
                       className="w-full sm:w-auto justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.02] transition-all flex items-center gap-2"
                     >
-                      {language === "id"
-                        ? "Coba Gratis 15 Hari"
-                        : "15-Day Free Trial"}{" "}
+                      <TextFlipWords
+                        text={
+                          language === "id"
+                            ? "Coba Gratis 15 Hari"
+                            : "15-Day Free Trial"
+                        }
+                        language={language}
+                        stagger={0.03}
+                      />{" "}
                       <ArrowRight size={18} />
                     </Link>
                     <Link
@@ -218,9 +220,15 @@ export default function HomePage() {
                       className="w-full sm:w-auto justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
                     >
                       <PlayCircle size={18} className="opacity-60" />
-                      {language === "id"
-                        ? "Lihat Cara Kerjanya"
-                        : "See How It Works"}
+                      <TextFlipWords
+                        text={
+                          language === "id"
+                            ? "Lihat Cara Kerjanya"
+                            : "See How It Works"
+                        }
+                        language={language}
+                        stagger={0.03}
+                      />
                     </Link>
                   </>
                 )}
@@ -228,9 +236,16 @@ export default function HomePage() {
 
               <p className="mt-4 sm:mt-5 text-xs sm:text-sm text-gray-400 flex items-center gap-2 max-[399px]:justify-center">
                 <Lock size={14} className="flex-shrink-0" />
-                {language === "id"
-                  ? "Keamanan kelas enterprise dengan enkripsi penuh"
-                  : "Enterprise-grade security with full encryption"}
+                <TextFlipWords
+                  text={
+                    language === "id"
+                      ? "Keamanan kelas enterprise dengan enkripsi penuh"
+                      : "Enterprise-grade security with full encryption"
+                  }
+                  language={language}
+                  delay={0.05}
+                  stagger={0.02}
+                />
               </p>
             </motion.div>
 
