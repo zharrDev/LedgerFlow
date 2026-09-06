@@ -171,7 +171,7 @@ export default function HomePage() {
                     }
                     language={language}
                     delay={0.12}
-                    wordClassName="bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent"
+                    wordClassName="bg-gradient-to-r from-primary-600 to-cyan-500 dark:from-primary-400 dark:to-cyan-300 bg-clip-text text-transparent pb-[0.18em] -mb-[0.18em] pt-[0.12em] -mt-[0.12em] px-[0.08em] -mx-[0.08em]"
                   />
                 </span>
               </h2>
@@ -442,8 +442,19 @@ export default function HomePage() {
 
               {/* Video Container */}
               <div className="relative group">
-                {/* Outer Glow */}
-                <div className="absolute -inset-10 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-sky-500/20 blur-3xl rounded-[50px]" />
+                {/* Outer Glow — diberi mask radial supaya memudar sebelum
+                    tepi section (overflow-hidden) memotongnya. Tanpa mask,
+                    blur-3xl ter-clip membentuk GARIS BATAS keras antara
+                    section demo dan section berikutnya di dark mode. */}
+                <div
+                  className="absolute -inset-10 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-sky-500/20 blur-3xl rounded-[50px]"
+                  style={{
+                    WebkitMaskImage:
+                      "radial-gradient(ellipse at center, black 45%, transparent 78%)",
+                    maskImage:
+                      "radial-gradient(ellipse at center, black 45%, transparent 78%)",
+                  }}
+                />
 
                 {/* Main Card */}
                 <div className="relative overflow-hidden rounded-[36px] border border-white/20 bg-white/60 dark:bg-darkCard/70 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.18)] transition-[background-color,border-color,box-shadow,transform] duration-700 group-hover:-translate-y-2">

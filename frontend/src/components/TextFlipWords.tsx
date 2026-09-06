@@ -1,8 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 // TextFlipWords — animasi pergantian teks per KATA dengan flip 3D (rotateX).
-// Dipakai untuk transisi ganti bahasa (ID↔EN) yang smooth: kata lama keluar
-// berputar cepat (bersamaan), kata baru masuk satu-satu (stagger 30-40ms).
+// Dipakai untuk transisi ganti bahasa (ID↔EN) yang smooth: kata lama "jatuh"
+// ke BELAKANG (ujung atas menunduk menjauh, rotateX 0→90), lalu kata baru
+// bangkit dari posisi terbalik itu (rotateX 90→0) satu per satu stagger —
+// efeknya seperti kartu split-flap yang dibalik ke belakang.
 //
 // - `language` dipakai sebagai key: begitu berubah, seluruh blok di-animate
 //   ulang (AnimatePresence mode="wait" — exit dulu, lalu masuk stagger).
@@ -69,10 +71,13 @@ export function TextFlipWords({
                 reduced
                   ? { opacity: 0, transition: { duration: 0.12 } }
                   : {
+                      // jatuh ke belakang: arah sama dengan pose awal kata
+                      // baru (rotateX 90) → transisi terasa seperti kartu
+                      // yang dibalik ke belakang, bukan dibalik ke depan.
                       opacity: 0,
-                      rotateX: -90,
-                      y: "-0.35em",
-                      transition: { duration: 0.12, ease: "easeIn" },
+                      rotateX: 90,
+                      y: "0.35em",
+                      transition: { duration: 0.14, ease: "easeIn" },
                     }
               }
               transition={{
