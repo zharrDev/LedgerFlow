@@ -72,7 +72,7 @@ interface StatCardProps {
   value: ReactNode;
   sub?: string;
   colorClass?: string;
-  icon?: React.ElementType;
+  icon?: (props: { size?: number; className?: string }) => ReactNode;
 }
 
 export function StatCard({
