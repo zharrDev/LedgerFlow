@@ -35,6 +35,7 @@ import ScrollReveal from "../components/ScrollReveal";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 import FloatingIconField from "../components/home/FloatingIconField";
 import VideoModal from "../components/home/VideoModal";
+import MacFrame from "../components/home/MacFrame";
 import { TextFlipWords } from "../components/TextFlipWords";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
@@ -478,7 +479,7 @@ export default function HomePage() {
                 />
 
                 {/* Main Card */}
-                <div className="relative overflow-hidden rounded-[36px] border border-white/20 bg-white/60 dark:bg-darkCard/70 backdrop-blur-2xl shadow-[0_30px_100px_rgba(0,0,0,0.18)] transition-[background-color,border-color,box-shadow,transform] duration-700 group-hover:-translate-y-2">
+                <MacFrame className="relative transition-transform duration-700 group-hover:-translate-y-2">
                   <ScrollReveal direction="scale" className="w-full">
                     <InViewVideo
                       sources={[
@@ -488,9 +489,7 @@ export default function HomePage() {
                       className="w-full min-h-[100px] md:min-h-[300px] lg:min-h-[450px] object-cover"
                     />
                   </ScrollReveal>
-                  {/* Overlay Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-                </div>
+                </MacFrame>
 
                 {/* Floating Card 1 */}
                 <motion.div

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import MacFrame from "./MacFrame";
 
 type Props = {
   open: boolean;
@@ -64,7 +65,7 @@ export default function VideoModal({ open, onClose, src, type = "video/webm" }: 
             >
               <X size={18} />
             </button>
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+            <MacFrame>
               <video
                 key={src}
                 controls
@@ -74,7 +75,7 @@ export default function VideoModal({ open, onClose, src, type = "video/webm" }: 
               >
                 <source src={src} type={type} />
               </video>
-            </div>
+            </MacFrame>
           </motion.div>
         </motion.div>
       )}
