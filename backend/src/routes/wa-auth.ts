@@ -26,6 +26,7 @@ import {
   sendWhatsAppLoginAlert,
   FonnteError,
 } from "../lib/whatsapp.js";
+import { deleteOrphanAuthUserByPhone } from "../lib/authHeal.js";
 import { strictOtpRateLimit } from "../middleware/rate-limit.js";
 
 const waAuth = new Hono();
@@ -170,12 +171,42 @@ async function createCompany(companyName: string): Promise<{ id: string }> {
   return data;
 }
 
+// Buat auth user Supabase untuk nomor WA. Bila nomor sudah terpakai di
+// auth.users, coba auto-heal: hapus auth YATIM (tanpa profil users) lalu
+// retry sekali — penghapusan akun yang tidak bersih (profil ter-CASCADE,
+// auth tertinggal) tidak lagi membuat register ulang gagal 500.
 async function createPhoneAuthUser(phone: string): Promise<{ id: string }> {
-  const { data, error } = await supabase.auth.admin.createUser({
-    phone: `+${phone}`,
-    phone_confirm: true,
-  });
-  if (error) throw new Error(`create_auth_user: ${fmtError(error)}`);
+  const attempt = () =>
+    supabase.auth.admin.createUser({
+      phone: `+${phone}`,
+      phone_confirm: true,
+    });
+
+  let { data, error } = await attempt();
+  if (error) {
+    const duplicate = /already.*registered|phone.*exists|duplikat/i.test(
+      `${error.message ?? ""} ${JSON.stringify(error)}`,
+    );
+    if (duplicate) {
+      console.warn(
+        `[wa-auth] nomor ${phone} bentrok di auth.users — coba heal yatim…`,
+      );
+      const healed = await deleteOrphanAuthUserByPhone(phone);
+      if (healed) {
+        const retry = await attempt();
+        data = retry.data;
+        error = retry.error;
+      }
+    }
+  }
+  if (error) {
+    throw new Error(
+      `create_auth_user: nomor ini sudah dipakai akun lain. ${fmtError(error)}`,
+    );
+  }
+  if (!data?.user?.id) {
+    throw new Error("create_auth_user: respons Supabase tanpa user id.");
+  }
   return { id: data.user.id };
 }
 
@@ -477,6 +508,14 @@ waAuth.post("/register/verify", async (c) => {
     }
   } catch (err: any) {
     console.error("WA REGISTER VERIFY ERROR:", err);
+    // Bentrok nomor di auth.users (bukan yatim — akun sah) → 409 jelas,
+    // bukan 500 generik yang membingungkan user.
+    if (/create_auth_user/.test(err?.message ?? "")) {
+      return c.json(
+        { error: "Nomor WhatsApp ini sudah dipakai akun lain. Silakan masuk atau gunakan nomor berbeda." },
+        409,
+      );
+    }
     return c.json({ error: "Gagal membuat akun. Coba lagi beberapa saat." }, 500);
   }
 });
