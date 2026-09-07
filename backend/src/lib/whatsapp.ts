@@ -21,7 +21,10 @@ export function normalizePhoneNumber(input: string): string {
   return num;
 }
 
-async function sendFonnte(params: FormData, timeoutMs = 15000): Promise<any> {
+// Timeout 8 detik (turun dari 15): Fonnte yang sehat merespons < 3 detik;
+// 8s cukup ruang untuk jaringan lambat, tapi user tidak digantung lama
+// saat provider bermasalah — gagal cepat, coba lagi cepat.
+async function sendFonnte(params: FormData, timeoutMs = 8000): Promise<any> {
   const token = process.env.FONNTE_TOKEN;
   if (!token?.trim()) {
     throw new FonnteError(
