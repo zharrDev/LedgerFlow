@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import InfoPanel from "../components/InfoPanel";
 import AuthFlipCard from "../components/auth/AuthFlipCard";
@@ -17,13 +18,8 @@ export default function AuthPage({
 }) {
   const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [isHovered, setIsHovered] = useState(false);
-  const [showUI, setShowUI] = useState(false);
   const navigate = useNavigate();
   const { language } = useLanguage();
-
-  useEffect(() => {
-    setShowUI(true);
-  }, []);
 
   // Warm-up saat halaman login/register kebukak:
   //   1. Prefetch chunk DashboardPage biar Navigasi ke dashboard lebih cepat
@@ -71,10 +67,11 @@ export default function AuthPage({
 
       {/* RIGHT FORM AREA */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex items-center justify-center p-4 sm:p-6 py-10 sm:py-12 lg:py-6 relative">
-        <div
-          className={`w-full max-w-md mx-auto transition-all duration-300 {
-            showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-          }`}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-md mx-auto"
         >
           <Link
             to="/"
@@ -89,7 +86,7 @@ export default function AuthPage({
             front={<LoginForm onModeChange={setMode} />}
             back={<RegisterForm onModeChange={setMode} />}
           />
-        </div>
+        </motion.div>
       </div>
     </div>
   );
