@@ -13,11 +13,21 @@ export default function PublicHelpPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
       <Navbar />
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pt-24 pb-10 sm:pb-14 space-y-10">
+      <main className="relative flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pt-24 pb-10 sm:pb-14 space-y-10">
+        {/* Glow latar — mask radial supaya memudar sebelum tepi (tanpa garis) */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl"
+          style={{
+            WebkitMaskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 75%)",
+            maskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 75%)",
+          }}
+        />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-3"
+          className="relative text-center space-y-3"
         >
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
             <HelpCircle className="w-8 h-8 text-white" />
@@ -36,7 +46,7 @@ export default function PublicHelpPage() {
           <ContactCards cards={helpContactCards} />
         </section>
 
-        <section className="space-y-4">
+        <section className="relative space-y-4">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
               <HelpCircle size={18} />
