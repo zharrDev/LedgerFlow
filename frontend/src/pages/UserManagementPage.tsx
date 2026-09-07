@@ -16,6 +16,7 @@ import {
 import { useSetAppShellConfig } from "../context/AppShellConfigContext";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { HoverDropdown } from "../components/HoverDropdown";
+import Spinner from "../components/Spinner";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
@@ -225,7 +226,7 @@ export default function UserManagementPage() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-primary-500/20 border-t-primary-500" />
+          <Spinner size={9} />
         </div>
       ) : error ? (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl">

@@ -1,4 +1,6 @@
 /** Skeleton placeholder for financial report pages (first load only). */
+import Spinner from "../Spinner";
+
 export function ReportSkeleton({ cards = 3 }: { cards?: number }) {
   return (
     <div className="space-y-6 animate-pulse" aria-hidden>
@@ -37,7 +39,7 @@ export function ReportSkeleton({ cards = 3 }: { cards?: number }) {
 export function ReportRefetchBar({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 text-xs text-primary-600 dark:text-primary-400 py-1">
-      <div className="w-3.5 h-3.5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin shrink-0" />
+      <Spinner size={4} />
       <span>{label}</span>
     </div>
   );

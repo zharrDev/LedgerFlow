@@ -7,6 +7,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 
 import { ScrollReveal } from "../components/ScrollReveal";
+import Spinner from "../components/Spinner";
 import {
   PlusCircle,
   Layers,
@@ -653,7 +654,7 @@ export default function ChartOfAccounts() {
                   >
                     {importing ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <Spinner size={4} colorClass="bg-white" />
                         {tx(language, "Importing...", "Importing...")}
                       </>
                     ) : (

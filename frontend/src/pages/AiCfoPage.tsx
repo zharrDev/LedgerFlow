@@ -10,6 +10,7 @@ import { AiCfoChatComposer } from "../components/ai/AiCfoChatComposer";
 import { AiCfoLoadingIndicator } from "../components/ai/AiCfoLoadingIndicator";
 import { AiCfoHistoryPanel } from "../components/ai/AiCfoHistoryPanel";
 import { AiCfoWelcome } from "../components/ai/AiCfoWelcome";
+import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { getAiErrorMessage, sendAiChat } from "../services/aiService";
@@ -219,7 +220,7 @@ export default function AiCfoPage() {
   if (!hydrated) {
     return (
       <div className="flex items-center justify-center flex-1">
-        <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-primary-500/20 border-t-primary-500" />
+        <Spinner size={9} />
       </div>
     );
   }

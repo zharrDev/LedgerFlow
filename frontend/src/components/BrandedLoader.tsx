@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import logo from "../assets/ledgerflow.webp";
+import Spinner from "./Spinner";
 
 /** Small inline fallback for lazy routes — keeps AppShell chrome visible. */
 export function RouteSuspenseFallback() {
   return (
     <div className="flex items-center justify-center min-h-[40vh] bg-gray-100 dark:bg-[#0B1120]">
-      <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <Spinner size={9} />
     </div>
   );
 }

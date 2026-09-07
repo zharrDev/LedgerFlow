@@ -70,6 +70,7 @@ import { usePagination } from "../hooks/usePagination";
 import { getErrorMessage } from "../lib/errorMessage";
 import { TablePagination } from "../components/TablePagination";
 import { HoverDropdown } from "../components/HoverDropdown";
+import Spinner from "../components/Spinner";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 
@@ -375,7 +376,7 @@ export default function AdminPortalPage() {
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
             {loading ? (
               <div className="py-20 flex justify-center">
-                <div className={`animate-spin rounded-full h-8 w-8 border-2 ${ACCENT.spinner} border-t-transparent`} />
+                <Spinner size={9} />
               </div>
             ) : tab === "overview" ? (
               <OverviewView overview={overview} error={error} />
@@ -446,7 +447,7 @@ export default function AdminPortalPage() {
         <main className="flex-1 p-4 sm:p-6 space-y-6">
           {loading ? (
             <div className="py-20 flex justify-center">
-              <div className={`animate-spin rounded-full h-8 w-8 border-2 ${ACCENT.spinner} border-t-transparent`} />
+              <Spinner size={9} />
             </div>
           ) : tab === "overview" ? (
             <OverviewView overview={overview} error={error} />
@@ -745,7 +746,7 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
           )}
         </div>
         {loading ? (
-          <div className="py-12 flex justify-center"><div className={`animate-spin rounded-full h-6 w-6 border-2 ${ACCENT.spinner} border-t-transparent`} /></div>
+          <div className="py-12 flex justify-center"><Spinner /></div>
         ) : logs.length === 0 ? (
           <EmptyState error={fetchError || error} text={query || statusFilter ? tx(language, "No matching records.", "Tidak ada catatan yang cocok.") : tx(language, "No recorded attempts yet.", "Belum ada percobaan tercatat.")} />
         ) : (
@@ -1114,7 +1115,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
               <div className="flex items-center justify-end gap-3 px-6 py-5 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
                 <button onClick={() => setShowModal(false)} disabled={submitting} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40">{tx(language, "Cancel", "Batal")}</button>
                 <button onClick={handleSubmit} disabled={submitting} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${ACCENT.btn}`}>
-                  {submitting ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {tx(language, "Saving...", "Menyimpan...")}</> : editingPlan ? tx(language, "Save Changes", "Simpan Perubahan") : tx(language, "Create Plan", "Buat Plan")}
+                  {submitting ? <><Spinner size={4} colorClass="bg-white" /> {tx(language, "Saving...", "Menyimpan...")}</> : editingPlan ? tx(language, "Save Changes", "Simpan Perubahan") : tx(language, "Create Plan", "Buat Plan")}
                 </button>
               </div>
             </motion.div>
@@ -1241,7 +1242,7 @@ function ConfirmActionModal({ confirm, confirming, onCancel, onConfirm }: { conf
             <div className="flex items-center justify-end gap-3 px-6 py-5 mt-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
               <button onClick={onCancel} disabled={confirming} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40">{tx(language, "Cancel", "Batal")}</button>
               <button onClick={onConfirm} disabled={confirming} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${meta.buttonCls}`}>
-                {confirming ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {tx(language, "Processing...", "Memproses...")}</> : <>{meta.icon} {meta.button}</>}
+                {confirming ? <><Spinner size={4} colorClass="bg-white" /> {tx(language, "Processing...", "Memproses...")}</> : <>{meta.icon} {meta.button}</>}
               </button>
             </div>
           </motion.div>
@@ -1273,7 +1274,7 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
             </div>
             <div className="px-6 pt-5">
               {loading ? (
-                <div className="py-14 flex justify-center"><div className={`animate-spin rounded-full h-7 w-7 border-2 ${ACCENT.spinner} border-t-transparent`} /></div>
+                <div className="py-14 flex justify-center"><Spinner size={8} /></div>
               ) : error ? (
                 <div className="py-14 text-center"><XCircle size={36} className="mx-auto mb-3 opacity-40 text-rose-400" /><p className="text-sm text-gray-400 dark:text-gray-500">{error}</p></div>
               ) : data ? (
