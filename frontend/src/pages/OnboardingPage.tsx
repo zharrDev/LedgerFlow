@@ -76,8 +76,38 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10 p-4">
-      <div className="w-full max-w-lg mx-auto">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10 p-4">
+      {/* Dekor blob gradient — "bahan" yang di-blur kartu glass. Mask radial
+          supaya memudar sebelum tepi (tanpa garis potong), pola yang sama
+          dengan halaman publik. */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/4 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-primary-500/15 blur-3xl dark:bg-primary-500/20"
+        style={{
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+          maskImage:
+            "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -left-24 bottom-1/4 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl"
+        style={{
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 35%, transparent 70%)",
+          maskImage:
+            "radial-gradient(ellipse at center, black 35%, transparent 70%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -right-24 top-10 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl"
+        style={{
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 35%, transparent 70%)",
+          maskImage:
+            "radial-gradient(ellipse at center, black 35%, transparent 70%)",
+        }}
+      />
+      <div className="relative w-full max-w-lg mx-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -86,7 +116,7 @@ export default function OnboardingPage() {
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-primary-500/20 rounded-3xl shadow-2xl p-5 sm:p-8 text-center">
+            <div className="bg-white/55 dark:bg-[#111827]/55 backdrop-blur-xl border border-white/70 dark:border-white/10 rounded-3xl shadow-[0_8px_32px_rgba(31,41,55,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)] p-5 sm:p-8 text-center">
               <div
                 className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${steps[step].color} flex items-center justify-center shadow-lg`}
               >
