@@ -50,15 +50,25 @@ export function TermsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
       <Navbar />
-      <div className="mx-auto max-w-2xl w-full px-4 pt-24 pb-10 sm:pt-28 sm:pb-16 flex-1">
+      <div className="relative mx-auto max-w-2xl w-full px-4 pt-24 pb-10 sm:pt-28 sm:pb-16 flex-1">
+        {/* Glow latar — mask radial supaya memudar sebelum tepi (tanpa garis) */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl"
+          style={{
+            WebkitMaskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 75%)",
+            maskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 75%)",
+          }}
+        />
         <Link
           to="/register"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 mb-6 transition"
+          className="relative inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 mb-6 transition-colors duration-200"
         >
           <ArrowLeft size={16} /> {id ? "Kembali ke pendaftaran" : "Back to sign up"}
         </Link>
 
-        <div className="flex items-center gap-3 mb-6">
+        <div className="relative flex items-center gap-3 mb-6">
           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-md">
             <ShieldCheck size={22} />
           </div>
@@ -72,7 +82,7 @@ export function TermsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-6 sm:p-8 space-y-6 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+        <div className="relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-6 sm:p-8 space-y-6 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
           {sections.map((section) => (
             <section key={section.title}>
               <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
