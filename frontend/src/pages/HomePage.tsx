@@ -1,4 +1,5 @@
 // src/pages/HomePage.tsx
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -33,6 +34,7 @@ import { TextReveal } from "../components/TextReveal";
 import ScrollReveal from "../components/ScrollReveal";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 import FloatingIconField from "../components/home/FloatingIconField";
+import VideoModal from "../components/home/VideoModal";
 import { TextFlipWords } from "../components/TextFlipWords";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
@@ -47,6 +49,17 @@ try {
   ).href;
 } catch {
   dashboardDemo = "";
+}
+
+// Video "Lihat Cara Kerjanya" — tombol hero membuka modal video ini.
+let howItWorksVideo = "";
+try {
+  howItWorksVideo = new URL(
+    "../assets/ledgerflow-how-it-works.webm",
+    import.meta.url,
+  ).href;
+} catch {
+  howItWorksVideo = "";
 }
 
 
@@ -114,11 +127,18 @@ const featureCards: Array<{
 export default function HomePage() {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
   return (
     <div
       className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg"
     >
+      <VideoModal
+        open={howItWorksOpen}
+        onClose={() => setHowItWorksOpen(false)}
+        src={howItWorksVideo}
+        type="video/webm"
+      />
       <Navbar />
       <ScrollCardWrapper>
         {/* ═══ Hero ═══ */}
@@ -215,8 +235,9 @@ export default function HomePage() {
                       />{" "}
                       <ArrowRight size={18} />
                     </Link>
-                    <Link
-                      to="/login"
+                    <button
+                      type="button"
+                      onClick={() => setHowItWorksOpen(true)}
                       className="w-full sm:w-auto justify-center px-5 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base border border-gray-200 dark:border-white/20 rounded-xl text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-medium flex items-center gap-2"
                     >
                       <PlayCircle size={18} className="opacity-60" />
@@ -229,7 +250,7 @@ export default function HomePage() {
                         language={language}
                         stagger={0.03}
                       />
-                    </Link>
+                    </button>
                   </>
                 )}
               </div>
