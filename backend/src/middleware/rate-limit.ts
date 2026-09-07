@@ -140,7 +140,7 @@ export function strictOtpRateLimit() {
     max: STRICT_MAX,
     keyGenerator: async (c) => `${getClientIp(c)}:${await phoneKeyPart(c)}`,
     message:
-      "Terlalu banyak percobaan. Coba lagi dalam 15 menit atau hubungi dukungan.",
+      "Percobaan terlalu sering untuk nomor ini. Tunggu 15 menit atau gunakan nomor lain.",
   });
 }
 
