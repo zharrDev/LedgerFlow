@@ -345,19 +345,22 @@ waAuth.post("/register/start", async (c) => {
       );
     }
 
-    const { data: existing } = await supabase
-      .from("users")
-      .select("id")
-      .eq("phone", phone)
-      .maybeSingle();
-    if (existing) {
+    // Query existing-user & cooldown independen — jalan paralel supaya
+    // endpoint kirim OTP tidak menumpuk 2 round-trip Supabase berurutan.
+    const [existingResult, wait] = await Promise.all([
+      supabase.from("users").select("id").eq("phone", phone).maybeSingle(),
+      cooldownRemaining(phone, "register"),
+    ]);
+    if (existingResult.error) {
+      throw new Error(`lookup_existing: ${fmtError(existingResult.error)}`);
+    }
+    if (existingResult.data) {
       return c.json(
         { error: "Nomor WhatsApp sudah terdaftar. Silakan masuk." },
         409,
       );
     }
 
-    const wait = await cooldownRemaining(phone, "register");
     if (wait > 0) {
       return c.json(
         { error: `Mohon tunggu ${wait} detik sebelum meminta kode baru.`, retry_after: wait },
@@ -488,19 +491,20 @@ waAuth.post("/login/start", async (c) => {
     if ("errorResponse" in norm) return norm.errorResponse;
     const phone = norm.phone;
 
-    const { data: user } = await supabase
-      .from("users")
-      .select("id")
-      .eq("phone", phone)
-      .maybeSingle();
-    if (!user) {
+    // Query user & cooldown independen — jalan paralel supaya endpoint
+    // kirim OTP tidak menumpuk 2 round-trip Supabase berurutan.
+    const [userResult, wait] = await Promise.all([
+      supabase.from("users").select("id").eq("phone", phone).maybeSingle(),
+      cooldownRemaining(phone, "login"),
+    ]);
+    if (userResult.error) throw new Error(`lookup_user: ${fmtError(userResult.error)}`);
+    if (!userResult.data) {
       return c.json(
         { error: "Nomor WhatsApp belum terdaftar. Silakan daftar terlebih dahulu." },
         404,
       );
     }
 
-    const wait = await cooldownRemaining(phone, "login");
     if (wait > 0) {
       return c.json(
         { error: `Mohon tunggu ${wait} detik sebelum meminta kode baru.`, retry_after: wait },
