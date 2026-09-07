@@ -15,7 +15,7 @@ export default function ResourceDetailPage() {
     <DetailPageTemplate
       content={content}
       backHref="/"
-      backLabel="Back to Home"
+      backLabel={{ en: "Back to Home", id: "Kembali ke Beranda" }}
     />
   );
 }

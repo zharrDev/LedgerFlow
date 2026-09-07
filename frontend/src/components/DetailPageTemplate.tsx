@@ -49,11 +49,15 @@ export default function DetailPageTemplate({
 }: {
   content: DetailPageContent;
   backHref: string;
-  backLabel?: string;
+  backLabel?: L | string;
 }) {
   const { language } = useLanguage();
   const id = language === "id";
   const Icon = content.heroIcon;
+  const backText =
+    typeof backLabel === "string"
+      ? backLabel
+      : backLabel?.[language] ?? (id ? "Kembali" : "Back");
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-darkBg">
@@ -61,17 +65,17 @@ export default function DetailPageTemplate({
       <main className="flex-1 pt-24 pb-16">
         {/* ═══ Hero ═══ */}
         <section className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
-          {/* Breadcrumb — own row with margin-bottom */}
+          {/* Breadcrumb pill — kiri atas, di luar alur center hero */}
           <motion.div
             {...breadcrumbAnim}
-            className="mb-8"
+            className="mb-8 flex justify-start"
           >
             <Link
               to={backHref}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3.5 py-1.5 text-sm font-medium text-gray-600 shadow-sm transition-all duration-200 hover:border-primary-500/40 hover:bg-primary-50 hover:text-primary-600 dark:border-gray-700/60 dark:bg-gray-800/60 dark:text-gray-300 dark:hover:border-primary-500/40 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"
             >
-              <ArrowLeft size={14} />
-              {backLabel ?? (id ? "Kembali" : "Back")}
+              <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
+              {backText}
             </Link>
           </motion.div>
 
