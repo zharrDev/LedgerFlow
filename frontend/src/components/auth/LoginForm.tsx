@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../hooks/useLanguage";
+import { getErrorMessage } from "../../lib/errorMessage";
 import GoogleAuthButton from "./GoogleAuthButton";
 import logo from "../../assets/ledgerflow.webp";
 
@@ -20,16 +21,11 @@ export default function LoginForm({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showUI, setShowUI] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const { requestWaOtp, verifyWaOtp, loginWithGoogle } = useAuth();
   const { language } = useLanguage();
   const id = language === "id";
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setShowUI(true);
-  }, []);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -53,8 +49,8 @@ export default function LoginForm({
       await requestWaOtp({ phone: phone.trim(), mode: "login" });
       setStep("otp");
       setCountdown(RESEND_SECONDS);
-    } catch (err: any) {
-      setError(err.message || (id ? "Gagal mengirim kode OTP." : "Failed to send OTP code."));
+    } catch (err) {
+      setError(getErrorMessage(err) || (id ? "Gagal mengirim kode OTP." : "Failed to send OTP code."));
     } finally {
       setLoading(false);
     }
@@ -75,9 +71,9 @@ export default function LoginForm({
     try {
       await verifyWaOtp({ phone: phone.trim(), code: code.trim(), mode: "login" });
       navigate("/dashboard");
-    } catch (err: any) {
+    } catch (err) {
       setError(
-        err.message ||
+        getErrorMessage(err) ||
           (id ? "Kode OTP salah atau kedaluwarsa." : "OTP code is invalid or expired."),
       );
       setCode("");
@@ -97,17 +93,17 @@ export default function LoginForm({
     try {
       await loginWithGoogle();
       // Akan redirect ke Google → Supabase → /auth/callback
-    } catch (err: any) {
-      setError(err.message || "Google login failed");
+    } catch (err) {
+      setError(getErrorMessage(err) || "Google login failed");
       setGoogleLoading(false);
     }
   };
 
   return (
-    <div
-      className={`transition-all duration-300 {
-        showUI ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      }`}
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="flex justify-center mb-4 sm:mb-6">
         <img src={logo} alt="LedgerFlow" className="w-10 h-10 sm:w-12 sm:h-12" />
@@ -286,6 +282,6 @@ export default function LoginForm({
           {id ? "Daftar" : "Sign up"}
         </button>
       </p>
-    </div>
+    </motion.div>
   );
 }
