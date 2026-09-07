@@ -59,7 +59,9 @@ const toSlug = (value: string) => value.toLowerCase().replace(/&/g, " ").replace
 // Panel dropdown BERSAMA — satu elemen fixed yang meluncur + morph lebar
 // saat kursor pindah antar menu (Solutions → Products → Resources), bukan
 // tutup-buka per item. Konten di dalamnya crossfade (AnimatePresence keyed).
-const HOVER_PANEL_SPRING = { type: "spring" as const, stiffness: 350, damping: 30 };
+// Spring sengaja lembut (damping tinggi) supaya perpindahan terasa melayang
+// halus, tidak menyentak.
+const HOVER_PANEL_SPRING = { type: "spring" as const, stiffness: 260, damping: 34 };
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -221,8 +223,8 @@ const Navbar = () => {
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.97 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             style={{ position: "fixed", top: panelPos.top, left: 0, right: 0, zIndex: 998, pointerEvents: "none" }}
             onMouseEnter={() => openMenu(openDropdown)}
             onMouseLeave={scheduleCloseMenu}
@@ -239,13 +241,13 @@ const Navbar = () => {
                   initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -12 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <div className={activeMenu.items.length > 4 ? "grid grid-cols-2 gap-0.5 px-3" : "px-2"}>
                     {activeMenu.items.map((sub) => {
                       const isComingSoon = sub.comingSoon;
-                      const className = `flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors group/sub ${isComingSoon ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-500/10 dark:hover:bg-primary-900/20"}`;
-                      const content = (<><div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 group-hover/sub:bg-primary-500/20 transition-colors"><sub.icon size={16} /></div><div><p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors">{sub.title[language]}{isComingSoon && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-normal">Coming Soon</span>}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{sub.desc[language]}</p></div></>);
+                      const className = `flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ease-out group/sub ${isComingSoon ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-500/10 dark:hover:bg-primary-900/20 hover:translate-x-0.5"}`;
+                      const content = (<><div className="flex-shrink-0 mt-0.5 p-2 rounded-lg bg-primary-500/10 text-primary-600 dark:text-primary-400 transition-all duration-200 group-hover/sub:bg-primary-500/20 group-hover/sub:scale-110"><sub.icon size={16} /></div><div><p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover/sub:text-primary-600 dark:group-hover/sub:text-primary-400 transition-colors duration-200">{sub.title[language]}{isComingSoon && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-normal">Coming Soon</span>}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{sub.desc[language]}</p></div></>);
                       if (isComingSoon) return (<div key={sub.title.en} className={className}>{content}</div>);
                       if (sub.href) return (<Link key={sub.title.en} to={sub.href} className={className}>{content}</Link>);
                       return (<Link key={sub.title.en} to={`/${openDropdown}/${toSlug(sub.title.en)}`} className={className}>{content}</Link>);

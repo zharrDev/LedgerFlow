@@ -375,7 +375,7 @@ export default function AdminPortalPage() {
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
             {loading ? (
               <div className="py-20 flex justify-center">
-                <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${ACCENT.spinner}`} />
+                <div className={`animate-spin rounded-full h-8 w-8 border-2 ${ACCENT.spinner} border-t-transparent`} />
               </div>
             ) : tab === "overview" ? (
               <OverviewView overview={overview} error={error} />
@@ -446,7 +446,7 @@ export default function AdminPortalPage() {
         <main className="flex-1 p-4 sm:p-6 space-y-6">
           {loading ? (
             <div className="py-20 flex justify-center">
-              <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${ACCENT.spinner}`} />
+              <div className={`animate-spin rounded-full h-8 w-8 border-2 ${ACCENT.spinner} border-t-transparent`} />
             </div>
           ) : tab === "overview" ? (
             <OverviewView overview={overview} error={error} />
@@ -745,7 +745,7 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
           )}
         </div>
         {loading ? (
-          <div className="py-12 flex justify-center"><div className={`animate-spin rounded-full h-6 w-6 border-b-2 ${ACCENT.spinner}`} /></div>
+          <div className="py-12 flex justify-center"><div className={`animate-spin rounded-full h-6 w-6 border-2 ${ACCENT.spinner} border-t-transparent`} /></div>
         ) : logs.length === 0 ? (
           <EmptyState error={fetchError || error} text={query || statusFilter ? tx(language, "No matching records.", "Tidak ada catatan yang cocok.") : tx(language, "No recorded attempts yet.", "Belum ada percobaan tercatat.")} />
         ) : (
@@ -1273,7 +1273,7 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
             </div>
             <div className="px-6 pt-5">
               {loading ? (
-                <div className="py-14 flex justify-center"><div className={`animate-spin rounded-full h-7 w-7 border-b-2 ${ACCENT.spinner}`} /></div>
+                <div className="py-14 flex justify-center"><div className={`animate-spin rounded-full h-7 w-7 border-2 ${ACCENT.spinner} border-t-transparent`} /></div>
               ) : error ? (
                 <div className="py-14 text-center"><XCircle size={36} className="mx-auto mb-3 opacity-40 text-rose-400" /><p className="text-sm text-gray-400 dark:text-gray-500">{error}</p></div>
               ) : data ? (

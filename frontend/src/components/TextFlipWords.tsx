@@ -1,18 +1,19 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-// TextFlipWords — animasi pergantian teks per KATA dengan flip 3D (rotateX).
-// Dipakai untuk transisi ganti bahasa (ID↔EN) yang smooth: kata lama "jatuh"
-// ke BELAKANG (ujung atas menunduk menjauh, rotateX 0→90), lalu kata baru
-// bangkit dari posisi terbalik itu (rotateX 90→0) satu per satu stagger —
-// efeknya seperti kartu split-flap yang dibalik ke belakang.
+// TextFlipWords — animasi pergantian teks per KATA dengan flip 3D (rotateX)
+// + blur. Dipakai untuk transisi ganti bahasa (ID↔EN): kata lama "jatuh" ke
+// BELAKANG sambil mengeblur keluar, lalu kata baru bangkit dari posisi
+// terbalik itu satu per satu (stagger) — efek kartu split-flap yang halus.
+//
+// Tempo sengaja PELAN & halus (durasi 0.5s/kata, easing easeOutCubic) sesuai
+// arahan desain; exit tetap cepat (0.2s) supaya tidak terasa nunggu.
 //
 // - `language` dipakai sebagai key: begitu berubah, seluruh blok di-animate
 //   ulang (AnimatePresence mode="wait" — exit dulu, lalu masuk stagger).
 // - `wordClassName` untuk styling per kata (wajib dipakai bila teks berada
 //   di dalam efek bg-clip-text/gradient — transform pada child bisa
 //   merusak clip kalau gradient dipasang di parent).
-// - Hormati prefers-reduced-motion: cukup cross-fade, tanpa rotasi.
-// - Exit tanpa stagger (0.12s) supaya total transisi tetap < 0.6s.
+// - Hormati prefers-reduced-motion: cukup cross-fade, tanpa rotasi/blur.
 
 interface TextFlipWordsProps {
   text: string;
@@ -60,28 +61,29 @@ export function TextFlipWords({
               initial={
                 reduced
                   ? { opacity: 0 }
-                  : { opacity: 0, rotateX: 90, y: "0.35em" }
+                  : { opacity: 0, rotateX: 90, y: "0.35em", filter: "blur(6px)" }
               }
               animate={
                 reduced
                   ? { opacity: 1 }
-                  : { opacity: 1, rotateX: 0, y: "0em" }
+                  : { opacity: 1, rotateX: 0, y: "0em", filter: "blur(0px)" }
               }
               exit={
                 reduced
-                  ? { opacity: 0, transition: { duration: 0.12 } }
+                  ? { opacity: 0, transition: { duration: 0.15 } }
                   : {
-                      // jatuh ke belakang: arah sama dengan pose awal kata
-                      // baru (rotateX 90) → transisi terasa seperti kartu
-                      // yang dibalik ke belakang, bukan dibalik ke depan.
+                      // jatuh ke belakang + memudar kabur: arah sama dengan
+                      // pose awal kata baru → transisi terasa seperti kartu
+                      // yang dibalik ke belakang, lembut tidak menyentak.
                       opacity: 0,
                       rotateX: 90,
                       y: "0.35em",
-                      transition: { duration: 0.14, ease: "easeIn" },
+                      filter: "blur(6px)",
+                      transition: { duration: 0.2, ease: "easeIn" },
                     }
               }
               transition={{
-                duration: 0.3,
+                duration: 0.5,
                 delay: delay + i * stagger,
                 ease: [0.22, 1, 0.36, 1],
               }}

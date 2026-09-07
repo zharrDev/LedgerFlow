@@ -30,6 +30,9 @@ export function clearSession(): void {
   sessionStorage.removeItem(USER_KEY);
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  // Cache langganan ikut dibuang — user berikutnya tidak boleh melihat
+  // plan/cache milik user sebelumnya.
+  sessionStorage.removeItem("subscription_cache");
 }
 
 // ── Admin Gate (dashboard admin khusus) ───────────────────────────────

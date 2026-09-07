@@ -85,7 +85,7 @@ export default function DetailPageTemplate({
           {/* Title + Description */}
           <motion.h1
             {...titleAnim}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-[1.1] text-gray-900 dark:text-white"
           >
             {content.heroTitle[language]}
           </motion.h1>
@@ -111,8 +111,12 @@ export default function DetailPageTemplate({
                 <motion.div
                   key={i}
                   {...SCROLL_REVEAL_STAGGER(i + 1)}
-                  className="rounded-2xl bg-red-50/60 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 p-5"
+                  whileHover={{ y: -4, transition: { type: "tween", duration: 0.25 } }}
+                  className="group rounded-2xl bg-red-50/60 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 p-5 transition-shadow duration-300 hover:shadow-lg hover:shadow-red-500/5"
                 >
+                  <span className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500 transition-transform duration-300 group-hover:scale-110">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                  </span>
                   <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                     {point.title[language]}
                   </h3>
@@ -139,12 +143,14 @@ export default function DetailPageTemplate({
                 <motion.div
                   key={i}
                   {...SCROLL_REVEAL_STAGGER(i + 1)}
-                  className="flex items-start gap-4 rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5"
+                  whileHover={{ y: -4, transition: { type: "tween", duration: 0.25 } }}
+                  className="group relative flex items-start gap-4 overflow-hidden rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5 transition-shadow duration-300 hover:shadow-xl hover:shadow-primary-500/10 hover:border-primary-400/40"
                 >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-500/10 dark:bg-primary-500/15 text-primary-500 flex items-center justify-center font-bold text-sm">
+                  <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(6,182,212,0.07),transparent_65%)]" />
+                  <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-primary-500/10 dark:bg-primary-500/15 text-primary-500 flex items-center justify-center font-bold text-sm transition-transform duration-300 group-hover:scale-110">
                     {i + 1}
                   </div>
-                  <div>
+                  <div className="relative">
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                       {cap.title[language]}
                     </h3>
@@ -170,13 +176,14 @@ export default function DetailPageTemplate({
           {...SCROLL_REVEAL}
           className="mt-16 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto text-center"
         >
-          <div className="rounded-3xl bg-gradient-to-r from-primary-600 to-primary-700 p-8 sm:p-12 text-white shadow-2xl">
-            <h2 className="text-xl sm:text-2xl font-bold">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-600 to-primary-700 p-8 sm:p-12 text-white shadow-2xl">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_120%,rgba(6,182,212,0.25),transparent_55%),radial-gradient(circle_at_85%_-20%,rgba(255,255,255,0.15),transparent_50%)]" />
+            <h2 className="relative text-xl sm:text-2xl font-bold">
               {content.ctaText?.[language] ?? (id ? "Siap mencoba?" : "Ready to get started?")}
             </h2>
             <Link
               to="/register"
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold hover:bg-gray-100 transition shadow-md"
+              className="relative mt-6 inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-700 rounded-xl font-semibold transition-all duration-300 hover:scale-[1.03] hover:shadow-lg shadow-md"
             >
               {id ? "Mulai Gratis" : "Start Free Trial"} <ArrowRight size={16} />
             </Link>

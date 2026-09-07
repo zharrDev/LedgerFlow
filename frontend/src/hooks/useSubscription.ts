@@ -9,9 +9,34 @@ import {
 } from "../services/paymentService";
 import { getErrorMessage } from "../lib/errorMessage";
 
-// Module-scope cache — subsequent mounts reuse data, refresh in background.
-let cachedSubscription: Subscription | null = null;
+// Cache modul + sessionStorage: mount ulang / full reload (mis. setelah
+// pindah company) tidak menunggu fetch ulang — UI langsung render dari
+// cache, lalu data di-refresh di belakang (stale-while-revalidate).
+const SUB_CACHE_KEY = "subscription_cache";
+const SUB_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let cachedSubscription: Subscription | null = readSessionCache();
 let inflightFetch: Promise<Subscription | null> | null = null;
+
+function readSessionCache(): Subscription | null {
+  try {
+    const raw = sessionStorage.getItem(SUB_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { t: number; d: Subscription | null };
+    if (!parsed || Date.now() - parsed.t > SUB_CACHE_TTL_MS) return null;
+    return parsed.d ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(data: Subscription | null): void {
+  try {
+    sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ t: Date.now(), d: data }));
+  } catch {
+    // sessionStorage penuh / diblokir — cache modul tetap bekerja.
+  }
+}
 
 // Mapping fitur ke plan minimum yang boleh mengaksesnya
 const FEATURE_PLAN: Record<string, string[]> = {
@@ -31,6 +56,7 @@ async function loadSubscription(): Promise<Subscription | null> {
   inflightFetch = getSubscription()
     .then((data) => {
       cachedSubscription = data;
+      writeSessionCache(data);
       return data;
     })
     .catch((err) => {

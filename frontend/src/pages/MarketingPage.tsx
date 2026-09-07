@@ -74,23 +74,33 @@ export default function MarketingPage() {
     <div className="min-h-screen bg-white text-gray-900 dark:bg-darkBg dark:text-white">
       <Navbar />
       <main className="pt-20">
+        {/* ── Hero ── latar lembut bercabang dua warna (atas) yang memudar
+            sebelum tepi — pola yang sama dengan homepage, tanpa garis batas */}
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4 }}
           className="relative overflow-hidden px-5 py-20 sm:py-28"
         >
-          <div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl" />
+          <div
+            className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl"
+            style={{
+              WebkitMaskImage:
+                "radial-gradient(ellipse at center, black 40%, transparent 75%)",
+              maskImage:
+                "radial-gradient(ellipse at center, black 40%, transparent 75%)",
+            }}
+          />
           <div className="relative mx-auto max-w-4xl text-center">
             <p className="text-xs font-extrabold tracking-[.22em] text-primary-500">{page.eyebrow}</p>
-            <h1 className="mt-5 text-3xl font-bold leading-tight sm:text-6xl">
+            <h1 className="mt-5 text-3xl sm:text-5xl lg:text-6xl font-bold leading-[1.06] tracking-[-0.02em]">
               <TextReveal text={page.title} delay={0.1} language={language} />
             </h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-300"
+              className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-300 leading-relaxed"
             >
               {page.description}
             </motion.p>
@@ -99,7 +109,7 @@ export default function MarketingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.7 }}
             >
-              <Link to="/register" className="mt-9 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-6 py-3 font-bold text-white shadow-lg shadow-primary-500/25">
+              <Link to="/register" className="mt-9 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-cyan-500 px-6 py-3 font-bold text-white shadow-lg shadow-primary-500/25 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
                 {label.start}
                 <ArrowRight size={18} />
               </Link>
@@ -122,19 +132,31 @@ export default function MarketingPage() {
               <motion.div
                 key={item.title}
                 {...SCROLL_REVEAL_STAGGER(index)}
-                whileHover={{ y: -8, transition: { type: "tween", duration: 0.15 } }}
+                whileHover={{ y: -6, transition: { type: "tween", duration: 0.25 } }}
               >
                 <Link
                   to={`/${key}/${detailPaths[key][index]}`}
-                  className="group relative block h-full overflow-hidden rounded-3xl border border-primary-500/15 bg-white p-7 shadow-lg shadow-primary-950/5 transition duration-300 hover:-translate-y-2 hover:border-primary-400/40 hover:shadow-2xl dark:bg-darkCard"
+                  className="group relative block h-full overflow-hidden rounded-3xl border border-primary-500/15 bg-white p-7 shadow-lg shadow-primary-950/5 transition-[border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1.5 hover:border-primary-400/40 hover:shadow-2xl hover:shadow-primary-500/10 dark:bg-darkCard"
                 >
-                  <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 transition group-hover:scale-150" />
-                  <item.icon className="relative h-11 w-11 rounded-xl bg-primary-500/10 p-2 text-primary-500 transition group-hover:rotate-3 group-hover:scale-110" />
+                  {/* Halo dekoratif — mask radial agar memudar sebelum tepi,
+                      tidak membentuk garis potong saat ter-clip kartu */}
+                  <div
+                    className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 transition-transform duration-500 ease-out group-hover:scale-150"
+                    style={{
+                      WebkitMaskImage:
+                        "radial-gradient(circle at center, black 35%, transparent 72%)",
+                      maskImage:
+                        "radial-gradient(circle at center, black 35%, transparent 72%)",
+                    }}
+                  />
+                  {/* Glow lembut yang muncul saat hover — menyatu, bukan blok */}
+                  <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(6,182,212,0.08),transparent_65%)]" />
+                  <item.icon className="relative h-11 w-11 rounded-xl bg-primary-500/10 p-2 text-primary-500 transition-transform duration-300 ease-out group-hover:scale-110" />
                   <h2 className="relative mt-5 text-xl font-bold">{item.title}</h2>
                   <p className="relative mt-3 leading-relaxed text-gray-600 dark:text-gray-300">{item.description}</p>
                   <div className="relative mt-6 flex items-center gap-2 text-sm font-semibold text-primary-500">
                     <CheckCircle2 size={17} /> {label.benefit}
-                    <ArrowRight size={16} className="ml-auto transition-transform group-hover:translate-x-1" />
+                    <ArrowRight size={16} className="ml-auto transition-transform duration-300 ease-out group-hover:translate-x-1.5" />
                   </div>
                 </Link>
               </motion.div>
@@ -143,15 +165,18 @@ export default function MarketingPage() {
 
           <motion.div
             {...SCROLL_REVEAL}
-            className="mt-12 rounded-3xl bg-gray-950 px-7 py-8 text-white sm:flex sm:items-center sm:justify-between sm:px-10"
+            className="relative mt-12 overflow-hidden rounded-3xl bg-gray-950 px-7 py-8 text-white sm:flex sm:items-center sm:justify-between sm:px-10"
           >
-            <div>
+            <div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_120%,rgba(6,182,212,0.22),transparent_55%),radial-gradient(circle_at_85%_-20%,rgba(99,102,241,0.18),transparent_50%)]"
+            />
+            <div className="relative">
               <p className="text-sm font-bold text-cyan-300">LedgerFlow</p>
               <h2 className="mt-2 text-2xl font-bold">
                 {language === "id" ? "Siap membuat keuangan lebih sederhana?" : "Ready to make finance simpler?"}
               </h2>
             </div>
-            <Link to="/register" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-950 sm:mt-0">
+            <Link to="/register" className="relative mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-gray-950 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg sm:mt-0">
               {label.start}
               <ArrowRight size={16} />
             </Link>
