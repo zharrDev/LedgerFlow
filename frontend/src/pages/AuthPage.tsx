@@ -7,7 +7,6 @@ import AuthFlipCard from "../components/auth/AuthFlipCard";
 import LoginForm from "../components/auth/LoginForm";
 import RegisterForm from "../components/auth/RegisterForm";
 import { api } from "../lib/api";
-import { getSessionToken } from "../lib/session";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 
@@ -24,20 +23,15 @@ export default function AuthPage({
   // Warm-up saat halaman login/register kebukak:
   //   1. Prefetch chunk DashboardPage biar Navigasi ke dashboard lebih cepat
   //      pas login berhasil (Suspense gak nunggu download chunk).
-  //   2. Kalau user udah punya token (balik ke login, mis. sesi expired),
-  //      ping /health buat "menghidupkan" backend Render free-tier yang
-  //      cold-start 30-60 detik, biar navigasi berikutnya gak nunggu lama.
+  //   2. Ping /health TANPA SYARAT — Render free-tier cold-start 30-60
+  //      detik. Ping saat halaman kebukak (saat user masih mengisi nomor),
+  //      jadi saat tombol "Kirim Kode" ditekan, backend sudah hidup dan
+  //      request OTP tidak menunggu boot instance.
   useEffect(() => {
-    let cancelled = false;
     // Prefetch chunk dashboard
     import("./DashboardPage").catch(() => {});
-    // Warm-up backend kalau ada token (hingga keep-alive tak terpakai)
-    if (getSessionToken() && !cancelled) {
-      api.get("/health", { skipErrorToast: true }).catch(() => {});
-    }
-    return () => {
-      cancelled = true;
-    };
+    // Warm-up backend (cold-start Render) — fire-and-forget
+    api.get("/health", { skipErrorToast: true }).catch(() => {});
   }, []);
 
   // Shortcut rahasia ke gerbang admin: Ctrl+Alt+\.
