@@ -33,7 +33,30 @@ export function getErrorMessage(err: unknown): string {
       return SERVER_ERROR_MESSAGE;
     }
 
-    // Error 4xx — backend mengirim pesan human-readable (pola konsisten
+    // 429 = rate limit — pesan spesifik (sisa waktu dibaca terpisah di
+    // interceptor via header Retry-After).
+    if (status === 429) {
+      const data = err.response?.data as { error?: unknown } | undefined;
+      if (typeof data?.error === "string" && data.error.trim()) return data.error;
+      return "Terlalu banyak permintaan. Mohon tunggu sebentar sebelum mencoba lagi.";
+    }
+
+    // 401 = sesi berakhir / belum login.
+    if (status === 401) {
+      return "Sesi Anda telah berakhir. Silakan masuk kembali.";
+    }
+
+    // 403 = akses ditolak.
+    if (status === 403) {
+      return "Anda tidak memiliki akses untuk tindakan ini.";
+    }
+
+    // 404 = data/halaman tidak ditemukan.
+    if (status === 404) {
+      return "Data atau halaman yang diminta tidak ditemukan.";
+    }
+
+    // Error 4xx lain — backend mengirim pesan human-readable (pola konsisten
     // di seluruh route: `c.json({ error: "..." })`).
     if (status !== undefined && status >= 400) {
       const data = err.response?.data as { error?: unknown } | undefined;
@@ -64,9 +87,25 @@ export function getErrorMessage(err: unknown): string {
 export function errorToastTitle(err: unknown): string {
   if (err instanceof AxiosError) {
     if (!err.response) return "Koneksi Terputus";
+    const status = err.response.status;
     // 429 = kena rate limit, bukan kesalahan sistem.
-    if (err.response.status === 429) return "Terlalu Sering";
-    if (err.response.status >= 500) return "Server Bermasalah";
+    if (status === 429) return "Terlalu Sering";
+    if (status === 401) return "Sesi Berakhir";
+    if (status === 403) return "Akses Ditolak";
+    if (status === 404) return "Tidak Ditemukan";
+    if (status >= 500) return "Server Bermasalah";
   }
   return "Gagal";
+}
+
+/** Sisa waktu tunggu (detik) dari header Retry-After pada error 429,
+ *  atau null bila tidak ada / tidak bisa dibaca. */
+export function rateLimitRetryAfterSec(err: unknown): number | null {
+  if (!(err instanceof AxiosError)) return null;
+  if (err.response?.status !== 429) return null;
+  const header = err.response?.headers?.["retry-after"];
+  if (header === undefined) return null;
+  const sec = Number(header);
+  if (Number.isFinite(sec) && sec > 0) return Math.ceil(sec);
+  return null;
 }

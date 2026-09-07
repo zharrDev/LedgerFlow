@@ -1,6 +1,10 @@
 import axios from "axios";
 import { getSessionToken, clearSession } from "./session";
-import { getErrorMessage, errorToastTitle } from "./errorMessage";
+import {
+  getErrorMessage,
+  errorToastTitle,
+  rateLimitRetryAfterSec,
+} from "./errorMessage";
 import { showToast } from "./toastBridge";
 
 // Opsi tambahan per-request: komponen/service yang SUDAH menangani error
@@ -64,12 +68,26 @@ api.interceptors.response.use(
 
     const is401AuthRoute = err.response?.status === 401 && isAuthRoute;
     if (!err.config?.skipErrorToast && !is401AuthRoute) {
+      // 429 (rate limit) — sampaikan sisa waktu tunggu dari header
+      // Retry-After backend supaya user tahu KAPAN boleh coba lagi,
+      // bukan hanya "terlalu sering" tanpa kejelasan.
+      let message = getErrorMessage(err);
+      if (err.response?.status === 429) {
+        const waitSec = rateLimitRetryAfterSec(err);
+        if (waitSec !== null) {
+          const waitText =
+            waitSec >= 60
+              ? `${Math.ceil(waitSec / 60)} menit`
+              : `${waitSec} detik`;
+          message = `Terlalu banyak permintaan. Silakan coba lagi dalam ${waitText}.`;
+        }
+      }
       showToast({
         // 429 (rate limit) bukan kesalahan sistem — tampilkan sebagai
         // warning dengan pesan dari backend (berisi "coba lagi ... menit").
         variant: err.response?.status === 429 ? "warning" : "error",
         title: errorToastTitle(err),
-        message: getErrorMessage(err),
+        message,
       });
     }
 
