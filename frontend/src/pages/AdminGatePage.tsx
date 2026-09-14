@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { verifyAdminGatePassword } from "../services/adminGateService";
+import Spinner from "../components/Spinner";
 
 // Halaman gerbang admin — HANYA meminta password (tanpa email/username),
 // terpisah total dari alur login WhatsApp OTP user biasa. Tidak ditautkan
@@ -50,26 +51,29 @@ export default function AdminGatePage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-white dark:bg-darkBg p-4 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center bg-gray-100 dark:bg-[#0B1120] p-4 overflow-hidden">
       {/* Latar mesh lembut — satu dunia visual dengan Admin Portal */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-10%,rgba(99,102,241,0.10),transparent_45%),radial-gradient(circle_at_85%_110%,rgba(139,92,246,0.08),transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-10%,rgba(99,102,241,0.12),transparent_45%),radial-gradient(circle_at_85%_110%,rgba(139,92,246,0.10),transparent_45%)]" />
       <div className="relative w-full max-w-md mx-auto">
-        <div className="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border border-primary-500/20 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="bg-white dark:bg-[#111827]/90 backdrop-blur-xl border border-gray-200/60 dark:border-white/10 rounded-2xl shadow-xl dark:shadow-black/40 p-6 sm:p-8">
           <div className="text-center mb-6">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500 mb-3">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white mb-3 shadow-sm shadow-indigo-950/40">
               <ShieldCheck size={22} />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400 mb-1.5">
+              Internal Console
+            </p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
               Akses Khusus
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            <p className="text-gray-500 text-sm mt-1">
               Masukkan password untuk melanjutkan
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200">
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-sm rounded-xl ring-1 ring-rose-600/20 dark:ring-rose-500/25 flex items-center gap-2">
                 {error}
               </div>
             )}
@@ -86,7 +90,7 @@ export default function AdminGatePage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoFocus
                 autoComplete="current-password"
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 outline-none transition"
+                className="w-full pl-9 pr-10 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.04] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition"
               />
               <button
                 type="button"
@@ -101,9 +105,9 @@ export default function AdminGatePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-md shadow-indigo-950/30 hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? "Memverifikasi..." : "Masuk"}
+              {loading ? <Spinner size={5} colorClass="bg-white" /> : "Masuk"}
             </button>
           </form>
         </div>

@@ -1150,7 +1150,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
       <AnimatePresence>
         {showModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !submitting && setShowModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+            <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white dark:bg-[#141b2e] rounded-2xl border border-gray-200/70 dark:border-white/10 shadow-2xl dark:shadow-black/50 overflow-hidden">
               <div className="flex items-center justify-between px-6 pt-6 pb-2">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingPlan ? tx(language, "Edit Plan", "Edit Plan") : tx(language, "New Plan", "Tambah Plan Baru")}</h3>
                 <button onClick={() => setShowModal(false)} disabled={submitting} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition"><X size={16} /></button>
@@ -1185,7 +1185,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 px-6 py-5 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center justify-end gap-3 px-6 py-5 bg-gray-50/60 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/[0.06]">
                 <button onClick={() => setShowModal(false)} disabled={submitting} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40">{tx(language, "Cancel", "Batal")}</button>
                 <button onClick={handleSubmit} disabled={submitting} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${ACCENT.btn}`}>
                   {submitting ? <><Spinner size={4} colorClass="bg-white" /> {tx(language, "Saving...", "Menyimpan...")}</> : editingPlan ? tx(language, "Save Changes", "Simpan Perubahan") : tx(language, "Create Plan", "Buat Plan")}
@@ -1259,8 +1259,11 @@ function SystemHealthView() {
                     </p>
                   </div>
                 </div>
-                {item.status !== null && (
-                  <span className={`w-3 h-3 rounded-full ${item.status.ok ? "bg-emerald-500" : "bg-rose-500"}`} />
+                {item.status !== null && !item.loading && (
+                  <span className="relative flex h-3 w-3 shrink-0">
+                    <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping ${item.status.ok ? "bg-emerald-400" : "bg-rose-400"}`} />
+                    <span className={`relative inline-flex h-3 w-3 rounded-full ${item.status.ok ? "bg-emerald-500" : "bg-rose-500"}`} />
+                  </span>
                 )}
               </div>
               {item.status && (
@@ -1292,18 +1295,18 @@ function ConfirmActionModal({ confirm, confirming, onCancel, onConfirm }: { conf
   const detail = confirm && isUser ? (confirm.item as AdminGateUser).email || (confirm.item as AdminGateUser).phone || "" : "";
 
   const meta = isDelete
-    ? { icon: <AlertTriangle size={22} />, iconBox: "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400", title: `${tx(language, "Delete", "Hapus")} ${isUser ? "User" : "Company"}?`, body: isUser ? <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span>{detail && <span className="text-gray-400 dark:text-gray-500"> ({detail})</span>} {tx(language, "will be", "akan")} <span className="font-semibold text-rose-600 dark:text-rose-400">{tx(language, "permanently deleted", "dihapus permanen")}</span>.</> : <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> {tx(language, "will be", "akan")} <span className="font-semibold text-rose-600 dark:text-rose-400">{tx(language, "permanently deleted", "dihapus permanen")}</span> {tx(language, "along with its data", "beserta datanya")}.</>, button: tx(language, "Yes, Delete", "Ya, Hapus"), buttonCls: "bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-500/25" }
+    ? { icon: <AlertTriangle size={22} />, iconBox: "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-600/20 dark:ring-rose-500/25", title: `${tx(language, "Delete", "Hapus")} ${isUser ? "User" : "Company"}?`, body: isUser ? <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span>{detail && <span className="text-gray-400 dark:text-gray-500"> ({detail})</span>} {tx(language, "will be", "akan")} <span className="font-semibold text-rose-600 dark:text-rose-400">{tx(language, "permanently deleted", "dihapus permanen")}</span>.</> : <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> {tx(language, "will be", "akan")} <span className="font-semibold text-rose-600 dark:text-rose-400">{tx(language, "permanently deleted", "dihapus permanen")}</span> {tx(language, "along with its data", "beserta datanya")}.</>, button: tx(language, "Yes, Delete", "Ya, Hapus"), buttonCls: "bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-500/25" }
     : isSuspend
-      ? { icon: <Ban size={22} />, iconBox: "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400", title: `${tx(language, "Suspend", "Suspend")} ${isUser ? "User" : "Company"}?`, body: <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> {tx(language, "will be temporarily deactivated.", "akan dinonaktifkan sementara.")} <span className="font-semibold text-amber-600 dark:text-amber-400">{tx(language, "Data is not deleted.", "Data tidak dihapus.")}</span></>, button: tx(language, "Yes, Suspend", "Ya, Suspend"), buttonCls: "bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-500/25" }
+      ? { icon: <Ban size={22} />, iconBox: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-600/20 dark:ring-amber-500/25", title: `${tx(language, "Suspend", "Suspend")} ${isUser ? "User" : "Company"}?`, body: <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> {tx(language, "will be temporarily deactivated.", "akan dinonaktifkan sementara.")} <span className="font-semibold text-amber-600 dark:text-amber-400">{tx(language, "Data is not deleted.", "Data tidak dihapus.")}</span></>, button: tx(language, "Yes, Suspend", "Ya, Suspend"), buttonCls: "bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-500/25" }
       : isUnsuspend
-        ? { icon: <CheckCircle2 size={22} />, iconBox: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", title: `${tx(language, "Reactivate", "Aktifkan Kembali")} ${isUser ? "User" : "Company"}?`, body: <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> {tx(language, "will be reactivated.", "akan diaktifkan kembali.")}</>, button: tx(language, "Yes, Activate", "Ya, Aktifkan"), buttonCls: "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/25" }
+        ? { icon: <CheckCircle2 size={22} />, iconBox: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-600/20 dark:ring-emerald-500/25", title: `${tx(language, "Reactivate", "Aktifkan Kembali")} ${isUser ? "User" : "Company"}?`, body: <><span className="font-medium text-gray-700 dark:text-gray-300">{name}</span> {tx(language, "will be reactivated.", "akan diaktifkan kembali.")}</>, button: tx(language, "Yes, Activate", "Ya, Aktifkan"), buttonCls: "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/25" }
         : null;
 
   return (
     <AnimatePresence>
       {confirm && meta && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onCancel}>
-          <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+          <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white dark:bg-[#141b2e] rounded-2xl border border-gray-200/70 dark:border-white/10 shadow-2xl dark:shadow-black/50 overflow-hidden">
             <div className="flex items-start gap-4 px-6 pt-6">
               <div className={`shrink-0 p-3 rounded-2xl ${meta.iconBox}`}>{meta.icon}</div>
               <div className="flex-1 min-w-0">
@@ -1312,7 +1315,7 @@ function ConfirmActionModal({ confirm, confirming, onCancel, onConfirm }: { conf
               </div>
               <button onClick={onCancel} disabled={confirming} className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition disabled:opacity-40"><X size={16} /></button>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-5 mt-4 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-end gap-3 px-6 py-5 mt-4 bg-gray-50/60 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/[0.06]">
               <button onClick={onCancel} disabled={confirming} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition disabled:opacity-40">{tx(language, "Cancel", "Batal")}</button>
               <button onClick={onConfirm} disabled={confirming} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${meta.buttonCls}`}>
                 {confirming ? <><Spinner size={4} colorClass="bg-white" /> {tx(language, "Processing...", "Memproses...")}</> : <>{meta.icon} {meta.button}</>}
@@ -1333,9 +1336,9 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
     <AnimatePresence>
       {company && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-          <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+          <motion.div initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-white dark:bg-[#141b2e] rounded-2xl border border-gray-200/70 dark:border-white/10 shadow-2xl dark:shadow-black/50 overflow-hidden">
             <div className="flex items-start gap-4 px-6 pt-6">
-              <div className="shrink-0 p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25"><Building2 size={22} /></div>
+              <div className="shrink-0 p-3 rounded-2xl bg-indigo-600 text-white shadow-sm shadow-indigo-950/40"><Building2 size={22} /></div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">{company.name}</h3>
                 <div className="mt-1 flex items-center gap-2 flex-wrap">
@@ -1381,7 +1384,7 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
                 </div>
               ) : <div className="py-14 text-center"><p className="text-sm text-gray-400 dark:text-gray-500">{tx(language, "No data.", "Tidak ada data.")}</p></div>}
             </div>
-            <div className="flex items-center justify-end px-6 py-5 mt-5 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-end px-6 py-5 mt-5 bg-gray-50/60 dark:bg-white/[0.02] border-t border-gray-100 dark:border-white/[0.06]">
               <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-white/5 transition">{tx(language, "Close", "Tutup")}</button>
             </div>
           </motion.div>
