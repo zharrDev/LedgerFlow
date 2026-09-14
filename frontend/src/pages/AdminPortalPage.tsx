@@ -249,14 +249,16 @@ export default function AdminPortalPage() {
     return <Badge label={m.label} tone={m.tone} />;
   };
 
-  const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number }[] = [
-    { key: "overview", icon: <LayoutDashboard size={16} />, label: tx(language, "Overview", "Ringkasan") },
-    { key: "billing", icon: <CreditCard size={16} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length },
-    { key: "log", icon: <ScrollText size={16} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length },
-    { key: "users", icon: <Users size={16} />, label: tx(language, "Users", "Pengguna"), count: users.length },
-    { key: "companies", icon: <Building2 size={16} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length },
-    { key: "plans", icon: <Wallet size={16} />, label: tx(language, "Plans", "Paket"), count: plans.length },
-    { key: "health", icon: <Activity size={16} />, label: tx(language, "System Health", "Kesehatan Sistem") },
+  // Warna chip ikon unik per menu (ala dashboard referensi): item aktif
+  // berubah jadi chip gradient penuh + teks putih; non-aktif versi /10.
+  const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number; chip: string }[] = [
+    { key: "overview", icon: <LayoutDashboard size={15} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
+    { key: "billing", icon: <CreditCard size={15} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length, chip: "from-emerald-500 to-teal-500 text-emerald-500" },
+    { key: "log", icon: <ScrollText size={15} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length, chip: "from-amber-500 to-orange-500 text-amber-500" },
+    { key: "users", icon: <Users size={15} />, label: tx(language, "Users", "Pengguna"), count: users.length, chip: "from-cyan-500 to-sky-500 text-cyan-500" },
+    { key: "companies", icon: <Building2 size={15} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length, chip: "from-fuchsia-500 to-purple-500 text-fuchsia-500" },
+    { key: "plans", icon: <Wallet size={15} />, label: tx(language, "Plans", "Paket"), count: plans.length, chip: "from-rose-500 to-pink-500 text-rose-500" },
+    { key: "health", icon: <Activity size={15} />, label: tx(language, "System Health", "Kesehatan Sistem"), chip: "from-lime-500 to-green-500 text-lime-600" },
   ];
 
   return (
@@ -296,22 +298,28 @@ export default function AdminPortalPage() {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`group relative flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
+                  className={`group relative flex items-center gap-2.5 w-full px-2.5 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
                     tab === t.key
-                      ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-medium ring-1 ring-indigo-600/20 dark:ring-indigo-500/30"
-                      : "text-gray-600 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]"
+                      ? "bg-gradient-to-r from-indigo-500/15 via-violet-500/10 to-transparent text-indigo-700 dark:text-indigo-200 font-semibold ring-1 ring-indigo-500/25 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/[0.05]"
                   }`}
                 >
-                  <span
-                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                      tab === t.key ? "h-5 bg-indigo-500 dark:bg-indigo-400" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-400/50"
-                    }`}
-                  />
-                  {t.icon}
+                  {/* Chip ikon gradient penuh per menu — warna unik tiap item,
+                      item aktif ber-saturasi penuh, lainnya sedikit redup */}
+                  {(() => {
+                    const grad = t.chip.split(" ").slice(0, 2).join(" ");
+                    return (
+                      <span
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm transition-all duration-200 group-hover:scale-105 ${tab === t.key ? "" : "opacity-85 group-hover:opacity-100"}`}
+                      >
+                        {t.icon}
+                      </span>
+                    );
+                  })()}
                   <span className="truncate">{t.label}</span>
                   {t.count !== undefined && (
                     <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
-                      tab === t.key ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200" : "bg-gray-100 dark:bg-white/5 text-gray-500"
+                      tab === t.key ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-200" : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400"
                     }`}>
                       {t.count}
                     </span>
@@ -321,23 +329,39 @@ export default function AdminPortalPage() {
             </div>
           </nav>
 
-          {/* Sidebar footer: refresh + logout */}
-          <div className="border-t border-gray-100 dark:border-white/[0.06] py-2 px-3 space-y-1">
-            <button
-              onClick={load}
-              disabled={refreshing}
-              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors"
-            >
-              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-              <span>{tx(language, "Reload", "Muat Ulang")}</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-rose-600 dark:text-rose-400/90 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-            >
-              <LogOut size={16} />
-              <span>{tx(language, "Logout", "Keluar")}</span>
-            </button>
+          {/* Sidebar footer: kartu status sistem + aksi */}
+          <div className="border-t border-gray-100 dark:border-white/[0.06] py-3 px-3 space-y-2">
+            <div className="rounded-xl border border-gray-200/70 dark:border-white/[0.07] bg-gray-50/80 dark:bg-white/[0.03] px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-200 truncate">
+                  {tx(language, "All systems operational", "Semua sistem normal")}
+                </p>
+              </div>
+              <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                {refreshing ? tx(language, "Syncing data…", "Menyinkronkan…") : tx(language, "Admin console · secure session", "Konsol admin · sesi aman")}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={load}
+                disabled={refreshing}
+                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
+                {tx(language, "Reload", "Muat")}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+              >
+                <LogOut size={13} />
+                {tx(language, "Logout", "Keluar")}
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -423,17 +447,21 @@ export default function AdminPortalPage() {
           </div>
           {/* Mobile tabs */}
           <div className="flex gap-1 px-4 pb-3 overflow-x-auto scrollbar-thin">
-            {sidebarTabs.map((t) => (
+            {sidebarTabs.map((t) => {
+              const grad = t.chip.split(" ").slice(0, 2).join(" ");
+              return (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
                   tab === t.key
                     ? "bg-indigo-50 dark:bg-indigo-500/15 ring-1 ring-indigo-600/20 dark:ring-indigo-500/30 text-indigo-700 dark:text-indigo-200"
                     : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
-                {t.icon}
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br ${grad} text-white ${tab === t.key ? "" : "opacity-80"}`}>
+                  {t.icon}
+                </span>
                 {t.label}
                 {t.count !== undefined && (
                   <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold tabular-nums ${
@@ -443,7 +471,8 @@ export default function AdminPortalPage() {
                   </span>
                 )}
               </button>
-            ))}
+              );
+            })}
           </div>
         </header>
 
