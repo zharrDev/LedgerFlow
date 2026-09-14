@@ -98,11 +98,6 @@ const ACCENT = {
   spinner: "border-indigo-500",
 };
 
-const roleBadge: Record<string, string> = {
-  owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  akuntan: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-};
-
 const PAGE_SIZE = 5;
 
 export default function AdminPortalPage() {
@@ -245,17 +240,13 @@ export default function AdminPortalPage() {
   };
 
   const statusBadge = (status: AdminGateLog["status"]) => {
-    const map = {
-      success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-      failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",
-      blocked: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    } as const;
-    const label = { success: tx(language, "Success", "Berhasil"), failed: tx(language, "Failed", "Gagal"), blocked: tx(language, "Blocked", "Diblokir") } as const;
-    return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status]}`}>
-        {label[status]}
-      </span>
-    );
+    const map: Record<AdminGateLog["status"], { label: string; tone: BadgeTone }> = {
+      success: { label: tx(language, "Success", "Berhasil"), tone: "emerald" },
+      failed: { label: tx(language, "Failed", "Gagal"), tone: "rose" },
+      blocked: { label: tx(language, "Blocked", "Diblokir"), tone: "amber" },
+    };
+    const m = map[status];
+    return <Badge label={m.label} tone={m.tone} />;
   };
 
   const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number }[] = [
@@ -397,7 +388,7 @@ export default function AdminPortalPage() {
             ) : tab === "log" ? (
               <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
             ) : tab === "users" ? (
-              <UsersView users={users} roleBadge={roleBadge} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
+              <UsersView users={users} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
             ) : tab === "companies" ? (
               <CompaniesView companies={companies} error={error} onDelete={requestDeleteCompany} onSuspend={requestSuspendCompany} onUnsuspend={requestUnsuspendCompany} onView={openDetail} />
             ) : tab === "plans" ? (
@@ -468,7 +459,7 @@ export default function AdminPortalPage() {
           ) : tab === "log" ? (
             <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
           ) : tab === "users" ? (
-            <UsersView users={users} roleBadge={roleBadge} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
+            <UsersView users={users} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
           ) : tab === "companies" ? (
             <CompaniesView companies={companies} error={error} onDelete={requestDeleteCompany} onSuspend={requestSuspendCompany} onUnsuspend={requestUnsuspendCompany} onView={openDetail} />
           ) : tab === "plans" ? (
@@ -553,7 +544,6 @@ function useIsDark() {
 function PlanDistributionChart({ data }: { data: { name: string; users: number }[] }) {
   const isDark = useIsDark();
   const { language } = useLanguage();
-  const textColor = isDark ? "#94a3b8" : "#64748b";
   const totalUsers = data.reduce((s, p) => s + p.users, 0);
 
   return (
@@ -733,16 +723,28 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
 
 function SubBadge({ status }: { status: string }) {
   const { language } = useLanguage();
-  const map: Record<string, string> = { active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", trialing: "bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400", past_due: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400", canceled: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400", expired: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400" };
-  const label: Record<string, string> = { active: tx(language, "Active", "Aktif"), trialing: "Trial", past_due: tx(language, "Overdue", "Tunggakan"), canceled: tx(language, "Canceled", "Dibatalkan"), expired: tx(language, "Expired", "Kedaluwarsa") };
-  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.canceled}`}>{label[status] || status}</span>;
+  const map: Record<string, { label: string; tone: BadgeTone }> = {
+    active: { label: tx(language, "Active", "Aktif"), tone: "emerald" },
+    trialing: { label: "Trial", tone: "indigo" },
+    past_due: { label: tx(language, "Overdue", "Tunggakan"), tone: "rose" },
+    canceled: { label: tx(language, "Canceled", "Dibatalkan"), tone: "slate" },
+    expired: { label: tx(language, "Expired", "Kedaluwarsa"), tone: "slate" },
+  };
+  const m = map[status] || map.canceled;
+  return <Badge label={m.label} tone={m.tone} />;
 }
 
 function PayBadge({ status }: { status: string }) {
   const { language } = useLanguage();
-  const map: Record<string, string> = { paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", pending: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400", failed: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400", expired: "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400", refunded: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400" };
-  const label: Record<string, string> = { paid: tx(language, "Paid", "Lunas"), pending: tx(language, "Pending", "Menunggu"), failed: tx(language, "Failed", "Gagal"), expired: tx(language, "Expired", "Kedaluwarsa"), refunded: "Refund" };
-  return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] || map.expired}`}>{label[status] || status}</span>;
+  const map: Record<string, { label: string; tone: BadgeTone }> = {
+    paid: { label: tx(language, "Paid", "Lunas"), tone: "emerald" },
+    pending: { label: tx(language, "Pending", "Menunggu"), tone: "amber" },
+    failed: { label: tx(language, "Failed", "Gagal"), tone: "rose" },
+    expired: { label: tx(language, "Expired", "Kedaluwarsa"), tone: "slate" },
+    refunded: { label: "Refund", tone: "violet" },
+  };
+  const m = map[status] || map.expired;
+  return <Badge label={m.label} tone={m.tone} />;
 }
 
 // ── Audit Log ──────────────────────────────────────────────────────
@@ -853,7 +855,7 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
 }
 
 // ── Users ──────────────────────────────────────────────────────────
-function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }: { users: AdminGateUser[]; roleBadge: Record<string, string>; error: string; onDelete: (u: AdminGateUser) => void; onSuspend: (u: AdminGateUser) => void; onUnsuspend: (u: AdminGateUser) => void }) {
+function UsersView({ users, error, onDelete, onSuspend, onUnsuspend }: { users: AdminGateUser[]; error: string; onDelete: (u: AdminGateUser) => void; onSuspend: (u: AdminGateUser) => void; onUnsuspend: (u: AdminGateUser) => void }) {
   const { language } = useLanguage();
   const pagination = usePagination(users, PAGE_SIZE);
   return (
@@ -874,7 +876,7 @@ function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }
                     <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{u.name}</td>
                     <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{u.email || u.phone || "—"}</td>
                     <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">{u.companies?.name || "—"}</td>
-                    <td className="px-4 py-2.5"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadge[u.role] || ""}`}>{u.role}</span></td>
+                    <td className="px-4 py-2.5"><Badge label={u.role} tone={u.role === "owner" ? "violet" : "indigo"} /></td>
                     <td className="px-4 py-2.5">{entityStatusBadge(u.status, language)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
@@ -905,7 +907,7 @@ function UsersView({ users, roleBadge, error, onDelete, onSuspend, onUnsuspend }
                   {entityStatusBadge(u.status, language)}
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
-                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadge[u.role] || ""}`}>{u.role}</span>
+                  <Badge label={u.role} tone={u.role === "owner" ? "violet" : "indigo"} />
                   <div className="flex items-center gap-1">
                     {u.status === "suspended" ? (
                       <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
@@ -1383,43 +1385,74 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
 
 // ── Shared UI ──────────────────────────────────────────────────────
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">{children}</div>;
+  return <div className="rounded-2xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.25)] overflow-hidden">{children}</div>;
 }
 
 function EmptyState({ error, text }: { error: string; text: string }) {
   return (
-    <div className="py-16 text-center">
-      {error ? <><XCircle size={40} className="mx-auto mb-3 opacity-40 text-rose-400" /><p className="text-gray-400 dark:text-gray-500 text-sm">{error}</p></> : <p className="text-gray-400 dark:text-gray-500 text-sm">{text}</p>}
+    <div className="py-20 text-center">
+      {error ? (
+        <><div className="mx-auto w-14 h-14 rounded-2xl bg-rose-500/10 ring-1 ring-rose-500/20 flex items-center justify-center mb-4"><XCircle size={26} className="text-rose-400" /></div><p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs mx-auto">{error}</p></>
+      ) : (
+        <><div className="mx-auto w-14 h-14 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center mb-4"><Activity size={26} className="text-gray-500" /></div><p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs mx-auto">{text}</p></>
+      )}
     </div>
   );
 }
 
-function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent?: "emerald" | "rose" | "amber" }) {
-  const chip = accent === "emerald"
-    ? "bg-emerald-500/10 text-emerald-500"
-    : accent === "rose"
-      ? "bg-rose-500/10 text-rose-500"
-      : accent === "amber"
-        ? "bg-amber-500/10 text-amber-500"
-        : "bg-indigo-500/10 text-indigo-500";
-  const bar = accent === "emerald"
-    ? "from-emerald-400 to-emerald-500"
-    : accent === "rose"
-      ? "from-rose-400 to-rose-500"
-      : accent === "amber"
-        ? "from-amber-400 to-amber-500"
-        : "from-indigo-400 to-violet-500";
+// Badge kecil: dot + label, bg very subtle. Satu sistem untuk semua status
+// (user/company/sub/payment/plan/role) — bukan blok warna penuh yang ramai.
+type BadgeTone = "indigo" | "emerald" | "amber" | "rose" | "slate" | "violet";
+function Badge({ label, tone = "slate", dot = true }: { label: string; tone?: BadgeTone; dot?: boolean }) {
+  const map: Record<BadgeTone, string> = {
+    indigo: "bg-indigo-500/10 text-indigo-300 dark:text-indigo-300 ring-indigo-500/30",
+    emerald: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30",
+    amber: "bg-amber-500/10 text-amber-400 ring-amber-500/30",
+    rose: "bg-rose-500/10 text-rose-400 ring-rose-500/30",
+    violet: "bg-violet-500/10 text-violet-300 ring-violet-500/30",
+    slate: "bg-white/5 text-gray-400 ring-white/10",
+  };
+  const dotMap: Record<BadgeTone, string> = {
+    indigo: "bg-indigo-400",
+    emerald: "bg-emerald-400",
+    amber: "bg-amber-400",
+    rose: "bg-rose-400",
+    violet: "bg-violet-400",
+    slate: "bg-gray-500",
+  };
   return (
-    <div className="group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-400/40 overflow-hidden">
-      {/* Garis aksen di atas kartu — pembeda warna per metrik */}
-      <span className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${bar}`} />
-      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.08),transparent_70%)]" />
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${map[tone]}`}>
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dotMap[tone]}`} />}
+      {label}
+    </span>
+  );
+}
+
+function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent?: "emerald" | "rose" | "amber" }) {
+  // Accent hanya via warna chip icon (semantic), bukan garis gradient penuh.
+  const chip = accent === "emerald"
+    ? "bg-emerald-500/10 text-emerald-400"
+    : accent === "rose"
+      ? "bg-rose-500/10 text-rose-400"
+      : accent === "amber"
+        ? "bg-amber-500/10 text-amber-400"
+        : "bg-indigo-500/10 text-indigo-300";
+  const numColor = accent === "emerald"
+    ? "text-emerald-400"
+    : accent === "rose"
+      ? "text-rose-400"
+      : accent === "amber"
+        ? "text-amber-400"
+        : "text-gray-100";
+  return (
+    <div className="group relative rounded-2xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/5 hover:border-white/10 px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.10),transparent_70%)]" />
       <div className="relative">
         <div className="flex items-center gap-2 mb-2.5">
           <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${chip}`}>{icon}</span>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-500">{label}</p>
         </div>
-        <p className="text-[1.7rem] leading-none font-bold text-gray-900 dark:text-white tabular-nums">{value}</p>
+        <p className={`text-[1.7rem] leading-none font-bold tabular-nums ${numColor}`}>{value}</p>
       </div>
     </div>
   );
@@ -1427,14 +1460,14 @@ function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label
 
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gray-50/70 dark:bg-white/[0.03] px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</p>
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-gray-200 dark:text-gray-200">{value}</p>
     </div>
   );
 }
 
 function entityStatusBadge(status?: "active" | "suspended", language?: "en" | "id") {
-  if (status === "suspended") return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"><Ban size={10} /> Suspend</span>;
-  return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"><CheckCircle2 size={10} /> {tx(language || "en", "Active", "Aktif")}</span>;
+  if (status === "suspended") return <Badge label={tx(language || "en", "Suspended", "Ditangguhkan")} tone="amber" />;
+  return <Badge label={tx(language || "en", "Active", "Aktif")} tone="emerald" />;
 }
