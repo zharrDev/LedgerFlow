@@ -13,10 +13,12 @@ type Copy = { eyebrow: string; title: string; description: string; items: Item[]
 const VALID_SECTIONS = ["solutions", "products", "resources", "tools", "company"] as const;
 type ValidSection = typeof VALID_SECTIONS[number];
 
+// Slug HARUS sama dengan kunci di *Content.ts (solutionsContent,
+// productContent, resourcesContent) — selain itu kartu mendarat di 404.
 const detailPaths = {
-  solutions: ["small-businesses", "mid-market-companies", "accountants-firms"],
-  products: ["chart-of-accounts", "financial-reports", "security-compliance"],
-  resources: ["guides-tutorials", "help-center", "community"],
+  solutions: ["small-business", "mid-market", "accountants-firms"],
+  products: ["chart-of-accounts", "journal-entries", "financial-reports"],
+  resources: ["blog", "guides", "templates"],
 };
 
 const content: Record<"solutions" | "products" | "resources", Record<"id" | "en", Copy>> = {

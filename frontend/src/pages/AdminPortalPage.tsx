@@ -269,9 +269,12 @@ export default function AdminPortalPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+    <div className="relative min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+      {/* Latar mesh lembut — memberi kedalaman tanpa garis batas; gradasi
+          radial memudar alami ke warna dasar. */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(99,102,241,0.10),transparent_45%),radial-gradient(circle_at_88%_8%,rgba(139,92,246,0.08),transparent_40%),radial-gradient(circle_at_50%_115%,rgba(6,182,212,0.07),transparent_45%)] dark:opacity-100 opacity-70" />
       {/* Desktop: 2 floating cards */}
-      <div className="hidden lg:flex h-screen p-4 gap-4">
+      <div className="relative hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
         <aside className="w-64 shrink-0 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col">
           {/* Sidebar header */}
@@ -369,6 +372,15 @@ export default function AdminPortalPage() {
                 <ShieldCheck size={12} />
                 {tx(language, "Admin Only", "Khusus Admin")}
               </span>
+              <button
+                onClick={load}
+                disabled={refreshing}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+                title={tx(language, "Reload data", "Muat ulang data")}
+              >
+                <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+                {refreshing ? tx(language, "Refreshing…", "Memuat…") : tx(language, "Refresh", "Segarkan")}
+              </button>
             </div>
           </header>
 
@@ -398,7 +410,7 @@ export default function AdminPortalPage() {
       </div>
 
       {/* Mobile: simple layout */}
-      <div className="lg:hidden min-h-screen flex flex-col">
+      <div className="relative lg:hidden min-h-screen flex flex-col">
         <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -491,13 +503,24 @@ function OverviewView({ overview, error }: { overview: AdminGateOverview | null;
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <div className="p-6">
-            <div className="flex items-center gap-1.5 mb-1 text-indigo-500">
-              <Wallet size={15} />
-              <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">MRR</p>
+          <div className="relative p-6 overflow-hidden h-full">
+            {/* Glow dekoratif — menyatu halus dengan kartu, tanpa garis */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_90%_-10%,rgba(99,102,241,0.12),transparent_55%),radial-gradient(circle_at_0%_120%,rgba(6,182,212,0.08),transparent_45%)]" />
+            <div className="relative flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-500">
+                    <Wallet size={14} />
+                  </span>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">MRR</p>
+                </div>
+                <p className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">{formatRp(overview.mrr)}</p>
+                <p className="mt-2.5 text-xs text-gray-500 dark:text-gray-400">{tx(language, "From", "Dari")} {totalActives} {tx(language, "active subscriptions", "subscription aktif")}</p>
+              </div>
+              <div className="hidden sm:flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500">
+                <TrendingUp size={30} className="opacity-70" />
+              </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">{formatRp(overview.mrr)}</p>
-            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{tx(language, "From", "Dari")} {totalActives} {tx(language, "active subscriptions", "subscription aktif")}</p>
           </div>
         </Card>
         <PlanDistributionChart data={overview.plan_distribution} />
@@ -1332,14 +1355,23 @@ function EmptyState({ error, text }: { error: string; text: string }) {
 }
 
 function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent?: "emerald" | "rose" | "amber" }) {
-  const accentCls = accent === "emerald" ? "text-emerald-500" : accent === "rose" ? "text-rose-500" : accent === "amber" ? "text-amber-500" : "text-indigo-500";
+  const chip = accent === "emerald"
+    ? "bg-emerald-500/10 text-emerald-500"
+    : accent === "rose"
+      ? "bg-rose-500/10 text-rose-500"
+      : accent === "amber"
+        ? "bg-amber-500/10 text-amber-500"
+        : "bg-indigo-500/10 text-indigo-500";
   return (
-    <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3.5">
-      <div className={`flex items-center gap-1.5 mb-1 ${accentCls}`}>
-        {icon}
-        <p className="text-[11px] font-medium uppercase tracking-wider opacity-80">{label}</p>
+    <div className="group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3.5 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-400/40 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.08),transparent_70%)]" />
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${chip}`}>{icon}</span>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
+        </div>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">{value}</p>
       </div>
-      <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{value}</p>
     </div>
   );
 }
