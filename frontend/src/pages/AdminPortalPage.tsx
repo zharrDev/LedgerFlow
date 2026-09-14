@@ -15,7 +15,6 @@ import {
   ScrollText,
   AlertTriangle,
   X,
-  LayoutDashboard,
   TrendingUp,
   UserMinus,
   Wallet,
@@ -32,6 +31,11 @@ import {
   Pencil,
   Power,
   PowerOff,
+  BarChart3,
+  FileText,
+  UsersRound,
+  Landmark,
+  Coins,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -252,13 +256,13 @@ export default function AdminPortalPage() {
   // Warna chip ikon unik per menu (ala dashboard referensi): item aktif
   // berubah jadi chip gradient penuh + teks putih; non-aktif versi /10.
   const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number; chip: string }[] = [
-    { key: "overview", icon: <LayoutDashboard size={15} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
+    { key: "overview", icon: <BarChart3 size={15} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
     { key: "billing", icon: <CreditCard size={15} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length, chip: "from-emerald-500 to-teal-500 text-emerald-500" },
-    { key: "log", icon: <ScrollText size={15} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length, chip: "from-amber-500 to-orange-500 text-amber-500" },
-    { key: "users", icon: <Users size={15} />, label: tx(language, "Users", "Pengguna"), count: users.length, chip: "from-cyan-500 to-sky-500 text-cyan-500" },
-    { key: "companies", icon: <Building2 size={15} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length, chip: "from-fuchsia-500 to-purple-500 text-fuchsia-500" },
-    { key: "plans", icon: <Wallet size={15} />, label: tx(language, "Plans", "Paket"), count: plans.length, chip: "from-rose-500 to-pink-500 text-rose-500" },
-    { key: "health", icon: <Activity size={15} />, label: tx(language, "System Health", "Kesehatan Sistem"), chip: "from-lime-500 to-green-500 text-lime-600" },
+    { key: "log", icon: <FileText size={15} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length, chip: "from-amber-500 to-orange-500 text-amber-500" },
+    { key: "users", icon: <UsersRound size={15} />, label: tx(language, "Users", "Pengguna"), count: users.length, chip: "from-cyan-500 to-sky-500 text-cyan-500" },
+    { key: "companies", icon: <Landmark size={15} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length, chip: "from-fuchsia-500 to-purple-500 text-fuchsia-500" },
+    { key: "plans", icon: <Coins size={15} />, label: tx(language, "Plans", "Paket"), count: plans.length, chip: "from-rose-500 to-pink-500 text-rose-500" },
+    { key: "health", icon: <ShieldCheck size={15} />, label: tx(language, "System Health", "Kesehatan Sistem"), chip: "from-lime-500 to-green-500 text-lime-600" },
   ];
 
   return (
