@@ -152,4 +152,28 @@ describe("strictOtpRateLimit (kunci IP + nomor telepon)", () => {
     });
     expect(res.status).toBe(200);
   });
+
+  it("STRICT: format nomor sama (08.. vs 628..) memakai bucket yang sama", async () => {
+    const app = buildApp(strictOtpRateLimit());
+    const makeReq = (phone: string) =>
+      app.request("/otp", {
+        method: "POST",
+        body: JSON.stringify({ phone }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "11.11.11.11",
+        },
+      });
+
+    // 3x sebagai "0811.." + 2x sebagai "62811.." = 5 hit satu bucket.
+    // ("08111111111" dinormalisasi jadi "628111111111" — nomor yang sama.)
+    for (let i = 0; i < 3; i++) {
+      expect((await makeReq("08111111111")).status).toBe(200);
+    }
+    for (let i = 0; i < 2; i++) {
+      expect((await makeReq("628111111111")).status).toBe(200);
+    }
+    // Hit ke-6 (format mana pun) diblokir — bukti satu bucket.
+    expect((await makeReq("08111111111")).status).toBe(429);
+  });
 });

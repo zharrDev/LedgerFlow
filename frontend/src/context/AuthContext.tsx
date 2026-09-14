@@ -93,7 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // WhatsApp OTP: kirim kode ke nomor user
+  // WhatsApp OTP: kirim kode ke nomor user.
+  // skipErrorToast: form login/register menampilkan error inline sendiri —
+  // tanpa ini user melihat error DOBEL (toast global + pesan di form).
   const requestWaOtp = async (payload: WaPayload) => {
     const url =
       payload.mode === "register" ? "/api/wa/register/start" : "/api/wa/login/start";
@@ -102,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? { phone: payload.phone, name: payload.name, company_name: payload.company_name }
         : { phone: payload.phone };
     try {
-      await api.post(url, body);
+      await api.post(url, body, { skipErrorToast: true });
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }
@@ -122,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         : { phone: payload.phone, code: payload.code };
     try {
-      const response = await api.post(url, body);
+      const response = await api.post(url, body, { skipErrorToast: true });
       login(response.data.token, response.data.user);
     } catch (err) {
       throw new Error(getErrorMessage(err));

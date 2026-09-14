@@ -32,9 +32,13 @@ import { strictOtpRateLimit } from "../middleware/rate-limit.js";
 const waAuth = new Hono();
 
 // STRICT rate limit: 5 request / 15 menit per kombinasi IP + nomor telepon,
-// berlaku untuk semua endpoint OTP di bawah. Limiter lama checkIpRateLimit
-// (per IP saja) tetap aktif sebagai defense-in-depth.
-waAuth.use("*", strictOtpRateLimit());
+// HANYA untuk endpoint START (kirim OTP). Endpoint VERIFY dikecualikan
+// karena sudah dilindungi pengunci percobaan sendiri (5x salah → minta kode
+// baru) + limiter per-IP di bawah. Kalau verify ikut dihitung, pemakaian
+// normal mudah terkunci 15 menit: login = start+verify (2 hit), salah ketik
+// + kirim ulang + verify lagi = 5 hit → lockout padahal user sah.
+waAuth.use("/register/start", strictOtpRateLimit());
+waAuth.use("/login/start", strictOtpRateLimit());
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -456,8 +460,8 @@ waAuth.post("/register/verify", async (c) => {
         return c.json(
           {
             error: result.remaining
-              ? `Kode OTP salah. Sisa ${result.remaining} percobaan.`
-              : "Kode OTP salah.",
+              ? `Kode OTP salah. Pastikan memakai kode terbaru — sisa ${result.remaining} percobaan.`
+              : "Kode OTP salah. Minta kode baru dan pakai kode terbaru.",
           },
           400,
         );
@@ -641,8 +645,8 @@ waAuth.post("/login/verify", async (c) => {
         return c.json(
           {
             error: result.remaining
-              ? `Kode OTP salah. Sisa ${result.remaining} percobaan.`
-              : "Kode OTP salah.",
+              ? `Kode OTP salah. Pastikan memakai kode terbaru — sisa ${result.remaining} percobaan.`
+              : "Kode OTP salah. Minta kode baru dan pakai kode terbaru.",
           },
           400,
         );

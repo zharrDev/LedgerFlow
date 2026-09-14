@@ -77,9 +77,15 @@ async function phoneKeyPart(c: Context): Promise<string> {
     // Hono meng-cache hasil parse body — handler masih bisa memanggil
     // c.req.json() lagi setelah ini tanpa error "body already consumed".
     const body = await c.req.json();
-    const digits = String(body?.phone ?? "")
+    let digits = String(body?.phone ?? "")
       .replace(/\D+/g, "")
       .slice(0, 20);
+    // Samakan format nomor (08.. -> 628..) supaya nomor yang sama dalam
+    // penulisan berbeda memakai bucket yang sama — konsisten dengan
+    // normalizePhoneNumber di lib/whatsapp.ts. Tanpa ini, "0812.." dan
+    // "62812.." dihitung terpisah (user sah bisa kena lockout dobel,
+    // penyerang bisa mengakali limit).
+    if (digits.startsWith("0")) digits = `62${digits.slice(1)}`;
     return digits || "-";
   } catch {
     return "-";
