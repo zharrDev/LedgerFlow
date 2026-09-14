@@ -267,18 +267,18 @@ export default function AdminPortalPage() {
       {/* Desktop: 2 floating cards */}
       <div className="relative hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
-        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white/[0.04] dark:bg-white/[0.04] border border-white/[0.07] shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
+        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/[0.07] shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
           {/* Sidebar header */}
           <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/[0.07]">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-indigo-950/50 shrink-0">
                 <Terminal size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-gray-100 dark:text-gray-100 truncate leading-tight">
+                <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">
                   LedgerFlow Ops
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-500 truncate leading-tight mt-0.5">
+                <p className="text-[10px] text-gray-500 truncate leading-tight mt-0.5">
                   Internal Console
                 </p>
               </div>
@@ -288,7 +288,7 @@ export default function AdminPortalPage() {
 
           {/* Navigation */}
           <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-y-auto scrollbar-thin">
-            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-500 dark:text-gray-600 uppercase tracking-[0.15em]">
+            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em]">
               Panel
             </p>
             <div className="space-y-1.5">
@@ -298,20 +298,20 @@ export default function AdminPortalPage() {
                   onClick={() => setTab(t.key)}
                   className={`group relative flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
                     tab === t.key
-                      ? "bg-indigo-500/15 text-indigo-300 font-medium ring-1 ring-indigo-500/30"
-                      : "text-gray-400 dark:text-gray-500 hover:text-indigo-300 hover:bg-white/[0.04] dark:hover:bg-white/[0.04]"
+                      ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-medium ring-1 ring-indigo-600/20 dark:ring-indigo-500/30"
+                      : "text-gray-600 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]"
                   }`}
                 >
                   <span
                     className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                      tab === t.key ? "h-5 bg-indigo-400" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-400/50"
+                      tab === t.key ? "h-5 bg-indigo-500 dark:bg-indigo-400" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-400/50"
                     }`}
                   />
                   {t.icon}
                   <span className="truncate">{t.label}</span>
                   {t.count !== undefined && (
                     <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
-                      tab === t.key ? "bg-indigo-500/20 text-indigo-200" : "bg-white/5 text-gray-500"
+                      tab === t.key ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200" : "bg-gray-100 dark:bg-white/5 text-gray-500"
                     }`}>
                       {t.count}
                     </span>
@@ -322,18 +322,18 @@ export default function AdminPortalPage() {
           </nav>
 
           {/* Sidebar footer: refresh + logout */}
-          <div className="border-t border-white/[0.06] py-2 px-3 space-y-1">
+          <div className="border-t border-gray-100 dark:border-white/[0.06] py-2 px-3 space-y-1">
             <button
               onClick={load}
               disabled={refreshing}
-              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-colors"
+              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors"
             >
               <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
               <span>{tx(language, "Reload", "Muat Ulang")}</span>
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-rose-400/90 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-rose-600 dark:text-rose-400/90 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
             >
               <LogOut size={16} />
               <span>{tx(language, "Logout", "Keluar")}</span>
@@ -342,15 +342,15 @@ export default function AdminPortalPage() {
         </aside>
 
         {/* Content card */}
-        <div className="flex-1 h-full rounded-3xl bg-white/[0.02] dark:bg-white/[0.02] border border-white/[0.07] shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col min-w-0">
+        <div className="flex-1 h-full rounded-3xl bg-white dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/[0.07] shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col min-w-0">
           {/* Content header strip */}
-          <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-white/[0.06] bg-white/[0.03] backdrop-blur-md">
+          <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.03] backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-950/50">
+              <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-950/20 dark:shadow-indigo-950/50">
                 <ShieldCheck size={18} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-100 tracking-tight">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">
                   {tx(language, "Admin Portal", "Admin Portal")}
                 </h1>
                 <p className="text-xs text-gray-500">
@@ -359,14 +359,14 @@ export default function AdminPortalPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-500/10 ring-1 ring-indigo-500/30 text-xs font-medium text-indigo-300">
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 ring-1 ring-indigo-600/20 dark:ring-indigo-500/30 text-xs font-medium text-indigo-700 dark:text-indigo-300">
                 <ShieldCheck size={12} />
                 {tx(language, "Admin Only", "Khusus Admin")}
               </span>
               <button
                 onClick={load}
                 disabled={refreshing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs font-medium text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
                 title={tx(language, "Reload data", "Muat ulang data")}
               >
                 <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
@@ -402,20 +402,20 @@ export default function AdminPortalPage() {
 
       {/* Mobile: simple layout */}
       <div className="relative lg:hidden min-h-screen flex flex-col">
-        <header className="border-b border-white/[0.06] bg-white/[0.03] backdrop-blur-md sticky top-0 z-10">
+        <header className="border-b border-gray-200 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.03] backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
                 <ShieldCheck size={18} />
               </div>
-              <span className="font-semibold text-gray-100 text-sm">{tx(language, "Admin Portal", "Admin Portal")}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{tx(language, "Admin Portal", "Admin Portal")}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-300 border border-white/10 rounded-xl hover:bg-white/5 transition-colors disabled:opacity-50">
+              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
                 <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 {tx(language, "Reload", "Muat Ulang")}
               </button>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-300 border border-white/10 rounded-xl hover:bg-white/5 transition-colors">
+              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                 <LogOut size={14} />
                 {tx(language, "Logout", "Keluar")}
               </button>
@@ -429,15 +429,15 @@ export default function AdminPortalPage() {
                 onClick={() => setTab(t.key)}
                 className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
                   tab === t.key
-                    ? "bg-indigo-500/15 ring-1 ring-indigo-500/30 text-indigo-200"
-                    : "text-gray-500 hover:text-gray-300"
+                    ? "bg-indigo-50 dark:bg-indigo-500/15 ring-1 ring-indigo-600/20 dark:ring-indigo-500/30 text-indigo-700 dark:text-indigo-200"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
                 {t.icon}
                 {t.label}
                 {t.count !== undefined && (
                   <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold tabular-nums ${
-                    tab === t.key ? "bg-indigo-500/20 text-indigo-200" : "bg-white/5 text-gray-500"
+                    tab === t.key ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200" : "bg-gray-100 dark:bg-white/5 text-gray-500"
                   }`}>
                     {t.count}
                   </span>
@@ -1385,7 +1385,7 @@ function CompanyDetailModal({ company, data, loading, error, onClose }: { compan
 
 // ── Shared UI ──────────────────────────────────────────────────────
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.25)] overflow-hidden">{children}</div>;
+  return <div className="rounded-2xl bg-white dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/5 shadow-sm dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] overflow-hidden">{children}</div>;
 }
 
 function EmptyState({ error, text }: { error: string; text: string }) {
@@ -1405,12 +1405,12 @@ function EmptyState({ error, text }: { error: string; text: string }) {
 type BadgeTone = "indigo" | "emerald" | "amber" | "rose" | "slate" | "violet";
 function Badge({ label, tone = "slate", dot = true }: { label: string; tone?: BadgeTone; dot?: boolean }) {
   const map: Record<BadgeTone, string> = {
-    indigo: "bg-indigo-500/10 text-indigo-300 dark:text-indigo-300 ring-indigo-500/30",
-    emerald: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30",
-    amber: "bg-amber-500/10 text-amber-400 ring-amber-500/30",
-    rose: "bg-rose-500/10 text-rose-400 ring-rose-500/30",
-    violet: "bg-violet-500/10 text-violet-300 ring-violet-500/30",
-    slate: "bg-white/5 text-gray-400 ring-white/10",
+    indigo: "bg-indigo-50 text-indigo-700 ring-indigo-600/20 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/30",
+    emerald: "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30",
+    amber: "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/30",
+    rose: "bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/30",
+    violet: "bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30",
+    slate: "bg-gray-100 text-gray-600 ring-gray-500/20 dark:bg-white/5 dark:text-gray-400 dark:ring-white/10",
   };
   const dotMap: Record<BadgeTone, string> = {
     indigo: "bg-indigo-400",
@@ -1431,26 +1431,26 @@ function Badge({ label, tone = "slate", dot = true }: { label: string; tone?: Ba
 function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: number; accent?: "emerald" | "rose" | "amber" }) {
   // Accent hanya via warna chip icon (semantic), bukan garis gradient penuh.
   const chip = accent === "emerald"
-    ? "bg-emerald-500/10 text-emerald-400"
+    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
     : accent === "rose"
-      ? "bg-rose-500/10 text-rose-400"
+      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
       : accent === "amber"
-        ? "bg-amber-500/10 text-amber-400"
-        : "bg-indigo-500/10 text-indigo-300";
+        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300";
   const numColor = accent === "emerald"
-    ? "text-emerald-400"
+    ? "text-emerald-600 dark:text-emerald-400"
     : accent === "rose"
-      ? "text-rose-400"
+      ? "text-rose-600 dark:text-rose-400"
       : accent === "amber"
-        ? "text-amber-400"
-        : "text-gray-100";
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-gray-900 dark:text-gray-100";
   return (
-    <div className="group relative rounded-2xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/5 hover:border-white/10 px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30 overflow-hidden">
+    <div className="group relative rounded-2xl bg-white dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/30 overflow-hidden">
       <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.10),transparent_70%)]" />
       <div className="relative">
         <div className="flex items-center gap-2 mb-2.5">
           <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${chip}`}>{icon}</span>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-500">{label}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">{label}</p>
         </div>
         <p className={`text-[1.7rem] leading-none font-bold tabular-nums ${numColor}`}>{value}</p>
       </div>
@@ -1460,9 +1460,9 @@ function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label
 
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-500">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-gray-200 dark:text-gray-200">{value}</p>
+    <div className="rounded-2xl border border-gray-200/70 dark:border-white/5 bg-gray-50/70 dark:bg-white/[0.02] px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</p>
     </div>
   );
 }
