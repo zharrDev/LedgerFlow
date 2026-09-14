@@ -267,18 +267,18 @@ export default function AdminPortalPage() {
       {/* Desktop: 2 floating cards */}
       <div className="relative hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
-        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col">
+        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white/[0.04] dark:bg-white/[0.04] border border-white/[0.07] shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
           {/* Sidebar header */}
           <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50/50 dark:from-indigo-900/20 dark:to-violet-900/10 border border-indigo-200/50 dark:border-indigo-800/30">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-indigo-950/50 shrink-0">
                 <Terminal size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                <p className="text-xs font-semibold text-gray-100 dark:text-gray-100 truncate leading-tight">
                   LedgerFlow Ops
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5">
+                <p className="text-[10px] text-gray-500 dark:text-gray-500 truncate leading-tight mt-0.5">
                   Internal Console
                 </p>
               </div>
@@ -288,7 +288,7 @@ export default function AdminPortalPage() {
 
           {/* Navigation */}
           <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-y-auto scrollbar-thin">
-            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em]">
+            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-500 dark:text-gray-600 uppercase tracking-[0.15em]">
               Panel
             </p>
             <div className="space-y-1.5">
@@ -298,20 +298,20 @@ export default function AdminPortalPage() {
                   onClick={() => setTab(t.key)}
                   className={`group relative flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
                     tab === t.key
-                      ? "bg-gradient-to-r from-indigo-500/10 to-indigo-500/5 text-indigo-600 dark:text-indigo-400 font-medium shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-darkCard/50"
+                      ? "bg-indigo-500/15 text-indigo-300 font-medium ring-1 ring-indigo-500/30"
+                      : "text-gray-400 dark:text-gray-500 hover:text-indigo-300 hover:bg-white/[0.04] dark:hover:bg-white/[0.04]"
                   }`}
                 >
                   <span
                     className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                      tab === t.key ? "h-5 bg-indigo-500" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-300 dark:group-hover:bg-indigo-700"
+                      tab === t.key ? "h-5 bg-indigo-400" : "h-0 bg-transparent group-hover:h-2 group-hover:bg-indigo-400/50"
                     }`}
                   />
                   {t.icon}
                   <span className="truncate">{t.label}</span>
                   {t.count !== undefined && (
-                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                      tab === t.key ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" : "bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
+                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
+                      tab === t.key ? "bg-indigo-500/20 text-indigo-200" : "bg-white/5 text-gray-500"
                     }`}>
                       {t.count}
                     </span>
@@ -322,18 +322,18 @@ export default function AdminPortalPage() {
           </nav>
 
           {/* Sidebar footer: refresh + logout */}
-          <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
+          <div className="border-t border-white/[0.06] py-2 px-3 space-y-1">
             <button
               onClick={load}
               disabled={refreshing}
-              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-darkCard/50 transition-colors"
+              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-colors"
             >
               <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
               <span>{tx(language, "Reload", "Muat Ulang")}</span>
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+              className="flex items-center gap-2.5 w-full pl-4 pr-3 py-2 text-xs rounded-xl text-rose-400/90 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
             >
               <LogOut size={16} />
               <span>{tx(language, "Logout", "Keluar")}</span>
@@ -342,31 +342,31 @@ export default function AdminPortalPage() {
         </aside>
 
         {/* Content card */}
-        <div className="flex-1 h-full rounded-3xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
+        <div className="flex-1 h-full rounded-3xl bg-white/[0.02] dark:bg-white/[0.02] border border-white/[0.07] shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col min-w-0">
           {/* Content header strip */}
-          <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-darkCard/80 backdrop-blur-md">
+          <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-white/[0.06] bg-white/[0.03] backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+              <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-950/50">
                 <ShieldCheck size={18} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                <h1 className="text-lg font-bold text-gray-100 tracking-tight">
                   {tx(language, "Admin Portal", "Admin Portal")}
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-500">
                   {sidebarTabs.find((t) => t.key === tab)?.label || "Dashboard"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-500/10 ring-1 ring-indigo-500/30 text-xs font-medium text-indigo-300">
                 <ShieldCheck size={12} />
                 {tx(language, "Admin Only", "Khusus Admin")}
               </span>
               <button
                 onClick={load}
                 disabled={refreshing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs font-medium text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50"
                 title={tx(language, "Reload data", "Muat ulang data")}
               >
                 <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
@@ -402,20 +402,20 @@ export default function AdminPortalPage() {
 
       {/* Mobile: simple layout */}
       <div className="relative lg:hidden min-h-screen flex flex-col">
-        <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md sticky top-0 z-10">
+        <header className="border-b border-white/[0.06] bg-white/[0.03] backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+              <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
                 <ShieldCheck size={18} />
               </div>
-              <span className="font-semibold text-gray-900 dark:text-white text-sm">{tx(language, "Admin Portal", "Admin Portal")}</span>
+              <span className="font-semibold text-gray-100 text-sm">{tx(language, "Admin Portal", "Admin Portal")}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-300 border border-white/10 rounded-xl hover:bg-white/5 transition-colors disabled:opacity-50">
                 <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 {tx(language, "Reload", "Muat Ulang")}
               </button>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-300 border border-white/10 rounded-xl hover:bg-white/5 transition-colors">
                 <LogOut size={14} />
                 {tx(language, "Logout", "Keluar")}
               </button>
@@ -429,15 +429,15 @@ export default function AdminPortalPage() {
                 onClick={() => setTab(t.key)}
                 className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
                   tab === t.key
-                    ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    ? "bg-indigo-500/15 ring-1 ring-indigo-500/30 text-indigo-200"
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
               >
                 {t.icon}
                 {t.label}
                 {t.count !== undefined && (
-                  <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold ${
-                    tab === t.key ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" : "bg-gray-100 dark:bg-white/5 text-gray-400"
+                  <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold tabular-nums ${
+                    tab === t.key ? "bg-indigo-500/20 text-indigo-200" : "bg-white/5 text-gray-500"
                   }`}>
                     {t.count}
                   </span>
