@@ -33,7 +33,7 @@ import {
   Power,
   PowerOff,
 } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
   fetchAdminGateLogs,
   fetchAdminGateUsers,
@@ -501,29 +501,35 @@ function OverviewView({ overview, error }: { overview: AdminGateOverview | null;
         <StatCard icon={<TrendingUp size={15} />} label={tx(language, "New Users 30 Days", "User Baru 30 Hari")} value={overview.users_growth_30d} accent="emerald" />
         <StatCard icon={<UserMinus size={15} />} label={tx(language, "Churn 30 Days", "Churn 30 Hari")} value={overview.churn_30d} accent="rose" />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <div className="relative p-6 overflow-hidden h-full">
-            {/* Glow dekoratif — menyatu halus dengan kartu, tanpa garis */}
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_90%_-10%,rgba(99,102,241,0.12),transparent_55%),radial-gradient(circle_at_0%_120%,rgba(6,182,212,0.08),transparent_45%)]" />
-            <div className="relative flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-500">
-                    <Wallet size={14} />
-                  </span>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">MRR</p>
-                </div>
-                <p className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">{formatRp(overview.mrr)}</p>
-                <p className="mt-2.5 text-xs text-gray-500 dark:text-gray-400">{tx(language, "From", "Dari")} {totalActives} {tx(language, "active subscriptions", "subscription aktif")}</p>
-              </div>
-              <div className="hidden sm:flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500">
-                <TrendingUp size={30} className="opacity-70" />
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* ── Kartu Revenue (hero) ── gradient penuh + dekorasi ring,
+            jadi pusat visual Overview — bukan kartu putih kosong. */}
+        <div className="relative lg:col-span-2 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-6 text-white shadow-xl shadow-indigo-950/25 min-h-[220px] flex flex-col justify-between">
+          {/* Dekorasi ring transparan — halus, masked agar tak terpotong kasar */}
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full border-[22px] border-white/10" />
+          <div className="pointer-events-none absolute -right-6 -bottom-20 h-44 w-44 rounded-full border-[16px] border-white/[0.07]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_115%,rgba(6,182,212,0.25),transparent_50%)]" />
+          <div className="relative flex items-center gap-2.5">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+              <Wallet size={15} />
+            </span>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">MRR</p>
+          </div>
+          <div className="relative mt-6">
+            <p className="text-4xl sm:text-[2.6rem] leading-none font-bold tabular-nums tracking-tight">{formatRp(overview.mrr)}</p>
+            <div className="mt-3.5 flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+                <Users size={11} /> {totalActives} {tx(language, "active subscriptions", "subscription aktif")}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+                <CreditCard size={11} /> {overview.plan_distribution.length} {tx(language, "plans", "plan")}
+              </span>
             </div>
           </div>
-        </Card>
-        <PlanDistributionChart data={overview.plan_distribution} />
+        </div>
+        <div className="lg:col-span-3 min-w-0">
+          <PlanDistributionChart data={overview.plan_distribution} />
+        </div>
       </div>
     </div>
   );
@@ -548,25 +554,59 @@ function PlanDistributionChart({ data }: { data: { name: string; users: number }
   const isDark = useIsDark();
   const { language } = useLanguage();
   const textColor = isDark ? "#94a3b8" : "#64748b";
+  const totalUsers = data.reduce((s, p) => s + p.users, 0);
+
   return (
     <Card>
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "User Distribution per Plan", "Distribusi User per Plan")}</span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">{tx(language, "Based on active subscriptions", "Berdasarkan subscription aktif")}</span>
       </div>
-      <div className="p-4">
+      <div className="p-5">
         {data.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">{tx(language, "No active subscriptions yet.", "Belum ada subscription aktif.")}</div>
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={data} dataKey="users" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={3} strokeWidth={2} stroke={isDark ? "#111827" : "#ffffff"}>
-                {data.map((_, i) => <Cell key={i} fill={PLAN_COLORS[i % PLAN_COLORS.length]} />)}
-              </Pie>
-              <Tooltip formatter={(value: any, name: any) => [`${value} user`, name as string]} contentStyle={{ background: isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.95)", border: isDark ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(99,102,241,0.15)", borderRadius: 12, fontSize: 12 }} />
-              <Legend iconType="circle" formatter={(value: any) => <span style={{ color: textColor, fontSize: 12 }}>{value}</span>} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="grid gap-6 sm:grid-cols-2 items-center">
+            {/* Donut + total di tengah */}
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={230}>
+                <PieChart>
+                  <Pie data={data} dataKey="users" nameKey="name" innerRadius={62} outerRadius={92} paddingAngle={4} cornerRadius={6} strokeWidth={2} stroke={isDark ? "#111827" : "#ffffff"}>
+                    {data.map((_, i) => <Cell key={i} fill={PLAN_COLORS[i % PLAN_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(value: any, name: any) => [`${value} user`, name as string]} contentStyle={{ background: isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.95)", border: isDark ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(99,102,241,0.15)", borderRadius: 12, fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">{totalUsers}</p>
+                <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">{tx(language, "Active users", "User aktif")}</p>
+              </div>
+            </div>
+
+            {/* Daftar plan dengan bar persentase */}
+            <div className="space-y-3.5">
+              {data.map((p, i) => {
+                const pct = totalUsers > 0 ? Math.round((p.users / totalUsers) * 100) : 0;
+                const color = PLAN_COLORS[i % PLAN_COLORS.length];
+                return (
+                  <div key={p.name}>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 capitalize truncate">{p.name}</span>
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums shrink-0">
+                        {p.users} {tx(language, "users", "user")} · <span className="font-semibold text-gray-600 dark:text-gray-300">{pct}%</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
     </Card>
@@ -1362,15 +1402,24 @@ function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label
       : accent === "amber"
         ? "bg-amber-500/10 text-amber-500"
         : "bg-indigo-500/10 text-indigo-500";
+  const bar = accent === "emerald"
+    ? "from-emerald-400 to-emerald-500"
+    : accent === "rose"
+      ? "from-rose-400 to-rose-500"
+      : accent === "amber"
+        ? "from-amber-400 to-amber-500"
+        : "from-indigo-400 to-violet-500";
   return (
-    <div className="group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3.5 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-400/40 overflow-hidden">
+    <div className="group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-400/40 overflow-hidden">
+      {/* Garis aksen di atas kartu — pembeda warna per metrik */}
+      <span className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${bar}`} />
       <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.08),transparent_70%)]" />
       <div className="relative">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${chip}`}>{icon}</span>
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${chip}`}>{icon}</span>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
         </div>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">{value}</p>
+        <p className="text-[1.7rem] leading-none font-bold text-gray-900 dark:text-white tabular-nums">{value}</p>
       </div>
     </div>
   );
