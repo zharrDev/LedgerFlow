@@ -366,7 +366,7 @@ export default function AdminPortalPage() {
               <button
                 onClick={load}
                 disabled={refreshing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors disabled:opacity-50"
                 title={tx(language, "Reload data", "Muat ulang data")}
               >
                 <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
@@ -411,11 +411,11 @@ export default function AdminPortalPage() {
               <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{tx(language, "Admin Portal", "Admin Portal")}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors disabled:opacity-50">
                 <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 {tx(language, "Reload", "Muat Ulang")}
               </button>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
                 <LogOut size={14} />
                 {tx(language, "Logout", "Keluar")}
               </button>
@@ -548,8 +548,8 @@ function PlanDistributionChart({ data }: { data: { name: string; users: number }
 
   return (
     <Card>
-      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "User Distribution per Plan", "Distribusi User per Plan")}</span>
+      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "User Distribution per Plan", "Distribusi User per Plan")}</span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">{tx(language, "Based on active subscriptions", "Berdasarkan subscription aktif")}</span>
       </div>
       <div className="p-5">
@@ -614,8 +614,8 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
   return (
     <div className="space-y-6">
       <Card>
-        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between flex-wrap gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "Payment & Subscription Data", "Data Pembayaran & Langganan")}</span>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between flex-wrap gap-2">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "Payment & Subscription Data", "Data Pembayaran & Langganan")}</span>
           <div className="flex gap-1">
             {[{ key: "subs" as const, label: tx(language, "Subscriptions", "Langganan") }, { key: "payments" as const, label: tx(language, "Payment History", "Riwayat Pembayaran") }].map((t) => (
               <button key={t.key} onClick={() => setSubTab(t.key)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${subTab === t.key ? ACCENT.activeBg : "text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-white/5"}`}>
@@ -630,12 +630,12 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
               {/* Desktop table */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-800/30">
-                    <tr>{[tx(language, "User", "User"), tx(language, "Plan", "Paket"), tx(language, "Cycle", "Siklus"), tx(language, "Status", "Status"), tx(language, "Period Ends", "Periode Berakhir")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                  <thead className="border-b border-gray-100 dark:border-white/[0.06]">
+                    <tr>{[tx(language, "User", "User"), tx(language, "Plan", "Paket"), tx(language, "Cycle", "Siklus"), tx(language, "Status", "Status"), tx(language, "Period Ends", "Periode Berakhir")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-[0.14em]">{h}</th>)}</tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                     {subPagination.pageItems.map((s) => (
-                      <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                      <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03]">
                         <td className="px-4 py-2.5"><p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{s.users?.name || "—"}</p><p className="text-xs text-gray-400 dark:text-gray-500">{s.users?.email || s.users?.phone || ""}</p></td>
                         <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">{s.plans?.display_name || s.plans?.name || "—"}</td>
                         <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{s.billing_cycle === "yearly" ? tx(language, "Yearly", "Tahunan") : tx(language, "Monthly", "Bulanan")}</td>
@@ -648,7 +648,7 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
               </div>
 
               {/* Mobile cards */}
-              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+              <div className="sm:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {subPagination.pageItems.map((s) => (
                   <div key={s.id} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-2">
@@ -677,12 +677,12 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
             {/* Desktop table */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/30">
-                  <tr>{[tx(language, "Order ID", "Order ID"), tx(language, "User", "User"), tx(language, "Amount", "Jumlah"), tx(language, "Status", "Status"), tx(language, "Time", "Waktu")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                <thead className="border-b border-gray-100 dark:border-white/[0.06]">
+                  <tr>{[tx(language, "Order ID", "Order ID"), tx(language, "User", "User"), tx(language, "Amount", "Jumlah"), tx(language, "Status", "Status"), tx(language, "Time", "Waktu")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-[0.14em]">{h}</th>)}</tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {payPagination.pageItems.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03]">
                       <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{p.order_id}</td>
                       <td className="px-4 py-2.5"><p className="font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{p.users?.name || "—"}</p><p className="text-xs text-gray-400 dark:text-gray-500">{p.users?.email || p.users?.phone || ""}</p></td>
                       <td className="px-4 py-2.5 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap tabular-nums">{formatRp(p.amount, p.currency)}</td>
@@ -695,7 +695,7 @@ function BillingView({ subscriptions, payments, error }: { subscriptions: AdminG
             </div>
 
             {/* Mobile cards */}
-            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
               {payPagination.pageItems.map((p) => (
                 <div key={p.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
@@ -783,8 +783,8 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
         <StatCard icon={<Ban size={15} />} label={tx(language, "Blocked", "Diblokir")} value={stats.blocked} accent="amber" />
       </div>
       <Card>
-        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "Gateway Login Attempt History", "Riwayat Percobaan Login Gerbang")}</span>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "Gateway Login Attempt History", "Riwayat Percobaan Login Gerbang")}</span>
           {!loading && logs.length > 0 && <span className="text-[11px] text-gray-400 dark:text-gray-500">{logs.length} {tx(language, "records", "catatan")}</span>}
         </div>
         <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-2">
@@ -805,7 +805,7 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
             ]}
           />
           {(query || statusFilter) && (
-            <button onClick={resetFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+            <button onClick={resetFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition">
               <X size={14} /> {tx(language, "Reset", "Reset")}
             </button>
           )}
@@ -819,10 +819,10 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
             {/* Desktop table */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Time", "Waktu"), "IP", tx(language, "Status", "Status")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                <thead className="border-b border-gray-100 dark:border-white/[0.06]"><tr>{[tx(language, "Time", "Waktu"), "IP", tx(language, "Status", "Status")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-[0.14em]">{h}</th>)}</tr></thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {pagination.pageItems.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03]">
                       <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">{new Date(log.created_at).toLocaleString(language === "id" ? "id-ID" : "en-US")}</td>
                       <td className="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400">{log.ip}</td>
                       <td className="px-4 py-2.5">{statusBadge(log.status)}</td>
@@ -833,7 +833,7 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
             </div>
 
             {/* Mobile cards */}
-            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
               {pagination.pageItems.map((log) => (
                 <div key={log.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
@@ -860,8 +860,8 @@ function UsersView({ users, error, onDelete, onSuspend, onUnsuspend }: { users: 
   const pagination = usePagination(users, PAGE_SIZE);
   return (
     <Card>
-      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "All Users (cross-company)", "Semua User (lintas company)")}</span>
+      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "All Users (cross-company)", "Semua User (lintas company)")}</span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">{tx(language, "Moderation: suspend or delete", "Moderasi: suspend atau hapus")}</span>
       </div>
       {users.length === 0 ? <EmptyState error={error} text={tx(language, "No users yet.", "Belum ada user.")} /> : (
@@ -869,23 +869,28 @@ function UsersView({ users, error, onDelete, onSuspend, onUnsuspend }: { users: 
           {/* Desktop table */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), "Email / No. HP", tx(language, "Company", "Company"), tx(language, "Role", "Role"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+              <thead className="border-b border-gray-100 dark:border-white/[0.06]"><tr>{[tx(language, "Name", "Nama"), "Email / No. HP", tx(language, "Company", "Company"), tx(language, "Role", "Role"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-[0.14em]">{h}</th>)}</tr></thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {pagination.pageItems.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">{u.name}</td>
-                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{u.email || u.phone || "—"}</td>
+                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={u.name} size="sm" />
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{u.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{u.email || u.phone || "—"}</td>
                     <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">{u.companies?.name || "—"}</td>
                     <td className="px-4 py-2.5"><Badge label={u.role} tone={u.role === "owner" ? "violet" : "indigo"} /></td>
                     <td className="px-4 py-2.5">{entityStatusBadge(u.status, language)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
                         {u.status === "suspended" ? (
-                          <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
+                          <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition"><RotateCcw size={14} /></button>
                         ) : (
-                          <button onClick={() => onSuspend(u)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
+                          <button onClick={() => onSuspend(u)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 transition"><Ban size={14} /></button>
                         )}
-                        <button onClick={() => onDelete(u)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
+                        <button onClick={() => onDelete(u)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -895,14 +900,17 @@ function UsersView({ users, error, onDelete, onSuspend, onUnsuspend }: { users: 
           </div>
 
           {/* Mobile cards */}
-          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
             {pagination.pageItems.map((u) => (
               <div key={u.id} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.name}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{u.email || u.phone || "—"}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{u.companies?.name || "—"}</p>
+                  <div className="min-w-0 flex items-center gap-2.5">
+                    <Avatar name={u.name} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.name}</p>
+                      <p className="font-mono text-[11px] text-gray-400 dark:text-gray-500 truncate">{u.email || u.phone || "—"}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{u.companies?.name || "—"}</p>
+                    </div>
                   </div>
                   {entityStatusBadge(u.status, language)}
                 </div>
@@ -910,11 +918,11 @@ function UsersView({ users, error, onDelete, onSuspend, onUnsuspend }: { users: 
                   <Badge label={u.role} tone={u.role === "owner" ? "violet" : "indigo"} />
                   <div className="flex items-center gap-1">
                     {u.status === "suspended" ? (
-                      <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"><RotateCcw size={14} /></button>
+                      <button onClick={() => onUnsuspend(u)} title={tx(language, "Reactivate", "Aktifkan kembali")} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition"><RotateCcw size={14} /></button>
                     ) : (
-                      <button onClick={() => onSuspend(u)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"><Ban size={14} /></button>
+                      <button onClick={() => onSuspend(u)} title={tx(language, "Suspend", "Suspend")} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 transition"><Ban size={14} /></button>
                     )}
-                    <button onClick={() => onDelete(u)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition"><Trash2 size={14} /></button>
+                    <button onClick={() => onDelete(u)} title={tx(language, "Delete permanently", "Hapus permanen")} className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition"><Trash2 size={14} /></button>
                   </div>
                 </div>
               </div>
@@ -933,8 +941,8 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
   const pagination = usePagination(companies, PAGE_SIZE);
   return (
     <Card>
-      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "All Companies", "Semua Company")}</span>
+      <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "All Companies", "Semua Company")}</span>
         <span className="text-[11px] text-gray-400 dark:text-gray-500">{tx(language, "Moderation: suspend or delete", "Moderasi: suspend atau hapus")}</span>
       </div>
       {companies.length === 0 ? <EmptyState error={error} text={tx(language, "No companies yet.", "Belum ada company.")} /> : (
@@ -942,10 +950,10 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
           {/* Desktop table */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/30"><tr>{[tx(language, "Name", "Nama"), tx(language, "Currency", "Mata Uang"), tx(language, "Created", "Dibuat"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+              <thead className="border-b border-gray-100 dark:border-white/[0.06]"><tr>{[tx(language, "Name", "Nama"), tx(language, "Currency", "Mata Uang"), tx(language, "Created", "Dibuat"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-[0.14em]">{h}</th>)}</tr></thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {pagination.pageItems.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-200">{c.name}</td>
                     <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{c.currency}</td>
                     <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString(language === "id" ? "id-ID" : "en-US")}</td>
@@ -968,7 +976,7 @@ function CompaniesView({ companies, error, onDelete, onSuspend, onUnsuspend, onV
           </div>
 
           {/* Mobile cards */}
-          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
             {pagination.pageItems.map((c) => (
               <div key={c.id} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
@@ -1057,8 +1065,8 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
   return (
     <div className="space-y-6">
       <Card>
-        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx(language, "Subscription Plan List", "Daftar Plan Langganan")}</span>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "Subscription Plan List", "Daftar Plan Langganan")}</span>
           <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm">
             <Plus size={14} /> {tx(language, "Add Plan", "Tambah Plan")}
           </button>
@@ -1068,12 +1076,12 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
             {/* Desktop table */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/30">
-                  <tr>{[tx(language, "Name", "Nama"), tx(language, "Monthly Price", "Harga Bulanan"), tx(language, "Yearly Price", "Harga Tahunan"), tx(language, "Max Companies", "Max perusahaan"), tx(language, "Max Journals", "Max jurnal"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+                <thead className="border-b border-gray-100 dark:border-white/[0.06]">
+                  <tr>{[tx(language, "Name", "Nama"), tx(language, "Monthly Price", "Harga Bulanan"), tx(language, "Yearly Price", "Harga Tahunan"), tx(language, "Max Companies", "Max perusahaan"), tx(language, "Max Journals", "Max jurnal"), tx(language, "Status", "Status"), tx(language, "Actions", "Aksi")].map((h) => <th key={h} className="text-left py-2.5 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-[0.14em]">{h}</th>)}</tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {pagination.pageItems.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03]">
                       <td className="px-4 py-2.5">
                         <p className="font-medium text-gray-800 dark:text-gray-200">{p.display_name || p.name}</p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">{p.name}</p>
@@ -1104,7 +1112,7 @@ function PlansView({ plans, setPlans, error }: { plans: AdminGatePlan[]; setPlan
             </div>
 
             {/* Mobile cards */}
-            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
               {pagination.pageItems.map((p) => (
                 <div key={p.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
@@ -1230,7 +1238,7 @@ function SystemHealthView() {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tx(language, "System Health", "System Health")}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">{tx(language, "Real-time system component status", "Status komponen sistem secara real-time")}</p>
         </div>
-        <button onClick={checkAll} disabled={Object.values(loading).some(Boolean)} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+        <button onClick={checkAll} disabled={Object.values(loading).some(Boolean)} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors disabled:opacity-50">
           <RefreshCw size={14} className={Object.values(loading).some(Boolean) ? "animate-spin" : ""} /> {tx(language, "Test All Again", "Test Ulang Semua")}
         </button>
       </div>
@@ -1258,7 +1266,7 @@ function SystemHealthView() {
               {item.status && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{item.status.message}</p>
               )}
-              <button onClick={item.check} disabled={item.loading} className="w-full px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+              <button onClick={item.check} disabled={item.loading} className="w-full px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors disabled:opacity-50">
                 {item.loading ? tx(language, "Testing...", "Menguji...") : tx(language, "Test Again", "Test Ulang")}
               </button>
             </div>
@@ -1464,6 +1472,33 @@ function InfoCell({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</p>
       <p className="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200">{value}</p>
     </div>
+  );
+}
+
+// Avatar inisial deterministik dari nama — 5 rona redup (bukan pelangi
+// cerah) agar terlihat seperti produk matang: indigo/violet/slate/cyan/emerald.
+const AVATAR_TONES = [
+  "bg-indigo-500/15 text-indigo-400",
+  "bg-violet-500/15 text-violet-300",
+  "bg-cyan-500/15 text-cyan-400",
+  "bg-emerald-500/15 text-emerald-400",
+  "bg-slate-500/15 text-slate-300",
+] as const;
+function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
+  const initials = (name || "?")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  const tone = AVATAR_TONES[hash % AVATAR_TONES.length];
+  const box = size === "sm" ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-xs";
+  return (
+    <span className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${box} ${tone}`}>
+      {initials}
+    </span>
   );
 }
 
