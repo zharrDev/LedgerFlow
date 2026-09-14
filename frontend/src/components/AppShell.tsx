@@ -4,6 +4,8 @@ import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { AppNav } from "./AppNav";
 import { getMyCompany } from "../services/companiesService";
+import { TextFlipParagraph } from "./TextFlipParagraph";
+import { useLanguage } from "../hooks/useLanguage";
 import { getCurrency, setCurrency } from "../utils/currency";
 import { useAppShellConfig } from "../context/AppShellConfigContext";
 
@@ -13,6 +15,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const config = useAppShellConfig();
+  const { language } = useLanguage();
   const { title, description, fullHeight, hideTitle } = config;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -85,9 +88,11 @@ className={`flex-1 overflow-x-hidden min-w-0 ${
                   </motion.h1>
                 )}
                 {description && (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                    {description}
-                  </p>
+                  <TextFlipParagraph
+                    text={description}
+                    language={language}
+                    className="text-gray-500 dark:text-gray-400 text-sm mt-1"
+                  />
                 )}
               </div>
             )}
@@ -137,11 +142,13 @@ className={`flex-1 overflow-x-hidden min-w-0 ${
                   {title}
                 </motion.h1>
               )}
-              {description && (
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                  {description}
-                </p>
-              )}
+            {description && (
+              <TextFlipParagraph
+                text={description}
+                language={language}
+                className="text-gray-500 dark:text-gray-400 text-sm mt-1"
+              />
+            )}
             </div>
           )}
           {fullHeight ? (

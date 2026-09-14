@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../hooks/useLanguage";
+import { TextFlipParagraph } from "../TextFlipParagraph";
 import { getErrorMessage } from "../../lib/errorMessage";
 import GoogleAuthButton from "./GoogleAuthButton";
 import logo from "../../assets/ledgerflow.webp";
@@ -36,7 +37,10 @@ export default function LoginForm({
   const handleSendCode = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     setError("");
-    if (!PHONE_RE.test(phone.trim())) {
+    // Samakan dengan backend (normalizePhoneNumber): abaikan spasi, strip,
+    // titik, kurung saat validasi — "0812 3456 7890" tetap valid.
+    const digits = phone.replace(/[\s\-.()]/g, "");
+    if (!PHONE_RE.test(digits)) {
       setError(
         id
           ? "Nomor WhatsApp tidak valid. Contoh: 081234567890"
@@ -117,15 +121,19 @@ export default function LoginForm({
       >
         {id ? "Selamat Datang Kembali" : "Welcome Back"}
       </motion.h1>
-      <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-1">
-        {step === "phone"
-          ? id
-            ? "Masuk dengan nomor WhatsApp"
-            : "Sign in with your WhatsApp number"
-          : id
-            ? `Masukkan kode yang dikirim ke ${phone}`
-            : `Enter the code sent to ${phone}`}
-      </p>
+      <TextFlipParagraph
+        text={
+          step === "phone"
+            ? id
+              ? "Masuk dengan nomor WhatsApp"
+              : "Sign in with your WhatsApp number"
+            : id
+              ? `Masukkan kode yang dikirim ke ${phone}`
+              : `Enter the code sent to ${phone}`
+        }
+        language={language}
+        className="text-center text-gray-500 dark:text-gray-400 text-sm mt-1"
+      />
 
       {error && (
         <div className="mt-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200">

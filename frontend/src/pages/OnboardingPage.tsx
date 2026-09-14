@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 import { tx } from "../i18n/tx";
 
 const steps = [
@@ -129,9 +130,11 @@ export default function OnboardingPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 {steps[step].title[language]}
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 text-base leading-relaxed mb-8">
-                {steps[step].desc[language]}
-              </p>
+              <TextFlipParagraph
+                text={steps[step].desc[language]}
+                language={language}
+                className="text-gray-500 dark:text-gray-400 text-base leading-relaxed mb-8"
+              />
 
               <div className="flex items-center justify-center gap-2 mb-8">
                 {steps.map((_, i) => (

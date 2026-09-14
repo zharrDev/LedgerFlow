@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Account } from "../types/account";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "./TextFlipParagraph";
 import { tx } from "../i18n/tx";
 
 export function ConfirmDialog({
@@ -65,14 +66,11 @@ export function ConfirmDialog({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               {willDeactivate ? tx(language, "Deactivate Account?", "Nonaktifkan Akun?") : tx(language, "Activate Account?", "Aktifkan Akun?")}
             </h3>
-            <p className="text-sm text-gray-500 mb-5">
-              {tx(language, "Are you sure you want to", "Apakah Anda yakin ingin")}{" "}
-              {willDeactivate ? tx(language, "deactivate", "menonaktifkan") : tx(language, "activate", "mengaktifkan")} <br />
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                {account.code} – {account.name}
-              </span>
-              ?
-            </p>
+            <TextFlipParagraph
+              text={`${tx(language, "Are you sure you want to", "Apakah Anda yakin ingin")} ${willDeactivate ? tx(language, "deactivate", "menonaktifkan") : tx(language, "activate", "mengaktifkan")} ${account.code} – ${account.name}?`}
+              language={language}
+              className="text-sm text-gray-500 mb-5"
+            />
             <div className="flex gap-3">
               <button
                 onClick={onClose}

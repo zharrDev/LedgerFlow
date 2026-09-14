@@ -3,6 +3,7 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 
 export function TermsPage() {
   const { language } = useLanguage();
@@ -76,9 +77,11 @@ export function TermsPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
               {id ? "Syarat & Ketentuan" : "Terms & Conditions"}
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {id ? "Terakhir diperbarui: 14 Agustus 2026" : "Last updated: August 14, 2026"}
-            </p>
+            <TextFlipParagraph
+              text={id ? "Terakhir diperbarui: 14 Agustus 2026" : "Last updated: August 14, 2026"}
+              language={language}
+              className="text-sm text-gray-500 dark:text-gray-400"
+            />
           </div>
         </div>
 
@@ -88,7 +91,7 @@ export function TermsPage() {
               <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
                 {section.title}
               </h2>
-              <p>{section.body}</p>
+              <TextFlipParagraph text={section.body} language={language} />
             </section>
           ))}
 

@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, type LucideIcon } from "lucide-react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "./TextFlipParagraph";
 import { SCROLL_REVEAL, SCROLL_REVEAL_STAGGER } from "../lib/scrollAnimations";
 
 type L = { en: string; id: string };
@@ -124,9 +125,11 @@ export default function DetailPageTemplate({
                   <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                     {point.title[language]}
                   </h3>
-                  <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400">
-                    {point.description[language]}
-                  </p>
+                  <TextFlipParagraph
+                    text={point.description[language]}
+                    language={language}
+                    className="mt-1.5 text-sm text-gray-600 dark:text-gray-400"
+                  />
                 </motion.div>
               ))}
             </div>
@@ -158,9 +161,11 @@ export default function DetailPageTemplate({
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
                       {cap.title[language]}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      {cap.description[language]}
-                    </p>
+                    <TextFlipParagraph
+                      text={cap.description[language]}
+                      language={language}
+                      className="mt-1 text-sm text-gray-600 dark:text-gray-400"
+                    />
                   </div>
                 </motion.div>
               ))}

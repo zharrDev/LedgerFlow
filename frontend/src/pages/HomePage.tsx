@@ -37,6 +37,7 @@ import FloatingIconField from "../components/home/FloatingIconField";
 import VideoModal from "../components/home/VideoModal";
 import MacFrame from "../components/home/MacFrame";
 import { TextFlipWords } from "../components/TextFlipWords";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 
 // Video demo — jika file belum tersedia, section video akan di-skip
 let dashboardDemo = "";
@@ -306,11 +307,15 @@ export default function HomePage() {
                   language={language}
                 />
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">
-                {language === "id"
-                  ? "Keamanan setingkat bank & kepatuhan perusahaan"
-                  : "Bank-grade security & enterprise compliance"}
-              </p>
+              <TextFlipParagraph
+                text={
+                  language === "id"
+                    ? "Keamanan setingkat bank & kepatuhan perusahaan"
+                    : "Bank-grade security & enterprise compliance"
+                }
+                language={language}
+                className="text-gray-500 dark:text-gray-400 mt-2"
+              />
             </motion.div>
             <div className="grid gap-5 sm:gap-8 md:grid-cols-2">
               <motion.div
@@ -327,11 +332,15 @@ export default function HomePage() {
                         ? "Data Bank via Plaid"
                         : "Bank Data via Plaid"}
                     </h3>
-                    <p className="text-sm text-gray-500">
-                      {language === "id"
-                        ? "Kredensial tidak pernah disimpan di server kami"
-                        : "Credentials never stored on our servers"}
-                    </p>
+                    <TextFlipParagraph
+                      text={
+                        language === "id"
+                          ? "Kredensial tidak pernah disimpan di server kami"
+                          : "Credentials never stored on our servers"
+                      }
+                      language={language}
+                      className="text-sm text-gray-500"
+                    />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
@@ -359,11 +368,15 @@ export default function HomePage() {
                         ? "Pembayaran via Stripe"
                         : "Payments via Stripe"}
                     </h3>
-                    <p className="text-sm text-gray-500">
-                      {language === "id"
-                        ? "Dipercaya jutaan bisnis di seluruh dunia"
-                        : "Trusted by millions of businesses"}
-                    </p>
+                    <TextFlipParagraph
+                      text={
+                        language === "id"
+                          ? "Dipercaya jutaan bisnis di seluruh dunia"
+                          : "Trusted by millions of businesses"
+                      }
+                      language={language}
+                      className="text-sm text-gray-500"
+                    />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
@@ -455,11 +468,15 @@ export default function HomePage() {
                     />
                   </span>
                 </h2>
-                <p className="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-400">
-                  {language === "id"
-                    ? "Kelola transaksi, pantau arus kas, lacak pengeluaran, dan dapatkan insight yang bisa ditindaklanjuti lewat dashboard keuangan yang dirancang dengan indah."
-                    : "Manage transactions, monitor cash flow, track expenses, and gain actionable insights through a beautifully designed financial dashboard."}
-                </p>
+                <TextFlipParagraph
+                  text={
+                    language === "id"
+                      ? "Kelola transaksi, pantau arus kas, lacak pengeluaran, dan dapatkan insight yang bisa ditindaklanjuti lewat dashboard keuangan yang dirancang dengan indah."
+                      : "Manage transactions, monitor cash flow, track expenses, and gain actionable insights through a beautifully designed financial dashboard."
+                  }
+                  language={language}
+                  className="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-400"
+                />
               </div>
 
               {/* Video Container */}
@@ -546,11 +563,15 @@ export default function HomePage() {
               language={language}
             />
           </h2>
-          <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
-            {language === "id"
-              ? "Semua alat yang Anda perlukan, dalam satu platform."
-              : "Every tool you need, built into one platform."}
-          </p>
+          <TextFlipParagraph
+            text={
+              language === "id"
+                ? "Semua alat yang Anda perlukan, dalam satu platform."
+                : "Every tool you need, built into one platform."
+            }
+            language={language}
+            className="mt-3 text-lg text-gray-600 dark:text-gray-400"
+          />
         </motion.div>
         <FeatureCarousel />
 
@@ -568,11 +589,15 @@ export default function HomePage() {
                   language={language}
                 />
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-3">
-                {language === "id"
-                  ? "Fitur andal yang dibuat untuk tim keuangan modern"
-                  : "Powerful features built for modern finance teams"}
-              </p>
+              <TextFlipParagraph
+                text={
+                  language === "id"
+                    ? "Fitur andal yang dibuat untuk tim keuangan modern"
+                    : "Powerful features built for modern finance teams"
+                }
+                language={language}
+                className="text-gray-500 dark:text-gray-400 mt-3"
+              />
             </motion.div>
             <div className="grid gap-5 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
               {featureCards.map((feat, idx) => (
@@ -591,9 +616,11 @@ export default function HomePage() {
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                     {feat.title[language]}
                   </h3>
-                  <p className="mt-2 text-gray-500 dark:text-gray-400">
-                    {feat.desc[language]}
-                  </p>
+                  <TextFlipParagraph
+                    text={feat.desc[language]}
+                    language={language}
+                    className="mt-2 text-gray-500 dark:text-gray-400"
+                  />
                 </motion.div>
               ))}
             </div>
@@ -632,11 +659,15 @@ export default function HomePage() {
                     language={language}
                   />
                 </h2>
-                <p className="mt-4 text-primary-100 text-base sm:text-lg">
-                  {language === "id"
-                    ? "Mulai uji coba gratis 15 hari — tanpa kartu kredit"
-                    : "Start your 15-day free trial — no credit card required"}
-                </p>
+                <TextFlipParagraph
+                  text={
+                    language === "id"
+                      ? "Mulai uji coba gratis 15 hari — tanpa kartu kredit"
+                      : "Start your 15-day free trial — no credit card required"
+                  }
+                  language={language}
+                  className="mt-4 text-primary-100 text-base sm:text-lg"
+                />
                 <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4">
                   {user ? (
                     <Link

@@ -6,6 +6,7 @@ import { FaqAccordion } from "../components/help/FaqAccordion";
 import { ContactCards } from "../components/help/ContactCards";
 import { helpFaqs, helpContactCards } from "../data/helpCenterContent";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 
 export default function PublicHelpPage() {
   const { language } = useLanguage();
@@ -35,11 +36,15 @@ export default function PublicHelpPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
             {id ? "Pusat Bantuan" : "Help Center"}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto">
-            {id
-              ? "FAQ & kontak support LedgerFlow — bisa diakses tanpa login"
-              : "LedgerFlow FAQ & support contacts — accessible without login"}
-          </p>
+          <TextFlipParagraph
+            text={
+              id
+                ? "FAQ & kontak support LedgerFlow — bisa diakses tanpa login"
+                : "LedgerFlow FAQ & support contacts — accessible without login"
+            }
+            language={language}
+            className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto"
+          />
         </motion.div>
 
         <section>

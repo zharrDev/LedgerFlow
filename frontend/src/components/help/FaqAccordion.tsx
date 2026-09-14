@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import type { HelpFaq } from "../../data/helpCenterContent";
 import { useLanguage } from "../../hooks/useLanguage";
+import { TextFlipParagraph } from "../TextFlipParagraph";
+import { TextFlipWords } from "../TextFlipWords";
 
 function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false);
+  const { language } = useLanguage();
 
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-darkCard overflow-hidden transition-colors hover:border-primary-300 dark:hover:border-primary-500/30">
@@ -19,7 +22,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
             {index + 1}
           </span>
           <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-            {q}
+            <TextFlipWords text={q} language={language} stagger={0.02} />
           </span>
         </div>
         <motion.div
@@ -39,9 +42,12 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 text-sm text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-100 dark:border-gray-800 pt-3 ml-10">
-              {a}
-            </div>
+            <TextFlipParagraph
+              text={a}
+              language={language}
+              as="div"
+              className="px-5 pb-4 text-sm text-gray-500 dark:text-gray-400 leading-relaxed border-t border-gray-100 dark:border-gray-800 pt-3 ml-10"
+            />
           </motion.div>
         )}
       </AnimatePresence>

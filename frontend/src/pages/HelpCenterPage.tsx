@@ -10,6 +10,7 @@ import { FaqAccordion } from "../components/help/FaqAccordion";
 import { ContactCards } from "../components/help/ContactCards";
 import { helpFaqs, helpContactCards } from "../data/helpCenterContent";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -62,11 +63,15 @@ export default function HelpCenterPage() {
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
             Help Center
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto">
-            {id
-              ? "Temukan jawaban untuk pertanyaan umum atau hubungi kami untuk bantuan"
-              : "Find answers to common questions or contact us for help"}
-          </p>
+          <TextFlipParagraph
+            text={
+              id
+                ? "Temukan jawaban untuk pertanyaan umum atau hubungi kami untuk bantuan"
+                : "Find answers to common questions or contact us for help"
+            }
+            language={language}
+            className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto"
+          />
         </motion.div>
 
         <motion.div variants={itemVariants}>
@@ -115,11 +120,15 @@ export default function HelpCenterPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {id ? "Pesan Terkirim!" : "Message Sent!"}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {id
-                    ? "Terima kasih, tim kami akan segera menghubungi Anda"
-                    : "Thank you, our team will contact you shortly"}
-                </p>
+                <TextFlipParagraph
+                  text={
+                    id
+                      ? "Terima kasih, tim kami akan segera menghubungi Anda"
+                      : "Thank you, our team will contact you shortly"
+                  }
+                  language={language}
+                  className="text-sm text-gray-500 dark:text-gray-400 mt-1"
+                />
               </motion.div>
             ) : (
               <motion.form

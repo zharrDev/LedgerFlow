@@ -1,6 +1,7 @@
 import type { JournalEntry } from "../../types/journal";
 import { SpinnerIcon } from "./JournalShared";
 import { useLanguage } from "../../hooks/useLanguage";
+import { TextFlipParagraph } from "../TextFlipParagraph";
 import { tx } from "../../i18n/tx";
 
 type DialogMode = "post" | "delete" | "void";
@@ -130,33 +131,17 @@ export function ConfirmDialog({
           {cfg.title}
         </h3>
 
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-5">
-          {mode === "post" ? (
-            <>
-              {tx(language, "Entry ", "Entry ")}
-              <span className="font-medium text-gray-700 dark:text-gray-200">
-                {entry.number}
-              </span>{" "}
-              {tx(language, "will be posted to the ledger and cannot be reversed.", "akan diposting ke buku besar dan tidak dapat diubah kembali.")}
-            </>
-          ) : mode === "void" ? (
-            <>
-              {tx(language, "Entry ", "Entry ")}
-              <span className="font-medium text-gray-700 dark:text-gray-200">
-                {entry.number}
-              </span>{" "}
-              {tx(language, "will be voided — the data stays in history but is excluded from all reports.", "akan di-void — datanya tetap ada di riwayat tapi tidak ikut terhitung di laporan.")}
-            </>
-          ) : (
-            <>
-              {tx(language, "Draft ", "Draft ")}
-              <span className="font-medium text-gray-700 dark:text-gray-200">
-                {entry.number}
-              </span>{" "}
-              {tx(language, "will be permanently deleted.", "akan dihapus secara permanen.")}
-            </>
-          )}
-        </p>
+        <TextFlipParagraph
+          text={
+            mode === "post"
+              ? `Entry ${entry.number} ${tx(language, "will be posted to the ledger and cannot be reversed.", "akan diposting ke buku besar dan tidak dapat diubah kembali.")}`
+              : mode === "void"
+                ? `Entry ${entry.number} ${tx(language, "will be voided — the data stays in history but is excluded from all reports.", "akan di-void — datanya tetap ada di riwayat tapi tidak ikut terhitung di laporan.")}`
+                : `Draft ${entry.number} ${tx(language, "will be permanently deleted.", "akan dihapus secara permanen.")}`
+          }
+          language={language}
+          className="text-center text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-5"
+        />
 
         {mode === "void" && (
           <div className="mb-5">

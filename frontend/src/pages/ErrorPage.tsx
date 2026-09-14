@@ -3,6 +3,7 @@ import { ShieldAlert, Lock, AlertTriangle, ServerCrash, Home } from "lucide-reac
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 
 type ErrorEntry = { icon: typeof ShieldAlert; color: string; title: { en: string; id: string }; desc: { en: string; id: string } };
 
@@ -36,7 +37,7 @@ export default function ErrorPage() {
           <Icon size={72} className={`${config.color} mx-auto mb-4`} />
           <div className="text-6xl font-bold bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent mb-2 tracking-tight">{code}</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{config.title[language]}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">{config.desc[language]}</p>
+          <TextFlipParagraph text={config.desc[language]} language={language} className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed" />
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl font-semibold shadow-md shadow-primary-500/25 hover:shadow-lg hover:scale-[1.02] transition-all duration-300"><Home size={18} /> {language === "id" ? "Ke Beranda" : "Go Home"}</Link>
             <Link to="/login" className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300">{language === "id" ? "Masuk" : "Sign in"}</Link>

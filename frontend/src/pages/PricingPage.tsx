@@ -18,6 +18,8 @@ import {
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ScrollReveal } from "../components/ScrollReveal";
+import { TextFlipWords } from "../components/TextFlipWords";
+import { TextFlipParagraph } from "../components/TextFlipParagraph";
 import { useLanguage } from "../hooks/useLanguage";
 import {
   Check,
@@ -259,18 +261,33 @@ export default function PricingPage() {
           >
             {/* Baris 1 */}
             <span className="block text-gray-900 dark:text-white">
-              {language === "id" ? "Pilih Plan yang Tepat" : "Choose the Right Plan"}
+              <TextFlipWords
+                text={language === "id" ? "Pilih Plan yang Tepat" : "Choose the Right Plan"}
+                language={language}
+              />
             </span>
 
             {/* Baris 2 — gradient */}
             <span className="block mt-2 bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent">
-              {language === "id" ? "untuk Bisnis Anda" : "for Your Business"}
+              <TextFlipWords
+                text={language === "id" ? "untuk Bisnis Anda" : "for Your Business"}
+                language={language}
+                delay={0.08}
+                wordClassName="bg-gradient-to-r from-primary-600 to-cyan-500 bg-clip-text text-transparent"
+              />
             </span>
           </motion.h1>{" "}
           <ScrollReveal direction="left" className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            {language === "id"
-              ? "Mulai gratis, upgrade kapan saja. Semua plan termasuk 15 hari free trial untuk fitur premium."
-              : "Start free, upgrade anytime. Every plan includes a 15-day free trial of premium features."}
+            <TextFlipParagraph
+              as="span"
+              text={
+                language === "id"
+                  ? "Mulai gratis, upgrade kapan saja. Semua plan termasuk 15 hari free trial untuk fitur premium."
+                  : "Start free, upgrade anytime. Every plan includes a 15-day free trial of premium features."
+              }
+              language={language}
+              className="text-base sm:text-lg text-gray-600 dark:text-gray-400"
+            />
           </ScrollReveal>
         </motion.div>
 
@@ -690,7 +707,7 @@ export default function PricingPage() {
                     className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
                   >
                     <span className="font-semibold text-[15px] text-gray-900 dark:text-white">
-                      {faq.q}
+                      <TextFlipWords text={faq.q} language={language} stagger={0.02} />
                     </span>
                     <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
                       open
@@ -715,9 +732,11 @@ export default function PricingPage() {
                         transition={{ duration: 0.25, ease: "easeInOut" }}
                         className="overflow-hidden"
                       >
-                        <p className="px-5 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                          {faq.a}
-                        </p>
+                        <TextFlipParagraph
+                          text={faq.a}
+                          language={language}
+                          className="px-5 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed"
+                        />
                       </motion.div>
                     )}
                   </AnimatePresence>

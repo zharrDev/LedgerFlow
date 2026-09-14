@@ -2,6 +2,7 @@
 import { Check, BarChart3, Shield, TrendingUp, Activity } from "lucide-react";
 import logo from "../assets/ledgerflow.webp";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "./TextFlipParagraph";
 
 export default function InfoPanel({
   isExpanded,
@@ -82,15 +83,19 @@ export default function InfoPanel({
             ? "Kelola keuangan bisnis Anda dengan lebih cerdas."
             : "Manage your business finances smarter."}
         </h2>
-        <p className="text-sm text-white/65 leading-relaxed mb-8">
-          {isExpanded
-            ? id
-              ? "Platform manajemen keuangan modern yang membantu pengguna mengelola pemasukan, pengeluaran, dan aktivitas harian dalam satu dashboard terintegrasi."
-              : "A modern financial management platform that helps users manage income, expenses, and daily activity in one integrated dashboard."
-            : id
-            ? "Bergabung dengan ribuan perusahaan yang menggunakan LedgerFlow untuk laporan keuangan real-time dan rekonsiliasi otomatis."
-            : "Join thousands of companies using LedgerFlow for real-time financial reports and automatic reconciliation."}
-        </p>
+        <TextFlipParagraph
+          text={
+            isExpanded
+              ? id
+                ? "Platform manajemen keuangan modern yang membantu pengguna mengelola pemasukan, pengeluaran, dan aktivitas harian dalam satu dashboard terintegrasi."
+                : "A modern financial management platform that helps users manage income, expenses, and daily activity in one integrated dashboard."
+              : id
+              ? "Bergabung dengan ribuan perusahaan yang menggunakan LedgerFlow untuk laporan keuangan real-time dan rekonsiliasi otomatis."
+              : "Join thousands of companies using LedgerFlow for real-time financial reports and automatic reconciliation."
+          }
+          language={language}
+          className="text-sm text-white/65 leading-relaxed mb-8"
+        />
       </div>
       {!isExpanded && (
         <ul className="space-y-3.5">

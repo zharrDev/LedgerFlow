@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "./TextFlipParagraph";
 
 // ─── Dictionaries ───────────────────────────────────────────────────
 const FEATURE_NAMES: Record<string, { en: string; id: string }> = {
@@ -136,25 +137,21 @@ export function Paywall({
           {title ??
             (language === "id" ? `Fitur ${planName}` : `${planName} Feature`)}
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          {description ?? (
-            <>
-              {featureName && <strong>{featureName}</strong>}
-              {featureName && " "}
-              {language === "id" ? (
-                <>
-                  {!featureName && "Fitur ini "}
-                  memerlukan plan {planName} atau lebih tinggi.
-                </>
-              ) : (
-                <>
-                  {!featureName && "This feature "}
-                  requires the {planName} plan or higher.
-                </>
-              )}
-            </>
-          )}
-        </p>
+        {description ?? (
+          <TextFlipParagraph
+            text={
+              featureName
+                ? language === "id"
+                  ? `${featureName} memerlukan plan ${planName} atau lebih tinggi.`
+                  : `${featureName} requires the ${planName} plan or higher.`
+                : language === "id"
+                  ? `Fitur ini memerlukan plan ${planName} atau lebih tinggi.`
+                  : `This feature requires the ${planName} plan or higher.`
+            }
+            language={language}
+            className="text-sm text-gray-600 dark:text-gray-400 mt-1"
+          />
+        )}
         <button
           onClick={handleUpgrade}
           className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r ${gradientClass} text-white text-sm font-semibold hover:shadow-lg transition-all`}
@@ -204,32 +201,28 @@ export function Paywall({
         </motion.h2>
 
         {/* Description */}
-        <motion.p
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-3 text-gray-600 dark:text-gray-400 max-w-md mx-auto"
+          className="mt-3 max-w-md mx-auto"
         >
           {description ?? (
-            <>
-              {featureName && <strong>{featureName}</strong>}
-              {featureName && " "}
-              {language === "id" ? (
-                <>
-                  {!featureName && "Fitur ini "}
-                  tersedia pada plan {planName}. Upgrade sekarang untuk akses
-                  penuh ke semua fitur premium LedgerFlow.
-                </>
-              ) : (
-                <>
-                  {!featureName && "This feature is "}
-                  available on the {planName} plan. Upgrade now for full access
-                  to all premium LedgerFlow features.
-                </>
-              )}
-            </>
+            <TextFlipParagraph
+              text={
+                featureName
+                  ? language === "id"
+                    ? `${featureName} tersedia pada plan ${planName}. Upgrade sekarang untuk akses penuh ke semua fitur premium LedgerFlow.`
+                    : `${featureName} is available on the ${planName} plan. Upgrade now for full access to all LedgerFlow premium features.`
+                  : language === "id"
+                    ? `Fitur ini tersedia pada plan ${planName}. Upgrade sekarang untuk akses penuh ke semua fitur premium LedgerFlow.`
+                    : `This feature is available on the ${planName} plan. Upgrade now for full access to all LedgerFlow premium features.`
+              }
+              language={language}
+              className="text-gray-600 dark:text-gray-400"
+            />
           )}
-        </motion.p>
+        </motion.div>
 
         {/* Feature Highlights */}
         <motion.div

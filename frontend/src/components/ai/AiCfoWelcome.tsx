@@ -1,5 +1,6 @@
 import { Bot, BarChart3, Wallet, TrendingDown, ShieldAlert } from "lucide-react";
 import { useLanguage } from "../../hooks/useLanguage";
+import { TextFlipParagraph } from "../TextFlipParagraph";
 import { tx } from "../../i18n/tx";
 import { getTimeGreeting, getQuickActions } from "../../utils/aiCfoPrompt";
 import type { DashboardSummary } from "../../hooks/useDashboardData";
@@ -40,9 +41,11 @@ export function AiCfoWelcome({
       <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
         {greeting}, {firstName}!
       </h2>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
-        {tx(language, "I'm AI CFO LedgerFlow — ready to help analyze your business finances. How can I help you today?", "Saya AI CFO LedgerFlow — siap membantu analisis keuangan bisnis Anda. Ada yang bisa saya bantu hari ini?")}
-      </p>
+      <TextFlipParagraph
+        text={tx(language, "I'm AI CFO LedgerFlow — ready to help analyze your business finances. How can I help you today?", "Saya AI CFO LedgerFlow — siap membantu analisis keuangan bisnis Anda. Ada yang bisa saya bantu hari ini?")}
+        language={language}
+        className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed"
+      />
       {todaySessionCount > 0 && (
         <p className="mt-2 text-xs text-primary-600 dark:text-primary-400">
           {todaySessionCount} {tx(language, "saved conversations — click", "percakapan tersimpan — klik")}{" "}

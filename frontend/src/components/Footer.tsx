@@ -3,6 +3,7 @@ import { ArrowUpRight, Mail, ShieldCheck } from "lucide-react";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, XIcon, YoutubeIcon } from "./icons/SocialIcons";
 import logo from "../assets/ledgerflow.webp";
 import { useLanguage } from "../hooks/useLanguage";
+import { TextFlipParagraph } from "./TextFlipParagraph";
 import { siteLinks, getLinkHref, type SiteLinkItem } from "../data/siteLinks";
 
 const socials = [
@@ -70,11 +71,15 @@ const Footer = () => {
               <img src={logo} alt="LedgerFlow" loading="lazy" decoding="async" className="h-10 w-10" />
               <span className="text-xl font-bold text-white">LedgerFlow</span>
             </Link>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-400">
-              {id
-                ? "Platform akuntansi modern untuk pembukuan rapi, laporan real-time, dan keputusan bisnis yang lebih percaya diri."
-                : "A modern accounting platform for organized books, real-time reports, and more confident business decisions."}
-            </p>
+            <TextFlipParagraph
+              text={
+                id
+                  ? "Platform akuntansi modern untuk pembukuan rapi, laporan real-time, dan keputusan bisnis yang lebih percaya diri."
+                  : "A modern accounting platform for organized books, real-time reports, and more confident business decisions."
+              }
+              language={language}
+              className="mt-4 max-w-sm text-sm leading-relaxed text-gray-400"
+            />
             <Link to="/help" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-400 hover:text-cyan-300">
               <Mail size={16} />{id ? "Hubungi dukungan" : "Contact support"}<ArrowUpRight size={15} />
             </Link>
