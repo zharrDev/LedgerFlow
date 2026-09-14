@@ -493,26 +493,26 @@ function OverviewView({ overview, error }: { overview: AdminGateOverview | null;
         <StatCard icon={<UserMinus size={15} />} label={tx(language, "Churn 30 Days", "Churn 30 Hari")} value={overview.churn_30d} accent="rose" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* ── Kartu Revenue (hero) ── gradient penuh + dekorasi ring,
-            jadi pusat visual Overview — bukan kartu putih kosong. */}
-        <div className="relative lg:col-span-2 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-6 text-white shadow-xl shadow-indigo-950/25 min-h-[220px] flex flex-col justify-between">
-          {/* Dekorasi ring transparan — halus, masked agar tak terpotong kasar */}
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full border-[22px] border-white/10" />
-          <div className="pointer-events-none absolute -right-6 -bottom-20 h-44 w-44 rounded-full border-[16px] border-white/[0.07]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_115%,rgba(6,182,212,0.25),transparent_50%)]" />
+        {/* ── Kartu Revenue (hero) ── satu-satunya gradient penuh yang
+            layak: pusat visual Overview. Mesh gelap + ring halus. */}
+        <div className="relative lg:col-span-2 overflow-hidden rounded-2xl bg-indigo-950 p-6 text-white ring-1 ring-indigo-400/20 shadow-xl shadow-indigo-950/40 min-h-[220px] flex flex-col justify-between">
+          {/* Dekorasi: mesh + ring transparan, masked agar tak terpotong kasar */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_-10%,rgba(129,140,248,0.35),transparent_55%),radial-gradient(circle_at_10%_110%,rgba(6,182,212,0.18),transparent_50%)]" />
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full border-[22px] border-white/[0.06]" />
+          <div className="pointer-events-none absolute -right-6 -bottom-20 h-44 w-44 rounded-full border-[16px] border-white/[0.04]" />
           <div className="relative flex items-center gap-2.5">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
               <Wallet size={15} />
             </span>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">MRR</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-200/70">MRR</p>
           </div>
           <div className="relative mt-6">
             <p className="text-4xl sm:text-[2.6rem] leading-none font-bold tabular-nums tracking-tight">{formatRp(overview.mrr)}</p>
             <div className="mt-3.5 flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium ring-1 ring-white/15">
                 <Users size={11} /> {totalActives} {tx(language, "active subscriptions", "subscription aktif")}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium ring-1 ring-white/15">
                 <CreditCard size={11} /> {overview.plan_distribution.length} {tx(language, "plans", "plan")}
               </span>
             </div>
@@ -526,7 +526,7 @@ function OverviewView({ overview, error }: { overview: AdminGateOverview | null;
   );
 }
 
-const PLAN_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#f43f5e"];
+const PLAN_COLORS = ["#6366f1", "#818cf8", "#a5b4fc", "#8b5cf6", "#64748b", "#475569"];
 
 function useIsDark() {
   const [isDark, setIsDark] = useState(false);
