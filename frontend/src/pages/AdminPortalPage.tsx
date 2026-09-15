@@ -325,12 +325,9 @@ export default function AdminPortalPage() {
                 <p className="text-xs font-semibold text-white truncate leading-tight">
                   LedgerFlow Ops
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <p className="text-[10px] text-white/60 truncate leading-tight">
-                    Internal Console
-                  </p>
-                  <span className="h-px flex-1 bg-white/15" aria-hidden />
-                </div>
+                <p className="text-[10px] text-white/60 truncate leading-tight mt-0.5">
+                  Internal Console
+                </p>
               </div>
               <button
                 onClick={toggleCollapsed}
@@ -340,6 +337,7 @@ export default function AdminPortalPage() {
                 {collapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
               </button>
             </div>
+            <div className={`mx-2.5 mt-2 border-b border-white/15 overflow-hidden transition-all duration-300 ${collapsed ? "max-h-0 opacity-0 mt-0" : "max-h-2 opacity-100"}`} aria-hidden />
           </div>
 
           {/* Navigation — kompak tanpa scroll, ikon glass samar */}
