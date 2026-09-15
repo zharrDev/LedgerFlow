@@ -338,7 +338,7 @@ export default function AdminPortalPage() {
           </div>
 
           {/* Navigation — kompak tanpa scroll, ikon glass samar */}
-          <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-hidden">
+          <nav className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
             <p className="px-3 mb-1 text-[10px] font-semibold text-white/40 uppercase tracking-[0.15em]">
               Panel
             </p>
@@ -350,7 +350,7 @@ export default function AdminPortalPage() {
                     key={t.key}
                     onClick={() => setTab(t.key)}
                     title={collapsed ? t.label : undefined}
-                    className={`group relative flex items-center gap-2 w-full px-2 py-1.5 text-[11px] rounded-xl transition-colors duration-300 ease-out text-left ${
+                    className={`group relative flex items-center gap-2 w-full px-2 py-2 text-[11px] rounded-xl transition-colors duration-300 ease-out text-left ${
                       collapsed ? "justify-center px-1.5" : ""
                     } ${
                       active
@@ -388,14 +388,14 @@ export default function AdminPortalPage() {
             </div>
           </nav>
 
-          {/* Sidebar footer: status 1 baris + aksi ghost */}
-          <div className="border-t border-white/15 py-2 px-3 space-y-1.5">
-            <div className={`flex items-center gap-2 px-1 overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "justify-center" : ""}`}>
-              <span className="relative flex h-2 w-2 shrink-0">
+          {/* Sidebar footer: status + aksi ghost — proporsional, tanpa ruang kosong */}
+          <div className="border-t border-white/15 py-3 px-3 space-y-2">
+            <div className={`flex items-center gap-2.5 rounded-xl bg-white/[0.06] px-3 py-2.5 overflow-hidden whitespace-nowrap ${collapsed ? "justify-center !px-0 bg-transparent" : ""}`}>
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
               </span>
-              <p className={`text-[11px] font-medium text-white/70 truncate overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"}`}>
+              <p className={`text-xs font-semibold text-white/85 truncate overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"}`}>
                 {refreshing
                   ? tx(language, "Syncing data…", "Menyinkronkan…")
                   : tx(language, "All systems operational", "Semua sistem normal")}
@@ -406,9 +406,9 @@ export default function AdminPortalPage() {
                 onClick={load}
                 disabled={refreshing}
                 title={tx(language, "Reload", "Muat")}
-                className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold rounded-xl border border-white/20 text-white/85 hover:bg-white/10 transition-colors disabled:opacity-50"
               >
-                <RefreshCw size={13} className={`shrink-0 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw size={14} className={`shrink-0 ${refreshing ? "animate-spin" : ""}`} />
                 <span className={`truncate overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[80px] opacity-100"}`}>
                   {tx(language, "Reload", "Muat")}
                 </span>
@@ -416,9 +416,9 @@ export default function AdminPortalPage() {
               <button
                 onClick={handleLogout}
                 title={tx(language, "Logout", "Keluar")}
-                className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg border border-rose-300/30 text-rose-200 hover:bg-rose-500/20 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold rounded-xl border border-rose-300/30 text-rose-200 hover:bg-rose-500/20 transition-colors"
               >
-                <LogOut size={13} className="shrink-0" />
+                <LogOut size={14} className="shrink-0" />
                 <span className={`truncate overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[80px] opacity-100"}`}>
                   {tx(language, "Logout", "Keluar")}
                 </span>
