@@ -176,4 +176,27 @@ describe("strictOtpRateLimit (kunci IP + nomor telepon)", () => {
     // Hit ke-6 (format mana pun) diblokir — bukti satu bucket.
     expect((await makeReq("08111111111")).status).toBe(429);
   });
+
+  it("STRICT: nomor 13 digit (08xx + 11 digit) diterima tanpa error", async () => {
+    const app = buildApp(strictOtpRateLimit());
+    const res = await app.request("/otp", {
+      method: "POST",
+      body: JSON.stringify({ phone: "0813123456789" }),
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "12.12.12.12",
+      },
+    });
+    expect(res.status).toBe(200);
+
+    const res62 = await app.request("/otp", {
+      method: "POST",
+      body: JSON.stringify({ phone: "62813123456789" }),
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "12.12.12.12",
+      },
+    });
+    expect(res62.status).toBe(200);
+  });
 });

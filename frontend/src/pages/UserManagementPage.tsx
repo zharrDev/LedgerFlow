@@ -180,14 +180,16 @@ export default function UserManagementPage() {
     }
   };
 
+  const PHONE_RE = /^(\+62|62|0)8\d{8,11}$/;
+
   const handleAddMember = async () => {
     setFormError("");
-    const digits = form.phone.replace(/[\s\-().+]/g, "");
+    const digits = form.phone.replace(/[\s\-().]/g, "");
     if (!form.name.trim() || !digits) {
       setFormError(tx(language, "Name and WhatsApp number are required.", "Nama dan nomor WhatsApp wajib diisi."));
       return;
     }
-    if (!/^\d{8,15}$/.test(digits)) {
+    if (!PHONE_RE.test(digits)) {
       setFormError(tx(language, "Enter a valid WhatsApp number, e.g. 081234567890.", "Masukkan nomor WhatsApp yang valid, cth. 081234567890."));
       return;
     }

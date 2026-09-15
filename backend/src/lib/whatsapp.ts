@@ -7,13 +7,16 @@ export class FonnteError extends Error {}
 
 // Normalisasi nomor HP Indonesia ke bentuk E.164 tanpa tanda "+":
 //   "08123456789" | "+628123456789" | "628123456789" -> "628123456789"
-// Hanya mengizinkan nomor seluler 8-11 digit setelah kode negara (62).
+// Hanya mengizinkan nomor seluler 9-12 digit setelah kode negara (62).
+// Rentang ini mencakup nomor Indonesia 10-13 digit (format 08...):
+//   08xxxxxxxx   (10 digit) → 628xxxxxxxx   (11 digit, 62+9)
+//   08xxxxxxxxxxx (13 digit) → 628xxxxxxxxxxx (14 digit, 62+12)
 // Nomor tidak valid / bukan format ID -> throw FonnteError.
 export function normalizePhoneNumber(input: string): string {
   const raw = (input ?? "").replace(/[\s\-().]/g, "").trim();
   let num = raw.startsWith("+") ? raw.slice(1) : raw;
   if (num.startsWith("0")) num = `62${num.slice(1)}`;
-  if (!/^62\d{8,11}$/.test(num)) {
+  if (!/^62\d{9,12}$/.test(num)) {
     throw new FonnteError(
       "Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx atau +628xxxxxxxxxx.",
     );
