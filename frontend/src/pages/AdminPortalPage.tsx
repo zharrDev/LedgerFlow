@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import {
   ShieldCheck,
   LogOut,
@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   XCircle,
   Ban,
+  ChevronsLeft,
+  ChevronsRight,
   Activity,
   Users,
   Building2,
@@ -116,6 +118,25 @@ export default function AdminPortalPage() {
   const { toast } = useToast();
   const { language } = useLanguage();
   const [tab, setTab] = useState<Tab>("overview");
+  // Sidebar bisa diciutkan jadi ikon saja (konten otomatis memanjang).
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("admin_sidebar_collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("admin_sidebar_collapsed", next ? "1" : "0");
+      } catch {
+        /* abaikan */
+      }
+      return next;
+    });
+  };
 
   const [logs, setLogs] = useState<AdminGateLog[]>([]);
   const [users, setUsers] = useState<AdminGateUser[]>([]);
@@ -282,6 +303,7 @@ export default function AdminPortalPage() {
   ];
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="relative min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
       {curtain && <CurtainReveal />}
       {/* Latar mesh lembut — memberi kedalaman tanpa garis batas; gradasi
@@ -290,14 +312,14 @@ export default function AdminPortalPage() {
       {/* Desktop: 2 floating cards */}
       <div className="relative hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
-        <aside className="w-64 shrink-0 h-full rounded-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
+        <aside className={`${collapsed ? "w-[76px]" : "w-64"} shrink-0 h-full rounded-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col transition-[width] duration-300 ease-in-out`}>
           {/* Sidebar header — wordmark langsung di atas solid fill */}
           <div className="px-3 pt-3 pb-2">
-            <div className="flex items-center gap-2 px-2.5 py-2">
-              <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            <div className={`flex items-center gap-2 px-2.5 py-2 ${collapsed ? "justify-center px-1" : ""}`}>
+              <div className={`h-7 rounded-lg bg-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden transition-all duration-300 ${collapsed ? "w-0 opacity-0" : "w-7 opacity-100"}`}>
                 <Terminal size={14} />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className={`min-w-0 flex-1 overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"}`}>
                 <p className="text-xs font-semibold text-white truncate leading-tight">
                   LedgerFlow Ops
                 </p>
@@ -305,7 +327,13 @@ export default function AdminPortalPage() {
                   Internal Console
                 </p>
               </div>
-              <ShieldCheck size={14} className="text-white shrink-0" />
+              <button
+                onClick={toggleCollapsed}
+                title={collapsed ? tx(language, "Expand sidebar", "Bentangkan sidebar") : tx(language, "Collapse sidebar", "Ciutkan sidebar")}
+                className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                {collapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
+              </button>
             </div>
           </div>
 
@@ -321,14 +349,24 @@ export default function AdminPortalPage() {
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className={`group relative flex items-center gap-2 w-full px-2 py-1.5 text-[11px] rounded-xl transition-all duration-200 text-left ${
+                    title={collapsed ? t.label : undefined}
+                    className={`group relative flex items-center gap-2 w-full px-2 py-1.5 text-[11px] rounded-xl transition-all duration-300 ease-out text-left hover:translate-x-[2px] ${
+                      collapsed ? "justify-center px-1.5" : ""
+                    } ${
                       active
-                        ? "bg-white text-indigo-700 font-semibold shadow-sm"
+                        ? "text-indigo-700 font-semibold"
                         : "text-white/70 hover:text-white hover:bg-white/10"
                     }`}
                   >
+                    {active && (
+                      <motion.span
+                        layoutId="admin-nav-pill"
+                        className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                      />
+                    )}
                     <span
-                      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-105 ${
+                      className={`relative z-10 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all duration-300 group-hover:scale-105 ${
                         active
                           ? "text-indigo-700"
                           : "bg-white/10 backdrop-blur-md ring-1 ring-white/20 text-white/80 group-hover:bg-white/15 group-hover:text-white"
@@ -336,11 +374,11 @@ export default function AdminPortalPage() {
                     >
                       {t.icon}
                     </span>
-                    <span className="truncate">{t.label}</span>
+                    <span className={`relative z-10 truncate whitespace-nowrap overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"}`}>{t.label}</span>
                     {t.count !== undefined && (
-                      <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
+                      <span className={`relative z-10 ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums whitespace-nowrap overflow-hidden transition-all duration-300 ${
                         active ? "bg-indigo-100 text-indigo-700" : "bg-white/15 text-white/80"
-                      }`}>
+                      } ${collapsed ? "max-w-0 opacity-0 !px-0 !ml-0" : ""}`}>
                         {t.count}
                       </span>
                     )}
@@ -352,12 +390,12 @@ export default function AdminPortalPage() {
 
           {/* Sidebar footer: status 1 baris + aksi ghost */}
           <div className="border-t border-white/15 py-2 px-3 space-y-1.5">
-            <div className="flex items-center gap-2 px-1">
+            <div className={`flex items-center gap-2 px-1 overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "justify-center" : ""}`}>
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              <p className="text-[11px] font-medium text-white/70 truncate">
+              <p className={`text-[11px] font-medium text-white/70 truncate overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"}`}>
                 {refreshing
                   ? tx(language, "Syncing data…", "Menyinkronkan…")
                   : tx(language, "All systems operational", "Semua sistem normal")}
@@ -367,17 +405,23 @@ export default function AdminPortalPage() {
               <button
                 onClick={load}
                 disabled={refreshing}
+                title={tx(language, "Reload", "Muat")}
                 className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
               >
-                <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
-                {tx(language, "Reload", "Muat")}
+                <RefreshCw size={13} className={`shrink-0 ${refreshing ? "animate-spin" : ""}`} />
+                <span className={`truncate overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[80px] opacity-100"}`}>
+                  {tx(language, "Reload", "Muat")}
+                </span>
               </button>
               <button
                 onClick={handleLogout}
+                title={tx(language, "Logout", "Keluar")}
                 className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg border border-rose-300/30 text-rose-200 hover:bg-rose-500/20 transition-colors"
               >
-                <LogOut size={13} />
-                {tx(language, "Logout", "Keluar")}
+                <LogOut size={13} className="shrink-0" />
+                <span className={`truncate overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[80px] opacity-100"}`}>
+                  {tx(language, "Logout", "Keluar")}
+                </span>
               </button>
             </div>
           </div>
@@ -418,12 +462,21 @@ export default function AdminPortalPage() {
           </header>
 
           {/* Main scrollable area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 scrollbar-admin">
             {loading ? (
               <div className="py-20 flex justify-center">
                 <Spinner size={9} />
               </div>
-            ) : tab === "overview" ? (
+            ) : (
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={tab}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                >
+            {tab === "overview" ? (
               <OverviewView overview={overview} error={error} />
             ) : tab === "billing" ? (
               <BillingView subscriptions={subscriptions} payments={payments} error={error} />
@@ -439,6 +492,9 @@ export default function AdminPortalPage() {
               <PlansView plans={plans} setPlans={setPlans} error={error} />
             ) : (
               <SystemHealthView />
+            )}
+                </motion.div>
+              </AnimatePresence>
             )}
           </main>
         </div>
@@ -496,12 +552,21 @@ export default function AdminPortalPage() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 space-y-6">
+        <main className="flex-1 p-4 sm:p-6 space-y-6 scrollbar-admin">
           {loading ? (
             <div className="py-20 flex justify-center">
               <Spinner size={9} />
             </div>
-          ) : tab === "overview" ? (
+          ) : (
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={tab}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              >
+          {tab === "overview" ? (
             <OverviewView overview={overview} error={error} />
           ) : tab === "billing" ? (
             <BillingView subscriptions={subscriptions} payments={payments} error={error} />
@@ -518,6 +583,9 @@ export default function AdminPortalPage() {
           ) : (
             <SystemHealthView />
           )}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </main>
       </div>
 
@@ -525,6 +593,7 @@ export default function AdminPortalPage() {
       <ConfirmActionModal confirm={confirm} confirming={confirming} onCancel={() => !confirming && setConfirm(null)} onConfirm={handleConfirmAction} />
       <CompanyDetailModal company={detailOpen} data={detailData} loading={detailLoading} error={detailError} onClose={closeDetail} />
     </div>
+    </MotionConfig>
   );
 }
 
@@ -1562,15 +1631,25 @@ function MonitoringView() {
       <Card>
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 mr-auto">{tx(language, "Feature Access Logs", "Log Akses Fitur")}</span>
-          <select value={featFilter} onChange={(e) => setFeatFilter(e.target.value)} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none">
-            <option value="">{tx(language, "All features", "Semua fitur")}</option>
-            {MONITOR_FEATURES.map((f) => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <select value={grantedFilter} onChange={(e) => setGrantedFilter(e.target.value as "" | "true" | "false")} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none">
-            <option value="">{tx(language, "Granted + denied", "Diizinkan + ditolak")}</option>
-            <option value="true">{tx(language, "Granted", "Diizinkan")}</option>
-            <option value="false">{tx(language, "Denied", "Ditolak")}</option>
-          </select>
+          <HoverDropdown
+            value={featFilter}
+            onChange={setFeatFilter}
+            minWidth={150}
+            options={[
+              { value: "", label: tx(language, "All features", "Semua fitur") },
+              ...MONITOR_FEATURES.map((f) => ({ value: f, label: f })),
+            ]}
+          />
+          <HoverDropdown
+            value={grantedFilter}
+            onChange={(v) => setGrantedFilter(v as "" | "true" | "false")}
+            minWidth={150}
+            options={[
+              { value: "", label: tx(language, "Granted + denied", "Diizinkan + ditolak") },
+              { value: "true", label: tx(language, "Granted", "Diizinkan") },
+              { value: "false", label: tx(language, "Denied", "Ditolak") },
+            ]}
+          />
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input value={featSearch} onChange={(e) => setFeatSearch(e.target.value)} placeholder={tx(language, "Search email / IP / feature…", "Cari email / IP / fitur…")} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none w-52" />

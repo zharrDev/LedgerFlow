@@ -116,6 +116,50 @@ body {
   background: #1e293b;
 }
 
+/* Scrollbar ungu untuk area konten admin — thumb tegas biar "megang" */
+.scrollbar-admin {
+  scrollbar-width: thin;
+  scrollbar-color: #8b5cf6 transparent;
+}
+
+.dark .scrollbar-admin {
+  scrollbar-color: #a78bfa transparent;
+}
+
+.scrollbar-admin::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar-admin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-admin::-webkit-scrollbar-thumb {
+  background: #8b5cf6;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark .scrollbar-admin::-webkit-scrollbar-thumb {
+  background: #a78bfa;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollbar-admin::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark .scrollbar-admin::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
 /* Sembunyikan scrollbar (saran autocomplete, dsb.) */
 .scrollbar-none {
   scrollbar-width: none;
