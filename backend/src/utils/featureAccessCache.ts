@@ -4,7 +4,7 @@
 // Mengurangi database calls untuk pengecekan fitur berulang kali, khususnya untuk dashboard
 // dan page dengan banyak fitur check. Cache berlangsung 5 menit dan invalidasi saat subscription user berubah.
 
-import { supabase } from "./supabase.js";
+import { supabase } from "../lib/supabase.js";
 
 // Cache entry dengan timestamp
 interface CacheEntry {
@@ -74,7 +74,7 @@ class FeatureAccessCache {
     }
     
     // Fallback: ambil dari database
-    const { data, error } = await supabase
+    const { data, error }: { data: any; error: any } = await supabase
       .from("subscriptions")
       .select(
         "*, plans(name, display_name), " +
@@ -95,7 +95,7 @@ class FeatureAccessCache {
     const planName = data.plans?.name || "free";
     const isTrial = data.status === "trialing";
     const trialDaysLeft = isTrial 
-      ? Math.ceil((new Date(data.trial_end).getTime() - Date.now()) / 86,400,000)
+      ? Math.ceil((new Date(data.trial_end).getTime() - Date.now()) / 86400000)
       : 0;
     
     const result: FeatureAccessInfo = {
