@@ -20,6 +20,22 @@ body {
   font-family: "Poppins", sans-serif;
 }
 
+/* Fallback -webkit-backdrop-filter untuk Safari / WebKit mobile */
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .backdrop-blur-lg {
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(24px);
+  }
+}
+
 /* Fallback default gelap sebelum React/theme mount — mencegah flash putih */
 html {
   background-color: #0f172a;

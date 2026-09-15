@@ -18,12 +18,55 @@ const ALLOWED_IMAGE_MIME: Record<string, string> = {
 // Batas ukuran default 5 MB
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
 
+// Verifikasi magic bytes asli di buffer file (mencegah spoofing header dataUrl)
+function verifyMagicBytes(buffer: Buffer, mime: string): boolean {
+  if (buffer.length < 4) return false;
+  
+  if (mime === "image/png") {
+    return (
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47
+    );
+  }
+  
+  if (mime === "image/jpeg" || mime === "image/jpg") {
+    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  
+  if (mime === "image/gif") {
+    return buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46;
+  }
+  
+  if (mime === "image/webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer[0] === 0x52 && // R
+      buffer[1] === 0x49 && // I
+      buffer[2] === 0x46 && // F
+      buffer[3] === 0x46 && // F
+      buffer[8] === 0x57 && // W
+      buffer[9] === 0x45 && // E
+      buffer[10] === 0x42 && // B
+      buffer[11] === 0x50   // P
+    );
+  }
+  
+  return false;
+}
+
 function parseDataUrl(dataUrl: string): ParsedDataUrl {
   const match = dataUrl.match(/^data:([^;]+);base64,(.*)$/s);
   if (!match) throw new Error("Format dataUrl tidak valid");
   const mime = match[1].toLowerCase().trim();
   const buffer = Buffer.from(match[2], "base64");
   const ext = ALLOWED_IMAGE_MIME[mime] || "";
+  
+  if (ext && !verifyMagicBytes(buffer, mime)) {
+    throw new Error("Isi file tidak sesuai dengan format gambar yang diklaim.");
+  }
+  
   return { buffer, ext, mime };
 }
 
