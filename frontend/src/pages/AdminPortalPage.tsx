@@ -260,8 +260,8 @@ export default function AdminPortalPage() {
     return <Badge label={m.label} tone={m.tone} />;
   };
 
-  // Warna chip ikon unik per menu (ala dashboard referensi): item aktif
-  // berubah jadi chip gradient penuh + teks putih; non-aktif versi /10.
+  // Sidebar desktop gaya solid fill: ikon flat putih, item aktif = pil putih.
+  // Field `chip` dipertahankan karena masih dipakai nav mobile di bawah.
   const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number; chip: string }[] = [
     { key: "overview", icon: <BarChart3 size={15} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
     { key: "billing", icon: <CreditCard size={15} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length, chip: "from-emerald-500 to-teal-500 text-emerald-500" },
@@ -281,94 +281,89 @@ export default function AdminPortalPage() {
       {/* Desktop: 2 floating cards */}
       <div className="relative hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
-        <aside className="w-64 shrink-0 h-full rounded-3xl bg-white dark:bg-white/[0.04] border border-gray-200/60 dark:border-white/[0.07] shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
-          {/* Sidebar header */}
+        <aside className="w-64 shrink-0 h-full rounded-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
+          {/* Sidebar header — wordmark langsung di atas solid fill */}
           <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/[0.07]">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shadow-indigo-950/50 shrink-0">
+            <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0">
                 <Terminal size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">
+                <p className="text-xs font-semibold text-white truncate leading-tight">
                   LedgerFlow Ops
                 </p>
-                <p className="text-[10px] text-gray-500 truncate leading-tight mt-0.5">
+                <p className="text-[10px] text-white/60 truncate leading-tight mt-0.5">
                   Internal Console
                 </p>
               </div>
-              <ShieldCheck size={14} className="text-indigo-400 shrink-0" />
+              <ShieldCheck size={14} className="text-white shrink-0" />
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Navigation — ikon flat putih, item aktif = pil putih */}
           <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-y-auto scrollbar-thin">
-            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em]">
+            <p className="px-3 mb-1 text-[10px] font-semibold text-white/40 uppercase tracking-[0.15em]">
               Panel
             </p>
             <div className="space-y-1.5">
-              {sidebarTabs.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`group relative flex items-center gap-2.5 w-full px-2.5 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
-                    tab === t.key
-                      ? "bg-gradient-to-r from-indigo-500/15 via-violet-500/10 to-transparent text-indigo-700 dark:text-indigo-200 font-semibold ring-1 ring-indigo-500/25 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/[0.05]"
-                  }`}
-                >
-                  {/* Chip ikon gradient penuh per menu — warna unik tiap item,
-                      item aktif ber-saturasi penuh, lainnya sedikit redup */}
-                  {(() => {
-                    const grad = t.chip.split(" ").slice(0, 2).join(" ");
-                    return (
-                      <span
-                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm transition-all duration-200 group-hover:scale-105 ${tab === t.key ? "" : "opacity-85 group-hover:opacity-100"}`}
-                      >
-                        {t.icon}
-                      </span>
-                    );
-                  })()}
-                  <span className="truncate">{t.label}</span>
-                  {t.count !== undefined && (
-                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
-                      tab === t.key ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-200" : "bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400"
-                    }`}>
-                      {t.count}
+              {sidebarTabs.map((t) => {
+                const active = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`group relative flex items-center gap-2.5 w-full px-2.5 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
+                      active
+                        ? "bg-white text-indigo-700 font-semibold shadow-sm"
+                        : "text-white/70 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <span
+                      className={`inline-flex shrink-0 items-center justify-center transition-all duration-200 group-hover:scale-105 ${
+                        active ? "text-indigo-700" : "text-white/70 group-hover:text-white"
+                      }`}
+                    >
+                      {t.icon}
                     </span>
-                  )}
-                </button>
-              ))}
+                    <span className="truncate">{t.label}</span>
+                    {t.count !== undefined && (
+                      <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
+                        active ? "bg-indigo-100 text-indigo-700" : "bg-white/15 text-white/80"
+                      }`}>
+                        {t.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </nav>
 
-          {/* Sidebar footer: kartu status sistem + aksi */}
-          <div className="border-t border-gray-100 dark:border-white/[0.06] py-3 px-3 space-y-2">
-            <div className="rounded-xl border border-gray-200/70 dark:border-white/[0.07] bg-gray-50/80 dark:bg-white/[0.03] px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-200 truncate">
-                  {tx(language, "All systems operational", "Semua sistem normal")}
-                </p>
-              </div>
-              <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500 truncate">
-                {refreshing ? tx(language, "Syncing data…", "Menyinkronkan…") : tx(language, "Admin console · secure session", "Konsol admin · sesi aman")}
+          {/* Sidebar footer: status 1 baris + aksi ghost */}
+          <div className="border-t border-white/15 py-3 px-3 space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <p className="text-[11px] font-medium text-white/70 truncate">
+                {refreshing
+                  ? tx(language, "Syncing data…", "Menyinkronkan…")
+                  : tx(language, "All systems operational", "Semua sistem normal")}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={load}
                 disabled={refreshing}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
                 {tx(language, "Reload", "Muat")}
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-rose-300/30 text-rose-200 hover:bg-rose-500/20 transition-colors"
               >
                 <LogOut size={13} />
                 {tx(language, "Logout", "Keluar")}
