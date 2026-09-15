@@ -1,75 +1,99 @@
-// ============================================================================
-// Unit Tests: Feature Access Logger Middleware
-// ============================================================================
-// Test suite untuk featureAccessLogger middleware
-// Menguji logging fitur akses premium, audit trail, dan security compliance
-
+// Unit test middleware featureAccessLogger (middleware/accessLogger.ts).
+// Diuji lewat Hono app.request() tanpa server sungguhan.
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Hono } from "hono";
-import { featureAccessLogger } from "./accessLogger";
+import {
+  featureAccessLogger,
+  logFeatureAccess,
+} from "../middleware/accessLogger.js";
 
-// Mock Supabase
-vi.mock("../lib/supabase.js", () => ({
-  from: vi.fn(() => ({
-    select: vi.fn(() => ({
-      insert: vi.fn(() => ({
-        select: vi.fn(() => Promise.resolve({ data: null, error: null }))
-      }))
-    }))
-  }) as any
-}));
-
-describe("Feature Access Logger Middleware", () => {
-  let app: Hono;
-  
-  beforeEach(() => {
-    app = new Hono();
-    app.use("*", featureAccessLogger);
-    app.get("/test", async (c) => {
-      c.set("user", { sub: "test-user-123" });
-      c.set("featureGranted", true);
-      return c.json({ success: true });
-    });
-  });
-  
-  it("should log premium feature access when feature is accessed", async () => {
-    // Mock Supabase insert
-    const mockInsert = vi.fn();
-    const mockSelect = vi.fn(() => ({ insert: mockInsert }));
-    const mockFrom = vi.fn(() => ({ select: mockSelect }));
-    vi.mocked(require("../lib/supabase.js").supabase).from = mockFrom;
-    
-    // Call middleware
-    const response = await app.fetch("http://localhost/test", {
-      method: "GET",
-      headers: {
-        "x-forwarded-for": "192.168.1.100",
-        "user-agent": "Mozilla/5.0 (Test Browser)",
-      },
-    });
-    
-    // Verify Supabase insert was called
-    expect(mockInsert).toHaveBeenCalled();
-    
-    const logData = mockInsert.mock.calls[0][0];
-    expect(logData.user_id).toBe("test-user-123");
-    expect(logData.feature).toBe("income_statement");
-    expect(logData.granted).toBe(true);
-    expect(logData.ip_address).toBe("192.168.1.100");
-  });
-  
-  it("should not log when no user context", async () => {
-    const app2 = new Hono();
-    app2.use("*", featureAccessLogger);
-    app2.get("/test", async (c) => {
-      // Tidak ada user context
-      return c.json({ success: true });
-    });
-    
-    const response = await app2.fetch("http://localhost/test");
-    
-    // Tidak ada Supabase insert karena tidak ada user
-  });
+// Mock Supabase: dukung rantai .select().eq().maybeSingle() dan .insert().
+const mocks = vi.hoisted(() => {
+  const maybeSingle = vi.fn(async () => ({
+    data: { email: "t@t.co", company_id: "comp-1" },
+    error: null,
+  }));
+  const eq = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ eq }));
+  const insert = vi.fn(async (..._args: any[]) => ({ error: null }));
+  const from = vi.fn(() => ({ select, insert }));
+  return { maybeSingle, eq, select, insert, from };
 });
 
-export {};
+vi.mock("../lib/supabase.js", () => ({ supabase: { from: mocks.from } }));
+
+function buildApp(withUser: boolean) {
+  const app = new Hono();
+  if (withUser) {
+    app.use("*", async (c, next) => {
+      c.set("user", { sub: "user-1", role: "owner", company_id: "comp-1" });
+      await next();
+    });
+  }
+  app.use("/check", featureAccessLogger);
+  app.get("/check", (c) => {
+    (c as any).set("featureGranted", true);
+    return c.json({ ok: true });
+  });
+  return app;
+}
+
+beforeEach(() => {
+  mocks.from.mockClear();
+  mocks.insert.mockClear();
+});
+
+describe("featureAccessLogger", () => {
+  it("mencatat akses fitur premium ke feature_access_logs", async () => {
+    const app = buildApp(true);
+    const res = await app.request("/check?feature=income_statement", {
+      headers: {
+        "x-forwarded-for": "1.2.3.4",
+        "user-agent": "vitest",
+      },
+    });
+    expect(res.status).toBe(200);
+    expect(mocks.from).toHaveBeenCalledWith("feature_access_logs");
+    expect(mocks.insert).toHaveBeenCalledOnce();
+    const logged = mocks.insert.mock.calls[0][0] as unknown as Record<string, unknown>;
+    expect(logged).toMatchObject({
+      user_id: "user-1",
+      feature: "income_statement",
+      granted: true,
+      ip_address: "1.2.3.4",
+    });
+  });
+
+  it("tidak mencatat bila fitur bukan premium", async () => {
+    const app = buildApp(true);
+    const res = await app.request("/check?feature=dashboard");
+    expect(res.status).toBe(200);
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
+  it("tidak mencatat bila tanpa user", async () => {
+    const app = buildApp(false);
+    const res = await app.request("/check?feature=income_statement");
+    expect(res.status).toBe(200);
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
+  it("helper logFeatureAccess menulis satu baris log", async () => {
+    const c = {
+      req: {
+        header: () => undefined,
+        path: () => "/api/x",
+        method: () => "POST",
+      },
+      get: () => ({ company_id: "comp-1" }),
+    } as any;
+    await logFeatureAccess("user-9", "export_pdf", false, "pro", c);
+    expect(mocks.from).toHaveBeenCalledWith("feature_access_logs");
+    const logged = mocks.insert.mock.calls[0][0] as unknown as Record<string, unknown>;
+    expect(logged).toMatchObject({
+      user_id: "user-9",
+      feature: "export_pdf",
+      granted: false,
+    });
+  });
+});
