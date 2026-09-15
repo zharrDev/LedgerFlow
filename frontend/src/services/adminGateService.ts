@@ -152,6 +152,127 @@ export async function fetchAdminGateOverview(): Promise<AdminGateOverview> {
   return res.data as AdminGateOverview;
 }
 
+// ── Monitoring akses fitur premium (tab Monitoring) ───────────────────
+// Read-only; hanya dengan token admin-gate. Response dinormalisasi agar UI
+// tidak crash bila backend mengembalikan bentuk tak terduga.
+
+export type MonitoringRange = "24h" | "7d" | "30d";
+
+export type MonitoringSummary = {
+  range: string;
+  since: string;
+  totals: {
+    access: number;
+    denied: number;
+    rate_limit_events: number;
+    blocked_ips: number;
+  };
+  top_features: { feature: string; count: number }[];
+  top_users: { user_id: string; email: string | null; count: number }[];
+  peak_hours: { hour: number; count: number }[];
+};
+
+export type MonitoringFeatureLog = {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  feature: string;
+  plan_at_access: string;
+  granted: boolean;
+  ip_address: string;
+  request_path: string;
+  method: string;
+  created_at: string;
+};
+
+export type MonitoringRateLimitLog = {
+  id: string;
+  user_id: string;
+  reason: string;
+  ip_address: string;
+  request_path: string;
+  method: string;
+  created_at: string;
+  reset_at: string | null;
+};
+
+const EMPTY_MONITORING_SUMMARY: MonitoringSummary = {
+  range: "24h",
+  since: "",
+  totals: { access: 0, denied: 0, rate_limit_events: 0, blocked_ips: 0 },
+  top_features: [],
+  top_users: [],
+  peak_hours: [],
+};
+
+export async function fetchMonitoringSummary(range: MonitoringRange = "24h"): Promise<MonitoringSummary> {
+  const res = await api.get("/api/admin-gate/monitoring/summary", {
+    headers: authHeaders(), skipErrorToast: true,
+    params: { range },
+  });
+  const d = res.data as Partial<MonitoringSummary> | null;
+  if (!d || typeof d !== "object") return EMPTY_MONITORING_SUMMARY;
+  return {
+    range: typeof d.range === "string" ? d.range : "24h",
+    since: typeof d.since === "string" ? d.since : "",
+    totals: {
+      access: Number(d.totals?.access) || 0,
+      denied: Number(d.totals?.denied) || 0,
+      rate_limit_events: Number(d.totals?.rate_limit_events) || 0,
+      blocked_ips: Number(d.totals?.blocked_ips) || 0,
+    },
+    top_features: Array.isArray(d.top_features) ? d.top_features : [],
+    top_users: Array.isArray(d.top_users) ? d.top_users : [],
+    peak_hours: Array.isArray(d.peak_hours) ? d.peak_hours : [],
+  };
+}
+
+export async function fetchMonitoringFeatureLogs(params?: {
+  feature?: string;
+  granted?: boolean;
+  search?: string;
+  limit?: number;
+  page?: number;
+}): Promise<{ data: MonitoringFeatureLog[]; page: number; limit: number }> {
+  const res = await api.get("/api/admin-gate/monitoring/feature-logs", {
+    headers: authHeaders(), skipErrorToast: true,
+    params: {
+      feature: params?.feature || undefined,
+      granted: params?.granted === undefined ? undefined : String(params.granted),
+      search: params?.search || undefined,
+      limit: params?.limit,
+      page: params?.page,
+    },
+  });
+  const d = res.data as { data?: unknown; page?: unknown; limit?: unknown } | null;
+  return {
+    data: Array.isArray(d?.data) ? (d.data as MonitoringFeatureLog[]) : [],
+    page: Number(d?.page) || 1,
+    limit: Number(d?.limit) || 50,
+  };
+}
+
+export async function fetchMonitoringRateLimitLogs(params?: {
+  search?: string;
+  limit?: number;
+  page?: number;
+}): Promise<{ data: MonitoringRateLimitLog[]; page: number; limit: number }> {
+  const res = await api.get("/api/admin-gate/monitoring/rate-limit-logs", {
+    headers: authHeaders(), skipErrorToast: true,
+    params: {
+      search: params?.search || undefined,
+      limit: params?.limit,
+      page: params?.page,
+    },
+  });
+  const d = res.data as { data?: unknown; page?: unknown; limit?: unknown } | null;
+  return {
+    data: Array.isArray(d?.data) ? (d.data as MonitoringRateLimitLog[]) : [],
+    page: Number(d?.page) || 1,
+    limit: Number(d?.limit) || 50,
+  };
+}
+
 // ── Billing: subscription & pembayaran global (tab Billing) ────────────
 
 export type AdminGateSubscription = {
