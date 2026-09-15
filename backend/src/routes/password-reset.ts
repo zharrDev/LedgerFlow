@@ -5,6 +5,13 @@ import crypto from "node:crypto";
 
 const passwordReset = new Hono();
 
+// Token reset TIDAK disimpan mentah di database — hanya hash SHA-256
+// (pola sama dengan OTP di wa-auth.ts). Token mentah hanya dikirim via
+// email dan tidak bisa direkonstruksi dari isi database.
+function hashResetToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 passwordReset.post("/forgot-password", async (c) => {
   try {
     const { email } = await c.req.json();
@@ -28,7 +35,7 @@ passwordReset.post("/forgot-password", async (c) => {
 
     await supabase.from("password_resets").insert({
       user_id: user.id,
-      token: resetToken,
+      token: hashResetToken(resetToken),
       expires_at: expiresAt.toISOString(),
     });
 
@@ -59,7 +66,7 @@ passwordReset.post("/reset-password", async (c) => {
     const { data: resetRecord } = await supabase
       .from("password_resets")
       .select("*")
-      .eq("token", token)
+      .eq("token", hashResetToken(String(token)))
       .eq("used", false)
       .single();
 
