@@ -154,13 +154,13 @@ function calculateSubscriptionRetention(subscriptions: any[]): number {
 
 // Kalkulasi distribusi plan
 function calculateTopPlans(subscriptions: any[]): Array<{ plan: string; count: number; percentage: number }> {
-  const planCounts = subscriptions.reduce((acc, sub) => {
+  const planCounts = subscriptions.reduce<Record<string, number>>((acc, sub) => {
     const planName = sub.plans?.name || "unknown";
     acc[planName] = (acc[planName] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
-  
-  const total = Object.values(planCounts).reduce((sum, count) => sum + count, 0);
+  }, {});
+
+  const total = Object.values(planCounts).reduce<number>((sum, count) => sum + count, 0);
   
   return Object.entries(planCounts)
     .map(([plan, count]) => ({
@@ -197,14 +197,14 @@ function calculateAverageRevenuePerUser(subscriptions: any[]): number {
 
 // Kalkulasi revenue berdasarkan plan
 function calculateRevenueByPlan(subscriptions: any[]): Array<{ plan: string; revenue: number; percentage: number }> {
-  const revenueByPlan = subscriptions.reduce((acc, sub) => {
+  const revenueByPlan = subscriptions.reduce<Record<string, number>>((acc, sub) => {
     const planName = sub.plans?.name || "unknown";
     const price = sub.plans?.price_monthly || 0;
     acc[planName] = (acc[planName] || 0) + price;
     return acc;
-  }, {} as Record<string, number>);
-  
-  const totalRevenue = Object.values(revenueByPlan).reduce((sum, revenue) => sum + revenue, 0);
+  }, {});
+
+  const totalRevenue = Object.values(revenueByPlan).reduce<number>((sum, revenue) => sum + revenue, 0);
   
   return Object.entries(revenueByPlan)
     .map(([plan, revenue]) => ({
@@ -217,12 +217,12 @@ function calculateRevenueByPlan(subscriptions: any[]): Array<{ plan: string; rev
 
 // Kalkulasi akses fitur berdasarkan fitur
 function calculateFeatureAccessByFeature(logs: any[]): Array<{ feature: string; accessCount: number; percentage: number }> {
-  const featureCounts = logs.reduce((acc, log) => {
+  const featureCounts = logs.reduce<Record<string, number>>((acc, log) => {
     acc[log.feature] = (acc[log.feature] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
-  
-  const totalAccess = Object.values(featureCounts).reduce((sum, count) => sum + count, 0);
+  }, {});
+
+  const totalAccess = Object.values(featureCounts).reduce<number>((sum, count) => sum + count, 0);
   
   return Object.entries(featureCounts)
     .map(([feature, count]) => ({
