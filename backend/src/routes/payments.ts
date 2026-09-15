@@ -17,6 +17,8 @@ import { Hono } from "hono"; // Framework web ringan buat bikin API routes
 import { supabase } from "../lib/supabase.js"; // Client Supabase buat akses database
 import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js"; // Verifikasi JWT -> c.get("user")
+import { featureAccessLogger } from "../middleware/accessLogger.js"; // Audit best-effort akses fitur premium
+import { premiumFeatureRateLimit } from "../middleware/rateLimit.js"; // Rate-limit khusus fitur premium
 import {
   snap, // Midtrans Snap API — buat bikin transaksi payment popup
   coreApi, // Midtrans Core API — buat approve/cancel transaksi langsung
@@ -1023,7 +1025,7 @@ payments.post("/cancel", authMiddleware, async (c) => {
 //   → Backend cek: user free plan, fitur butuh pro → return has_access: false
 //   → Frontend tampilin Paywall "Upgrade ke Pro buat akses fitur ini"
 // ═══════════════════════════════════════════════════════════════════════
-payments.get("/check-access", authMiddleware, async (c) => {
+payments.get("/check-access", authMiddleware, premiumFeatureRateLimit, featureAccessLogger, async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
 
@@ -1090,6 +1092,8 @@ payments.get("/check-access", authMiddleware, async (c) => {
     const trialGrantsAccess = isTrialActive && trialCoreFeatures.includes(feature);
     // Cek apakah plan user termasuk dalam daftar plan yang bisa akses fitur ini
     const hasAccess = trialGrantsAccess || featureAccess[feature].includes(planName);
+    // Dibaca oleh featureAccessLogger setelah handler selesai.
+    c.set("featureGranted", hasAccess);
 
     return c.json({
       has_access: hasAccess, // Apakah bisa akses
