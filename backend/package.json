@@ -11,25 +11,25 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.6",
     "@types/nodemailer": "^8.0.1",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.13",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.4",
-    "@langchain/core": "^1.2.5",
-    "@langchain/langgraph": "^1.4.9",
-    "@langchain/openai": "^1.5.6",
-    "@supabase/supabase-js": "^2.106.2",
+    "@hono/node-server": "^2.1.1",
+    "@langchain/core": "^1.2.11",
+    "@langchain/langgraph": "^1.4.15",
+    "@langchain/openai": "^1.5.13",
+    "@supabase/supabase-js": "^2.116.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
-    "google-auth-library": "^10.7.0",
-    "hono": "^4.12.23",
-    "jose": "^6.2.3",
+    "google-auth-library": "^10.9.1",
+    "hono": "^4.13.8",
+    "jose": "^6.2.12",
     "midtrans-client": "^1.4.3",
-    "nodemailer": "^9.0.3",
-    "zod": "^4.4.3"
+    "nodemailer": "^9.1.1",
+    "zod": "^4.6.5"
   }
 }
