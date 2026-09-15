@@ -954,6 +954,7 @@ function AuditLogView({ statusBadge, stats, error }: { statusBadge: (s: AdminGat
           <HoverDropdown
             value={statusFilter}
             onChange={setStatusFilter}
+            accent="indigo"
             icon={<ListFilter size={14} />}
             minWidth={150}
             options={[
@@ -1634,6 +1635,7 @@ function MonitoringView() {
           <HoverDropdown
             value={featFilter}
             onChange={setFeatFilter}
+            accent="indigo"
             minWidth={150}
             options={[
               { value: "", label: tx(language, "All features", "Semua fitur") },
@@ -1643,6 +1645,7 @@ function MonitoringView() {
           <HoverDropdown
             value={grantedFilter}
             onChange={(v) => setGrantedFilter(v as "" | "true" | "false")}
+            accent="indigo"
             minWidth={150}
             options={[
               { value: "", label: tx(language, "Granted + denied", "Diizinkan + ditolak") },

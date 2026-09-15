@@ -33,6 +33,8 @@ interface HoverDropdownProps {
   className?: string;
   placement?: "bottom" | "top" | "auto";
   alignRight?: boolean;
+  /** Varian warna: "primary" (tema customer) atau "indigo" (portal admin). */
+  accent?: "primary" | "indigo";
 }
 
 interface PanelPos {
@@ -57,7 +59,9 @@ export function HoverDropdown({
   className = "",
   placement = "auto",
   alignRight = false,
+  accent = "primary",
 }: HoverDropdownProps) {
+  const indigo = accent === "indigo";
   const [isOpen, setIsOpen] = useState(false);
   const [panelPos, setPanelPos] = useState<PanelPos | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -228,21 +232,33 @@ export function HoverDropdown({
         type="button"
         disabled={disabled}
         onClick={() => (isOpen ? setIsOpen(false) : open())}
-        className={`flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-          fullWidth ? "w-full" : ""
-        }`}
+        className={`flex items-center justify-between gap-2 text-sm border rounded-xl px-3 py-2 bg-white dark:bg-darkCard outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          indigo
+            ? "border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-50/60 dark:hover:bg-indigo-500/10 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+            : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500"
+        } ${fullWidth ? "w-full" : ""}`}
       >
         <span className="flex items-center gap-2 min-w-0">
-          {icon && <span className="text-gray-400 shrink-0">{icon}</span>}
-          <span className="text-gray-700 dark:text-gray-200 truncate">
+          {icon && (
+            <span className={`shrink-0 ${indigo ? "text-indigo-500" : "text-gray-400"}`}>
+              {icon}
+            </span>
+          )}
+          <span
+            className={`truncate ${
+              indigo
+                ? "text-indigo-700 dark:text-indigo-200 font-medium"
+                : "text-gray-700 dark:text-gray-200"
+            }`}
+          >
             {getLabel()}
           </span>
         </span>
         <ChevronDown
           size={14}
-          className={`text-gray-400 shrink-0 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`shrink-0 transition-transform duration-200 ${
+            indigo ? "text-indigo-500" : "text-gray-400"
+          } ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -273,10 +289,12 @@ export function HoverDropdown({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors break-words ${
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors break-words ${
                     value === option.value
-                      ? "text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-500/10 font-medium"
-                      : "text-gray-700 dark:text-gray-300"
+                      ? indigo
+                        ? "text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/15 font-medium"
+                        : "text-primary-600 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-500/10 font-medium"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
                   }`}
                 >
                   {option.label}
