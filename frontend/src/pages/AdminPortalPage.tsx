@@ -10,6 +10,7 @@ import {
   Ban,
   ChevronsLeft,
   ChevronsRight,
+  MoreHorizontal,
   Activity,
   Users,
   Building2,
@@ -589,8 +590,11 @@ const BOTTOM_TABS: { key: Tab; icon: React.ReactNode }[] = [
   { key: "health", icon: <ShieldCheck size={22} /> },
 ];
 
+const BOTTOM_VISIBLE_COUNT = 5;
+
 function AdminBottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   const { language } = useLanguage();
+  const [moreOpen, setMoreOpen] = useState(false);
   const short: Record<Tab, string> = {
     overview: tx(language, "Overview", "Ringkasan"),
     billing: tx(language, "Billing", "Billing"),
@@ -601,48 +605,136 @@ function AdminBottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void })
     plans: tx(language, "Plans", "Paket"),
     health: tx(language, "Health", "Sehat"),
   };
+  const visible = BOTTOM_TABS.slice(0, BOTTOM_VISIBLE_COUNT);
+  const hidden = BOTTOM_TABS.slice(BOTTOM_VISIBLE_COUNT);
+  const moreActive = hidden.some((t) => t.key === tab);
+
+  const renderItem = (t: { key: Tab; icon: React.ReactNode }, layoutId: string) => {
+    const active = tab === t.key;
+    return (
+      <motion.button
+        key={t.key}
+        type="button"
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          setTab(t.key);
+          setMoreOpen(false);
+        }}
+        aria-label={short[t.key]}
+        aria-current={active ? "page" : undefined}
+        className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 pb-1 pt-2 outline-none transition-colors duration-200 ${
+          active
+            ? "text-indigo-600 dark:text-indigo-300"
+            : "text-gray-400 dark:text-gray-500 active:text-indigo-500"
+        }`}
+      >
+        {active && (
+          <motion.span
+            layoutId={layoutId}
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+            className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-indigo-500"
+          />
+        )}
+        <span className="flex items-center justify-center">
+          {t.icon}
+        </span>
+        <span className={`text-[9px] leading-none whitespace-nowrap ${active ? "font-semibold" : "font-medium"}`}>
+          {short[t.key]}
+        </span>
+      </motion.button>
+    );
+  };
+
   return (
-    <nav
-      aria-label={tx(language, "Admin navigation", "Navigasi admin")}
-      className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
-    >
-      <div className="border-t border-indigo-500/15 bg-white/85 dark:bg-[#0B1120]/85 backdrop-blur-xl shadow-[0_-8px_30px_rgba(2,6,23,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.45)]">
-        <div className="flex overflow-x-auto scrollbar-none px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          {BOTTOM_TABS.map((t) => {
-            const active = tab === t.key;
-            return (
-              <motion.button
-                key={t.key}
-                type="button"
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setTab(t.key)}
-                aria-label={short[t.key]}
-                aria-current={active ? "page" : undefined}
-                className={`relative flex min-w-[64px] flex-1 flex-col items-center gap-0.5 rounded-xl px-1 pb-1 pt-2 outline-none transition-colors duration-200 ${
-                  active
-                    ? "text-indigo-600 dark:text-indigo-300"
-                    : "text-gray-400 dark:text-gray-500 active:text-indigo-500"
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="admin-bottomnav-pill"
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                    className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-indigo-500"
-                  />
-                )}
-                <span className="flex items-center justify-center">
-                  {t.icon}
-                </span>
-                <span className={`text-[9px] leading-none whitespace-nowrap ${active ? "font-semibold" : "font-medium"}`}>
-                  {short[t.key]}
-                </span>
-              </motion.button>
-            );
-          })}
+    <>
+      <nav
+        aria-label={tx(language, "Admin navigation", "Navigasi admin")}
+        className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
+      >
+        <div className="border-t border-indigo-500/15 bg-white/85 dark:bg-[#0B1120]/85 backdrop-blur-xl shadow-[0_-8px_30px_rgba(2,6,23,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.45)]">
+          <div className="flex px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            {visible.map((t) => renderItem(t, "admin-bottomnav-pill"))}
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-label={tx(language, "More", "Lainnya")}
+              className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 pb-1 pt-2 outline-none transition-colors duration-200 ${
+                moreActive || moreOpen
+                  ? "text-indigo-600 dark:text-indigo-300"
+                  : "text-gray-400 dark:text-gray-500 active:text-indigo-500"
+              }`}
+            >
+              {(moreActive || moreOpen) && (
+                <motion.span
+                  layoutId="admin-bottomnav-pill"
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-indigo-500"
+                />
+              )}
+              <span className="flex h-[22px] w-[22px] items-center justify-center">
+                <MoreHorizontal size={22} />
+              </span>
+              <span className={`text-[9px] leading-none whitespace-nowrap ${(moreActive || moreOpen) ? "font-semibold" : "font-medium"}`}>
+                {tx(language, "More", "Lainnya")}
+              </span>
+            </motion.button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <AnimatePresence>
+        {moreOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 lg:hidden"
+            onClick={() => setMoreOpen(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 36 }}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white dark:bg-[#141b2e] border-t border-gray-200/70 dark:border-white/10 shadow-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            >
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 dark:bg-white/15" />
+              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+                {tx(language, "More menus", "Menu lainnya")}
+              </p>
+              <div className="space-y-1">
+                {hidden.map((t) => {
+                  const active = tab === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => {
+                        setTab(t.key);
+                        setMoreOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                        active
+                          ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200 font-semibold"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <span className={active ? "text-indigo-600 dark:text-indigo-300" : "text-gray-400"}>
+                        {t.icon}
+                      </span>
+                      {short[t.key]}
+                      {active && <CheckCircle2 size={15} className="ml-auto text-indigo-500" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
