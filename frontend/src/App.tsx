@@ -60,10 +60,6 @@ import type { PaymentResultPageProps } from "./pages/PaymentResultPage";
 const PaymentResultPage = lazyTyped<PaymentResultPageProps>(() =>
   import("./pages/PaymentResultPage"),
 );
-const ForgotPasswordPage = lazyPage(() =>
-  import("./pages/ForgotPasswordPage"),
-);
-const ResetPasswordPage = lazyPage(() => import("./pages/ResetPasswordPage"));
 const AdminGatePage = lazyPage(() => import("./pages/AdminGatePage"));
 const AdminPortalPage = lazyPage(() => import("./pages/AdminPortalPage"));
 const UserManagementPage = lazyPage(() =>
@@ -129,8 +125,6 @@ function AiCfoFabGate() {
   const hiddenPrefixes = [
     "/login",
     "/register",
-    "/forgot-password",
-    "/reset-password",
     "/auth/",
     "/payment/",
     "/pricing",
@@ -248,15 +242,6 @@ function AnimatedRoutes() {
           Hanya bisa dicapai lewat shortcut rahasia di /login. */}
       <Route path="/portal-akses" element={<AdminGatePage />} />
       <Route path="/admin-portal" element={<AdminPortalPage />} />
-      <Route
-        path="/forgot-password"
-        element={
-          <PublicRoute>
-            <ForgotPasswordPage />
-          </PublicRoute>
-        }
-      />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/help" element={<PublicHelpPage />} />
       <Route path="/terms" element={<TermsPage />} />
 
