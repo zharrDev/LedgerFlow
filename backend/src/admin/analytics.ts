@@ -77,14 +77,14 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   // Feature access logs hari ini
   const { data: featureLogs } = await supabase
     .from("feature_access_logs")
-    .select("feature, user_id, granted")
-    .gte("timestamp", startOfDay.toISOString());
-  
+    .select("feature, user_id, user_email, granted, created_at")
+    .gte("created_at", startOfDay.toISOString());
+
   // Rate limit logs hari ini
   const { data: rateLimitLogs } = await supabase
     .from("rate_limit_logs")
     .select("*")
-    .gte("timestamp", startOfDay.toISOString());
+    .gte("created_at", startOfDay.toISOString());
   
   // Hitung metrics utama
   const userMetrics: UserMetrics = {
@@ -238,7 +238,7 @@ function calculatePeakAccessTimes(logs: any[]): Array<{ hour: number; requests: 
   const hourCounts: Record<number, number> = {};
   
   logs.forEach(log => {
-    const hour = new Date(log.timestamp).getHours();
+    const hour = new Date(log.created_at).getHours();
     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
   });
   
