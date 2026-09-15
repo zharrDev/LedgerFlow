@@ -309,10 +309,10 @@ export default function AdminPortalPage() {
       {/* Latar mesh lembut — memberi kedalaman tanpa garis batas; gradasi
           radial memudar alami ke warna dasar. */}
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(99,102,241,0.10),transparent_45%),radial-gradient(circle_at_88%_8%,rgba(139,92,246,0.08),transparent_40%),radial-gradient(circle_at_50%_115%,rgba(6,182,212,0.07),transparent_45%)] dark:opacity-100 opacity-70" />
-      {/* Desktop: 2 floating cards */}
-      <div className="relative hidden lg:flex h-screen p-4 gap-4">
+      {/* Desktop: sidebar + konten rapat tanpa celah */}
+      <div className="relative hidden lg:flex h-screen p-4 gap-0">
         {/* Sidebar card */}
-        <aside className={`${collapsed ? "w-[76px]" : "w-64"} shrink-0 h-full rounded-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col transition-[width] duration-300 ease-in-out`}>
+        <aside className={`${collapsed ? "w-[76px]" : "w-64"} shrink-0 h-full rounded-l-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col transition-[width] duration-300 ease-in-out`}>
           {/* Sidebar header — wordmark langsung di atas solid fill */}
           <div className="px-3 pt-3 pb-2">
             <div className={`flex items-center gap-2 px-2.5 py-2 ${collapsed ? "justify-center px-1" : ""}`}>
@@ -350,26 +350,26 @@ export default function AdminPortalPage() {
                     key={t.key}
                     onClick={() => setTab(t.key)}
                     title={collapsed ? t.label : undefined}
-                    className={`group relative flex items-center gap-2 w-full px-2 py-1.5 text-[11px] rounded-xl transition-all duration-300 ease-out text-left hover:translate-x-[2px] ${
+                    className={`group relative flex items-center gap-2 w-full px-2 py-1.5 text-[11px] rounded-xl transition-colors duration-300 ease-out text-left ${
                       collapsed ? "justify-center px-1.5" : ""
                     } ${
                       active
-                        ? "text-indigo-700 font-semibold"
+                        ? "text-indigo-700 dark:text-white font-semibold"
                         : "text-white/70 hover:text-white hover:bg-white/10"
                     }`}
                   >
                     {active && (
                       <motion.span
                         layoutId="admin-nav-pill"
-                        className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                        className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-l-xl rounded-r-none bg-white dark:bg-[#111C33] shadow-sm"
                         transition={{ type: "spring", stiffness: 420, damping: 34 }}
                       />
                     )}
                     <span
-                      className={`relative z-10 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all duration-300 group-hover:scale-105 ${
+                      className={`relative z-10 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-colors duration-300 ${
                         active
-                          ? "text-indigo-700"
-                          : "bg-white/10 backdrop-blur-md ring-1 ring-white/20 text-white/80 group-hover:bg-white/15 group-hover:text-white"
+                          ? "text-indigo-700 dark:text-white"
+                          : "bg-white/10 backdrop-blur-md ring-1 ring-white/20 text-white/80"
                       }`}
                     >
                       {t.icon}
@@ -377,7 +377,7 @@ export default function AdminPortalPage() {
                     <span className={`relative z-10 truncate whitespace-nowrap overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"}`}>{t.label}</span>
                     {t.count !== undefined && (
                       <span className={`relative z-10 ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums whitespace-nowrap overflow-hidden transition-all duration-300 ${
-                        active ? "bg-indigo-100 text-indigo-700" : "bg-white/15 text-white/80"
+                        active ? "bg-indigo-100 text-indigo-700 dark:bg-white/15 dark:text-white" : "bg-white/15 text-white/80"
                       } ${collapsed ? "max-w-0 opacity-0 !px-0 !ml-0" : ""}`}>
                         {t.count}
                       </span>
@@ -427,8 +427,8 @@ export default function AdminPortalPage() {
           </div>
         </aside>
 
-        {/* Content card */}
-        <div className="flex-1 h-full rounded-3xl bg-white dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/[0.07] shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col min-w-0">
+        {/* Content card — solid per mode agar pil aktif bisa sama persis */}
+        <div className="flex-1 h-full rounded-r-3xl bg-white dark:bg-[#111C33] border border-gray-200/60 dark:border-white/[0.07] border-l-0 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col min-w-0">
           {/* Content header strip */}
           <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.03] backdrop-blur-md">
             <div className="flex items-center gap-3">
