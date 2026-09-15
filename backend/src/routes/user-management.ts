@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
+import { sanitizeSearch, pickSort } from "../lib/sanitize.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { normalizePhoneNumber, sendWhatsAppInviteNotification } from "../lib/whatsapp.js";
 import {
@@ -301,13 +302,12 @@ userMgmt.get("/", requireRole("owner"), async (c) => {
   // Search (nama/email/telepon) butuh id profil dulu — ilike hanya ada di
   // tabel users. Batasi 1000 id agar query .in tetap ringan.
   let searchIds: string[] | null = null;
-  if (search) {
+  const q = sanitizeSearch(search);
+  if (q) {
     const { data: matched, error: searchErr } = await supabase
       .from("users")
       .select("id")
-      .or(
-        `name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`,
-      )
+      .or(`name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
       .limit(1000);
     if (searchErr) return dbErrorResponse(c, searchErr);
     searchIds = (matched ?? []).map((u) => u.id);
@@ -327,9 +327,10 @@ userMgmt.get("/", requireRole("owner"), async (c) => {
 
   // Sort di level membership: created_at & role. Sort by name dilakukan di
   // JS setelah profil digabung (halaman maks 100 baris, tetap ringan).
-  const sortFieldRaw = sort?.startsWith("-") ? sort.slice(1) : sort || "created_at";
-  const sortDir = sort?.startsWith("-") ? ("desc" as const) : ("asc" as const);
-  const jsSort = sortFieldRaw === "name";
+  const sortRaw = String(sort ?? "").trim();
+  const jsSort = sortRaw === "name" || sortRaw === "-name";
+  const { field: sortFieldRaw, desc } = pickSort(sort, ["created_at", "role", "status", "name"], "created_at");
+  const sortDir = desc ? ("desc" as const) : ("asc" as const);
   const dbSortField = jsSort ? "created_at" : sortFieldRaw;
   query = query.order(dbSortField, { ascending: sortDir === "asc" });
 

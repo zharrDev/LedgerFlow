@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
+import { sanitizeSearch, pickSort } from "../lib/sanitize.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 
@@ -127,15 +128,16 @@ accounts.get("/", async (c) => {
     .select("*", { count: "exact" })
     .eq("company_id", company_id);
 
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+  const q = sanitizeSearch(search);
+  if (q) {
+    query = query.or(`name.ilike.%${q}%,code.ilike.%${q}%`);
   }
   if (status === "active") query = query.eq("is_active", true);
   else if (status === "inactive") query = query.eq("is_active", false);
   if (type) query = query.eq("type", TYPE_MAP[type] || type);
 
-  const sortField = sort?.startsWith("-") ? sort.slice(1) : sort || "code";
-  const sortDir = sort?.startsWith("-") ? "desc" as const : "asc" as const;
+  const { field: sortField, desc } = pickSort(sort, ["code", "name", "type", "created_at"], "code");
+  const sortDir = desc ? "desc" as const : "asc" as const;
   query = query.order(sortField, { ascending: sortDir === "asc" });
 
   const pageNum = Math.max(1, parseInt(page || "1"));

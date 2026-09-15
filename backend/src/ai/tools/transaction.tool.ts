@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase.js";
+import { sanitizeSearch } from "../../lib/sanitize.js";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 
@@ -31,8 +32,9 @@ export function createGetTransactionsTool(companyId: string) {
       if (filters.periodId) query = query.eq("period_id", filters.periodId);
       if (filters.startDate) query = query.gte("entry_date", filters.startDate);
       if (filters.endDate) query = query.lte("entry_date", filters.endDate);
-      if (filters.search) {
-        query = query.or(`description.ilike.%${filters.search}%,entry_number.ilike.%${filters.search}%`);
+      const q = sanitizeSearch(filters.search);
+      if (q) {
+        query = query.or(`description.ilike.%${q}%,entry_number.ilike.%${q}%`);
       }
 
       const limit = Math.min(100, Math.max(1, filters.limit || 20));

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import bcrypt from "bcryptjs";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
+import { sanitizeSearch } from "../lib/sanitize.js";
 import {
   signAdminGateToken,
   ADMIN_GATE_TTL_SECONDS,
@@ -155,9 +156,10 @@ adminGate.get("/logs", requireAdminGate, async (c) => {
   if (status && validStatuses.includes(status)) {
     query = query.eq("status", status);
   }
-  if (ip) {
+  const q = sanitizeSearch(ip, 45);
+  if (q) {
     // Pencarian IP sebagian (contains) — tanpa pola regex berbahaya.
-    query = query.ilike("ip", `%${ip}%`);
+    query = query.ilike("ip", `%${q}%`);
   }
 
   const { data, error } = await query
@@ -196,6 +198,18 @@ function parseMonitorPage(raw: string | undefined): number {
   if (!Number.isFinite(n)) return 1;
   return Math.max(n, 1);
 }
+
+const MONITOR_FEATURES = [
+  "income_statement",
+  "balance_sheet",
+  "cash_flow",
+  "export_pdf",
+  "export_csv",
+  "unlimited_journals",
+  "multi_company",
+  "multi_user",
+  "api_access",
+];
 
 function parseMonitorGranted(raw: string | undefined): boolean | undefined {
   const v = (raw ?? "").trim().toLowerCase();
@@ -298,9 +312,9 @@ adminGate.get("/monitoring/summary", requireAdminGate, async (c) => {
 // GET /api/admin-gate/monitoring/feature-logs — tabel log akses fitur.
 adminGate.get("/monitoring/feature-logs", requireAdminGate, async (c) => {
   try {
-    const feature = c.req.query("feature")?.trim();
+    const featureRaw = c.req.query("feature")?.trim();
     const granted = parseMonitorGranted(c.req.query("granted"));
-    const search = c.req.query("search")?.trim();
+    const search = sanitizeSearch(c.req.query("search"));
     const limit = parseMonitorLimit(c.req.query("limit"));
     const page = parseMonitorPage(c.req.query("page"));
 
@@ -309,7 +323,7 @@ adminGate.get("/monitoring/feature-logs", requireAdminGate, async (c) => {
       .select(
         "id,user_id,user_email,feature,plan_at_access,granted,ip_address,request_path,method,created_at",
       );
-    if (feature) query = query.eq("feature", feature);
+    if (featureRaw && MONITOR_FEATURES.includes(featureRaw)) query = query.eq("feature", featureRaw);
     if (granted !== undefined) query = query.eq("granted", granted);
     if (search) {
       query = query.or(
@@ -334,7 +348,7 @@ adminGate.get("/monitoring/feature-logs", requireAdminGate, async (c) => {
 // GET /api/admin-gate/monitoring/rate-limit-logs — tabel log rate-limit.
 adminGate.get("/monitoring/rate-limit-logs", requireAdminGate, async (c) => {
   try {
-    const search = c.req.query("search")?.trim();
+    const search = sanitizeSearch(c.req.query("search"));
     const limit = parseMonitorLimit(c.req.query("limit"));
     const page = parseMonitorPage(c.req.query("page"));
 

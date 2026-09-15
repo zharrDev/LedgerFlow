@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
+import { sanitizeSearch, pickSort } from "../lib/sanitize.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
@@ -165,14 +166,17 @@ journal.get("/", async (c) => {
 
   if (period_id) query = query.eq("period_id", period_id);
   if (status) query = query.eq("status", status);
-  if (search) {
-    query = query.or(
-      `description.ilike.%${search}%,entry_number.ilike.%${search}%`,
-    );
+  const q = sanitizeSearch(search);
+  if (q) {
+    query = query.or(`description.ilike.%${q}%,entry_number.ilike.%${q}%`);
   }
 
-  const sortField = sort?.startsWith("-") ? sort.slice(1) : sort || "entry_number";
-  const sortDir = sort?.startsWith("-") ? ("desc" as const) : ("asc" as const);
+  const { field: sortField, desc } = pickSort(
+    sort,
+    ["entry_number", "entry_date", "description", "status", "created_at"],
+    "entry_number",
+  );
+  const sortDir = desc ? ("desc" as const) : ("asc" as const);
   query = query.order(sortField, { ascending: sortDir === "asc" });
 
   const pageNum = Math.max(1, parseInt(page || "1"));
