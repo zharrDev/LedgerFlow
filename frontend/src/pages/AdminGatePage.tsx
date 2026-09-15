@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { verifyAdminGatePassword } from "../services/adminGateService";
+import { api } from "../lib/api";
 import Spinner from "../components/Spinner";
 
 // Halaman gerbang admin — HANYA meminta password (tanpa email/username),
@@ -25,6 +26,16 @@ export default function AdminGatePage() {
     };
   }, []);
 
+  // Warm-up saat gate kebuka (pola sama seperti AuthPage):
+  //   1. Prefetch chunk AdminPortalPage biar navigasi pas password benar
+  //      tidak nunggu download chunk (92KB + recharts).
+  //   2. Ping /health fire-and-forget — bangunkan Render free-tier selagi
+  //      user mengetik password, jadi /verify tidak kena cold-start.
+  useEffect(() => {
+    import("./AdminPortalPage").catch(() => {});
+    api.get("/health", { skipErrorToast: true }).catch(() => {});
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -35,7 +46,7 @@ export default function AdminGatePage() {
     setLoading(true);
     try {
       await verifyAdminGatePassword(password);
-      navigate("/admin-portal", { replace: true });
+      navigate("/admin-portal", { replace: true, state: { fromGate: true } });
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 429) {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -135,6 +135,14 @@ export default function AdminPortalPage() {
   const [detailError, setDetailError] = useState("");
 
   const hasToken = !!getAdminGateToken();
+  const location = useLocation();
+  // Mainkan animasi tirai hanya bila datang dari gate (flag sekali pakai).
+  const [curtain] = useState(
+    () => (location.state as { fromGate?: boolean } | null)?.fromGate === true,
+  );
+  useEffect(() => {
+    if (curtain) window.history.replaceState({}, "");
+  }, [curtain]);
 
   useEffect(() => {
     const meta = document.createElement("meta");
@@ -263,18 +271,19 @@ export default function AdminPortalPage() {
   // Sidebar desktop gaya solid fill: ikon flat putih, item aktif = pil putih.
   // Field `chip` dipertahankan karena masih dipakai nav mobile di bawah.
   const sidebarTabs: { key: Tab; icon: React.ReactNode; label: string; count?: number; chip: string }[] = [
-    { key: "overview", icon: <BarChart3 size={15} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
-    { key: "billing", icon: <CreditCard size={15} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length, chip: "from-emerald-500 to-teal-500 text-emerald-500" },
-    { key: "log", icon: <FileText size={15} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length, chip: "from-amber-500 to-orange-500 text-amber-500" },
-    { key: "monitoring", icon: <Activity size={15} />, label: tx(language, "Monitoring", "Monitoring"), chip: "from-sky-500 to-indigo-500 text-sky-500" },
-    { key: "users", icon: <UsersRound size={15} />, label: tx(language, "Users", "Pengguna"), count: users.length, chip: "from-cyan-500 to-sky-500 text-cyan-500" },
-    { key: "companies", icon: <Landmark size={15} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length, chip: "from-fuchsia-500 to-purple-500 text-fuchsia-500" },
-    { key: "plans", icon: <Coins size={15} />, label: tx(language, "Plans", "Paket"), count: plans.length, chip: "from-rose-500 to-pink-500 text-rose-500" },
-    { key: "health", icon: <ShieldCheck size={15} />, label: tx(language, "System Health", "Kesehatan Sistem"), chip: "from-lime-500 to-green-500 text-lime-600" },
+    { key: "overview", icon: <BarChart3 size={13} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
+    { key: "billing", icon: <CreditCard size={13} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length, chip: "from-emerald-500 to-teal-500 text-emerald-500" },
+    { key: "log", icon: <FileText size={13} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length, chip: "from-amber-500 to-orange-500 text-amber-500" },
+    { key: "monitoring", icon: <Activity size={13} />, label: tx(language, "Monitoring", "Monitoring"), chip: "from-sky-500 to-indigo-500 text-sky-500" },
+    { key: "users", icon: <UsersRound size={13} />, label: tx(language, "Users", "Pengguna"), count: users.length, chip: "from-cyan-500 to-sky-500 text-cyan-500" },
+    { key: "companies", icon: <Landmark size={13} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length, chip: "from-fuchsia-500 to-purple-500 text-fuchsia-500" },
+    { key: "plans", icon: <Coins size={13} />, label: tx(language, "Plans", "Paket"), count: plans.length, chip: "from-rose-500 to-pink-500 text-rose-500" },
+    { key: "health", icon: <ShieldCheck size={13} />, label: tx(language, "System Health", "Kesehatan Sistem"), chip: "from-lime-500 to-green-500 text-lime-600" },
   ];
 
   return (
     <div className="relative min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+      {curtain && <CurtainReveal />}
       {/* Latar mesh lembut — memberi kedalaman tanpa garis batas; gradasi
           radial memudar alami ke warna dasar. */}
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(99,102,241,0.10),transparent_45%),radial-gradient(circle_at_88%_8%,rgba(139,92,246,0.08),transparent_40%),radial-gradient(circle_at_50%_115%,rgba(6,182,212,0.07),transparent_45%)] dark:opacity-100 opacity-70" />
@@ -283,10 +292,10 @@ export default function AdminPortalPage() {
         {/* Sidebar card */}
         <aside className="w-64 shrink-0 h-full rounded-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col">
           {/* Sidebar header — wordmark langsung di atas solid fill */}
-          <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center gap-2.5 px-3 py-2.5">
-              <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                <Terminal size={16} />
+          <div className="px-3 pt-3 pb-2">
+            <div className="flex items-center gap-2 px-2.5 py-2">
+              <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <Terminal size={14} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-white truncate leading-tight">
@@ -300,27 +309,29 @@ export default function AdminPortalPage() {
             </div>
           </div>
 
-          {/* Navigation — ikon flat putih, item aktif = pil putih */}
-          <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-y-auto scrollbar-thin">
+          {/* Navigation — kompak tanpa scroll, ikon glass samar */}
+          <nav className="flex-1 flex flex-col px-3 pt-1 pb-1 overflow-hidden">
             <p className="px-3 mb-1 text-[10px] font-semibold text-white/40 uppercase tracking-[0.15em]">
               Panel
             </p>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {sidebarTabs.map((t) => {
                 const active = tab === t.key;
                 return (
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
-                    className={`group relative flex items-center gap-2.5 w-full px-2.5 py-2 text-xs rounded-xl transition-all duration-200 text-left ${
+                    className={`group relative flex items-center gap-2 w-full px-2 py-1.5 text-[11px] rounded-xl transition-all duration-200 text-left ${
                       active
                         ? "bg-white text-indigo-700 font-semibold shadow-sm"
                         : "text-white/70 hover:text-white hover:bg-white/10"
                     }`}
                   >
                     <span
-                      className={`inline-flex shrink-0 items-center justify-center transition-all duration-200 group-hover:scale-105 ${
-                        active ? "text-indigo-700" : "text-white/70 group-hover:text-white"
+                      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all duration-200 group-hover:scale-105 ${
+                        active
+                          ? "text-indigo-700"
+                          : "bg-white/10 backdrop-blur-md ring-1 ring-white/20 text-white/80 group-hover:bg-white/15 group-hover:text-white"
                       }`}
                     >
                       {t.icon}
@@ -340,7 +351,7 @@ export default function AdminPortalPage() {
           </nav>
 
           {/* Sidebar footer: status 1 baris + aksi ghost */}
-          <div className="border-t border-white/15 py-3 px-3 space-y-2">
+          <div className="border-t border-white/15 py-2 px-3 space-y-1.5">
             <div className="flex items-center gap-2 px-1">
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
@@ -356,14 +367,14 @@ export default function AdminPortalPage() {
               <button
                 onClick={load}
                 disabled={refreshing}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
                 {tx(language, "Reload", "Muat")}
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium rounded-lg border border-rose-300/30 text-rose-200 hover:bg-rose-500/20 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg border border-rose-300/30 text-rose-200 hover:bg-rose-500/20 transition-colors"
               >
                 <LogOut size={13} />
                 {tx(language, "Logout", "Keluar")}
@@ -513,6 +524,45 @@ export default function AdminPortalPage() {
       {/* Modals */}
       <ConfirmActionModal confirm={confirm} confirming={confirming} onCancel={() => !confirming && setConfirm(null)} onConfirm={handleConfirmAction} />
       <CompanyDetailModal company={detailOpen} data={detailData} loading={detailLoading} error={detailError} onClose={closeDetail} />
+    </div>
+  );
+}
+
+// ── Tirai pembuka portal ─────────────────────────────────────────────
+// Dua panel indigo terbelah dari tengah lalu meluncur keluar (kiri/kanan)
+// seperti tirai teater. Hanya dipasang saat datang dari gate; unmount
+// sendiri setelah selesai. Nonaktif bila reduced-motion.
+function CurtainReveal() {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setDone(true);
+      return;
+    }
+    const t = setTimeout(() => setDone(true), 850);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (done) return null;
+
+  const panel = "h-full w-1/2 bg-indigo-600 dark:bg-indigo-900";
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[100] flex" aria-hidden>
+      <motion.div
+        className={panel}
+        initial={{ x: 0 }}
+        animate={{ x: "-100%" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      />
+      <motion.div
+        className={panel}
+        initial={{ x: 0 }}
+        animate={{ x: "100%" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      />
     </div>
   );
 }
