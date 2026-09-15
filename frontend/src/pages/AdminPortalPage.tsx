@@ -1456,6 +1456,14 @@ const MONITOR_FEATURES = [
 ];
 const MONITOR_PAGE_SIZE = 20;
 
+// Ubah snake_case jadi label rapi: income_statement -> Income Statement.
+function humanizeFeature(value: string): string {
+  return value
+    .split("_")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
 function MonitoringView() {
   const { language } = useLanguage();
   const [range, setRange] = useState<MonitoringRange>("24h");
@@ -1591,7 +1599,7 @@ function MonitoringView() {
                     return (
                       <div key={f.feature}>
                         <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{f.feature}</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{humanizeFeature(f.feature)}</span>
                           <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums shrink-0">{f.count} · <span className="font-semibold text-gray-600 dark:text-gray-300">{pct}%</span></span>
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
@@ -1636,10 +1644,13 @@ function MonitoringView() {
             value={featFilter}
             onChange={setFeatFilter}
             accent="indigo"
-            minWidth={150}
+            minWidth={170}
+            labelRenderer={(v) =>
+              v ? humanizeFeature(v) : tx(language, "All features", "Semua fitur")
+            }
             options={[
               { value: "", label: tx(language, "All features", "Semua fitur") },
-              ...MONITOR_FEATURES.map((f) => ({ value: f, label: f })),
+              ...MONITOR_FEATURES.map((f) => ({ value: f, label: humanizeFeature(f) })),
             ]}
           />
           <HoverDropdown
@@ -1681,7 +1692,7 @@ function MonitoringView() {
                 featLogs.map((l) => (
                   <tr key={l.id} className="border-t border-gray-100 dark:border-white/[0.05] hover:bg-gray-50/60 dark:hover:bg-white/[0.02]">
                     <td className="px-5 py-2.5 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">{fmtTime(l.created_at)}</td>
-                    <td className="px-3 py-2.5 font-medium text-gray-700 dark:text-gray-200">{l.feature}</td>
+                    <td className="px-3 py-2.5 font-medium text-gray-700 dark:text-gray-200">{humanizeFeature(l.feature)}</td>
                     <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 truncate max-w-[180px]">{l.user_email || l.user_id.slice(0, 8)}</td>
                     <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 capitalize">{l.plan_at_access}</td>
                     <td className="px-3 py-2.5"><Badge label={l.granted ? tx(language, "Granted", "Diizinkan") : tx(language, "Denied", "Ditolak")} tone={l.granted ? "emerald" : "rose"} dot={false} /></td>
