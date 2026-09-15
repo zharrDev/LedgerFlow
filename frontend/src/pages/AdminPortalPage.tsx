@@ -53,6 +53,13 @@ import {
   checkSmtpHealth,
   checkWhatsAppHealth,
   checkDatabaseHealth,
+  fetchMonitoringSummary,
+  fetchMonitoringFeatureLogs,
+  fetchMonitoringRateLimitLogs,
+  type MonitoringRange,
+  type MonitoringSummary,
+  type MonitoringFeatureLog,
+  type MonitoringRateLimitLog,
   deleteAdminGateUser,
   deleteAdminGateCompany,
   setAdminGateUserStatus,
@@ -78,7 +85,7 @@ import Spinner from "../components/Spinner";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 
-type Tab = "overview" | "billing" | "log" | "users" | "companies" | "plans" | "health";
+type Tab = "overview" | "billing" | "log" | "monitoring" | "users" | "companies" | "plans" | "health";
 
 type ConfirmState = {
   type:
@@ -259,6 +266,7 @@ export default function AdminPortalPage() {
     { key: "overview", icon: <BarChart3 size={15} />, label: tx(language, "Overview", "Ringkasan"), chip: "from-indigo-500 to-violet-500 text-indigo-500" },
     { key: "billing", icon: <CreditCard size={15} />, label: tx(language, "Billing", "Penagihan"), count: subscriptions.length, chip: "from-emerald-500 to-teal-500 text-emerald-500" },
     { key: "log", icon: <FileText size={15} />, label: tx(language, "Audit Log", "Log Audit"), count: logs.length, chip: "from-amber-500 to-orange-500 text-amber-500" },
+    { key: "monitoring", icon: <Activity size={15} />, label: tx(language, "Monitoring", "Monitoring"), chip: "from-sky-500 to-indigo-500 text-sky-500" },
     { key: "users", icon: <UsersRound size={15} />, label: tx(language, "Users", "Pengguna"), count: users.length, chip: "from-cyan-500 to-sky-500 text-cyan-500" },
     { key: "companies", icon: <Landmark size={15} />, label: tx(language, "Companies", "Perusahaan"), count: companies.length, chip: "from-fuchsia-500 to-purple-500 text-fuchsia-500" },
     { key: "plans", icon: <Coins size={15} />, label: tx(language, "Plans", "Paket"), count: plans.length, chip: "from-rose-500 to-pink-500 text-rose-500" },
@@ -415,6 +423,8 @@ export default function AdminPortalPage() {
               <BillingView subscriptions={subscriptions} payments={payments} error={error} />
             ) : tab === "log" ? (
               <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
+            ) : tab === "monitoring" ? (
+              <MonitoringView />
             ) : tab === "users" ? (
               <UsersView users={users} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
             ) : tab === "companies" ? (
@@ -491,6 +501,8 @@ export default function AdminPortalPage() {
             <BillingView subscriptions={subscriptions} payments={payments} error={error} />
           ) : tab === "log" ? (
             <AuditLogView statusBadge={statusBadge} stats={stats} error={error} />
+          ) : tab === "monitoring" ? (
+            <MonitoringView />
           ) : tab === "users" ? (
             <UsersView users={users} error={error} onDelete={requestDeleteUser} onSuspend={requestSuspendUser} onUnsuspend={requestUnsuspendUser} />
           ) : tab === "companies" ? (
@@ -1309,6 +1321,301 @@ function SystemHealthView() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── Monitoring akses fitur premium ────────────────────────────────────
+// Self-fetching seperti SystemHealthView: ringkasan + 2 tabel log (fitur &
+// rate-limit) dengan filter dan pagination server-side.
+const MONITOR_FEATURES = [
+  "income_statement",
+  "balance_sheet",
+  "cash_flow",
+  "export_pdf",
+  "export_csv",
+  "unlimited_journals",
+  "multi_company",
+  "multi_user",
+  "api_access",
+];
+const MONITOR_PAGE_SIZE = 20;
+
+function MonitoringView() {
+  const { language } = useLanguage();
+  const [range, setRange] = useState<MonitoringRange>("24h");
+  const [summary, setSummary] = useState<MonitoringSummary | null>(null);
+  const [sumLoading, setSumLoading] = useState(true);
+  const [sumError, setSumError] = useState("");
+
+  const [featFilter, setFeatFilter] = useState("");
+  const [grantedFilter, setGrantedFilter] = useState<"" | "true" | "false">("");
+  const [featSearch, setFeatSearch] = useState("");
+  const [featPage, setFeatPage] = useState(1);
+  const [featLogs, setFeatLogs] = useState<MonitoringFeatureLog[]>([]);
+  const [featLoading, setFeatLoading] = useState(false);
+  const [featError, setFeatError] = useState("");
+
+  const [rlSearch, setRlSearch] = useState("");
+  const [rlPage, setRlPage] = useState(1);
+  const [rlLogs, setRlLogs] = useState<MonitoringRateLimitLog[]>([]);
+  const [rlLoading, setRlLoading] = useState(false);
+  const [rlError, setRlError] = useState("");
+
+  const loadSummary = useCallback(async (r: MonitoringRange) => {
+    setSumLoading(true);
+    setSumError("");
+    try {
+      setSummary(await fetchMonitoringSummary(r));
+    } catch (err) {
+      setSumError(getErrorMessage(err));
+    } finally {
+      setSumLoading(false);
+    }
+  }, []);
+
+  const loadFeatLogs = useCallback(async (page: number) => {
+    setFeatLoading(true);
+    setFeatError("");
+    try {
+      const res = await fetchMonitoringFeatureLogs({
+        feature: featFilter || undefined,
+        granted: grantedFilter === "" ? undefined : grantedFilter === "true",
+        search: featSearch.trim() || undefined,
+        limit: MONITOR_PAGE_SIZE,
+        page,
+      });
+      setFeatLogs(res.data);
+      setFeatPage(res.page);
+    } catch (err) {
+      setFeatError(getErrorMessage(err));
+    } finally {
+      setFeatLoading(false);
+    }
+  }, [featFilter, grantedFilter, featSearch]);
+
+  const loadRlLogs = useCallback(async (page: number) => {
+    setRlLoading(true);
+    setRlError("");
+    try {
+      const res = await fetchMonitoringRateLimitLogs({
+        search: rlSearch.trim() || undefined,
+        limit: MONITOR_PAGE_SIZE,
+        page,
+      });
+      setRlLogs(res.data);
+      setRlPage(res.page);
+    } catch (err) {
+      setRlError(getErrorMessage(err));
+    } finally {
+      setRlLoading(false);
+    }
+  }, [rlSearch]);
+
+  useEffect(() => { loadSummary(range); }, [range, loadSummary]);
+  useEffect(() => { loadFeatLogs(1); }, [loadFeatLogs]);
+  useEffect(() => { loadRlLogs(1); }, [loadRlLogs]);
+
+  const fmtTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(language === "id" ? "id-ID" : "en-US", {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const ranges: MonitoringRange[] = ["24h", "7d", "30d"];
+  const topFeatTotal = (summary?.top_features ?? []).reduce((s, f) => s + f.count, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tx(language, "Feature Monitoring", "Monitoring Fitur")}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{tx(language, "Premium feature access & rate-limit activity", "Aktivitas akses fitur premium & rate-limit")}</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-xl border border-gray-200 dark:border-white/10 p-1">
+          {ranges.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${range === r ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            >
+              {r === "24h" ? tx(language, "24h", "24 jam") : r === "7d" ? tx(language, "7d", "7 hari") : tx(language, "30d", "30 hari")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {sumLoading ? (
+        <div className="py-16 flex justify-center"><Spinner size={9} /></div>
+      ) : !summary ? (
+        <EmptyState error={sumError} text={tx(language, "No monitoring data yet.", "Belum ada data monitoring.")} />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard icon={<Activity size={15} />} label={tx(language, "Feature Access", "Akses Fitur")} value={summary.totals.access} />
+            <StatCard icon={<XCircle size={15} />} label={tx(language, "Denied", "Ditolak")} value={summary.totals.denied} accent="rose" />
+            <StatCard icon={<AlertTriangle size={15} />} label={tx(language, "Rate-limit Events", "Event Rate-limit")} value={summary.totals.rate_limit_events} accent="amber" />
+            <StatCard icon={<Ban size={15} />} label={tx(language, "Blocked IPs", "IP Diblokir")} value={summary.totals.blocked_ips} accent="emerald" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02]">
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "Top Features", "Fitur Teratas")}</span>
+              </div>
+              <div className="p-5 space-y-3.5">
+                {summary.top_features.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">{tx(language, "No access yet in this range.", "Belum ada akses pada rentang ini.")}</p>
+                ) : (
+                  summary.top_features.map((f) => {
+                    const pct = topFeatTotal > 0 ? Math.round((f.count / topFeatTotal) * 100) : 0;
+                    return (
+                      <div key={f.feature}>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{f.feature}</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums shrink-0">{f.count} · <span className="font-semibold text-gray-600 dark:text-gray-300">{pct}%</span></span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 transition-all duration-700" style={{ width: `${Math.max(pct, 3)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </Card>
+
+            <Card>
+              <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tx(language, "Most Active Users", "User Paling Aktif")}</span>
+                <span className="text-[11px] text-gray-400 dark:text-gray-500">{tx(language, "Peak hours", "Jam tersibuk")}: {(summary.peak_hours ?? []).map((p) => `${String(p.hour).padStart(2, "0")}:00`).join(", ") || "—"}</span>
+              </div>
+              <div className="p-5 space-y-3">
+                {(summary.top_users ?? []).length === 0 ? (
+                  <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">{tx(language, "No active users in this range.", "Belum ada user aktif pada rentang ini.")}</p>
+                ) : (
+                  summary.top_users.map((u) => (
+                    <div key={u.user_id} className="flex items-center justify-between gap-2 rounded-xl border border-gray-100 dark:border-white/[0.06] px-3.5 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.email || u.user_id.slice(0, 8)}</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{u.email ? u.user_id.slice(0, 8) : tx(language, "no email", "tanpa email")}</p>
+                      </div>
+                      <span className="text-sm font-bold text-indigo-600 dark:text-indigo-300 tabular-nums shrink-0">{u.count}×</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
+
+      <Card>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 mr-auto">{tx(language, "Feature Access Logs", "Log Akses Fitur")}</span>
+          <select value={featFilter} onChange={(e) => setFeatFilter(e.target.value)} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none">
+            <option value="">{tx(language, "All features", "Semua fitur")}</option>
+            {MONITOR_FEATURES.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <select value={grantedFilter} onChange={(e) => setGrantedFilter(e.target.value as "" | "true" | "false")} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none">
+            <option value="">{tx(language, "Granted + denied", "Diizinkan + ditolak")}</option>
+            <option value="true">{tx(language, "Granted", "Diizinkan")}</option>
+            <option value="false">{tx(language, "Denied", "Ditolak")}</option>
+          </select>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={featSearch} onChange={(e) => setFeatSearch(e.target.value)} placeholder={tx(language, "Search email / IP / feature…", "Cari email / IP / fitur…")} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none w-52" />
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[720px]">
+            <thead>
+              <tr className="text-gray-400 dark:text-gray-500 uppercase tracking-wider text-[10px]">
+                <th className="px-5 py-3 font-semibold">{tx(language, "Time", "Waktu")}</th>
+                <th className="px-3 py-3 font-semibold">{tx(language, "Feature", "Fitur")}</th>
+                <th className="px-3 py-3 font-semibold">{tx(language, "User", "User")}</th>
+                <th className="px-3 py-3 font-semibold">{tx(language, "Plan", "Paket")}</th>
+                <th className="px-3 py-3 font-semibold">{tx(language, "Status", "Status")}</th>
+                <th className="px-3 py-3 font-semibold">IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {featLoading ? (
+                <tr><td colSpan={6} className="px-5 py-10 text-center"><Spinner size={6} /></td></tr>
+              ) : featError ? (
+                <tr><td colSpan={6} className="px-5 py-10 text-center text-rose-500 text-sm">{featError}</td></tr>
+              ) : featLogs.length === 0 ? (
+                <tr><td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400 dark:text-gray-500">{tx(language, "No logs found.", "Tidak ada log.")}</td></tr>
+              ) : (
+                featLogs.map((l) => (
+                  <tr key={l.id} className="border-t border-gray-100 dark:border-white/[0.05] hover:bg-gray-50/60 dark:hover:bg-white/[0.02]">
+                    <td className="px-5 py-2.5 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">{fmtTime(l.created_at)}</td>
+                    <td className="px-3 py-2.5 font-medium text-gray-700 dark:text-gray-200">{l.feature}</td>
+                    <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 truncate max-w-[180px]">{l.user_email || l.user_id.slice(0, 8)}</td>
+                    <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 capitalize">{l.plan_at_access}</td>
+                    <td className="px-3 py-2.5"><Badge label={l.granted ? tx(language, "Granted", "Diizinkan") : tx(language, "Denied", "Ditolak")} tone={l.granted ? "emerald" : "rose"} dot={false} /></td>
+                    <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 tabular-nums">{l.ip_address}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-white/[0.06]">
+          <button onClick={() => loadFeatLogs(Math.max(featPage - 1, 1))} disabled={featPage <= 1 || featLoading} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-white/5">←</button>
+          <span className="text-xs text-gray-400 tabular-nums">{tx(language, "Page", "Halaman")} {featPage}</span>
+          <button onClick={() => loadFeatLogs(featPage + 1)} disabled={featLogs.length < MONITOR_PAGE_SIZE || featLoading} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-white/5">→</button>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02] flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 mr-auto">{tx(language, "Rate-limit Logs", "Log Rate-limit")}</span>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={rlSearch} onChange={(e) => setRlSearch(e.target.value)} placeholder={tx(language, "Search IP / path…", "Cari IP / path…")} className="text-xs rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-2.5 py-1.5 text-gray-700 dark:text-gray-200 outline-none w-52" />
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[640px]">
+            <thead>
+              <tr className="text-gray-400 dark:text-gray-500 uppercase tracking-wider text-[10px]">
+                <th className="px-5 py-3 font-semibold">{tx(language, "Time", "Waktu")}</th>
+                <th className="px-3 py-3 font-semibold">IP</th>
+                <th className="px-3 py-3 font-semibold">{tx(language, "Path", "Path")}</th>
+                <th className="px-3 py-3 font-semibold">{tx(language, "Reason", "Alasan")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rlLoading ? (
+                <tr><td colSpan={4} className="px-5 py-10 text-center"><Spinner size={6} /></td></tr>
+              ) : rlError ? (
+                <tr><td colSpan={4} className="px-5 py-10 text-center text-rose-500 text-sm">{rlError}</td></tr>
+              ) : rlLogs.length === 0 ? (
+                <tr><td colSpan={4} className="px-5 py-10 text-center text-sm text-gray-400 dark:text-gray-500">{tx(language, "No rate-limit events.", "Tidak ada event rate-limit.")}</td></tr>
+              ) : (
+                rlLogs.map((l) => (
+                  <tr key={l.id} className="border-t border-gray-100 dark:border-white/[0.05] hover:bg-gray-50/60 dark:hover:bg-white/[0.02]">
+                    <td className="px-5 py-2.5 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">{fmtTime(l.created_at)}</td>
+                    <td className="px-3 py-2.5 text-gray-700 dark:text-gray-200 tabular-nums">{l.ip_address}</td>
+                    <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 truncate max-w-[260px]">{l.request_path}</td>
+                    <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400">{l.reason}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-white/[0.06]">
+          <button onClick={() => loadRlLogs(Math.max(rlPage - 1, 1))} disabled={rlPage <= 1 || rlLoading} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-white/5">←</button>
+          <span className="text-xs text-gray-400 tabular-nums">{tx(language, "Page", "Halaman")} {rlPage}</span>
+          <button onClick={() => loadRlLogs(rlPage + 1)} disabled={rlLogs.length < MONITOR_PAGE_SIZE || rlLoading} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-white/5">→</button>
+        </div>
+      </Card>
     </div>
   );
 }
