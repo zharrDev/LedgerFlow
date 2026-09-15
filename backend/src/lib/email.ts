@@ -356,46 +356,4 @@ export async function sendMemberLoginNotification(
   }
 }
 
-export async function sendAccountCreatedEmail(
-  to: string,
-  name: string,
-  companyName: string,
-  resetLink: string,
-) {
-  try {
-    const html = baseTemplate(`
-      <h3 style="color: #1f2937; margin: 0 0 8px;">Akun Anda Telah Dibuat 🎉</h3>
-      <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Halo <strong>${name}</strong>,</p>
-      <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Pemilik perusahaan <strong>${companyName}</strong> telah membuatkan akun LedgerFlow untuk Anda. Anda diundang sebagai anggota tim.</p>
-      <table style="width: 100%; border-collapse: collapse; background: #f9fafb; border-radius: 12px; margin: 12px 0;">
-        ${infoRow("Email", to)}
-        ${infoRow("Perusahaan", companyName)}
-      </table>
-      <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Klik tombol di bawah untuk membuat kata sandi sendiri:</p>
-      <div style="text-align: center; margin: 28px 0;">
-        <a href="${resetLink}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">Atur Kata Sandi</a>
-      </div>
-      <p style="color: #6b7280; font-size: 13px; line-height: 1.5;">Link ini berlaku selama 1 jam. Setelah mengatur kata sandi, Anda bisa login dengan email di atas.</p>
-    `);
-    await sendEmail(to, "Akun LedgerFlow Anda - Atur Kata Sandi", html);
-  } catch (err) {
-    console.error("sendAccountCreatedEmail error:", err);
-  }
-}
 
-export async function sendResetPasswordEmail(to: string, name: string, resetLink: string) {
-  try {
-    const html = baseTemplate(`
-      <h3 style="color: #1f2937; margin: 0 0 8px;">Reset Password</h3>
-      <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Halo <strong>${name}</strong>,</p>
-      <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">Kami menerima permintaan reset password untuk akun LedgerFlow Anda. Klik tombol di bawah untuk membuat password baru:</p>
-      <div style="text-align: center; margin: 28px 0;">
-        <a href="${resetLink}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">Reset Password</a>
-      </div>
-      <p style="color: #6b7280; font-size: 13px; line-height: 1.5;">Link ini berlaku selama <strong>1 jam</strong>. Jika Anda tidak meminta reset password, abaikan email ini.</p>
-    `);
-    await sendEmail(to, "Reset Password - LedgerFlow", html);
-  } catch (err) {
-    console.error("sendResetPasswordEmail error:", err);
-  }
-}
