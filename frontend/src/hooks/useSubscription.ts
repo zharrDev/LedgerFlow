@@ -113,7 +113,11 @@ export function useSubscription() {
   const canAccess = useCallback(
     (feature: string): boolean => {
       if (!isActive) return false;
-      if (isTrial) return true;
+      // Trial grants access only to core features: income_statement, balance_sheet, cash_flow, export_pdf
+      const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf"];
+      if (isTrial && trialCoreFeatures.includes(feature)) {
+        return true;
+      }
 
       const allowedPlans = FEATURE_PLAN[feature];
       if (!allowedPlans) return true;

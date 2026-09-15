@@ -1084,7 +1084,10 @@ payments.get("/check-access", authMiddleware, async (c) => {
   if (feature && featureAccess[feature]) {
     // Trial aktif = full akses semua fitur (bisa nyobain semua plan berbayar)
     // Karena itu kalau user lagi trial, fitur apapun boleh diakses.
-    const trialGrantsAccess = isTrialActive;
+    // Trial grants access to core features only: income_statement, balance_sheet, cash_flow, export_pdf
+    // Ini adalah fitur 4 inti yang bisa dicoba pengguna trial tanpa biaya
+    const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf"];
+    const trialGrantsAccess = isTrialActive && trialCoreFeatures.includes(feature);
     // Cek apakah plan user termasuk dalam daftar plan yang bisa akses fitur ini
     const hasAccess = trialGrantsAccess || featureAccess[feature].includes(planName);
 
