@@ -9,6 +9,13 @@
 import type { Context, Next } from "hono";
 import { supabase } from "../lib/supabase.js";
 
+declare module "hono" {
+  interface ContextVariableMap {
+    rateLimited?: boolean;
+    rateLimitResetMs?: number;
+  }
+}
+
 // Rate limit store: map user_id -> array of timestamps
 const rateLimitStore = new Map<string, number[]>();
 
@@ -88,17 +95,22 @@ export const premiumFeatureRateLimit = async (c: Context, next: Next) => {
     c.set("rateLimited", true);
     c.set("rateLimitResetMs", result.resetInMs);
     
-    // Logging untuk audit
-    await supabase.from("rate_limit_logs").insert({
-      user_id: userId,
-      reason: "premium_feature_access",
-      ip_address: getClientIp(c),
-      user_agent: c.req.header("user-agent") || "unknown",
-      request_path: path,
-      method: c.req.method,
-      timestamp: new Date().toISOString(),
-      reset_at: new Date(Date.now() + (result.resetInMs || 0)).toISOString(),
-    });
+    // Logging untuk audit (best-effort; kegagalan log tidak boleh
+    // mengubah status 429 yang harus diterima klien).
+    try {
+      await supabase.from("rate_limit_logs").insert({
+        user_id: userId,
+        reason: "premium_feature_access",
+        ip_address: getClientIp(c),
+        user_agent: c.req.header("user-agent") || "unknown",
+        request_path: path,
+        method: c.req.method,
+        created_at: new Date().toISOString(),
+        reset_at: new Date(Date.now() + (result.resetInMs || 0)).toISOString(),
+      });
+    } catch (logError) {
+      console.error("[RateLimit] Gagal menyimpan log:", logError);
+    }
     
     return c.json(
       {
