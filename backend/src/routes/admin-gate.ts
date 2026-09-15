@@ -171,6 +171,194 @@ adminGate.get("/logs", requireAdminGate, async (c) => {
   return c.json(data ?? []);
 });
 
+// ── Monitoring akses fitur premium (dashboard admin) ────────────────────
+// Read-only, dibatasi agar ringan. Semua endpoint di bawah ini wajib token
+// admin-gate (bukan token user biasa).
+//   GET /api/admin-gate/monitoring/summary?range=24h|7d|30d
+//   GET /api/admin-gate/monitoring/feature-logs?feature=&granted=&search=&limit=&page=
+//   GET /api/admin-gate/monitoring/rate-limit-logs?search=&limit=&page=
+
+function parseMonitorRange(raw: string | undefined): { range: string; since: string } {
+  const v = (raw ?? "").trim();
+  if (v === "7d") return { range: "7d", since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() };
+  if (v === "30d") return { range: "30d", since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() };
+  return { range: "24h", since: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() };
+}
+
+function parseMonitorLimit(raw: string | undefined, def = 50): number {
+  const n = Number.parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n)) return def;
+  return Math.min(Math.max(n, 1), 200);
+}
+
+function parseMonitorPage(raw: string | undefined): number {
+  const n = Number.parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(n, 1);
+}
+
+function parseMonitorGranted(raw: string | undefined): boolean | undefined {
+  const v = (raw ?? "").trim().toLowerCase();
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return undefined;
+}
+
+// GET /api/admin-gate/monitoring/summary — ringkasan akses fitur premium.
+adminGate.get("/monitoring/summary", requireAdminGate, async (c) => {
+  try {
+    const { range, since } = parseMonitorRange(c.req.query("range"));
+
+    const [totalRes, deniedRes, rowsRes, rlTotalRes, rlRowsRes] = await Promise.all([
+      supabase
+        .from("feature_access_logs")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", since),
+      supabase
+        .from("feature_access_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("granted", false)
+        .gte("created_at", since),
+      supabase
+        .from("feature_access_logs")
+        .select("feature,user_id,user_email,granted,created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("rate_limit_logs")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", since),
+      supabase
+        .from("rate_limit_logs")
+        .select("ip_address")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
+
+    if (totalRes.error || deniedRes.error || rowsRes.error || rlTotalRes.error || rlRowsRes.error) {
+      console.error("[admin-gate] monitoring summary error");
+      return c.json({ error: "Gagal memuat monitoring" }, 500);
+    }
+
+    const rows = (rowsRes.data ?? []) as Array<{
+      feature: string;
+      user_id: string;
+      user_email?: string | null;
+      granted: boolean;
+      created_at: string;
+    }>;
+
+    const byFeature = new Map<string, number>();
+    const byUser = new Map<string, { count: number; email?: string | null }>();
+    const byHour = new Map<number, number>();
+    for (const r of rows) {
+      byFeature.set(r.feature, (byFeature.get(r.feature) ?? 0) + 1);
+      const u = byUser.get(r.user_id) ?? { count: 0, email: r.user_email ?? null };
+      u.count += 1;
+      if (!u.email && r.user_email) u.email = r.user_email;
+      byUser.set(r.user_id, u);
+      const h = new Date(r.created_at).getHours();
+      if (Number.isFinite(h)) byHour.set(h, (byHour.get(h) ?? 0) + 1);
+    }
+
+    const blockedIps = new Set(
+      ((rlRowsRes.data ?? []) as Array<{ ip_address: string }>).map((r) => r.ip_address),
+    );
+
+    return c.json({
+      range,
+      since,
+      totals: {
+        access: totalRes.count ?? 0,
+        denied: deniedRes.count ?? 0,
+        rate_limit_events: rlTotalRes.count ?? 0,
+        blocked_ips: blockedIps.size,
+      },
+      top_features: [...byFeature.entries()]
+        .map(([feature, count]) => ({ feature, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+      top_users: [...byUser.entries()]
+        .map(([user_id, v]) => ({ user_id, email: v.email ?? null, count: v.count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+      peak_hours: [...byHour.entries()]
+        .map(([hour, count]) => ({ hour, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+    });
+  } catch (err) {
+    console.error("[admin-gate] monitoring summary error:", err);
+    return c.json({ error: "Gagal memuat monitoring" }, 500);
+  }
+});
+
+// GET /api/admin-gate/monitoring/feature-logs — tabel log akses fitur.
+adminGate.get("/monitoring/feature-logs", requireAdminGate, async (c) => {
+  try {
+    const feature = c.req.query("feature")?.trim();
+    const granted = parseMonitorGranted(c.req.query("granted"));
+    const search = c.req.query("search")?.trim();
+    const limit = parseMonitorLimit(c.req.query("limit"));
+    const page = parseMonitorPage(c.req.query("page"));
+
+    let query = supabase
+      .from("feature_access_logs")
+      .select(
+        "id,user_id,user_email,feature,plan_at_access,granted,ip_address,request_path,method,created_at",
+      );
+    if (feature) query = query.eq("feature", feature);
+    if (granted !== undefined) query = query.eq("granted", granted);
+    if (search) {
+      query = query.or(
+        `user_email.ilike.%${search}%,ip_address.ilike.%${search}%,feature.ilike.%${search}%`,
+      );
+    }
+
+    const { data, error } = await query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+    if (error) {
+      console.error("[admin-gate] monitoring feature-logs error:", error.message);
+      return c.json({ error: "Gagal memuat log monitoring" }, 500);
+    }
+    return c.json({ data: data ?? [], page, limit });
+  } catch (err) {
+    console.error("[admin-gate] monitoring feature-logs error:", err);
+    return c.json({ error: "Gagal memuat log monitoring" }, 500);
+  }
+});
+
+// GET /api/admin-gate/monitoring/rate-limit-logs — tabel log rate-limit.
+adminGate.get("/monitoring/rate-limit-logs", requireAdminGate, async (c) => {
+  try {
+    const search = c.req.query("search")?.trim();
+    const limit = parseMonitorLimit(c.req.query("limit"));
+    const page = parseMonitorPage(c.req.query("page"));
+
+    let query = supabase
+      .from("rate_limit_logs")
+      .select("id,user_id,reason,ip_address,request_path,method,created_at,reset_at");
+    if (search) {
+      query = query.or(`ip_address.ilike.%${search}%,request_path.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query
+      .order("created_at", { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+    if (error) {
+      console.error("[admin-gate] monitoring rate-limit-logs error:", error.message);
+      return c.json({ error: "Gagal memuat log monitoring" }, 500);
+    }
+    return c.json({ data: data ?? [], page, limit });
+  } catch (err) {
+    console.error("[admin-gate] monitoring rate-limit-logs error:", err);
+    return c.json({ error: "Gagal memuat log monitoring" }, 500);
+  }
+});
+
 // ────────────────────────────────────────────────────────────────────────
 // Pandangan global untuk Admin (pemilik aplikasi).
 // Model role: per company hanya ada OWNER (akses penuh) & AKUNTAN
