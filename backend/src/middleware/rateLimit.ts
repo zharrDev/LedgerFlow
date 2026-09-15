@@ -7,7 +7,7 @@
 // Admin routes: rate limit terpisah (lebih ketat, 10 request per menit)
 
 import type { Context, Next } from "hono";
-import { supabase } from "./supabase.js";
+import { supabase } from "../lib/supabase.js";
 
 // Rate limit store: map user_id -> array of timestamps
 const rateLimitStore = new Map<string, number[]>();
@@ -34,12 +34,14 @@ function getClientIp(c: Context): string {
   );
 }
 
-// Helper: bersihkan timestamp yang sudah expiredunction cleanExpiredTimestamps(timestamps: number[], windowMs: number): number[] {
+// Helper: bersihkan timestamp yang sudah expired
+function cleanExpiredTimestamps(timestamps: number[], windowMs: number): number[] {
   const now = Date.now();
   return timestamps.filter((timestamp) => now - timestamp < windowMs);
 }
 
-// Helper: cek apakah user exceed rate limitunction isRateLimited(
+// Helper: cek apakah user exceed rate limit
+function isRateLimited(
   userId: string,
   limit: number,
   windowMs: number
@@ -72,7 +74,7 @@ export const premiumFeatureRateLimit = async (c: Context, next: Next) => {
   }
   
   // Cek apakah endpoint adalah admin (berdasarkan path)
-  const path = c.req.path();
+  const path = c.req.path;
   const isAdminRoute = path.startsWith("/api/admin") || path.startsWith("/api/auth/admin");
   
   const rateLimitConfig = isAdminRoute
@@ -93,7 +95,7 @@ export const premiumFeatureRateLimit = async (c: Context, next: Next) => {
       ip_address: getClientIp(c),
       user_agent: c.req.header("user-agent") || "unknown",
       request_path: path,
-      method: c.req.method(),
+      method: c.req.method,
       timestamp: new Date().toISOString(),
       reset_at: new Date(Date.now() + (result.resetInMs || 0)).toISOString(),
     });
@@ -138,7 +140,7 @@ export const premiumFeatureRateLimitWithAuth = async (c: Context, next: Next) =>
 };
 
 // Helper: cek apakah user boleh mengakses fitur premium berdasarkan rate limit
-declare function checkRateLimit(userId: string): boolean {
+export function checkRateLimit(userId: string): boolean {
   const isLimited = isRateLimited(userId, DEFAULT_RATE_LIMIT, DEFAULT_WINDOW_MS);
   return !isLimited.limited;
 }
@@ -156,10 +158,13 @@ export async function getRateLimitStats() {
     stats.averageRequestsPerUser = stats.totalRequests / stats.totalUsers;
     
     const userCounts = Array.from(rateLimitStore.entries())
-      .map(([userId, timestamps]) => ({ userId, count: timestamps.length }))
-      .sort((a, b) => b.count - a.count)
+      .map(([userId, timestamps]) => ({
+        userId,
+        requestCount: timestamps.length,
+      }))
+      .sort((a, b) => b.requestCount - a.requestCount)
       .slice(0, 10);
-    
+
     stats.topUsers = userCounts;
   }
   
