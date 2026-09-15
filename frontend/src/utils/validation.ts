@@ -20,19 +20,9 @@ export function validateName(value: string): string {
   return "";
 }
 
-export function validateCompanyName(value: string): string {
-  if (!value.trim()) return "Nama perusahaan wajib diisi.";
-  if (value.trim().length < 2) return "Nama perusahaan minimal 2 karakter.";
-  return "";
-}
-
 export function validateConfirmPassword(value: string, password: string): string {
   if (!value) return "Konfirmasi password wajib diisi.";
   if (value !== password) return "Konfirmasi password tidak cocok.";
   return "";
 }
 
-// Return error pertama yang tidak kosong, atau "" jika semua valid
-export function firstError(errors: string[]): string {
-  return errors.find((e) => e !== "") ?? "";
-}

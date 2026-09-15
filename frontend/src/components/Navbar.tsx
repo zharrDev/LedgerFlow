@@ -191,7 +191,7 @@ const Navbar = () => {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div id="mobile-navigation" initial={{ opacity: 0, y: -12, height: 0 }} animate={{ opacity: 1, y: 0, height: "auto" }} exit={{ opacity: 0, y: -12, height: 0 }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }} className="lg:hidden border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-darkCard/95 backdrop-blur-2xl overflow-hidden rounded-b-2xl shadow-2xl">
-            <nav className="px-3 py-3 max-h-[calc(100vh-5.5rem)] overflow-y-auto scrollbar-thin" aria-label="Mobile navigation">
+            <nav className="px-3 py-3 max-h-[calc(100vh-5.5rem)] supports-[height:100dvh]:max-h-[calc(100dvh-5.5rem)] overflow-y-auto scrollbar-thin" aria-label="Mobile navigation">
               <div className="space-y-2">
                 {menuItems.map((item) => {
                   const isOpen = mobileSection === item.key;
