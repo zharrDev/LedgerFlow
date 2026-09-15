@@ -17,6 +17,8 @@ import { Hono } from "hono"; // Framework web ringan buat bikin API routes
 import { supabase } from "../lib/supabase.js"; // Client Supabase buat akses database
 import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js"; // Verifikasi JWT -> c.get("user")
+import { featureAccessLogger } from "../middleware/accessLogger.js";
+import { premiumFeatureRateLimit, premiumFeatureRateLimitWithAuth } from "../middleware/rateLimit.js";
 import {
   snap, // Midtrans Snap API — buat bikin transaksi payment popup
   coreApi, // Midtrans Core API — buat approve/cancel transaksi langsung
@@ -1090,6 +1092,9 @@ payments.get("/check-access", authMiddleware, async (c) => {
     const trialGrantsAccess = isTrialActive && trialCoreFeatures.includes(feature);
     // Cek apakah plan user termasuk dalam daftar plan yang bisa akses fitur ini
     const hasAccess = trialGrantsAccess || featureAccess[feature].includes(planName);
+
+    // Set hasGrant untuk middleware logging
+    c.set("featureGranted", hasAccess);
 
     return c.json({
       has_access: hasAccess, // Apakah bisa akses
