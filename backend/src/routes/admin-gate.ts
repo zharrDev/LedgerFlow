@@ -975,74 +975,125 @@ adminGate.delete("/plans/:id", requireAdminGate, async (c) => {
 // ── System Health Monitor ─────────────────────────────────────────────
 // Endpoint untuk memeriksa status komponen sistem (SMTP, WA, Database).
 // Menggunakan probe sederhana — semua memakai requireAdminGate.
+//
+// Performa: hasil probe di-cache 20 detik (tab Health terbuka instan);
+// ?fresh=1 memaksa probe ulang (dipakai tombol "Test Ulang"). Semua probe
+// punya timeout eksplisit agar admin tidak menunggu puluhan detik saat
+// layanan tujuan down / tidak terjangkau.
+
+// Cache hasil probe (in-memory per instance).
+const HEALTH_CACHE_TTL_MS = 20 * 1000;
+const healthCache = new Map<string, { at: number; body: any }>();
+
+async function cachedHealth(key: string, fresh: boolean, probe: () => Promise<any>) {
+  const hit = healthCache.get(key);
+  if (!fresh && hit && Date.now() - hit.at < HEALTH_CACHE_TTL_MS) {
+    return { ...hit.body, cached: true };
+  }
+  const body = await probe();
+  healthCache.set(key, { at: Date.now(), body });
+  return body;
+}
 
 // GET /api/admin-gate/health/smtp — cek konfigurasi SMTP (ringan, tanpa kirim email)
 adminGate.get("/health/smtp", requireAdminGate, async (c) => {
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = Number(process.env.SMTP_PORT) || 587;
-  const secure = process.env.SMTP_SECURE === "true";
-  if (!user || !pass) {
-    return c.json({ ok: false, status: "not_configured", message: "SMTP_USER / SMTP_PASS belum di-set" });
-  }
-  try {
-    const { createTransport } = await import("nodemailer");
-    const t = createTransport({ host, port, secure, auth: { user, pass } });
-    await t.verify();
-    return c.json({ ok: true, status: "connected", message: `SMTP OK — ${host}:${port}` });
-  } catch (err: any) {
-    return c.json({ ok: false, status: "error", message: err?.message || "SMTP koneksi gagal" });
-  }
+  const fresh = c.req.query("fresh") === "1";
+  return c.json(
+    await cachedHealth("smtp", fresh, async () => {
+      const user = process.env.SMTP_USER;
+      const pass = process.env.SMTP_PASS;
+      const host = process.env.SMTP_HOST || "smtp.gmail.com";
+      const port = Number(process.env.SMTP_PORT) || 587;
+      const secure = process.env.SMTP_SECURE === "true";
+      if (!user || !pass) {
+        return { ok: false, status: "not_configured", message: "SMTP_USER / SMTP_PASS belum di-set" };
+      }
+      const start = Date.now();
+      try {
+        const { createTransport } = await import("nodemailer");
+        // Timeout eksplisit: default nodemailer bisa menggantung puluhan
+        // detik bila server SMTP tidak terjangkau.
+        const t = createTransport({
+          host,
+          port,
+          secure,
+          auth: { user, pass },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 8000,
+        });
+        await t.verify();
+        const latencyMs = Date.now() - start;
+        return { ok: true, status: "connected", message: `SMTP OK — ${host}:${port} (${latencyMs}ms)`, latency_ms: latencyMs };
+      } catch (err: any) {
+        return { ok: false, status: "error", message: err?.message || "SMTP koneksi gagal", latency_ms: Date.now() - start };
+      }
+    }),
+  );
 });
 
 // GET /api/admin-gate/health/whatsapp — tes koneksi WhatsApp/Fonnte
 // Docs: https://docs.fonnte.com/api-device/ — POST https://api.fonnte.com/device
 adminGate.get("/health/whatsapp", requireAdminGate, async (c) => {
-  const token = process.env.FONNTE_TOKEN;
-  if (!token) {
-    return c.json({ ok: false, status: "not_configured", message: "FONNTE_TOKEN belum di-set di environment" });
-  }
-  try {
-    const res = await fetch("https://api.fonnte.com/device", {
-      method: "POST",
-      headers: { Authorization: token.trim() },
-      signal: AbortSignal.timeout(10000),
-    });
-    // Baca text dulu, lalu JSON.parse — Fonnte bisa return plain-text error
-    const text = await res.text();
-    let data: any;
-    try { data = JSON.parse(text); } catch {
-      return c.json({ ok: false, message: "Fonnte response bukan JSON: " + text.slice(0, 200) });
-    }
-    if (data.status === false) {
-      return c.json({ ok: false, message: data.reason || "Token Fonnte tidak valid", details: { name: data.name, package: data.package } });
-    }
-    // status === true → token valid; cek device_status untuk konektivitas
-    const connected = data.device_status === "connect";
-    return c.json({
-      ok: connected,
-      message: connected ? "WhatsApp terhubung" : "Device WhatsApp terputus — scan ulang QR di dashboard Fonnte",
-      details: { name: data.name, package: data.package, quota: data.quota, expired: data.expired, messages: data.messages, device_status: data.device_status },
-    });
-  } catch (err: any) {
-    return c.json({ ok: false, message: err?.message || "WhatsApp probe gagal" });
-  }
+  const fresh = c.req.query("fresh") === "1";
+  return c.json(
+    await cachedHealth("whatsapp", fresh, async () => {
+      const token = process.env.FONNTE_TOKEN;
+      if (!token) {
+        return { ok: false, status: "not_configured", message: "FONNTE_TOKEN belum di-set di environment" };
+      }
+      const start = Date.now();
+      try {
+        const res = await fetch("https://api.fonnte.com/device", {
+          method: "POST",
+          headers: { Authorization: token.trim() },
+          signal: AbortSignal.timeout(6000),
+        });
+        // Baca text dulu, lalu JSON.parse — Fonnte bisa return plain-text error
+        const text = await res.text();
+        let data: any;
+        try { data = JSON.parse(text); } catch {
+          return { ok: false, message: "Fonnte response bukan JSON: " + text.slice(0, 200) };
+        }
+        if (data.status === false) {
+          return { ok: false, message: data.reason || "Token Fonnte tidak valid", details: { name: data.name, package: data.package } };
+        }
+        // status === true → token valid; cek device_status untuk konektivitas
+        const connected = data.device_status === "connect";
+        return {
+          ok: connected,
+          message: connected ? "WhatsApp terhubung" : "Device WhatsApp terputus — scan ulang QR di dashboard Fonnte",
+          details: { name: data.name, package: data.package, quota: data.quota, expired: data.expired, messages: data.messages, device_status: data.device_status },
+          latency_ms: Date.now() - start,
+        };
+      } catch (err: any) {
+        return { ok: false, message: err?.message || "WhatsApp probe gagal" };
+      }
+    }),
+  );
 });
 
 // GET /api/admin-gate/health/database — tes koneksi database Supabase
 adminGate.get("/health/database", requireAdminGate, async (c) => {
-  try {
-    const start = Date.now();
-    const { error } = await supabase.from("plans").select("id", { count: "exact", head: true });
-    const latencyMs = Date.now() - start;
-    if (error) {
-      return c.json({ ok: false, message: "Database error: " + error.message, latency_ms: latencyMs });
-    }
-    return c.json({ ok: true, message: `Database OK (${latencyMs}ms)`, latency_ms: latencyMs });
-  } catch (err: any) {
-    return c.json({ ok: false, message: err?.message || "Database probe gagal" });
-  }
+  const fresh = c.req.query("fresh") === "1";
+  return c.json(
+    await cachedHealth("database", fresh, async () => {
+      try {
+        const start = Date.now();
+        const { error } = await supabase
+          .from("plans")
+          .select("id", { count: "exact", head: true })
+          .abortSignal(AbortSignal.timeout(8000));
+        const latencyMs = Date.now() - start;
+        if (error) {
+          return { ok: false, message: "Database error: " + error.message, latency_ms: latencyMs };
+        }
+        return { ok: true, message: `Database OK (${latencyMs}ms)`, latency_ms: latencyMs };
+      } catch (err: any) {
+        return { ok: false, message: err?.message || "Database probe gagal" };
+      }
+    }),
+  );
 });
 
 export default adminGate;
