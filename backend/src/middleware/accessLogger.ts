@@ -35,8 +35,8 @@ export const featureAccessLogger = async (c: Context, next: Next) => {
   
   // Dapatkan fitur yang diakses dari query parameter / request body
   const feature = c.req.query("feature");
-  const path = c.req.path();
-  const method = c.req.method();
+  const path = c.req.path;
+  const method = c.req.method;
   
   // Ambil IP address dan user-agent untuk audit
   const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -113,8 +113,8 @@ export async function logFeatureAccess(
     granted,
     ip_address: resolvedIp,
     user_agent: resolvedUA,
-    request_path: c.req.path(),
-    method: c.req.method(),
+    request_path: c.req.path,
+    method: c.req.method,
     user_email: undefined, // Bisa diresolusi jika diperlukan
     company_id: c.get("user")?.company_id,
     timestamp: new Date().toISOString(),
@@ -158,8 +158,8 @@ export const paymentAccessLogger = async (c: Context, next: Next) => {
       ip_address: c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
                   c.req.header("x-real-ip") || "Tidak diketahui",
       user_agent: c.req.header("user-agent") || "Tidak diketahui",
-      request_path: c.req.path(),
-      method: c.req.method(),
+      request_path: c.req.path,
+      method: c.req.method,
       user_email: undefined,
       company_id: user.company_id,
       timestamp: new Date().toISOString(),
@@ -195,8 +195,8 @@ export const adminAuditLogger = async (c: Context, next: Next) => {
     ip_address: c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
                 c.req.header("x-real-ip") || "Tidak diketahui",
     user_agent: c.req.header("user-agent") || "Tidak diketahui",
-    request_path: c.req.path(),
-    method: c.req.method(),
+    request_path: c.req.path,
+    method: c.req.method,
     user_email: undefined,
     company_id: user.company_id,
     timestamp: new Date().toISOString(),
@@ -206,8 +206,8 @@ export const adminAuditLogger = async (c: Context, next: Next) => {
     await supabase.from("admin_access_logs").insert(logData);
     console.log("[AdminAuditLogger] Admin access logged:", {
       userId: user.sub,
-      path: c.req.path(),
-      method: c.req.method(),
+      path: c.req.path,
+      method: c.req.method,
     });
   } catch (logError) {
     console.error("[AdminAuditLogger] Gagal menyimpan log admin:", logError);
