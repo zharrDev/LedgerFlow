@@ -414,10 +414,11 @@ export type HealthStatus = {
   details?: any;
 };
 
-async function safeHealthCheck(path: string): Promise<HealthStatus> {
+async function safeHealthCheck(path: string, fresh = false): Promise<HealthStatus> {
   try {
     const res = await api.get(path, {
       headers: authHeaders(), skipErrorToast: true,
+      params: fresh ? { fresh: "1" } : undefined,
     });
     return res.data as HealthStatus;
   } catch (err: any) {
@@ -426,14 +427,14 @@ async function safeHealthCheck(path: string): Promise<HealthStatus> {
   }
 }
 
-export function checkSmtpHealth(): Promise<HealthStatus> {
-  return safeHealthCheck("/api/admin-gate/health/smtp");
+export function checkSmtpHealth(fresh = false): Promise<HealthStatus> {
+  return safeHealthCheck("/api/admin-gate/health/smtp", fresh);
 }
 
-export function checkWhatsAppHealth(): Promise<HealthStatus> {
-  return safeHealthCheck("/api/admin-gate/health/whatsapp");
+export function checkWhatsAppHealth(fresh = false): Promise<HealthStatus> {
+  return safeHealthCheck("/api/admin-gate/health/whatsapp", fresh);
 }
 
-export function checkDatabaseHealth(): Promise<HealthStatus> {
-  return safeHealthCheck("/api/admin-gate/health/database");
+export function checkDatabaseHealth(fresh = false): Promise<HealthStatus> {
+  return safeHealthCheck("/api/admin-gate/health/database", fresh);
 }

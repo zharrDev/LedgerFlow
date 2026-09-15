@@ -84,6 +84,7 @@ import { getErrorMessage } from "../lib/errorMessage";
 import { TablePagination } from "../components/TablePagination";
 import { HoverDropdown } from "../components/HoverDropdown";
 import Spinner from "../components/Spinner";
+import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 
@@ -588,6 +589,9 @@ export default function AdminPortalPage() {
           )}
         </main>
       </div>
+
+      {/* Toggle tema melayang — khas portal admin (bukan di navbar) */}
+      <ThemeSwitcher variant="floating" />
 
       {/* Modals */}
       <ConfirmActionModal confirm={confirm} confirming={confirming} onCancel={() => !confirming && setConfirm(null)} onConfirm={handleConfirmAction} />
@@ -1386,9 +1390,9 @@ function SystemHealthView() {
   };
 
   const items: { key: string; label: string; icon: React.ReactNode; status: HealthStatus | null; loading: boolean; check: () => void }[] = [
-    { key: "smtp", label: "SMTP (Email)", icon: <Mail size={18} />, status: smtp, loading: !!loading.smtp, check: () => checkOne("smtp", checkSmtpHealth, setSmtp) },
-    { key: "whatsapp", label: "WhatsApp / Fonnte", icon: <MessageSquare size={18} />, status: whatsapp, loading: !!loading.whatsapp, check: () => checkOne("whatsapp", checkWhatsAppHealth, setWhatsapp) },
-    { key: "database", label: "Database (Supabase)", icon: <Database size={18} />, status: database, loading: !!loading.database, check: () => checkOne("database", checkDatabaseHealth, setDatabase) },
+    { key: "smtp", label: "SMTP (Email)", icon: <Mail size={18} />, status: smtp, loading: !!loading.smtp, check: () => checkOne("smtp", () => checkSmtpHealth(true), setSmtp) },
+    { key: "whatsapp", label: "WhatsApp / Fonnte", icon: <MessageSquare size={18} />, status: whatsapp, loading: !!loading.whatsapp, check: () => checkOne("whatsapp", () => checkWhatsAppHealth(true), setWhatsapp) },
+    { key: "database", label: "Database (Supabase)", icon: <Database size={18} />, status: database, loading: !!loading.database, check: () => checkOne("database", () => checkDatabaseHealth(true), setDatabase) },
   ];
 
   return (
