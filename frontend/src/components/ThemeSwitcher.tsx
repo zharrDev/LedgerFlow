@@ -79,7 +79,7 @@ export default function ThemeSwitcher({ variant = "default" }: { variant?: "defa
       title={theme === "light" ? "Mode gelap" : "Mode terang"}
       className={
         floating
-          ? "fixed bottom-6 right-6 z-[90] w-11 h-11 flex items-center justify-center rounded-full bg-indigo-600 dark:bg-indigo-500 text-white shadow-xl shadow-indigo-950/30 hover:scale-105 active:scale-95 transition-transform duration-200"
+          ? "fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[90] w-11 h-11 flex items-center justify-center rounded-full bg-indigo-600 dark:bg-indigo-500 text-white shadow-xl shadow-indigo-950/30 hover:scale-105 active:scale-95 transition-transform duration-200"
           : "w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
       }
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}

@@ -512,48 +512,19 @@ export default function AdminPortalPage() {
               <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{tx(language, "Admin Portal", "Admin Portal")}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={load} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors disabled:opacity-50">
+              <button onClick={load} disabled={refreshing} title={tx(language, "Reload", "Muat Ulang")} className="flex items-center gap-1.5 px-2.5 min-[400px]:px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors disabled:opacity-50">
                 <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-                {tx(language, "Reload", "Muat Ulang")}
+                <span className="hidden min-[400px]:inline">{tx(language, "Reload", "Muat Ulang")}</span>
               </button>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
+              <button onClick={handleLogout} title={tx(language, "Logout", "Keluar")} className="flex items-center gap-1.5 px-2.5 min-[400px]:px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
                 <LogOut size={14} />
-                {tx(language, "Logout", "Keluar")}
+                <span className="hidden min-[400px]:inline">{tx(language, "Logout", "Keluar")}</span>
               </button>
             </div>
           </div>
-          {/* Mobile tabs */}
-          <div className="flex gap-1 px-4 pb-3 overflow-x-auto scrollbar-thin">
-            {sidebarTabs.map((t) => {
-              const grad = t.chip.split(" ").slice(0, 2).join(" ");
-              return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
-                  tab === t.key
-                    ? "bg-indigo-50 dark:bg-indigo-500/15 ring-1 ring-indigo-600/20 dark:ring-indigo-500/30 text-indigo-700 dark:text-indigo-200"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br ${grad} text-white ${tab === t.key ? "" : "opacity-80"}`}>
-                  {t.icon}
-                </span>
-                {t.label}
-                {t.count !== undefined && (
-                  <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold tabular-nums ${
-                    tab === t.key ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200" : "bg-gray-100 dark:bg-white/5 text-gray-500"
-                  }`}>
-                    {t.count}
-                  </span>
-                )}
-              </button>
-              );
-            })}
-          </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 space-y-6 scrollbar-admin">
+        <main className="flex-1 p-4 sm:p-6 pb-28 space-y-6 scrollbar-admin">
           {loading ? (
             <div className="py-20 flex justify-center">
               <Spinner size={9} />
@@ -588,6 +559,9 @@ export default function AdminPortalPage() {
             </AnimatePresence>
           )}
         </main>
+
+        {/* Bottom nav mobile — ala owner/akuntan: ikon + label mikro */}
+        <AdminBottomNav tab={tab} setTab={setTab} />
       </div>
 
       {/* Toggle tema melayang — khas portal admin (bukan di navbar) */}
@@ -598,6 +572,77 @@ export default function AdminPortalPage() {
       <CompanyDetailModal company={detailOpen} data={detailData} loading={detailLoading} error={detailError} onClose={closeDetail} />
     </div>
     </MotionConfig>
+  );
+}
+
+// ── Bottom nav mobile ala owner/akuntan ──────────────────────────────
+// Ikon di atas label mikro, pil indikator meluncur, bisa scroll horizontal
+// karena 8 tab. Hanya tampil di bawah lg (desktop pakai sidebar).
+const BOTTOM_TABS: { key: Tab; icon: React.ReactNode }[] = [
+  { key: "overview", icon: <BarChart3 size={22} /> },
+  { key: "billing", icon: <CreditCard size={22} /> },
+  { key: "log", icon: <FileText size={22} /> },
+  { key: "monitoring", icon: <Activity size={22} /> },
+  { key: "users", icon: <UsersRound size={22} /> },
+  { key: "companies", icon: <Landmark size={22} /> },
+  { key: "plans", icon: <Coins size={22} /> },
+  { key: "health", icon: <ShieldCheck size={22} /> },
+];
+
+function AdminBottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+  const { language } = useLanguage();
+  const short: Record<Tab, string> = {
+    overview: tx(language, "Overview", "Ringkasan"),
+    billing: tx(language, "Billing", "Billing"),
+    log: tx(language, "Log", "Log"),
+    monitoring: tx(language, "Monitor", "Monitor"),
+    users: tx(language, "Users", "User"),
+    companies: tx(language, "Companies", "Usaha"),
+    plans: tx(language, "Plans", "Paket"),
+    health: tx(language, "Health", "Sehat"),
+  };
+  return (
+    <nav
+      aria-label={tx(language, "Admin navigation", "Navigasi admin")}
+      className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
+    >
+      <div className="border-t border-indigo-500/15 bg-white/85 dark:bg-[#0B1120]/85 backdrop-blur-xl shadow-[0_-8px_30px_rgba(2,6,23,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.45)]">
+        <div className="flex overflow-x-auto scrollbar-none px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          {BOTTOM_TABS.map((t) => {
+            const active = tab === t.key;
+            return (
+              <motion.button
+                key={t.key}
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setTab(t.key)}
+                aria-label={short[t.key]}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex min-w-[64px] flex-1 flex-col items-center gap-0.5 rounded-xl px-1 pb-1 pt-2 outline-none transition-colors duration-200 ${
+                  active
+                    ? "text-indigo-600 dark:text-indigo-300"
+                    : "text-gray-400 dark:text-gray-500 active:text-indigo-500"
+                }`}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="admin-bottomnav-pill"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-indigo-500"
+                  />
+                )}
+                <span className="flex items-center justify-center">
+                  {t.icon}
+                </span>
+                <span className={`text-[9px] leading-none whitespace-nowrap ${active ? "font-semibold" : "font-medium"}`}>
+                  {short[t.key]}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+    </nav>
   );
 }
 
