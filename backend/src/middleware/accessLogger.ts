@@ -8,6 +8,13 @@
 import type { Context, Next } from "hono";
 import { supabase } from "../lib/supabase.js";
 
+declare module "hono" {
+  interface ContextVariableMap {
+    /** Ditulis handler setelah cek akses; dibaca logger setelah next(). */
+    featureGranted?: boolean;
+  }
+}
+
 // Type untuk data log akses fitur premium
 interface FeatureAccessLog {
   user_id: string;
@@ -18,9 +25,9 @@ interface FeatureAccessLog {
   user_agent: string;
   request_path: string;
   method: string;
-  user_email?: string;
-  company_id?: string;
-  timestamp: string;
+  user_email?: string | null;
+  company_id?: string | null;
+  created_at: string;
 }
 
 // Middleware utama untuk logging akses fitur premium
@@ -43,12 +50,19 @@ export const featureAccessLogger = async (c: Context, next: Next) => {
              c.req.header("x-real-ip") || "Tidak diketahui";
   const userAgent = c.req.header("user-agent") || "Tidak diketahui";
   
-  // Dapatkan nama email user untuk audit (opsional)
-  const { data: userProfile } = await supabase
-    .from("users")
-    .select("email, company_id")
-    .eq("id", user.sub)
-    .maybeSingle();
+  // Dapatkan nama email user untuk audit (opsional, best-effort).
+  // Lookup profil tidak boleh menggagalkan response utama.
+  let userProfile: { email?: string | null; company_id?: string | null } | null = null;
+  try {
+    const { data } = await supabase
+      .from("users")
+      .select("email, company_id")
+      .eq("id", user.sub)
+      .maybeSingle();
+    userProfile = data;
+  } catch (profileError) {
+    console.error("[AccessLogger] Gagal lookup profil:", profileError);
+  }
   
   // Hanya lacak akses ke fitur premium (bukan fitur dasar)
   const premiumFeatures = [
@@ -72,7 +86,7 @@ export const featureAccessLogger = async (c: Context, next: Next) => {
       method: method,
       user_email: userProfile?.email,
       company_id: user.company_id || userProfile?.company_id,
-      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
     
     // Simpan log ke database
@@ -117,7 +131,7 @@ export async function logFeatureAccess(
     method: c.req.method,
     user_email: undefined, // Bisa diresolusi jika diperlukan
     company_id: c.get("user")?.company_id,
-    timestamp: new Date().toISOString(),
+    created_at: new Date().toISOString(),
   };
   
   try {
@@ -162,7 +176,7 @@ export const paymentAccessLogger = async (c: Context, next: Next) => {
       method: c.req.method,
       user_email: undefined,
       company_id: user.company_id,
-      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
     
     // Simpan log pembayaran secara terpisah untuk analisis
@@ -199,7 +213,7 @@ export const adminAuditLogger = async (c: Context, next: Next) => {
     method: c.req.method,
     user_email: undefined,
     company_id: user.company_id,
-    timestamp: new Date().toISOString(),
+    created_at: new Date().toISOString(),
   };
   
   try {
