@@ -315,7 +315,7 @@ export default function AdminPortalPage() {
         <aside className={`${collapsed ? "w-[76px]" : "w-64"} shrink-0 h-full rounded-l-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col transition-[width] duration-300 ease-in-out`}>
           {/* Sidebar header — wordmark langsung di atas solid fill */}
           <div className="px-3 pt-3 pb-2">
-            <div className={`flex items-center gap-2 px-2.5 py-2 ${collapsed ? "justify-center px-1" : ""}`}>
+            <div className={`flex items-center px-2.5 py-2 ${collapsed ? "justify-center gap-0 px-1" : "gap-2"}`}>
               <div className={`h-7 rounded-lg bg-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden transition-all duration-300 ${collapsed ? "w-0 opacity-0" : "w-7 opacity-100"}`}>
                 <Terminal size={14} />
               </div>
@@ -339,7 +339,7 @@ export default function AdminPortalPage() {
 
           {/* Navigation — kompak tanpa scroll, ikon glass samar */}
           <nav className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
-            <p className="px-3 mb-1 text-[10px] font-semibold text-white/40 uppercase tracking-[0.15em]">
+            <p className={`px-3 text-[10px] font-semibold text-white/40 uppercase tracking-[0.15em] whitespace-nowrap overflow-hidden transition-all duration-300 ${collapsed ? "max-h-0 opacity-0 mb-0" : "max-h-6 opacity-100 mb-1"}`}>
               Panel
             </p>
             <div className="space-y-1">
@@ -401,7 +401,7 @@ export default function AdminPortalPage() {
                   : tx(language, "All systems operational", "Semua sistem normal")}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid gap-2 ${collapsed ? "grid-cols-1" : "grid-cols-2"}`}>
               <button
                 onClick={load}
                 disabled={refreshing}
