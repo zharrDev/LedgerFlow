@@ -3,6 +3,7 @@ import { motion, LayoutGroup } from "framer-motion";
 import React, { useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import { prefetchRoute } from "../lib/prefetchRoutes";
 import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import { useLanguage } from "../hooks/useLanguage";
 import { useSubscription } from "../hooks/useSubscription";
@@ -341,7 +342,11 @@ const SidebarContent = ({
                   key={item.path}
                   to={item.path}
                   onClick={onLinkClick}
-                  onMouseEnter={() => setHoveredPath(item.path)}
+                  onMouseEnter={() => {
+                    setHoveredPath(item.path);
+                    prefetchRoute(item.path);
+                  }}
+                  onFocus={() => prefetchRoute(item.path)}
                   onMouseLeave={() => setHoveredPath(null)}
                   className={({ isActive }) =>
                     navLinkClass(isActive, false, fillSidebar)
@@ -435,7 +440,11 @@ const SidebarContent = ({
                 key={item.path}
                 to={item.path}
                 onClick={onLinkClick}
-                onMouseEnter={() => setHoveredPath(item.path)}
+                onMouseEnter={() => {
+                  setHoveredPath(item.path);
+                  prefetchRoute(item.path);
+                }}
+                onFocus={() => prefetchRoute(item.path)}
                 onMouseLeave={() => setHoveredPath(null)}
                 className={({ isActive }) => navLinkClass(isActive, true)}
               >
