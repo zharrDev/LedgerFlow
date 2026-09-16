@@ -10,6 +10,7 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
 import { formatCompact } from "../i18n/compactNumber";
 
@@ -30,24 +31,24 @@ interface CashFlowChartProps {
 }
 
 // ─────────────────────────────────────────────
-// Palette — same as before (Indigo / Violet / Cyan)
+// Palette — Emerald (in) / Rose (out) / Indigo (net)
 // ─────────────────────────────────────────────
 const P = {
+  emerald: "#10b981",
+  emeraldLight: "#6ee7b7",
   indigo: "#6366f1",
   indigoLight: "#a5b4fc",
   violet: "#8b5cf6",
-  violetLight: "#c4b5fd",
   cyan: "#06b6d4",
-  cyanLight: "#67e8f9",
-  amber: "#f59e0b",
   rose: "#f43f5e",
+  amber: "#f59e0b",
   slate600: "#475569",
   slate400: "#94a3b8",
   slate300: "#cbd5e1",
   slate200: "#e2e8f0",
-  slate800: "#1e293b",
-  slate900: "#0f172a",
 };
+
+type View = "all" | "in" | "out";
 
 // ─────────────────────────────────────────────
 // Dark-mode hook
@@ -101,7 +102,7 @@ function AnimatedNumber({
 }
 
 // ─────────────────────────────────────────────
-// Summary Card (di atas grafik)
+// Summary Card (di bawah grafik)
 // ─────────────────────────────────────────────
 function SummaryCard({
   label,
@@ -115,39 +116,41 @@ function SummaryCard({
   label: string;
   value: number;
   colorClass: string;
-  icon: string;
+  icon: React.ReactNode;
   format: (v: number) => string;
   gradFrom: string;
   gradTo: string;
 }) {
   return (
-    <div className="relative flex flex-col gap-1 rounded-2xl px-4 py-3 overflow-hidden flex-1 min-w-0">
+    <div className="relative flex items-center gap-3 rounded-2xl px-4 py-3 overflow-hidden flex-1 min-w-0">
       <div
-        className="absolute inset-0 opacity-[0.08] dark:opacity-[0.12] rounded-2xl"
+        className="absolute inset-0 opacity-[0.07] dark:opacity-[0.1] rounded-2xl"
         style={{
           background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})`,
         }}
       />
-      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 relative z-10">
-        {label}
-      </span>
       <span
-        className={`text-base font-bold tabular-nums leading-tight relative z-10 ${colorClass}`}
-      >
-        <AnimatedNumber value={Math.abs(value)} format={format} />
-      </span>
-      <span
-        className="absolute right-3 top-3 text-xl opacity-20 select-none"
-        aria-hidden
+        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+        style={{ background: `${gradFrom}1f`, color: gradFrom }}
       >
         {icon}
+      </span>
+      <span className="relative z-10 min-w-0">
+        <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          {label}
+        </span>
+        <span
+          className={`block text-base font-bold tabular-nums leading-tight ${colorClass}`}
+        >
+          <AnimatedNumber value={Math.abs(value)} format={format} />
+        </span>
       </span>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// Custom Tooltip
+// Custom Tooltip (gelap, ringkas)
 // ─────────────────────────────────────────────
 function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
   const { language } = useLanguage();
@@ -157,20 +160,19 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
   const rows = [
     {
       key: "masuk",
-      label: language === "id" ? "Arus Masuk" : "Inflow",
-      color: P.cyan,
-      sign: "+"
+      label: language === "id" ? "Arus Masuk" : "Cash In",
+      color: P.emerald,
+      sign: "+",
     },
     {
       key: "keluar",
-      label: language === "id" ? "Arus Keluar" : "Outflow",
+      label: language === "id" ? "Arus Keluar" : "Cash Out",
       color: P.rose,
       sign: "-",
-      abs: true,
     },
     {
       key: "net",
-      label: language === "id" ? "Saldo Bersih" : "Net Balance",
+      label: language === "id" ? "Saldo Bersih" : "Net",
       color: d.net >= 0 ? P.indigo : P.rose,
       sign: d.net >= 0 ? "+" : "-",
       bold: true,
@@ -179,17 +181,17 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
 
   return (
     <div
-      className="rounded-2xl shadow-2xl p-4 min-w-[190px] text-xs border"
+      className="rounded-xl shadow-2xl p-3.5 min-w-[180px] text-xs border"
       style={{
-        background: isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.95)",
+        background: isDark ? "rgba(15,23,42,0.94)" : "rgba(255,255,255,0.97)",
         borderColor: isDark ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.15)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
       }}
     >
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-2.5">
         <span
-          className="w-1.5 h-5 rounded-full"
+          className="w-1.5 h-4 rounded-full"
           style={{
             background: `linear-gradient(180deg, ${P.indigoLight}, ${P.violet})`,
           }}
@@ -202,10 +204,9 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {rows.map((r) => {
           const rawVal = d[r.key as keyof CashFlowDatum] as number;
-          const absVal = Math.abs(rawVal);
           return (
             <div key={r.key} className="flex justify-between items-center">
               <span
@@ -223,26 +224,18 @@ function CustomTooltip({ active, payload, label, formatValue, isDark }: any) {
                 style={{ color: r.color }}
               >
                 {r.sign}
-                {formatValue(absVal)}
+                {formatValue(Math.abs(rawVal))}
               </span>
             </div>
           );
         })}
       </div>
-
-      <div
-        className="mt-3 h-0.5 rounded-full"
-        style={{
-          background: `linear-gradient(90deg, ${P.indigo}, ${P.violet}, ${P.cyan})`,
-          opacity: 0.5,
-        }}
-      />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// Main Chart — BarChart
+// Main Chart — ala "Money Flow": toggle segmented + bar besar rounded
 // ─────────────────────────────────────────────
 export function CashFlowChart({
   data,
@@ -252,6 +245,7 @@ export function CashFlowChart({
   const isDark = useIsDark();
   const { language } = useLanguage();
   const id = language === "id";
+  const [view, setView] = useState<View>("all");
 
   const totMasuk = data.reduce((s, d) => s + d.masuk, 0);
   const totKeluar = data.reduce((s, d) => s + Math.abs(d.keluar), 0);
@@ -260,78 +254,90 @@ export function CashFlowChart({
   const axisColor = isDark ? P.slate400 : P.slate600;
   const gridColor = isDark ? "rgba(148,163,184,0.08)" : "rgba(226,232,240,0.9)";
 
+  const viewOptions: { key: View; label: string }[] = [
+    { key: "all", label: id ? "Semua" : "All" },
+    { key: "in", label: id ? "Masuk" : "Cash In" },
+    { key: "out", label: id ? "Keluar" : "Cash Out" },
+  ];
+
   return (
     <div className="flex flex-col gap-4 w-full">
-      {/* ── Summary Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <SummaryCard
-          label={id ? "Total Masuk" : "Total Inflow"}
-          value={totMasuk}
-          format={formatValue}
-          colorClass="text-cyan-500 dark:text-cyan-400"
-          icon="↑"
-          gradFrom={P.cyan}
-          gradTo={P.cyanLight}
-        />
-        <SummaryCard
-          label={id ? "Total Keluar" : "Total Outflow"}
-          value={totKeluar}
-          format={formatValue}
-          colorClass="text-rose-500 dark:text-rose-400"
-          icon="↓"
-          gradFrom={P.rose}
-          gradTo="#fb923c"
-        />
-        <SummaryCard
-          label={id ? "Saldo Bersih" : "Net Balance"}
-          value={totNet}
-          format={formatValue}
-          colorClass={
-            totNet >= 0
-              ? "text-violet-600 dark:text-violet-400"
-              : "text-rose-500 dark:text-rose-400"
-          }
-          icon="≈"
-          gradFrom={P.indigo}
-          gradTo={P.violet}
-        />
+      {/* ── Baris kontrol: toggle segmented + legend chips ── */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div
+          className="inline-flex rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100/80 dark:bg-white/[0.04] p-1"
+          role="tablist"
+          aria-label={id ? "Filter arus kas" : "Cash flow filter"}
+        >
+          {viewOptions.map((o) => (
+            <button
+              key={o.key}
+              role="tab"
+              aria-selected={view === o.key}
+              onClick={() => setView(o.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                view === o.key
+                  ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Legend chips — hanya tampil yang relevan dengan view */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {view !== "out" && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              {id ? "Masuk" : "In"}
+            </span>
+          )}
+          {view !== "in" && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-2.5 py-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+              <span className="h-2 w-2 rounded-full bg-rose-500" />
+              {id ? "Keluar" : "Out"}
+            </span>
+          )}
+          {view === "all" && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+              <span className="h-2 w-2 rounded-full bg-indigo-500" />
+              {id ? "Bersih" : "Net"}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* ── Chart ── */}
-      <div className="relative rounded-2xl overflow-x-hidden w-full min-w-0" style={{ height: height ?? 300 }}>
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: isDark
-              ? "linear-gradient(160deg, rgba(99,102,241,0.04) 0%, rgba(139,92,246,0.06) 50%, rgba(6,182,212,0.04) 100%)"
-              : "linear-gradient(160deg, rgba(99,102,241,0.03) 0%, rgba(139,92,246,0.04) 50%, rgba(6,182,212,0.03) 100%)",
-          }}
-        />
-
+      {/* ── Chart — bar rounded besar, grid horizontal halus ── */}
+      <div
+        className="relative rounded-2xl overflow-x-hidden w-full min-w-0"
+        style={{ height: height ?? 300 }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            margin={{ top: 20, right: 16, left: 0, bottom: 0 }}
-            barGap={4}
-            barCategoryGap="20%"
+            margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
+            barGap={6}
+            barCategoryGap="28%"
           >
             <defs>
               <linearGradient id="barMasuk" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.cyan} stopOpacity={0.9} />
-                <stop offset="100%" stopColor={P.cyan} stopOpacity={0.5} />
+                <stop offset="0%" stopColor={P.emerald} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={P.emerald} stopOpacity={0.55} />
               </linearGradient>
               <linearGradient id="barKeluar" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.rose} stopOpacity={0.9} />
-                <stop offset="100%" stopColor={P.rose} stopOpacity={0.5} />
+                <stop offset="0%" stopColor={P.rose} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={P.rose} stopOpacity={0.55} />
               </linearGradient>
               <linearGradient id="barNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.9} />
-                <stop offset="100%" stopColor={P.indigo} stopOpacity={0.5} />
+                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={P.indigo} stopOpacity={0.55} />
               </linearGradient>
             </defs>
 
             <CartesianGrid
-              strokeDasharray="3 5"
+              strokeDasharray="3 6"
               vertical={false}
               stroke={gridColor}
             />
@@ -354,7 +360,7 @@ export function CashFlowChart({
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={72}
+              width={64}
             />
 
             <Tooltip
@@ -368,68 +374,90 @@ export function CashFlowChart({
               }
             />
 
-            {/* ── Bar Inflow ── */}
-            <Bar
-              dataKey="masuk"
-              name={id ? "Arus Masuk" : "Inflow"}
-              fill="url(#barMasuk)"
-              radius={[6, 6, 0, 0]}
-              animationDuration={1200}
-              animationEasing="ease-out"
-            >
-              {data.map((_entry, index) => (
-                <Cell key={`masuk-${index}`} />
-              ))}
-            </Bar>
+            {/* Bar Inflow */}
+            {(view === "all" || view === "in") && (
+              <Bar
+                dataKey="masuk"
+                name={id ? "Arus Masuk" : "Cash In"}
+                fill="url(#barMasuk)"
+                radius={[9, 9, 0, 0]}
+                animationDuration={900}
+                animationEasing="ease-out"
+              >
+                {data.map((_entry, index) => (
+                  <Cell key={`masuk-${index}`} />
+                ))}
+              </Bar>
+            )}
 
-            {/* ── Bar Outflow ── */}
-            <Bar
-              dataKey="keluar"
-              name={id ? "Arus Keluar" : "Outflow"}
-              fill="url(#barKeluar)"
-              radius={[6, 6, 0, 0]}
-              animationDuration={1400}
-              animationEasing="ease-out"
-            >
-              {data.map((_entry, index) => (
-                <Cell key={`keluar-${index}`} />
-              ))}
-            </Bar>
+            {/* Bar Outflow */}
+            {(view === "all" || view === "out") && (
+              <Bar
+                dataKey="keluar"
+                name={id ? "Arus Keluar" : "Cash Out"}
+                fill="url(#barKeluar)"
+                radius={[9, 9, 0, 0]}
+                animationDuration={1000}
+                animationEasing="ease-out"
+              >
+                {data.map((_entry, index) => (
+                  <Cell key={`keluar-${index}`} />
+                ))}
+              </Bar>
+            )}
 
-            {/* ── Bar Net ── */}
-            <Bar
-              dataKey="net"
-              name={id ? "Saldo Bersih" : "Net Balance"}
-              fill="url(#barNet)"
-              radius={[6, 6, 0, 0]}
-              animationDuration={1000}
-              animationEasing="ease-out"
-            >
-              {data.map((_entry, index) => (
-                <Cell key={`net-${index}`} />
-              ))}
-            </Bar>
+            {/* Bar Net */}
+            {view === "all" && (
+              <Bar
+                dataKey="net"
+                name={id ? "Saldo Bersih" : "Net"}
+                fill="url(#barNet)"
+                radius={[9, 9, 0, 0]}
+                animationDuration={1100}
+                animationEasing="ease-out"
+              >
+                {data.map((_entry, index) => (
+                  <Cell key={`net-${index}`} />
+                ))}
+              </Bar>
+            )}
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* ── Legend ── */}
-      <div className="flex items-center justify-center gap-6 flex-wrap">
-        {[
-          { color: P.cyan, label: id ? "Arus Masuk" : "Inflow" },
-          { color: P.rose, label: id ? "Arus Keluar" : "Outflow" },
-          { color: P.indigo, label: id ? "Saldo Bersih" : "Net Balance" },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span
-              className="w-3 h-3 rounded-sm"
-              style={{ background: item.color, opacity: 0.85 }}
-            />
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              {item.label}
-            </span>
-          </div>
-        ))}
+      {/* ── Summary — di bawah chart, chip ikon ala kartu referensi ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <SummaryCard
+          label={id ? "Total Masuk" : "Total Inflow"}
+          value={totMasuk}
+          format={formatValue}
+          colorClass="text-emerald-600 dark:text-emerald-400"
+          icon={<ArrowDownLeft size={15} />}
+          gradFrom={P.emerald}
+          gradTo={P.emeraldLight}
+        />
+        <SummaryCard
+          label={id ? "Total Keluar" : "Total Outflow"}
+          value={totKeluar}
+          format={formatValue}
+          colorClass="text-rose-600 dark:text-rose-400"
+          icon={<ArrowUpRight size={15} />}
+          gradFrom={P.rose}
+          gradTo="#fb923c"
+        />
+        <SummaryCard
+          label={id ? "Saldo Bersih" : "Net Balance"}
+          value={totNet}
+          format={formatValue}
+          colorClass={
+            totNet >= 0
+              ? "text-indigo-600 dark:text-indigo-400"
+              : "text-rose-600 dark:text-rose-400"
+          }
+          icon={<span className="text-[13px] font-bold">Σ</span>}
+          gradFrom={P.indigo}
+          gradTo={P.violet}
+        />
       </div>
     </div>
   );

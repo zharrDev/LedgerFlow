@@ -594,18 +594,18 @@ export default function DashboardPage() {
             variants={itemVariants}
             className="lg:col-span-2 rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-6"
           >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                {tx(language, "Cash Flow Monitor", "Monitor Arus Kas")}
-              </h3>
-              <div className="flex items-center gap-3 text-xs  text-gray-700 dark:text-gray-300">
-                <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-cyan-500"></div> {tx(language, "Inflow", "Masuk")}
-                </span>
-                <span className="flex items-center gap-1  text-gray-700 dark:text-gray-300">
-                  <div className="w-2 h-2 rounded-full bg-rose-500"></div>{" "}
-                  {tx(language, "Outflow", "Keluar")}
-                </span>
+            <div className="flex justify-between items-start gap-3 mb-5">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
+                  {tx(language, "Cash Flow Monitor", "Monitor Arus Kas")}
+                </h3>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {tx(
+                    language,
+                    "Compare cash in vs cash out across activities",
+                    "Bandingkan arus kas masuk vs keluar per aktivitas",
+                  )}
+                </p>
               </div>
             </div>
             {summaryLoading || !summary ? (
