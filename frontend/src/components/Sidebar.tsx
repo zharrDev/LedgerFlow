@@ -1,9 +1,8 @@
 import { NavLink, Link } from "react-router-dom";
-import { motion, LayoutGroup } from "framer-motion";
+import { motion } from "framer-motion";
 import React, { useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
-import { prefetchRoute } from "../lib/prefetchRoutes";
 import { useScrollIsolation } from "../hooks/useScrollIsolation";
 import { useLanguage } from "../hooks/useLanguage";
 import { useSubscription } from "../hooks/useSubscription";
@@ -165,23 +164,11 @@ const SidebarContent = ({
   const navLinkClass = (isActive: boolean, compact?: boolean, fill?: boolean) =>
     `group relative isolate flex items-center gap-2.5 ${fill ? "flex-1" : ""} ${
       compact ? "px-3" : "pl-4 pr-3"
-    } py-2 text-xs rounded-xl transition-colors duration-300 ${
+    } py-2 text-xs rounded-xl transition-all duration-200 ${
       isActive
-        ? "text-primary-600 dark:text-primary-400 font-medium"
+        ? "bg-gradient-to-r from-primary-500/10 to-primary-500/5 text-primary-600 dark:text-primary-400 font-medium shadow-sm"
         : "text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400"
     }`;
-
-  // Pill highlight AKTIF — meluncur antar item via layoutId dalam
-  // LayoutGroup eksplisit. Tween 0.45s (bukan spring) agar gerakan
-  // meluncurnya jelas terlihat walau jarak antar item pendek.
-  const activePill = (isActive: boolean) =>
-    isActive ? (
-      <motion.span
-        layoutId="sidebar-active-pill"
-        transition={{ duration: 0.45, ease: "easeOut" }}
-        className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-primary-500/10 to-primary-500/5 shadow-sm pointer-events-none"
-      />
-    ) : null;
 
   // Pill highlight hover — meluncur antar item via layoutId framer-motion.
   // Di-skip untuk item aktif (sudah punya gradient bg sendiri).
@@ -327,7 +314,6 @@ const SidebarContent = ({
               : "No menu items."}
           </p>
         ) : (
-          <LayoutGroup id="sidebar-nav">
           <div
             className={
               fillSidebar
@@ -342,11 +328,7 @@ const SidebarContent = ({
                   key={item.path}
                   to={item.path}
                   onClick={onLinkClick}
-                  onMouseEnter={() => {
-                    setHoveredPath(item.path);
-                    prefetchRoute(item.path);
-                  }}
-                  onFocus={() => prefetchRoute(item.path)}
+                  onMouseEnter={() => setHoveredPath(item.path)}
                   onMouseLeave={() => setHoveredPath(null)}
                   className={({ isActive }) =>
                     navLinkClass(isActive, false, fillSidebar)
@@ -355,14 +337,12 @@ const SidebarContent = ({
                   {({ isActive }) => (
                     <>
                       {hoverPill(item.path, isActive)}
-                      {activePill(isActive)}
-                      <motion.span
-                        animate={{
-                          height: isActive ? 20 : 0,
-                          opacity: isActive ? 1 : 0,
-                        }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-primary-500"
+                      <span
+                        className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
+                          isActive
+                            ? "h-5 bg-primary-500"
+                            : "h-0 bg-transparent group-hover:h-2 group-hover:bg-primary-300 dark:group-hover:bg-primary-700"
+                        }`}
                       />
                       <Icon size={16} className="shrink-0" />
                       <span className="truncate">{item.label[language]}</span>
@@ -378,7 +358,6 @@ const SidebarContent = ({
               );
             })}
           </div>
-          </LayoutGroup>
         )}
 
         {/* Promo banner — inside scroll, always at bottom of menu items.
@@ -432,7 +411,6 @@ const SidebarContent = ({
       {/* Account items (Help & Support) — below menu, outside scroll */}
       {accountItems.length > 0 && (
         <div className="border-t border-gray-100 dark:border-gray-800 py-2 px-3 space-y-1">
-          <LayoutGroup id="sidebar-nav">
           {accountItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -440,26 +418,20 @@ const SidebarContent = ({
                 key={item.path}
                 to={item.path}
                 onClick={onLinkClick}
-                onMouseEnter={() => {
-                  setHoveredPath(item.path);
-                  prefetchRoute(item.path);
-                }}
-                onFocus={() => prefetchRoute(item.path)}
+                onMouseEnter={() => setHoveredPath(item.path)}
                 onMouseLeave={() => setHoveredPath(null)}
                 className={({ isActive }) => navLinkClass(isActive, true)}
               >
-                  {({ isActive }) => (
-                    <>
-                      {hoverPill(item.path, isActive)}
-                      {activePill(isActive)}
-                      <Icon size={16} className="shrink-0" />
+                {({ isActive }) => (
+                  <>
+                    {hoverPill(item.path, isActive)}
+                    <Icon size={16} className="shrink-0" />
                     <span className="truncate">{item.label[language]}</span>
                   </>
                 )}
               </NavLink>
             );
           })}
-          </LayoutGroup>
         </div>
       )}
     </div>

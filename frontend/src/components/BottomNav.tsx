@@ -9,9 +9,8 @@ import {
   type NavItem,
 } from "../data/navigation";
 import { BottomNavSheet } from "./BottomNavSheet";
-import { prefetchRoute } from "../lib/prefetchRoutes";
 
-const SPRING = { type: "spring", stiffness: 300, damping: 35 } as const;
+const SPRING = { type: "spring", stiffness: 420, damping: 30 } as const;
 
 export function BottomNav() {
   const { user } = useAuth();
@@ -63,14 +62,6 @@ export function BottomNav() {
                   key={item.id}
                   type="button"
                   whileTap={{ scale: 0.9 }}
-                  onMouseEnter={() => {
-                    prefetchRoute(item.path);
-                    item.children?.forEach((child) => prefetchRoute(child.path));
-                  }}
-                  onFocus={() => {
-                    prefetchRoute(item.path);
-                    item.children?.forEach((child) => prefetchRoute(child.path));
-                  }}
                   onClick={() => handlePress(item)}
                   aria-label={`${
                     language === "id" ? "Buka" : "Open"
