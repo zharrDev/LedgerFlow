@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { sendWelcomeEmail } from "./email.js";
+import { provisionCompanyFoundation } from "./companyProvision.js";
 
 type AuthUserLike = {
   id: string;
@@ -100,6 +101,16 @@ export async function ensureUserProfile(authUser: AuthUserLike) {
     // Kompensasi: company yang baru dibuat dihapus agar tidak yatim.
     await supabase.from("companies").delete().eq("id", company.id);
     throw new Error(`create_user_profile: ${fmtError(userError)}`);
+  }
+
+  // Fondasi company (CoA standar + periode). Gagal di sini = batalkan
+  // profil & company seperti langkah lain (tidak ada company kosong).
+  try {
+    await provisionCompanyFoundation(company.id);
+  } catch (err) {
+    await supabase.from("users").delete().eq("id", user.id);
+    await supabase.from("companies").delete().eq("id", company.id);
+    throw err;
   }
 
   const { error: memberError } = await supabase.from("company_members").insert({
