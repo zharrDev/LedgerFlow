@@ -16,6 +16,7 @@ import {
 import { useSetAppShellConfig } from "../context/AppShellConfigContext";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { ConfirmActionDialog } from "../components/ConfirmActionDialog";
 import Spinner from "../components/Spinner";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
@@ -122,13 +123,16 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleDelete = async (userId: string, userName: string) => {
-    if (
-      !window.confirm(tx(language, `Remove user "${userName}" from this company? Their account stays intact — including access to other companies.`, `Hapus user "${userName}" dari perusahaan ini? Akunnya tetap utuh — termasuk akses ke perusahaan lain.`))
-    )
-      return;
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const { id: userId, name: userName } = deleteTarget;
+    setDeleting(true);
     try {
       await api.delete(`/api/users-management/${userId}`);
+      setDeleteTarget(null);
       await fetchUsers();
       toast({
         variant: "success",
@@ -141,6 +145,8 @@ export default function UserManagementPage() {
         title: tx(language, "Failed to remove user", "Gagal menghapus user"),
         message: getErrorMessage(err),
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -331,7 +337,7 @@ export default function UserManagementPage() {
 
                   {editable && (
                     <button
-                      onClick={() => handleDelete(user.id, user.name)}
+                      onClick={() => setDeleteTarget({ id: user.id, name: user.name })}
                       className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                       title={tx(language, "Remove from company", "Hapus dari perusahaan")}
                     >
@@ -443,6 +449,18 @@ export default function UserManagementPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Dialog konfirmasi hapus anggota ── */}
+      <ConfirmActionDialog
+        open={!!deleteTarget}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleting}
+        title={tx(language, `Remove "${deleteTarget?.name ?? ""}"?`, `Hapus "${deleteTarget?.name ?? ""}"?`)}
+        message={tx(language, "They will be removed from this company. Their account stays intact — including access to other companies.", "User akan dihapus dari perusahaan ini. Akunnya tetap utuh — termasuk akses ke perusahaan lain.")}
+        confirmLabel={tx(language, "Remove", "Hapus")}
+        tone="rose"
+      />
     </>
   );
 }

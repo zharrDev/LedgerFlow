@@ -10,6 +10,7 @@ import { tx } from "../i18n/tx";
 import { formatPrice, cancelSubscription } from "../services/paymentService";
 import { getErrorMessage } from "../lib/errorMessage";
 import { HoverDropdown } from "../components/HoverDropdown";
+import { ConfirmActionDialog } from "../components/ConfirmActionDialog";
 import { CURRENCIES, getCurrency, setCurrency as persistCurrency } from "../utils/currency";
 import { getMyCompany, updateCompanyCurrency } from "../services/companiesService";
 import {
@@ -137,13 +138,10 @@ export default function SettingsPage() {
     localStorage.setItem("notifications", JSON.stringify(notifications));
   };
 
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
   const handleCancelSubscription = async () => {
-    if (
-      !confirm(
-        tx(language, "Are you sure you want to cancel subscription? You will be returned to the Free plan.", "Yakin ingin cancel subscription? Anda akan dikembalikan ke plan Free."),
-      )
-    )
-      return;
+    setConfirmCancel(false);
     setCancelLoading(true);
     try {
       await cancelSubscription("User requested from settings");
@@ -175,6 +173,7 @@ export default function SettingsPage() {
   ];
 
   return (
+    <>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -323,7 +322,7 @@ export default function SettingsPage() {
                     <span>{tx(language, "Change Plan", "Ganti Plan")}</span>
                   </Link>
                   <button
-                    onClick={handleCancelSubscription}
+                    onClick={() => setConfirmCancel(true)}
                     disabled={cancelLoading}
                     className="flex-1 py-2.5 px-4 text-center rounded-xl border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50 shadow-sm"
                   >
@@ -556,5 +555,18 @@ export default function SettingsPage() {
           </button>
         </motion.div>
       </motion.div>
+
+      {/* ── Dialog konfirmasi cancel subscription ── */}
+      <ConfirmActionDialog
+        open={confirmCancel}
+        onClose={() => !cancelLoading && setConfirmCancel(false)}
+        onConfirm={handleCancelSubscription}
+        loading={cancelLoading}
+        title={tx(language, "Cancel Subscription?", "Batalkan Subscription?")}
+        message={tx(language, "Are you sure you want to cancel subscription? You will be returned to the Free plan.", "Yakin ingin cancel subscription? Anda akan dikembalikan ke plan Free.")}
+        confirmLabel={tx(language, "Yes, Cancel", "Ya, Batalkan")}
+        tone="amber"
+      />
+    </>
   );
 }
