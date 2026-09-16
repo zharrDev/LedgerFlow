@@ -4,6 +4,7 @@ import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { Check, X } from "lucide-react";
 import type { NavItem } from "../data/navigation";
 import { useLanguage } from "../hooks/useLanguage";
+import { prefetchRoute } from "../lib/prefetchRoutes";
 
 interface BottomNavSheetProps {
   item: NavItem | null;
@@ -83,6 +84,8 @@ export function BottomNavSheet({ item, onClose }: BottomNavSheetProps) {
                       key={child.path}
                       to={child.path}
                       onClick={onClose}
+                      onMouseEnter={() => prefetchRoute(child.path)}
+                      onFocus={() => prefetchRoute(child.path)}
                       aria-current={active ? "page" : undefined}
                       className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-primary-500/60 focus:outline-none hover:bg-primary-50/70 dark:hover:bg-primary-500/10"
                     >
