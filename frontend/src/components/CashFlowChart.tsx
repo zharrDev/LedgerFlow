@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  BarChart,
-  Bar,
+  ComposedChart,
+  Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Cell,
 } from "recharts";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
@@ -309,30 +309,28 @@ export function CashFlowChart({
         </div>
       </div>
 
-      {/* ── Chart — bar rounded besar, grid horizontal halus ── */}
+      {/* ── Chart — 3 garis (masuk/keluar/net) + area jaring, grid halus ── */}
       <div
         className="relative rounded-2xl overflow-x-hidden w-full min-w-0"
         style={{ height: height ?? 300 }}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
+          <ComposedChart
             data={data}
             margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
-            barGap={6}
-            barCategoryGap="28%"
           >
             <defs>
-              <linearGradient id="barMasuk" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.emerald} stopOpacity={0.95} />
-                <stop offset="100%" stopColor={P.emerald} stopOpacity={0.55} />
+              <linearGradient id="areaMasuk" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.emerald} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={P.emerald} stopOpacity={0.02} />
               </linearGradient>
-              <linearGradient id="barKeluar" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.rose} stopOpacity={0.95} />
-                <stop offset="100%" stopColor={P.rose} stopOpacity={0.55} />
+              <linearGradient id="areaKeluar" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.rose} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={P.rose} stopOpacity={0.02} />
               </linearGradient>
-              <linearGradient id="barNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.95} />
-                <stop offset="100%" stopColor={P.indigo} stopOpacity={0.55} />
+              <linearGradient id="areaNet" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={P.indigo} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={P.indigo} stopOpacity={0.02} />
               </linearGradient>
             </defs>
 
@@ -365,63 +363,97 @@ export function CashFlowChart({
 
             <Tooltip
               cursor={{
-                fill: isDark
-                  ? "rgba(99,102,241,0.08)"
-                  : "rgba(99,102,241,0.06)",
+                stroke: isDark
+                  ? "rgba(165,180,252,0.5)"
+                  : "rgba(99,102,241,0.4)",
+                strokeDasharray: "4 4",
               }}
               content={
                 <CustomTooltip formatValue={formatValue} isDark={isDark} />
               }
             />
 
-            {/* Bar Inflow */}
+            {/* Area jaring di belakang garis — inflow */}
             {(view === "all" || view === "in") && (
-              <Bar
+              <Area
+                type="monotone"
                 dataKey="masuk"
                 name={id ? "Arus Masuk" : "Cash In"}
-                fill="url(#barMasuk)"
-                radius={[9, 9, 0, 0]}
+                fill="url(#areaMasuk)"
+                stroke="none"
                 animationDuration={900}
-                animationEasing="ease-out"
-              >
-                {data.map((_entry, index) => (
-                  <Cell key={`masuk-${index}`} />
-                ))}
-              </Bar>
+              />
             )}
 
-            {/* Bar Outflow */}
+            {/* Area jaring di belakang garis — outflow */}
             {(view === "all" || view === "out") && (
-              <Bar
+              <Area
+                type="monotone"
                 dataKey="keluar"
                 name={id ? "Arus Keluar" : "Cash Out"}
-                fill="url(#barKeluar)"
-                radius={[9, 9, 0, 0]}
+                fill="url(#areaKeluar)"
+                stroke="none"
                 animationDuration={1000}
-                animationEasing="ease-out"
-              >
-                {data.map((_entry, index) => (
-                  <Cell key={`keluar-${index}`} />
-                ))}
-              </Bar>
+              />
             )}
 
-            {/* Bar Net */}
+            {/* Area jaring di belakang garis — net */}
             {view === "all" && (
-              <Bar
+              <Area
+                type="monotone"
                 dataKey="net"
                 name={id ? "Saldo Bersih" : "Net"}
-                fill="url(#barNet)"
-                radius={[9, 9, 0, 0]}
+                fill="url(#areaNet)"
+                stroke="none"
+                animationDuration={1100}
+              />
+            )}
+
+            {/* Garis Inflow */}
+            {(view === "all" || view === "in") && (
+              <Line
+                type="monotone"
+                dataKey="masuk"
+                name={id ? "Arus Masuk" : "Cash In"}
+                stroke={P.emerald}
+                strokeWidth={2}
+                dot={{ r: 3, fill: P.emerald, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: P.emerald, strokeWidth: 0 }}
+                animationDuration={900}
+                animationEasing="ease-out"
+              />
+            )}
+
+            {/* Garis Outflow */}
+            {(view === "all" || view === "out") && (
+              <Line
+                type="monotone"
+                dataKey="keluar"
+                name={id ? "Arus Keluar" : "Cash Out"}
+                stroke={P.rose}
+                strokeWidth={2}
+                dot={{ r: 3, fill: P.rose, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: P.rose, strokeWidth: 0 }}
+                animationDuration={1000}
+                animationEasing="ease-out"
+              />
+            )}
+
+            {/* Garis Net — paling tebal */}
+            {view === "all" && (
+              <Line
+                type="monotone"
+                dataKey="net"
+                name={id ? "Saldo Bersih" : "Net"}
+                stroke={P.indigo}
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: P.indigo, strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: P.indigo, strokeWidth: 0 }}
                 animationDuration={1100}
                 animationEasing="ease-out"
-              >
-                {data.map((_entry, index) => (
-                  <Cell key={`net-${index}`} />
-                ))}
-              </Bar>
+              />
             )}
-          </BarChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
