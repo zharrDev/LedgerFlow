@@ -10,7 +10,7 @@ import {
 } from "../data/navigation";
 import { BottomNavSheet } from "./BottomNavSheet";
 
-const SPRING = { type: "spring", stiffness: 420, damping: 30 } as const;
+const SPRING = { type: "spring", stiffness: 300, damping: 35 } as const;
 
 export function BottomNav() {
   const { user } = useAuth();

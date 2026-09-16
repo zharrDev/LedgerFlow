@@ -365,7 +365,7 @@ export default function AdminPortalPage() {
                       <motion.span
                         layoutId="admin-nav-pill"
                         className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-l-xl rounded-r-none bg-white dark:bg-[#111C33] shadow-sm"
-                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 35 }}
                       />
                     )}
                     <span
@@ -632,7 +632,7 @@ function AdminBottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void })
         {active && (
           <motion.span
             layoutId={layoutId}
-            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+            transition={{ type: "spring", stiffness: 300, damping: 35 }}
             className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-indigo-500"
           />
         )}
@@ -669,7 +669,7 @@ function AdminBottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void })
               {(moreActive || moreOpen) && (
                 <motion.span
                   layoutId="admin-bottomnav-pill"
-                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 35 }}
                   className="absolute top-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-indigo-500"
                 />
               )}

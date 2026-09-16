@@ -176,7 +176,7 @@ const SidebarContent = ({
     isActive ? (
       <motion.span
         layoutId={`sidebar-active-pill-${mode}`}
-        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+        transition={{ type: "spring", stiffness: 300, damping: 35 }}
         className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-primary-500/10 to-primary-500/5 shadow-sm pointer-events-none"
       />
     ) : null;
