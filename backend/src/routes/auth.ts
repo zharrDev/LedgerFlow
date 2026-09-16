@@ -128,7 +128,9 @@ async function resolveActiveMembership(
 
 // POST /api/auth/register — DINONAKTIFKAN.
 // Pendaftaran email/password dimatikan: gunakan WhatsApp OTP atau Google.
-// Akun password lama tetap bisa masuk via Google (email yang sama).
+// Catatan: akun password lama TIDAK otomatis tertaut ke Google (Supabase
+// tidak auto-link identitas) — penautan dilakukan manual oleh admin;
+// exchange-token menolak auto-provision bila email sudah punya profil.
 auth.post("/register", async (c) => {
   return c.json(
     {
@@ -192,6 +194,30 @@ auth.post("/exchange-token", async (c) => {
     }
 
     if (!user) {
+      // Anti-duplikat identitas: Supabase TIDAK otomatis menautkan OAuth ke
+      // akun password lama — authUser.id baru padahal emailnya sama. Tanpa
+      // cek ini, user mendarat di company BARU yang kosong dan mengira
+      // datanya hilang. Tolak dengan pesan jelas agar admin menautkan manual.
+      if (email) {
+        const { data: sameEmail } = await supabase
+          .from("users")
+          .select("id")
+          .ilike("email", email)
+          .maybeSingle();
+        if (sameEmail && sameEmail.id !== authUser.id) {
+          console.warn(
+            `[exchange-token] email ${email} sudah punya profil ${sameEmail.id}, tolak auto-provision untuk auth ${authUser.id}`,
+          );
+          return c.json(
+            {
+              error:
+                "Email ini sudah terdaftar dengan metode login lain. Masuk dengan metode semula, atau hubungi admin untuk menautkan akun Google Anda.",
+            },
+            409,
+          );
+        }
+      }
+
       console.log("PROFILE NOT FOUND — auto-provisioning profil (Google sign-up)");
       try {
         const provisioned = await ensureUserProfile(authUser);
