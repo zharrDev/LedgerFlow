@@ -166,9 +166,20 @@ const SidebarContent = ({
       compact ? "px-3" : "pl-4 pr-3"
     } py-2 text-xs rounded-xl transition-all duration-200 ${
       isActive
-        ? "bg-gradient-to-r from-primary-500/10 to-primary-500/5 text-primary-600 dark:text-primary-400 font-medium shadow-sm"
+        ? "text-primary-600 dark:text-primary-400 font-medium"
         : "text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400"
     }`;
+
+  // Pill highlight AKTIF — meluncur antar item via layoutId (transisi sama
+  // seperti sidebar admin). Background gradient pindah ke sini dari class.
+  const activePill = (isActive: boolean) =>
+    isActive ? (
+      <motion.span
+        layoutId={`sidebar-active-pill-${mode}`}
+        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+        className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-primary-500/10 to-primary-500/5 shadow-sm pointer-events-none"
+      />
+    ) : null;
 
   // Pill highlight hover — meluncur antar item via layoutId framer-motion.
   // Di-skip untuk item aktif (sudah punya gradient bg sendiri).
@@ -337,6 +348,7 @@ const SidebarContent = ({
                   {({ isActive }) => (
                     <>
                       {hoverPill(item.path, isActive)}
+                      {activePill(isActive)}
                       <span
                         className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
                           isActive
@@ -422,10 +434,11 @@ const SidebarContent = ({
                 onMouseLeave={() => setHoveredPath(null)}
                 className={({ isActive }) => navLinkClass(isActive, true)}
               >
-                {({ isActive }) => (
-                  <>
-                    {hoverPill(item.path, isActive)}
-                    <Icon size={16} className="shrink-0" />
+                  {({ isActive }) => (
+                    <>
+                      {hoverPill(item.path, isActive)}
+                      {activePill(isActive)}
+                      <Icon size={16} className="shrink-0" />
                     <span className="truncate">{item.label[language]}</span>
                   </>
                 )}
