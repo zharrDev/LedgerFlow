@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { AxiosError, AxiosHeaders } from "axios";
 import {
   getErrorMessage,
+  sanitizeErrorMessage,
   errorToastTitle,
   SERVER_ERROR_MESSAGE,
   NETWORK_ERROR_MESSAGE,
@@ -70,6 +71,36 @@ describe("getErrorMessage", () => {
   it("nilai tak dikenal -> pesan fallback", () => {
     expect(getErrorMessage(42)).toBe(UNEXPECTED_ERROR_MESSAGE);
     expect(getErrorMessage(undefined)).toBe(UNEXPECTED_ERROR_MESSAGE);
+  });
+});
+
+describe("sanitizeErrorMessage", () => {
+  it("membuang URL dari pesan", () => {
+    expect(
+      sanitizeErrorMessage("Gagal hubungi https://api.contoh.id/v1/x coba lagi."),
+    ).toBe("Gagal hubungi coba lagi.");
+  });
+
+  it("membuang token/heks panjang", () => {
+    expect(
+      sanitizeErrorMessage("Token abcdef1234567890abcdef1234567890 tidak valid."),
+    ).toBe("Token tidak valid.");
+  });
+
+  it("pesan ramah biasa lolos utuh", () => {
+    expect(sanitizeErrorMessage("Kode OTP salah. Minta kode baru.")).toBe(
+      "Kode OTP salah. Minta kode baru.",
+    );
+  });
+
+  it("memotong pesan kepanjangan", () => {
+    expect(sanitizeErrorMessage("x".repeat(500))).toHaveLength(218);
+  });
+
+  it("pesan 4xx ber-URL ikut dibersihkan via getErrorMessage", () => {
+    expect(
+      getErrorMessage(axiosError(400, { error: "Lihat https://contoh.id/a untuk info." })),
+    ).toBe("Lihat untuk info.");
   });
 });
 

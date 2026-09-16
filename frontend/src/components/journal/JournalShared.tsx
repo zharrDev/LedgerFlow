@@ -97,14 +97,14 @@ export function ActionButton({
 // ─── ToastContainer ───────────────────────────────────────────────────
 export function ToastContainer({ toasts }: { toasts: Toast[] }) {
   return (
-    <div className="fixed top-4 right-4 z-[100] space-y-2">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] space-y-2 flex flex-col items-center">
       <AnimatePresence>
         {toasts.map((t) => (
           <motion.div
             key={t.id}
-            initial={{ opacity: 0, x: 50, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 50, scale: 0.9 }}
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
             className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium shadow-lg ${
               t.type === "success"
                 ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"

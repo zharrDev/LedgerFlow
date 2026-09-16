@@ -23,6 +23,19 @@ export const NETWORK_ERROR_MESSAGE =
 // Pesan fallback untuk kasus yang tidak terdeteksi.
 export const UNEXPECTED_ERROR_MESSAGE = "Terjadi kesalahan yang tidak terduga.";
 
+/**
+ * Bersihkan pesan error teknis agar layak tampil di popup: buang URL,
+ * token/heks panjang, dan potong kepanjangan. Pesan ramah biasa
+ * ("Minta kode baru…") tidak berpola teknis sehingga lolos utuh.
+ */
+export function sanitizeErrorMessage(raw: string): string {
+  let msg = raw.replace(/https?:\/\/[^\s"'<>]+/gi, "").replace(/www\.[^\s"'<>]+/gi, "");
+  msg = msg.replace(/\b[0-9a-fA-F]{24,}\b/g, "").replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "");
+  msg = msg.replace(/\s+/g, " ").replace(/\s+([.,;:!?])/g, "$1").trim();
+  if (msg.length > 220) msg = `${msg.slice(0, 217).trimEnd()}…`;
+  return msg || UNEXPECTED_ERROR_MESSAGE;
+}
+
 /** Ambil pesan error yang aman untuk ditampilkan ke user. */
 export function getErrorMessage(err: unknown): string {
   if (err instanceof AxiosError) {
@@ -61,7 +74,7 @@ export function getErrorMessage(err: unknown): string {
     if (status !== undefined && status >= 400) {
       const data = err.response?.data as { error?: unknown } | undefined;
       if (typeof data?.error === "string" && data.error.trim()) {
-        return data.error;
+        return sanitizeErrorMessage(data.error);
       }
       return "Permintaan gagal. Coba lagi.";
     }
@@ -77,7 +90,7 @@ export function getErrorMessage(err: unknown): string {
   }
 
   if (err instanceof Error && err.message.trim()) {
-    return err.message;
+    return sanitizeErrorMessage(err.message);
   }
 
   return UNEXPECTED_ERROR_MESSAGE;

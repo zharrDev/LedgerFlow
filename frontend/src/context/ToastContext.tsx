@@ -82,9 +82,9 @@ function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: 80, scale: 0.92, filter: "blur(4px)" }}
-      animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
-      exit={{ opacity: 0, x: 80, scale: 0.92, filter: "blur(4px)" }}
+      initial={{ opacity: 0, y: -24, scale: 0.92, filter: "blur(4px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, y: -24, scale: 0.92, filter: "blur(4px)" }}
       transition={{ type: "spring", stiffness: 400, damping: 28 }}
       className={`relative flex items-start gap-3 w-[360px] max-w-[calc(100vw-2rem)] px-4 py-3.5 rounded-2xl border shadow-lg ${cfg.accent} ${cfg.glow} overflow-hidden backdrop-blur-sm`}
     >
@@ -183,8 +183,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast: addToast, dismiss }}>
       {children}
 
-      {/* Toast Stack — fixed top-right */}
-      <div className="fixed top-5 right-5 z-[9999] flex flex-col items-end gap-3 pointer-events-none">
+      {/* Toast Stack — tengah atas (semua portal: admin, owner, akuntan) */}
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map((t) => (
             <div key={t.id} className="pointer-events-auto">
