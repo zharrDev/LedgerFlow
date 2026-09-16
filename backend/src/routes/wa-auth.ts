@@ -26,6 +26,7 @@ import {
   sendWhatsAppLoginAlert,
   FonnteError,
 } from "../lib/whatsapp.js";
+import { provisionCompanyFoundation } from "../lib/companyProvision.js";
 import { deleteOrphanAuthUserByPhone } from "../lib/authHeal.js";
 import { strictOtpRateLimit } from "../middleware/rate-limit.js";
 
@@ -502,6 +503,10 @@ waAuth.post("/register/verify", async (c) => {
           status: "active",
         });
       if (memberErr) throw new Error(`insert_member: ${fmtError(memberErr)}`);
+
+      // Fondasi company (CoA standar + periode) — masuk rollback yang sama:
+      // gagal di sini = seluruh akun dibatalkan, user tinggal coba lagi.
+      await provisionCompanyFoundation(company.id);
 
       // Respons + JWT via buildLoginPayload (membership + nama company dalam
       // 1 query) — tanpa getCompanyName tambahan.
