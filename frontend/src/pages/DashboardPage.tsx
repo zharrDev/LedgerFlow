@@ -30,6 +30,7 @@ import {
   Landmark,
   CreditCard,
   Briefcase,
+  ShieldCheck,
 } from "lucide-react";
 import type { Period } from "../types/reports";
 import { formatAbsCurrency } from "../utils/currency";
@@ -220,19 +221,37 @@ export default function DashboardPage() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="relative mt-6 lg:mt-8"
         >
-          {/* blurred decorations — clipped to the panel */}
-          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-            <div className="absolute top-0 -right-32 w-72 h-72 bg-primary-500/30 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl" />
-          </div>
+          {/* Greeting panel — dekorasi radial ber-mask (memudar sebelum tepi,
+              tanpa blob blur yang terpotong kasar) */}
+          <div className="relative rounded-3xl bg-gradient-to-r from-[#0B1120] via-[#101827] to-[#16213A] border border-primary-500/25 shadow-2xl shadow-primary-950/30 overflow-hidden">
+            {/* Dekorasi: glow kanan (belakang owl) + kiri bawah + ring halus */}
+            <div
+              className="pointer-events-none absolute -right-10 -top-24 h-80 w-80 rounded-full bg-cyan-400/15 blur-3xl"
+              style={{
+                WebkitMaskImage:
+                  "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+                maskImage:
+                  "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+              }}
+            />
+            <div
+              className="pointer-events-none absolute -left-20 -bottom-28 h-72 w-72 rounded-full bg-primary-500/15 blur-3xl"
+              style={{
+                WebkitMaskImage:
+                  "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+                maskImage:
+                  "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+              }}
+            />
+            <div className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 hidden lg:block h-56 w-56 rounded-full border border-white/[0.05]" />
+            <div className="pointer-events-none absolute right-16 top-1/2 -translate-y-1/2 hidden lg:block h-80 w-80 rounded-full border border-white/[0.04]" />
 
-          {/* Greeting panel — overflow-visible so owl can peek out top */}
-          <div className="relative overflow-visible rounded-2xl bg-gradient-to-r from-[#0B1120] via-[#111827] to-[#1F2937] border border-primary-500/30 shadow-2xl">
-            <div className="relative p-4 sm:p-6 lg:p-7 xl:p-8">
-              <div className="flex items-end justify-between gap-4">
-                {/* Kiri — Greeting + Nama + Tanggal (3 baris sans-serif) */}
-                <div className="flex-1 min-w-0 lg:pr-44">
-                  <p className="text-sm text-gray-400">
+            <div className="relative p-5 sm:p-7 lg:p-8 xl:px-10">
+              <div className="flex items-end justify-between gap-4 lg:min-h-[7.5rem]">
+                {/* Kiri — pill sapaan + nama gradient + chip tanggal & role */}
+                <div className="flex-1 min-w-0 lg:pr-52 py-1">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-300 backdrop-blur-sm">
+                    <Sparkles size={12} className="text-cyan-400" />
                     {tx(language, "Good ", "Selamat ")}
                     {new Date().getHours() < 11
                       ? tx(language, "Morning", "Pagi")
@@ -241,9 +260,9 @@ export default function DashboardPage() {
                         : new Date().getHours() < 18
                           ? tx(language, "Evening", "Sore")
                           : tx(language, "Evening", "Malam")}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight truncate">
+                  </span>
+                  <div className="mt-2.5 flex items-center gap-3">
+                    <h1 className="text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-white via-white to-cyan-300 bg-clip-text text-transparent truncate">
                       {user?.name?.split(" ")[0] ||
                         tx(language, "User", "Pengguna")}
                     </h1>
@@ -252,19 +271,39 @@ export default function DashboardPage() {
                       <GreetingOwl variant="static" size="h-10 sm:h-12" />
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
-                    <Calendar size="14" className="shrink-0" />
-                    <span className="truncate">{formattedDate}</span>
+                  <div className="flex items-center gap-2 mt-4 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-gray-300">
+                      <Calendar size={12} className="text-cyan-400 shrink-0" />
+                      <span className="truncate">{formattedDate}</span>
+                    </span>
+                    {user?.role && (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-gray-300">
+                        <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
+                        <span className="capitalize truncate">{user.role}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-            <div className="h-0.5 w-full bg-gradient-to-r from-primary-500 via-emerald-500 to-primary-500"></div>
+            {/* Aksen bawah — gradient tiga warna memudar ke tengah */}
+            <div className="h-[3px] w-full bg-gradient-to-r from-primary-500 via-cyan-400/80 to-emerald-400" />
           </div>
 
-          {/* Desktop owl — pops out above panel top, kanan-bawah */}
-          <div className="hidden lg:block absolute -top-12 lg:-top-14 right-8 xl:right-10 z-10">
-            <GreetingOwl size="h-36 lg:h-44" />
+          {/* Desktop owl — pops out above panel top, dengan glow lembut */}
+          <div className="hidden lg:block absolute -top-14 lg:-top-16 right-10 xl:right-14 z-10">
+            <div className="relative">
+              <div
+                className="absolute inset-0 -m-8 rounded-full bg-cyan-400/10 blur-2xl"
+                style={{
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+                  maskImage:
+                    "radial-gradient(ellipse at center, black 40%, transparent 72%)",
+                }}
+              />
+              <GreetingOwl size="h-40 lg:h-48" />
+            </div>
           </div>
         </motion.div>
 
