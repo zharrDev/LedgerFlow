@@ -320,53 +320,6 @@ export default function JournalEntryPage() {
           )}
         </ScrollReveal>
 
-        {/* ── Filters (list view only) — langsung di bawah header, dekat
-            deskripsi, biar search cepat terjangkau ── */}
-        {view.mode === "list" && (
-          <ScrollReveal
-            direction="left"
-            className="bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center"
-          >
-            <div className="relative flex-1 min-w-[100%] sm:min-w-48">
-              <Search
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder={tx(language, "Search number or description...", "Cari nomor atau deskripsi...")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
-              />
-            </div>
-
-            <HoverDropdown
-              value={filterStatus}
-              onChange={(v) => setFilterStatus(v as FilterStatus)}
-              minWidth={150}
-              options={[
-                { value: "all", label: tx(language, "All Status", "Semua Status") },
-                { value: "active", label: tx(language, "Posted", "Diposting") },
-                { value: "inactive", label: tx(language, "Draft", "Draf") },
-              ]}
-            />
-
-            {(search || filterStatus !== "all") && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
-                  setFilterStatus("all");
-                }}
-                className="flex items-center gap-1 px-3 py-2 text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-              >
-                <X size={12} /> {tx(language, "Reset", "Reset")}
-              </button>
-            )}
-          </ScrollReveal>
-        )}
-
         {/* ── Banner sisa kuota jurnal (plan Free) ── */}
         {quota && quota.max !== null && quota.max > 0 && (
           <ScrollReveal
@@ -420,7 +373,7 @@ export default function JournalEntryPage() {
           </ScrollReveal>
         )}
 
-        {/* ── Stats (list view only) ── */}
+        {/* ── Stats (list view only) — di atas kartu gabungan ── */}
         {view.mode === "list" && (
           <ScrollReveal direction="up" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
@@ -451,10 +404,51 @@ export default function JournalEntryPage() {
           </ScrollReveal>
         )}
 
-        {/* ── Main Content ── */}
+        {/* ── Main Content: filter menempel tepat di atas tabel ── */}
         {view.mode === "list" && (
           <ScrollReveal direction="up">
             <JournalList
+              toolbar={
+                <>
+                  <div className="relative flex-1 min-w-[100%] sm:min-w-48">
+                    <Search
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="text"
+                      placeholder={tx(language, "Search number or description...", "Cari nomor atau deskripsi...")}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-darkBg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
+                    />
+                  </div>
+
+                  <HoverDropdown
+                    value={filterStatus}
+                    onChange={(v) => setFilterStatus(v as FilterStatus)}
+                    minWidth={150}
+                    options={[
+                      { value: "all", label: tx(language, "All Status", "Semua Status") },
+                      { value: "active", label: tx(language, "Posted", "Diposting") },
+                      { value: "inactive", label: tx(language, "Draft", "Draf") },
+                    ]}
+                  />
+
+                  {(search || filterStatus !== "all") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch("");
+                        setFilterStatus("all");
+                      }}
+                      className="flex items-center gap-1 px-3 py-2 text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <X size={12} /> {tx(language, "Reset", "Reset")}
+                    </button>
+                  )}
+                </>
+              }
               entries={pagination.pageItems}
               loading={loading}
               error={error}

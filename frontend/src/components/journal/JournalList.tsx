@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { JournalEntry } from "../../types/journal";
 import {
   StatusBadge,
@@ -30,6 +31,9 @@ interface JournalListProps {
   canPost?: boolean;
   canDelete?: boolean;
   canVoid?: boolean;
+  /** Baris filter (search/dropdown) yang dirender menempel di atas tabel,
+      dipisah hairline — tanpa jarak kartu. */
+  toolbar?: ReactNode;
 }
 
 export function JournalList({
@@ -46,6 +50,7 @@ export function JournalList({
   canPost = true,
   canDelete = true,
   canVoid = false,
+  toolbar,
 }: JournalListProps) {
   const { language } = useLanguage();
 
@@ -60,6 +65,14 @@ export function JournalList({
 
   return (
     <div className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden">
+      {toolbar && (
+        <>
+          <div className="px-4 py-3 flex flex-wrap gap-3 items-center">
+            {toolbar}
+          </div>
+          <div className="border-t border-gray-100 dark:border-gray-800/50" />
+        </>
+      )}
       {loading ? (
         <div className="py-20 flex flex-col items-center gap-3 text-gray-400">
           <SpinnerIcon className="w-6 h-6" />
