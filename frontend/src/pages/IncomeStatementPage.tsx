@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useIncomeStatement, useReportPeriods } from "../hooks/useReports";
 import { useLanguage } from "../hooks/useLanguage";
+import { sanitizeErrorMessage } from "../lib/errorMessage";
 import { tx } from "../i18n/tx";
 import { formatCompact } from "../i18n/compactNumber";
 
@@ -126,7 +127,7 @@ export function IncomeStatementPage() {
         {error && !isInitialLoad && (
           <ScrollReveal direction="fade" className="py-16 text-center">
             <p className="text-red-500 text-sm mb-2">
-              {error instanceof Error ? error.message : String(error)}
+              {sanitizeErrorMessage(error instanceof Error ? error.message : String(error))}
             </p>
             <button
               onClick={() => refetch()}

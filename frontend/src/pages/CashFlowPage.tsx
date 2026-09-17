@@ -15,6 +15,7 @@ import {
 
 import { ScrollReveal } from "../components/ScrollReveal";
 import { useLanguage } from "../hooks/useLanguage";
+import { sanitizeErrorMessage } from "../lib/errorMessage";
 import { tx } from "../i18n/tx";
 import { useCashFlow, useReportPeriods } from "../hooks/useReports";
 import { HoverDropdown } from "../components/HoverDropdown";
@@ -391,7 +392,7 @@ export default function CashFlowPage() {
           {/* ── Error ── */}
           {error && !isRefetching && (
             <div className="py-16 text-center">
-              <p className="text-rose-500 text-sm mb-2">{error instanceof Error ? error.message : String(error)}</p>
+              <p className="text-rose-500 text-sm mb-2">{sanitizeErrorMessage(error instanceof Error ? error.message : String(error))}</p>
               <button
                 onClick={() => refetch()}
                 className="text-primary-500 text-sm hover:underline font-medium"

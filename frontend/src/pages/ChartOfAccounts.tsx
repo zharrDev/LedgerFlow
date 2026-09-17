@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useAccounts } from "../hooks/useAccounts";
 import { usePagination } from "../hooks/usePagination";
 import { useLanguage } from "../hooks/useLanguage";
+import { sanitizeErrorMessage } from "../lib/errorMessage";
 import { tx } from "../i18n/tx";
 
 import { ScrollReveal } from "../components/ScrollReveal";
@@ -265,7 +266,9 @@ export default function ChartOfAccounts() {
       } catch (err) {
         failed++;
         const msg =
-          err instanceof Error ? err.message : tx(language, "an unexpected error occurred", "terjadi kesalahan tidak terduga");
+          err instanceof Error
+            ? sanitizeErrorMessage(err.message)
+            : tx(language, "an unexpected error occurred", "terjadi kesalahan tidak terduga");
         failures.push(`${acc.code} — ${acc.name}: ${msg}`);
       }
     }

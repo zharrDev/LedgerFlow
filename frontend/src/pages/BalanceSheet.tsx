@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
+import { sanitizeErrorMessage } from "../lib/errorMessage";
 import { tx } from "../i18n/tx";
 import { MONTHS_FULL } from "../i18n/months";
 import { useBalanceSheet, useReportPeriods } from "../hooks/useReports";
@@ -186,7 +187,7 @@ export default function BalanceSheet() {
                   {tx(language, "An Error Occurred", "Terjadi Kesalahan")}
                 </h3>
                 <p className="text-rose-700 dark:text-rose-300">
-                  {error instanceof Error ? error.message : String(error)}
+                  {sanitizeErrorMessage(error instanceof Error ? error.message : String(error))}
                 </p>
               </div>
             </div>

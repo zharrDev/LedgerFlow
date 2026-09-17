@@ -51,11 +51,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               Terjadi Kesalahan
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              Halaman tidak dapat ditampilkan. Detail error:
-            </p>
-            <p className="text-xs font-mono text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 rounded-lg p-3 mb-5 break-words">
-              {this.state.message || "Unknown error"}
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+              Halaman tidak dapat ditampilkan. Silakan muat ulang — tidak ada
+              data Anda yang hilang.
             </p>
             <button
               type="button"
