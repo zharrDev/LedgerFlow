@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import type {
   JournalEntry,
@@ -21,12 +21,9 @@ import { useAuth } from "../context/AuthContext";
 import { HoverDropdown } from "../components/HoverDropdown";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { formatCurrency } from "../utils/currency";
-import { formatCompact } from "../i18n/compactNumber";
 import {
   ArrowLeft,
   Search,
-  CheckCircle,
-  FileEdit,
   CircleDollarSign,
   Plus,
   X,
@@ -37,59 +34,6 @@ type ViewState =
   | { mode: "list" }
   | { mode: "new" }
   | { mode: "detail"; entry: JournalEntry };
-
-// ─── Animation variants ─────────────────────────────────────────────
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
-};
-
-// ─── Stat Card ──────────────────────────────────────────────────────
-function StatCard({
-  label,
-  value,
-  sub,
-  icon,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ReactNode;
-  accent: string;
-}) {
-  return (
-    <motion.div
-      variants={itemVariants}
-      whileHover={{ y: -4 }}
-      className={`group relative rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all p-3 sm:p-5 overflow-hidden`}
-    >
-      <div
-        className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-40 group-hover:opacity-80 transition-opacity ${accent}`}
-      ></div>
-      <div className="relative">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            {label}
-          </span>
-          <div className={`p-1.5 rounded-lg ${accent}`}>{icon}</div>
-        </div>
-        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tabular-nums break-words">
-          {value}
-        </p>
-        {sub && (
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-            {sub}
-          </p>
-        )}
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Page ───────────────────────────────────────────────────────────
 export default function JournalEntryPage() {
@@ -320,91 +264,7 @@ export default function JournalEntryPage() {
           )}
         </ScrollReveal>
 
-        {/* ── Banner sisa kuota jurnal (plan Free) ── */}
-        {quota && quota.max !== null && quota.max > 0 && (
-          <ScrollReveal
-            direction="left"
-            className={`rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 ${
-              (quota.left ?? 0) <= 10
-                ? "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40"
-                : "bg-white dark:bg-darkCard border-gray-200 dark:border-gray-700/50 shadow-sm"
-            }`}
-          >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div
-                className={`p-2 rounded-xl shrink-0 ${
-                  (quota.left ?? 0) <= 10
-                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                    : "bg-primary-500/10 text-primary-500"
-                }`}
-              >
-                <CircleDollarSign size={18} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {quota.planName === "free" ? "Plan Free" : tx(language, "Journal Quota", "Kuota Jurnal")} —{" "}
-                  {tx(language, `journals remaining this month (of ${quota.max})`, `jurnal tersisa bulan ini (dari ${quota.max})`)}
-                </p>
-                <div className="mt-1.5 h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700/60 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      (quota.left ?? 0) <= 10
-                        ? "bg-amber-500"
-                        : "bg-gradient-to-r from-primary-500 to-primary-600"
-                    }`}
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.max(4, ((quota.used || 0) / quota.max) * 100),
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-            {(quota.left ?? 0) <= 10 && (
-              <a
-                href="/pricing"
-                className="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
-              >
-                {tx(language, "Upgrade to Pro", "Upgrade ke Pro")}
-              </a>
-            )}
-          </ScrollReveal>
-        )}
-
-        {/* ── Stats (list view only) — di atas kartu gabungan ── */}
-        {view.mode === "list" && (
-          <ScrollReveal direction="up" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              label={tx(language, "Total Entries", "Total Entry")}
-              value={stats.total}
-              icon={<FileEdit size={14} className="text-gray-500" />}
-              accent="bg-gray-500/10"
-            />
-            <StatCard
-              label={tx(language, "Posted", "Diposting")}
-              value={stats.posted}
-              icon={<CheckCircle size={14} className="text-emerald-500" />}
-              accent="bg-emerald-500/10"
-            />
-            <StatCard
-              label={tx(language, "Draft", "Draf")}
-              value={stats.draft}
-              icon={<FileEdit size={14} className="text-amber-500" />}
-              accent="bg-amber-500/10"
-            />
-            <StatCard
-              label={tx(language, "Total Posted", "Total Diposting")}
-              value={fmtCompact(stats.totalPostedDebit)}
-              sub={tx(language, "Total Debit", "Total Debit")}
-              icon={<CircleDollarSign size={14} className="text-primary-500" />}
-              accent="bg-primary-500/10"
-            />
-          </ScrollReveal>
-        )}
-
-        {/* ── Main Content: filter menempel tepat di atas tabel ── */}
+        {/* ── Main Content: tepat di bawah header, tanpa blok penghalang ── */}
         {view.mode === "list" && (
           <ScrollReveal direction="up">
             <JournalList
@@ -446,6 +306,27 @@ export default function JournalEntryPage() {
                     >
                       <X size={12} /> {tx(language, "Reset", "Reset")}
                     </button>
+                  )}
+
+                  {quota && quota.max !== null && quota.max > 0 && (
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border ${
+                        (quota.left ?? 0) <= 10
+                          ? "border-amber-300 dark:border-amber-500/40 text-amber-600 dark:text-amber-400"
+                          : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      <CircleDollarSign size={12} />
+                      {quota.left}/{quota.max}
+                      {(quota.left ?? 0) <= 10 && (
+                        <a
+                          href="/pricing"
+                          className="font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                        >
+                          {tx(language, "Upgrade", "Upgrade")}
+                        </a>
+                      )}
+                    </span>
                   )}
                 </>
               }
