@@ -179,6 +179,30 @@ export function useAccounts() {
     [toast],
   );
 
+  // Hapus akun permanen (soft-delete di backend: is_active=false, owner only)
+  const removeAccount = useCallback(
+    async (account: Account): Promise<boolean> => {
+      try {
+        await accountsService.remove(account.id);
+        toast({
+          variant: "success",
+          title: "Akun berhasil dihapus",
+          message: `${account.code} · ${account.name}`,
+        });
+        await fetchAccounts();
+        return true;
+      } catch (e) {
+        toast({
+          variant: "error",
+          title: "Gagal menghapus akun",
+          message: getErrorMessage(e),
+        });
+        return false;
+      }
+    },
+    [toast, fetchAccounts],
+  );
+
   return {
     accounts,
     loading,
@@ -188,5 +212,6 @@ export function useAccounts() {
     fetchAccounts,
     saveAccount,
     toggleStatus,
+    removeAccount,
   };
 }

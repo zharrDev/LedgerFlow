@@ -1,13 +1,18 @@
 // Unit test formatter mata uang (utils/currency.ts).
+// Model: nominal tersimpan IDR; formatCurrency mengkonversi ke mata uang aktif.
 // JSDOM menyediakan localStorage yang dipakai getCurrency/setCurrency.
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   CURRENCIES,
+  EXCHANGE_RATES,
   getCurrency,
   setCurrency,
   formatCurrency,
   formatNumber,
   formatAbsCurrency,
+  convertFromIDR,
+  convertToIDR,
+  getExchangeRate,
 } from "../utils/currency";
 import { formatCompact } from "../i18n/compactNumber";
 
@@ -46,6 +51,35 @@ describe("getCurrency / setCurrency", () => {
       expect(codes).toContain(expected);
     }
   });
+
+  it("semua 17 mata uang punya kurs positif", () => {
+    for (const { code } of CURRENCIES) {
+      expect(EXCHANGE_RATES[code]).toBeGreaterThan(0);
+      expect(getExchangeRate(code)).toBe(EXCHANGE_RATES[code]);
+    }
+    expect(getExchangeRate("XXX")).toBe(1);
+  });
+});
+
+describe("convertFromIDR / convertToIDR", () => {
+  it("IDR identitas (tanpa konversi)", () => {
+    expect(convertFromIDR(99_000, "IDR")).toBe(99_000);
+    expect(convertToIDR(99_000, "IDR")).toBe(99_000);
+  });
+
+  it("99.000 IDR ≈ $6.00 (kurs 16.500)", () => {
+    expect(convertFromIDR(99_000, "USD")).toBeCloseTo(6, 5);
+  });
+
+  it("round-trip USD → IDR → USD konsisten", () => {
+    const idr = convertToIDR(100, "USD");
+    expect(idr).toBe(1_650_000);
+    expect(convertFromIDR(idr, "USD")).toBeCloseTo(100, 5);
+  });
+
+  it("VND kecil (kurs < 1) tidak nol", () => {
+    expect(convertFromIDR(99_000, "VND")).toBeGreaterThan(100_000);
+  });
 });
 
 describe("formatCurrency", () => {
@@ -55,16 +89,24 @@ describe("formatCurrency", () => {
     expect(norm(formatCurrency(99_000))).toContain("99.000");
   });
 
-  it("tanpa desimal untuk nominal bulat", () => {
+  it("tanpa desimal untuk IDR bulat", () => {
     setCurrency("IDR");
     expect(norm(formatCurrency(1_000_000))).not.toMatch(/,\d/);
   });
 
-  it("memformat USD dengan simbol $ dan koma ribuan", () => {
+  it("USD dikonversi (99.000 IDR → $6.00), bukan sekadar ganti simbol", () => {
     setCurrency("USD");
     const out = norm(formatCurrency(99_000));
     expect(out).toContain("$");
-    expect(out).toContain("99,000");
+    expect(out).toContain("6.00");
+    expect(out).not.toContain("99,000");
+  });
+
+  it("JPY 0 desimal (99.000 IDR → ±¥900)", () => {
+    setCurrency("JPY");
+    const out = norm(formatCurrency(99_000));
+    expect(out).toMatch(/[¥￥]/);
+    expect(out).toContain("900");
   });
 
   it("nilai negatif ditandai minus", () => {
@@ -81,15 +123,15 @@ describe("formatNumber & formatAbsCurrency", () => {
     expect(norm(formatNumber(1234.5))).toMatch(/1\.234,5/);
   });
 
-  it("formatAbsCurrency membuang tanda negatif", () => {
-    setCurrency("USD");
+  it("formatAbsCurrency membuang tanda negatif (dengan konversi)", () => {
+    setCurrency("IDR");
     const out = norm(formatAbsCurrency(-2_500));
     expect(out).not.toContain("-");
-    expect(out).toContain("2,500");
+    expect(out).toContain("2.500");
   });
 });
 
-describe("formatCompact — simbol mata uang (bukan kode text)", () => {
+describe("formatCompact — konversi dulu, lalu ambang jt/M", () => {
   it("IDR memakai simbol Rp, bukan kode IDR", () => {
     setCurrency("IDR");
     expect(norm(formatCompact("id", 20_000_000))).toContain("Rp");
@@ -97,16 +139,19 @@ describe("formatCompact — simbol mata uang (bukan kode text)", () => {
     expect(norm(formatCompact("id", 20_000_000))).toContain("jt");
   });
 
-  it("USD memakai simbol $, bukan kode USD", () => {
+  it("USD 99jt IDR → skala K ($6K), bukan M", () => {
     setCurrency("USD");
-    expect(norm(formatCompact("en", 5_000_000))).toContain("$");
-    expect(norm(formatCompact("en", 5_000_000))).not.toContain("USD");
+    const out = norm(formatCompact("en", 99_000_000));
+    expect(out).toContain("$");
+    expect(out).toContain("6K");
+    expect(out).not.toContain("USD");
   });
 
-  it("EUR memakai simbol €, bukan kode EUR", () => {
+  it("EUR memakai simbol € (dengan konversi)", () => {
     setCurrency("EUR");
-    expect(norm(formatCompact("en", 3_000_000))).toContain("€");
-    expect(norm(formatCompact("en", 3_000_000))).not.toContain("EUR");
+    const out = norm(formatCompact("en", 3_000_000));
+    expect(out).toContain("€");
+    expect(out).not.toContain("EUR");
   });
 
   it("JPY memakai simbol yen (bukan kode JPY)", () => {
@@ -119,8 +164,9 @@ describe("formatCompact — simbol mata uang (bukan kode text)", () => {
 
   it("GBP memakai simbol £ (bukan kode GBP)", () => {
     setCurrency("GBP");
-    expect(norm(formatCompact("en", 4_000_000))).toContain("£");
-    expect(norm(formatCompact("en", 4_000_000))).not.toContain("GBP");
+    const out = norm(formatCompact("en", 4_000_000));
+    expect(out).toContain("£");
+    expect(out).not.toContain("GBP");
   });
 
   it("skala ribuan (K/rb) juga memakai simbol", () => {
@@ -128,7 +174,15 @@ describe("formatCompact — simbol mata uang (bukan kode text)", () => {
     expect(norm(formatCompact("id", 50_000))).toContain("50rb");
     expect(norm(formatCompact("id", 50_000))).toContain("Rp");
     setCurrency("USD");
-    expect(norm(formatCompact("en", 50_000))).toContain("50K");
+    // 50.000 IDR ≈ $3.03 → di bawah ambang K, tampil satuan dolar
     expect(norm(formatCompact("en", 50_000))).toContain("$");
+  });
+
+  it("semua 17 mata uang terformat tanpa throw", () => {
+    for (const { code } of CURRENCIES) {
+      setCurrency(code);
+      expect(() => formatCurrency(1_000_000)).not.toThrow();
+      expect(() => formatCompact("en", 1_000_000)).not.toThrow();
+    }
   });
 });

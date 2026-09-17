@@ -934,31 +934,42 @@ payments.post("/webhook", async (c) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// GET /history — Ambil riwayat pembayaran user
-// ═══════════════════════════════════════════════════════════════════════
-// Dipake frontend buat nampilin halaman "Riwayat Pembayaran"
-// Menampilkan 20 pembayaran terakhir user, diurutin dari yang terbaru
-// ═══════════════════════════════════════════════════════════════════════
+// GET /history — Riwayat pembayaran user + search/filter/sort/pagination (S1).
+// Query: ?search=&status=paid&sort=newest|oldest&page=1&limit=20
+// Tanpa query pagination → array 20 terakhir (kompatibel lama).
 payments.get("/history", authMiddleware, async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
+  const search = (c.req.query("search") ?? "").trim();
+  const status = c.req.query("status") ?? "all";
+  const sort = c.req.query("sort") ?? "newest";
+  const pageParam = c.req.query("page");
+  const limitParam = c.req.query("limit");
 
-  // Query ke tabel "payments":
-  //   - eq("user_id", userId)                  → cuma payment milik user ini
-  //   - order("created_at", { ascending: false }) → urutin dari terbaru ke terlama
-  //   - limit(20)                              → cuma ambil 20 terakhir (biar gak berat)
-  const { data, error } = await supabase
+  let query = supabase
     .from("payments")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(20);
+    .order("created_at", { ascending: sort === "oldest" });
+  if (status !== "all") query = query.eq("status", status);
+  if (search) query = query.ilike("order_id", `%${search}%`);
+
+  // Kompatibel lama: tanpa page/limit/search/status/sort → 20 terakhir
+  if (pageParam === undefined && limitParam === undefined && !search && status === "all" && sort === "newest") {
+    const { data, error } = await query.limit(20);
+    if (error) return dbErrorResponse(c, error);
+    return c.json(data ?? []);
+  }
+
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(limitParam ?? "20", 10) || 20));
+  const offset = (page - 1) * limit;
+  const { data, error, count } = await query.range(offset, offset + limit - 1);
 
   // Kalau query gagal, return error
   if (error) return dbErrorResponse(c, error);
 
-  // Return data pembayaran (array of payment objects)
-  return c.json(data);
+  return c.json({ data: data ?? [], total: count ?? 0, page, limit });
 });
 
 // ═══════════════════════════════════════════════════════════════════════

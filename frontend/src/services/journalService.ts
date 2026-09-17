@@ -87,6 +87,16 @@ export const journalService = {
     await api.delete(`/api/journal/${id}`, { skipErrorToast: true });
   },
 
+  update: async (id: string, payload: CreateJournalPayload): Promise<JournalEntry> => {
+    const { data } = await api.put(`/api/journal/${id}`, payload, { skipErrorToast: true });
+    // Backend return updated header; ambil detail segar untuk lines
+    try {
+      return await journalService.getById(data?.id ?? id);
+    } catch {
+      return mapJournal(data);
+    }
+  },
+
   // Void jurnal posted — data tidak dihapus, hanya ditandai + alasan.
   void: async (id: string, reason: string): Promise<JournalEntry> => {
     const { data } = await api.post(

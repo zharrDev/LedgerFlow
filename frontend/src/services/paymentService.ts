@@ -14,6 +14,7 @@
 // ============================================================================
 
 import { api } from "../lib/api"; // Axios instance yang udah di-config (base URL, auth headers, dll)
+import { formatCurrency } from "../utils/currency"; // Harga backend dalam IDR → tampil ikut mata uang aktif
 
 // ═══════════════════════════════════════════════════════════════════════
 // TYPE DEFINITIONS
@@ -399,21 +400,11 @@ export async function openSnapPayment(
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
- * Format angka jadi format Rupiah lengkap.
+ * Format angka IDR jadi format mata uang aktif user.
  *
- * Contoh:
- *   formatPrice(99000)   → "Rp99.000"
- *   formatPrice(999000)  → "Rp999.000"
- *   formatPrice(2999000) → "Rp2.999.000"
+ * Contoh (mode IDR):  formatPrice(99000) → "Rp99.000"
+ * Contoh (mode USD):  formatPrice(99000) → "$6.00"
  */
 export function formatPrice(amount: number): string {
-  // Pakai Intl.NumberFormat dengan locale "id-ID" dan currency "IDR"
-  // minimumFractionDigits: 0 → gak ada desimal (Rp99.000, bukan Rp99.000,00)
-  // maximumFractionDigits: 0 → gak ada desimal
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency", // Format sebagai mata uang
-    currency: "IDR", // Mata uang Rupiah
-    minimumFractionDigits: 0, // Minimal 0 digit desimal
-    maximumFractionDigits: 0, // Maksimal 0 digit desimal
-  }).format(amount);
+  return formatCurrency(amount);
 }

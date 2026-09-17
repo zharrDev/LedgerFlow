@@ -17,6 +17,10 @@ export interface TablePaginationProps {
   summary?: ReactNode;
   /** Kata untuk satuan item, mis. "akun", "entry", "transaksi" */
   itemLabel?: string;
+  /** Pilihan jumlah data per halaman (ketentuan S1) */
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
 }
 
 export function TablePagination({
@@ -32,6 +36,9 @@ export function TablePagination({
   onGoTo,
   summary,
   itemLabel,
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions = [5, 10, 20, 50],
 }: TablePaginationProps) {
   const { language } = useLanguage();
   const id = language === "id";
@@ -68,6 +75,20 @@ export function TablePagination({
 
       {totalPages > 1 && (
         <div className="flex items-center gap-1 order-1 sm:order-2 self-end sm:self-auto">
+          {pageSize !== undefined && onPageSizeChange && (
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              aria-label={id ? "Jumlah data per halaman" : "Items per page"}
+              className="h-8 px-2 rounded-lg text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-gray-600 dark:text-gray-300 outline-none"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}/{id ? "hal" : "page"}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             onClick={onPrev}

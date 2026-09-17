@@ -549,4 +549,41 @@ CREATE INDEX IF NOT EXISTS idx_admin_gate_logs_created
 
 GRANT ALL PRIVILEGES ON TABLE public.admin_gate_logs TO service_role;
 
+-- ─── 18. KEPATUHAN S1: timestamp, soft-delete ketat, relasi 1:1 ──────
+-- Idempoten (IF NOT EXISTS / DROP IF EXISTS) — aman dijalankan ulang.
+-- 18a. Timestamp di tabel yang belum punya (ketentuan: created_at+updated_at
+--      tiap tabel utama).
+ALTER TABLE company_members ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE journal_counters ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE journal_counters ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE plans ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE plans ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DROP TRIGGER IF EXISTS trg_company_members_updated_at ON company_members;
+CREATE TRIGGER trg_company_members_updated_at BEFORE UPDATE ON company_members FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_journal_counters_updated_at ON journal_counters;
+CREATE TRIGGER trg_journal_counters_updated_at BEFORE UPDATE ON journal_counters FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_plans_updated_at ON plans;
+CREATE TRIGGER trg_plans_updated_at BEFORE UPDATE ON plans FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_subscriptions_updated_at ON subscriptions;
+CREATE TRIGGER trg_subscriptions_updated_at BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS trg_payments_updated_at ON payments;
+CREATE TRIGGER trg_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- 18b. Soft-delete ketat: deleted_at di accounts (tabel ke-2 selain
+--      journal_entries.deleted_at) — ketentuan minimal 2 tabel.
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_accounts_company_active
+  ON accounts(company_id) WHERE deleted_at IS NULL;
+
+-- 18c. Relasi 1:1 eksplisit (ketentuan S1): satu user ↔ satu subscription
+--      aktif, ditegakkan UNIQUE(user_id) di subscriptions. Komentar ini
+--      mendokumentasikan jenis relasi: 1:1 users↔subscriptions,
+--      1:M companies→accounts/periods/journal_entries, M:1 kebalikannya,
+--      M:M users↔companies via company_members.
+
 

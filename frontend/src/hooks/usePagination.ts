@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 
 // Hook pagination sederhana untuk memotong list per halaman
-export function usePagination<T>(items: T[], pageSize = 5) {
+export function usePagination<T>(items: T[], initialPageSize = 5) {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(initialPageSize);
 
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
 
@@ -11,6 +12,11 @@ export function usePagination<T>(items: T[], pageSize = 5) {
     if (page > totalPages) setPage(totalPages);
     if (page < 1) setPage(1);
   }, [page, totalPages]);
+
+  const setPageSize = (size: number) => {
+    setPageSizeState(size);
+    setPage(1);
+  };
 
   // Ambil item yang tampil di halaman aktif
   const pageItems = useMemo(() => {
@@ -27,6 +33,7 @@ export function usePagination<T>(items: T[], pageSize = 5) {
     totalPages,
     pageItems,
     pageSize,
+    setPageSize,
     totalItems: items.length,
     startIndex,
     endIndex,

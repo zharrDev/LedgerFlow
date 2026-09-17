@@ -39,7 +39,7 @@ describe("validateBody middleware", () => {
     expect(body.lines).toHaveLength(2);
   });
 
-  it("menolak body tidak valid dengan 400 + details.fieldErrors", async () => {
+  it("menolak body tidak valid dengan 422 + details.fieldErrors", async () => {
     const app = buildApp();
     const res = await app.request("/test", {
       method: "POST",
@@ -49,9 +49,9 @@ describe("validateBody middleware", () => {
         lines: [{ code: "1-1000" }], // kurang dari 2 baris
       }),
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     const body = await res.json();
-    expect(body.error).toBe("Data tidak valid");
+    expect(body.error).toBe("Validasi gagal");
     expect(body.details.fieldErrors).toBeTruthy();
     expect(Array.isArray(body.details.fieldErrors.email)).toBe(true);
     expect(Array.isArray(body.details.fieldErrors.lines)).toBe(true);
@@ -66,7 +66,7 @@ describe("validateBody middleware", () => {
     });
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe("Data tidak valid");
+    expect(body.error).toBe("Body JSON tidak valid");
   });
 
   it("menolak body kosong (null) dengan 400", async () => {

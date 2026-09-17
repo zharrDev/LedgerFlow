@@ -33,6 +33,7 @@ import {
 type ViewState =
   | { mode: "list" }
   | { mode: "new" }
+  | { mode: "edit"; entry: JournalEntry }
   | { mode: "detail"; entry: JournalEntry };
 
 // ─── Page ───────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export default function JournalEntryPage() {
     posting,
     fetchEntries,
     createEntry,
+    updateEntry,
     postEntry,
     deleteEntry,
     voidEntry,
@@ -62,6 +64,8 @@ export default function JournalEntryPage() {
   const location = useLocation();
   const [view, setView] = useState<ViewState>({ mode: "list" });
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [filterDate, setFilterDate] = useState<string>("all");
+  const [sortKey, setSortKey] = useState<string>("newest");
   const [quota, setQuota] = useState<{
     max: number | null;
     used: number;
@@ -98,10 +102,12 @@ export default function JournalEntryPage() {
   const [voidReason, setVoidReason] = useState("");
   const [voidReasonError, setVoidReasonError] = useState("");
 
-  // ── Filter ──
+  // ── Filter + Sorting (ketentuan S1: search/filter/sort bersamaan) ──
   const filtered = useMemo(() => {
     const q = (search ?? "").toLowerCase();
-    return (entries ?? []).filter((e) => {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const list = (entries ?? []).filter((e) => {
       const matchSearch =
         (e.number ?? "").toLowerCase().includes(q) ||
         (e.description ?? "").toLowerCase().includes(q);
@@ -109,9 +115,34 @@ export default function JournalEntryPage() {
         filterStatus === "all" ||
         (filterStatus === "active" && e.status === "posted") ||
         (filterStatus === "inactive" && e.status === "draft");
-      return matchSearch && matchStatus;
+      let matchDate = true;
+      if (filterDate !== "all") {
+        const t = new Date(e.date).getTime();
+        if (Number.isNaN(t)) matchDate = false;
+        else if (filterDate === "today") matchDate = now - t < dayMs;
+        else if (filterDate === "week") matchDate = now - t < 7 * dayMs;
+        else if (filterDate === "month") matchDate = now - t < 30 * dayMs;
+      }
+      return matchSearch && matchStatus && matchDate;
     });
-  }, [entries, search, filterStatus]);
+    const sorted = [...list];
+    switch (sortKey) {
+      case "oldest":
+        sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        break;
+      case "number-az":
+        sorted.sort((a, b) => (a.number ?? "").localeCompare(b.number ?? ""));
+        break;
+      case "number-za":
+        sorted.sort((a, b) => (b.number ?? "").localeCompare(a.number ?? ""));
+        break;
+      case "newest":
+      default:
+        sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        break;
+    }
+    return sorted;
+  }, [entries, search, filterStatus, filterDate, sortKey]);
 
   // Pagination client-side untuk list view
   const pagination = usePagination(filtered, 5);
@@ -128,16 +159,23 @@ export default function JournalEntryPage() {
     };
   }, [entries]);
 
-  // Stat cards memakai format compact (Rp 12,3 jt) — full IDR tidak muat di kartu grid-cols-2 300px.
-  // fmtIDR (full) tetap dipakai untuk baris tabel/list.
+  // fmtIDR (full) dipakai untuk baris tabel/list.
   const fmtIDR = (n: number) => formatCurrency(n);
-  const fmtCompact = (n: number) => formatCompact(language, n);
 
   // ── Handlers ──
   const handleSave = async (
     payload: CreateJournalPayload,
   ): Promise<boolean> => {
     const result = await createEntry(payload);
+    return result !== null;
+  };
+
+  const handleUpdate = async (
+    payload: CreateJournalPayload,
+  ): Promise<boolean> => {
+    if (view.mode !== "edit") return false;
+    const result = await updateEntry(view.entry.id, payload);
+    if (result) setView({ mode: "detail", entry: result });
     return result !== null;
   };
 
@@ -204,9 +242,11 @@ export default function JournalEntryPage() {
   const pageTitle =
     view.mode === "new"
       ? tx(language, "New Entry", "Buat Entry Baru")
-      : view.mode === "detail"
-        ? view.entry.number
-        : tx(language, "Journal Entry", "Entri Jurnal");
+      : view.mode === "edit"
+        ? tx(language, "Edit Entry", "Edit Entry")
+        : view.mode === "detail"
+          ? view.entry.number
+          : tx(language, "Journal Entry", "Entri Jurnal");
 
   return (
     <>
@@ -295,12 +335,38 @@ export default function JournalEntryPage() {
                     ]}
                   />
 
-                  {(search || filterStatus !== "all") && (
+                  <HoverDropdown
+                    value={filterDate}
+                    onChange={setFilterDate}
+                    minWidth={150}
+                    options={[
+                      { value: "all", label: tx(language, "All Dates", "Semua Tanggal") },
+                      { value: "today", label: tx(language, "Today", "Hari Ini") },
+                      { value: "week", label: tx(language, "Last 7 Days", "7 Hari Terakhir") },
+                      { value: "month", label: tx(language, "Last 30 Days", "30 Hari Terakhir") },
+                    ]}
+                  />
+
+                  <HoverDropdown
+                    value={sortKey}
+                    onChange={setSortKey}
+                    minWidth={150}
+                    options={[
+                      { value: "newest", label: tx(language, "Newest", "Terbaru") },
+                      { value: "oldest", label: tx(language, "Oldest", "Terlama") },
+                      { value: "number-az", label: tx(language, "Number A-Z", "Nomor A-Z") },
+                      { value: "number-za", label: tx(language, "Number Z-A", "Nomor Z-A") },
+                    ]}
+                  />
+
+                  {(search || filterStatus !== "all" || filterDate !== "all" || sortKey !== "newest") && (
                     <button
                       type="button"
                       onClick={() => {
                         setSearch("");
                         setFilterStatus("all");
+                        setFilterDate("all");
+                        setSortKey("newest");
                       }}
                       className="flex items-center gap-1 px-3 py-2 text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                     >
@@ -353,6 +419,8 @@ export default function JournalEntryPage() {
                 onPrev: pagination.prev,
                 onNext: pagination.next,
                 onGoTo: pagination.goTo,
+                pageSize: pagination.pageSize,
+                onPageSizeChange: pagination.setPageSize,
                 itemLabel: tx(language, "entries", "entry"),
                 summary: (
                   <>
@@ -377,6 +445,26 @@ export default function JournalEntryPage() {
           />
         )}
 
+        {view.mode === "edit" && (
+          <JournalForm
+            saving={saving}
+            onSave={handleUpdate}
+            onBack={() => setView({ mode: "detail", entry: view.entry })}
+            initialEntry={{
+              date: view.entry.date,
+              description: view.entry.description,
+              lines: view.entry.lines.map((l) => ({
+                accountCode: l.accountCode,
+                accountName: l.accountName,
+                description: l.description,
+                debit: l.debit,
+                credit: l.credit,
+              })),
+            }}
+            submitLabel={tx(language, "Update Entry", "Perbarui Entry")}
+          />
+        )}
+
         {view.mode === "detail" && (
           <JournalDetail
             entry={view.entry}
@@ -385,6 +473,7 @@ export default function JournalEntryPage() {
             onPost={(entry) => openConfirm("post", entry)}
             onDelete={(entry) => openConfirm("delete", entry)}
             onVoid={(entry) => openConfirm("void", entry)}
+            onEdit={(entry) => setView({ mode: "edit", entry })}
             canPost={canCreatePost}
             canDelete={canDelete}
             canVoid={canVoid}

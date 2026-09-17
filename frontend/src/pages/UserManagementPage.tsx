@@ -79,6 +79,10 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortKey, setSortKey] = useState<string>("name-az");
 
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", role: "akuntan" });
@@ -188,6 +192,33 @@ export default function UserManagementPage() {
 
   const PHONE_RE = /^(\+62|62|0)8\d{8,11}$/;
 
+  // Search / filter / sorting (ketentuan S1, bisa dipakai bersamaan)
+  const visibleUsers = users
+    .filter((u) => {
+      const q = search.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        u.name.toLowerCase().includes(q) ||
+        (u.phone ?? "").toLowerCase().includes(q) ||
+        (u.email ?? "").toLowerCase().includes(q);
+      const matchRole = filterRole === "all" || u.role === filterRole;
+      const matchStatus = filterStatus === "all" || u.status === filterStatus;
+      return matchSearch && matchRole && matchStatus;
+    })
+    .sort((a, b) => {
+      switch (sortKey) {
+        case "name-za":
+          return b.name.localeCompare(a.name);
+        case "newest":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "name-az":
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+
   const handleAddMember = async () => {
     setFormError("");
     const digits = form.phone.replace(/[\s\-().]/g, "");
@@ -218,6 +249,64 @@ export default function UserManagementPage() {
 
   return (
     <>
+      {/* ── Toolbar search/filter/sort ── */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex-1 min-w-[160px]">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={tx(language, "Search name, phone, email...", "Cari nama, HP, email...")}
+            className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkCard text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary-500/40 transition"
+          />
+        </div>
+        <HoverDropdown
+          value={filterRole}
+          onChange={setFilterRole}
+          minWidth={140}
+          options={[
+            { value: "all", label: tx(language, "All Roles", "Semua Role") },
+            { value: "owner", label: tx(language, "Owner", "Pemilik") },
+            { value: "akuntan", label: tx(language, "Accountant", "Akuntan") },
+          ]}
+        />
+        <HoverDropdown
+          value={filterStatus}
+          onChange={setFilterStatus}
+          minWidth={140}
+          options={[
+            { value: "all", label: tx(language, "All Status", "Semua Status") },
+            { value: "active", label: tx(language, "Active", "Aktif") },
+            { value: "suspended", label: tx(language, "Suspended", "Suspend") },
+          ]}
+        />
+        <HoverDropdown
+          value={sortKey}
+          onChange={setSortKey}
+          minWidth={140}
+          options={[
+            { value: "name-az", label: tx(language, "Name A-Z", "Nama A-Z") },
+            { value: "name-za", label: tx(language, "Name Z-A", "Nama Z-A") },
+            { value: "newest", label: tx(language, "Newest", "Terbaru") },
+            { value: "oldest", label: tx(language, "Oldest", "Terlama") },
+          ]}
+        />
+        {(search || filterRole !== "all" || filterStatus !== "all" || sortKey !== "name-az") && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setFilterRole("all");
+              setFilterStatus("all");
+              setSortKey("name-az");
+            }}
+            className="px-3 py-2 text-xs text-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
       {/* ── Tombol Tambah Anggota ── */}
       <ScrollReveal direction="left" className="flex justify-end mb-4">
         <button
@@ -240,21 +329,14 @@ export default function UserManagementPage() {
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl">
           {error}
         </div>
-      ) : users.length === 0 ? (
+      ) : visibleUsers.length === 0 ? (
         <div className="text-center py-20 text-gray-500">
           <UserCog size={48} className="mx-auto mb-3 opacity-40" />
-          <p>{tx(language, "No other users in this company yet.", "Belum ada user lain di perusahaan ini.")}</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
-          >
-            <Plus size={16} />
-            {tx(language, "Add First Member", "Tambah Anggota Pertama")}
-          </button>
+          <p>{tx(language, "No users match the filter.", "Tidak ada user yang cocok dengan filter.")}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {users.map((user, idx) => {
+          {visibleUsers.map((user, idx) => {
             const RoleIcon = roleIcons[user.role] || User;
             const editable = canManageRole();
             return (

@@ -2,12 +2,11 @@
  * Seed Demo Data untuk LedgerFlow
  * Jalankan: npm run seed
  *
- * Membuat:
- *  - 2 akun demo (Owner / Akuntan) via Supabase Auth admin API
- *  - 1 company demo
+ * Membuat (ketentuan S1: ≥20 data per tabel utama):
+ *  - 1 company demo + 20 user demo (1 owner + 19 akuntan) + 20 members (M:M)
  *  - Chart of Accounts (26 akun)
- *  - 12 periode (1 tahun berjalan)
- *  - 24 jurnal entry + lines (double-entry, debit = kredit)
+ *  - 24 periode (2 tahun berjalan: tahun lalu + tahun ini)
+ *  - 54 jurnal entry + ±120 lines (double-entry, debit = kredit, deterministik)
  *  - Company members (M:M)
  *
  * Idempotent: aman dijalankan berulang kali (upsert + cek email).
@@ -29,6 +28,17 @@ const DEMO_COMPANY = {
 const DEMO_USERS = [
   { email: "owner@demo.com", name: "Budi Santoso", role: "owner" },
   { email: "akuntan@demo.com", name: "Agus Wijaya", role: "akuntan" },
+  // 18 akun tambahan agar seed ≥20 user/tabel utama (ketentuan S1).
+  // Semua akuntan di PT Demo Nusantara; login via WA OTP nomor masing-masing
+  // atau DEMO_MODE (nomor demo didaftarkan di DEMO_PHONES bila dipakai).
+  ...Array.from({ length: 18 }, (_, i) => {
+    const n = String(i + 3).padStart(2, "0");
+    return {
+      email: `demo${n}@demo.com`,
+      name: `Demo Akuntan ${n}`,
+      role: "akuntan",
+    };
+  }),
 ];
 
 const ACCOUNTS = [
@@ -205,10 +215,13 @@ async function main() {
     console.log("  Company sudah ada:", company?.name, company?.id);
   }
 
-  // ── Users ──
+  // ── Users (20 akun: 2 utama + 18 tambahan, ketentuan S1 ≥20) ──
   const userIds: Record<string, string> = {};
-  for (const du of DEMO_USERS) {
-    const phone = normalizePhoneNumber(DEMO_PHONES[du.email] || "");
+  for (let ui = 0; ui < DEMO_USERS.length; ui++) {
+    const du = DEMO_USERS[ui];
+    // Nomor sintetis deterministik untuk akun tambahan (08 + 10 digit).
+    const fallbackPhone = `0812${String(10000000 + ui * 111111).slice(0, 8)}`;
+    const phone = normalizePhoneNumber(DEMO_PHONES[du.email] || fallbackPhone);
     const { data: existing } = await supabase
       .from("users")
       .select("id")
@@ -326,37 +339,40 @@ async function main() {
   }
   console.log(`  ${Object.keys(accountMap).length} akun siap.`);
 
-  // ── Periods ──
+  // ── Periods (24 bulan: tahun lalu + tahun ini → ≥20, ketentuan S1) ──
   const year = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
-  console.log(`→ Membuat periode ${year}...`);
+  const periodYears = [year - 1, year];
+  console.log(`→ Membuat periode ${periodYears.join(" & ")} (24 bulan)...`);
   const periods: { id: string; year: number; month: number }[] = [];
-  for (let m = 1; m <= 12; m++) {
-    const status = m < currentMonth ? "closed" : "open";
-    const { data, error } = await supabase
-      .from("periods")
-      .upsert(
-        { company_id: company!.id, year, month: m, status },
-        { onConflict: "company_id,year,month" },
-      )
-      .select()
-      .single();
-    if (error) {
-      console.error(`  Gagal upsert periode ${year}-${m}: ${error.message}`);
-      continue;
+  for (const y of periodYears) {
+    for (let m = 1; m <= 12; m++) {
+      const status = y < year || m < currentMonth ? "closed" : "open";
+      const { data, error } = await supabase
+        .from("periods")
+        .upsert(
+          { company_id: company!.id, year: y, month: m, status },
+          { onConflict: "company_id,year,month" },
+        )
+        .select()
+        .single();
+      if (error) {
+        console.error(`  Gagal upsert periode ${y}-${m}: ${error.message}`);
+        continue;
+      }
+      periods.push({ id: data.id, year: y, month: m });
     }
-    periods.push({ id: data.id, year, month: m });
   }
   console.log(`  ${periods.length} periode siap.`);
 
-  // ── Journal entries ──
+  // ── Journal entries (deterministik: 6 periode pertama → 54 entry, ≥20) ──
   const ownerId = userIds["owner@demo.com"];
   if (!ownerId) {
     console.error("  ⛔ Owner demo tidak ditemukan, jurnal dilewati.");
     return;
   }
-  const monthsToUse = periods.filter((p) => p.month <= 6 && p.month < currentMonth);
-  console.log(`→ Membuat jurnal untuk ${monthsToUse.length} bulan...`);
+  const monthsToUse = periods.slice(0, 6);
+  console.log(`→ Membuat jurnal untuk ${monthsToUse.length} bulan (deterministik)...`);
 
   const built = buildJournalData(company!.id, monthsToUse, ownerId);
 

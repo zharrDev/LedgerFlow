@@ -165,6 +165,13 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
     if (!file) return;
     setProofError(null);
 
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isImage = file.type.startsWith("image/");
+    if (!isImage && !isPdf) {
+      setProofError("Format file harus gambar atau PDF");
+      return;
+    }
+
     if (file.size > 2 * 1024 * 1024) {
       setProofError("Ukuran file maksimal 2MB");
       return;
@@ -431,7 +438,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                       <input
                         ref={proofInputRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/*,application/pdf,.pdf"
                         onChange={handleProofChange}
                         className="hidden"
                       />

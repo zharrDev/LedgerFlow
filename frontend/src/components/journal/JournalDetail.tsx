@@ -8,6 +8,7 @@ import {
   IconSend,
   IconTrash,
   IconVoid,
+  IconEdit,
   formatIDR,
   formatDate,
 } from "./JournalShared";
@@ -21,6 +22,7 @@ interface JournalDetailProps {
   onPost: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
   onVoid?: (entry: JournalEntry) => void;
+  onEdit?: (entry: JournalEntry) => void;
   /** Izin sesuai role (backend): post = owner/akuntan, delete & void = owner. */
   canPost?: boolean;
   canDelete?: boolean;
@@ -34,6 +36,7 @@ export function JournalDetail({
   onDelete,
   onPost,
   onVoid,
+  onEdit,
   canPost = true,
   canDelete = true,
   canVoid = false,
@@ -71,6 +74,13 @@ export function JournalDetail({
           <div className="flex gap-2">
             {isDraft && (
               <>
+                {onEdit && (
+                  <ActionButton
+                    title={tx(language, "Edit draft", "Edit draft")}
+                    onClick={() => onEdit(entry)}
+                    icon={<IconEdit size={14} />}
+                  />
+                )}
                 {canPost && (
                   <button
                     type="button"

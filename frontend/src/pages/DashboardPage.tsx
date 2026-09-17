@@ -67,6 +67,7 @@ export default function DashboardPage() {
     left: number | null;
     planName?: string;
   } | null>(null);
+  const [recentJournals, setRecentJournals] = useState<Array<{ id: string; number: string; description: string; date: string; status: string }>>([]);
 
   useEffect(() => {
     reportsService.getPeriods().then(setPeriods).catch(console.error);
@@ -75,6 +76,16 @@ export default function DashboardPage() {
       .getQuota()
       .then(setQuota)
       .catch(() => setQuota(null));
+    // Aktivitas terbaru: 5 jurnal terakhir (ketentuan S1 dashboard)
+    journalService
+      .getAll()
+      .then((list) => {
+        const sorted = [...(list ?? [])].sort(
+          (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+        setRecentJournals(sorted.slice(0, 5));
+      })
+      .catch(() => setRecentJournals([]));
   }, []);
 
   // Pagination untuk tabel "Akun Terbaru" (5 baris per halaman, bisa digeser)
@@ -851,8 +862,10 @@ export default function DashboardPage() {
                 canNext={accountsPagination.canNext}
                 onPrev={accountsPagination.prev}
                 onNext={accountsPagination.next}
-                onGoTo={accountsPagination.setPage}
+                onGoTo={accountsPagination.goTo}
                 itemLabel={tx(language, "accounts", "akun")}
+                pageSize={accountsPagination.pageSize}
+                onPageSizeChange={accountsPagination.setPageSize}
               />
             )}
           </ScrollReveal>
@@ -961,6 +974,57 @@ export default function DashboardPage() {
             </div>
           </ScrollReveal>
         </div>
+
+        {/* ═══ Aktivitas Terbaru (ketentuan S1) ═══ */}
+        <ScrollReveal
+          direction="up"
+          className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              {tx(language, "Recent Activity", "Aktivitas Terbaru")}
+            </h3>
+            <Link
+              to="/journal-entries"
+              className="text-xs text-primary-500 hover:text-primary-600 font-medium"
+            >
+              {tx(language, "View All →", "Lihat Semua →")}
+            </Link>
+          </div>
+          {recentJournals.length === 0 ? (
+            <p className="px-6 py-6 text-sm text-gray-500 dark:text-gray-400">
+              {tx(language, "No recent journal activity.", "Belum ada aktivitas jurnal terbaru.")}
+            </p>
+          ) : (
+            <ul className="divide-y divide-gray-100 dark:divide-gray-800/50">
+              {recentJournals.map((j) => (
+                <li key={j.id}>
+                  <Link
+                    to="/journal-entries"
+                    className="flex items-center justify-between gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                        <span className="font-mono text-xs text-primary-600 dark:text-primary-400 mr-2">{j.number}</span>
+                        {j.description}
+                      </p>
+                      <p className="text-xs text-gray-400">{formatDateFull(language, j.date)}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-[11px] px-2 py-1 rounded-full capitalize ${
+                        j.status === "posted"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+                      }`}
+                    >
+                      {j.status}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ScrollReveal>
       </div>
       </motion.div>
   );

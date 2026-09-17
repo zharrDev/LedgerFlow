@@ -408,13 +408,21 @@ export default function SettingsPage() {
             </label>
             <HoverDropdown
               value={currency}
-              onChange={(v) => setCurrency(v as CurrencyOption)}
+              onChange={(v) => {
+                const next = v as CurrencyOption;
+                setCurrency(next);
+                // Terapkan langsung ke tampilan (tanpa menunggu Save).
+                persistCurrency(next);
+              }}
               fullWidth
               minWidth={240}
               options={CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
             />
             <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-              {tx(language, "This currency is used to display all numbers in the app (journal, ledger, reports, dashboard) and export results.", "Mata uang ini dipakai untuk menampilkan semua angka di aplikasi (jurnal, buku besar, laporan, dashboard) dan hasil export.")}
+              {tx(language, "This currency is used to display all numbers in the app (journal, ledger, reports, dashboard) and export results. Amounts are stored in IDR and converted for display.", "Mata uang ini dipakai untuk menampilkan semua angka di aplikasi (jurnal, buku besar, laporan, dashboard) dan hasil export. Nominal tersimpan dalam IDR dan dikonversi untuk tampilan.")}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+              {tx(language, "Uses static reference rates (e.g. 1 USD ≈ Rp16,500), not live rates. Journal inputs you type are in the selected currency.", "Memakai kurs acuan statis (cth. 1 USD ≈ Rp16.500), bukan kurs live. Nominal yang diketik di form jurnal mengikuti mata uang terpilih.")}
             </p>
           </div>
         </motion.div>

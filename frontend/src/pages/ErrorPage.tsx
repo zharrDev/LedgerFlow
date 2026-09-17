@@ -14,8 +14,9 @@ const errorConfig: Record<string, ErrorEntry> = {
   "500": { icon: ServerCrash, color: "text-red-600", title: { en: "Internal Server Error", id: "Kesalahan Server Internal" }, desc: { en: "Something went wrong on our server. Please try again.", id: "Terjadi kesalahan pada server. Silakan coba lagi." } },
 };
 
-export default function ErrorPage() {
-  const { code = "404" } = useParams();
+export default function ErrorPage({ fixedCode }: { fixedCode?: string }) {
+  const { code: paramCode = "404" } = useParams();
+  const code = fixedCode ?? paramCode;
   const { language } = useLanguage();
   const config = errorConfig[code] || errorConfig["404"];
   const Icon = config.icon;

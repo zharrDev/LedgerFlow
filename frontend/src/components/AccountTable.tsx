@@ -9,6 +9,7 @@ import {
   IconDeactivate,
   IconActivate,
 } from "./AccountShared";
+import { Trash2, Eye } from "lucide-react";
 import { TablePagination, type TablePaginationProps } from "./TablePagination";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
@@ -20,6 +21,8 @@ interface AccountTableProps {
   onRetry: () => void;
   onEdit: (account: Account) => void;
   onToggleStatus: (account: Account) => void;
+  onDelete?: (account: Account) => void;
+  onDetail?: (account: Account) => void;
   toggling?: boolean;
   pagination?: TablePaginationProps;
 }
@@ -31,6 +34,8 @@ export function AccountTable({
   onRetry,
   onEdit,
   onToggleStatus,
+  onDelete,
+  onDetail,
   toggling,
   pagination,
 }: AccountTableProps) {
@@ -143,6 +148,13 @@ export function AccountTable({
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex gap-2">
+                      {onDetail && (
+                        <ActionButton
+                          title={tx(language, "Detail", "Detail")}
+                          onClick={() => onDetail(account)}
+                          icon={<Eye size={15} />}
+                        />
+                      )}
                       <ActionButton
                         title={tx(language, "Edit", "Edit")}
                         onClick={() => onEdit(account)}
@@ -161,6 +173,15 @@ export function AccountTable({
                         }
                         disabled={toggling}
                       />
+                      {onDelete && (
+                        <ActionButton
+                          title={tx(language, "Delete", "Hapus")}
+                          onClick={() => onDelete(account)}
+                          danger
+                          icon={<Trash2 size={15} />}
+                          disabled={toggling}
+                        />
+                      )}
                     </div>
                   </td>
                 </motion.tr>
@@ -210,6 +231,9 @@ export function AccountTable({
                   </span>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
+                  {onDetail && (
+                    <ActionButton title={tx(language, "Detail", "Detail")} onClick={() => onDetail(account)} icon={<Eye size={15} />} />
+                  )}
                   <ActionButton title={tx(language, "Edit", "Edit")} onClick={() => onEdit(account)} icon={<IconEdit />} />
                   <ActionButton
                     title={account.isActive ? tx(language, "Deactivate", "Nonaktifkan") : tx(language, "Activate", "Aktifkan")}
@@ -218,6 +242,15 @@ export function AccountTable({
                     icon={account.isActive ? <IconDeactivate /> : <IconActivate />}
                     disabled={toggling}
                   />
+                  {onDelete && (
+                    <ActionButton
+                      title={tx(language, "Delete", "Hapus")}
+                      onClick={() => onDelete(account)}
+                      danger
+                      icon={<Trash2 size={15} />}
+                      disabled={toggling}
+                    />
+                  )}
                 </div>
               </div>
             </motion.div>

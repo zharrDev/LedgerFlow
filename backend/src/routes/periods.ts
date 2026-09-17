@@ -9,10 +9,16 @@ const periods = new Hono();
 // Semua route periods wajib login
 periods.use("*", authMiddleware);
 
-// GET ALL PERIODS
-// Selalu discope ke company milik user (dari JWT), bukan dari query yang bisa dipalsukan.
+// GET ALL PERIODS — dukung search/filter/sort/pagination (ketentuan S1).
+// Query: ?search=januari/2024&status=open&sort=newest|oldest|name-az|name-za&page=1&limit=10
+// Tanpa query pagination → return array (kompatibel lama); dengan query → { data, total, page, limit }.
 periods.get("/", async (c) => {
   const user = c.get("user");
+  const search = (c.req.query("search") ?? "").trim().toLowerCase();
+  const status = c.req.query("status") ?? "all";
+  const sort = c.req.query("sort") ?? "newest";
+  const pageParam = c.req.query("page");
+  const limitParam = c.req.query("limit");
 
   const { data, error } = await supabase
     .from("periods")
@@ -22,7 +28,33 @@ periods.get("/", async (c) => {
     .order("month", { ascending: false });
 
   if (error) return dbErrorResponse(c, error);
-  return c.json(data ?? []);
+  let list = data ?? [];
+
+  if (status !== "all") list = list.filter((p: any) => p.status === status);
+  if (search) {
+    list = list.filter((p: any) =>
+      `${p.year}`.includes(search) || `${p.month}`.includes(search),
+    );
+  }
+  const sorted = [...list];
+  if (sort === "oldest") sorted.sort((a: any, b: any) => a.year - b.year || a.month - b.month);
+  else if (sort === "name-az" || sort === "name-za") {
+    sorted.sort((a: any, b: any) => {
+      const cmp = a.year - b.year || a.month - b.month;
+      return sort === "name-az" ? cmp : -cmp;
+    });
+  } else {
+    sorted.sort((a: any, b: any) => b.year - a.year || b.month - a.month);
+  }
+
+  if (pageParam === undefined && limitParam === undefined && !search && status === "all" && sort === "newest") {
+    return c.json(sorted);
+  }
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(limitParam ?? "10", 10) || 10));
+  const total = sorted.length;
+  const start = (page - 1) * limit;
+  return c.json({ data: sorted.slice(start, start + limit), total, page, limit });
 });
 
 // OPEN NEW PERIOD (POST)

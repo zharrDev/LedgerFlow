@@ -4,6 +4,7 @@ import { motion, type Variants } from "framer-motion";
 import { periodsService } from "../services/periodsService";
 import { getErrorMessage } from "../lib/errorMessage";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
 import { MONTHS_FULL } from "../i18n/months";
@@ -40,6 +41,7 @@ const itemVariants: Variants = {
 export default function PeriodManagement() {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [periods, setPeriods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +50,9 @@ export default function PeriodManagement() {
   const [newMonth, setNewMonth] = useState(new Date().getMonth() + 1);
   const [confirmClose, setConfirmClose] = useState<string | null>(null);
   const [confirmYearFar, setConfirmYearFar] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortKey, setSortKey] = useState<string>("newest");
 
   useEffect(() => {
     fetchPeriods();
@@ -76,6 +81,11 @@ export default function PeriodManagement() {
     try {
       await periodsService.open(user.company_id, newYear, newMonth);
       await fetchPeriods();
+      toast({
+        variant: "success",
+        title: tx(language, "Period Opened", "Periode Dibuka"),
+        message: tx(language, `Period ${MONTHS_FULL[language][newMonth - 1]} ${newYear} is now active.`, `Periode ${MONTHS_FULL[language][newMonth - 1]} ${newYear} sekarang aktif.`),
+      });
       pushNotification({
         type: "period_opened",
         title: tx(language, "Period Opened", "Periode Dibuka"),
@@ -83,10 +93,12 @@ export default function PeriodManagement() {
         link: "/period-management",
       });
     } catch (err: any) {
+      const msg = getErrorMessage(err);
+      toast({ variant: "error", title: tx(language, "Failed to Open Period", "Gagal Membuka Periode"), message: msg });
       pushNotification({
         type: "period_opened",
         title: tx(language, "Failed to Open Period", "Gagal Membuka Periode"),
-        message: getErrorMessage(err),
+        message: msg,
         link: "/period-management",
       });
     } finally {
@@ -110,6 +122,11 @@ export default function PeriodManagement() {
       await periodsService.close(id);
       await fetchPeriods();
       setConfirmClose(null);
+      toast({
+        variant: "success",
+        title: tx(language, "Period Closed", "Periode Ditutup"),
+        message: tx(language, "Period successfully closed.", "Periode berhasil ditutup."),
+      });
       pushNotification({
         type: "period_closed",
         title: tx(language, "Period Closed", "Periode Ditutup"),
@@ -117,6 +134,11 @@ export default function PeriodManagement() {
         link: "/period-management",
       });
     } catch {
+      toast({
+        variant: "error",
+        title: tx(language, "Failed to Close Period", "Gagal Menutup Periode"),
+        message: tx(language, "An error occurred while closing the period.", "Terjadi kesalahan saat menutup periode."),
+      });
       pushNotification({
         type: "period_closed",
         title: tx(language, "Failed to Close Period", "Gagal Menutup Periode"),
@@ -127,6 +149,38 @@ export default function PeriodManagement() {
   };
 
   const monthNames = MONTHS_FULL[language];
+
+  // Search / filter / sorting (ketentuan S1, bisa dipakai bersamaan)
+  const visiblePeriods = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = periods.filter((p) => {
+      const label = `${monthNames[p.month - 1] ?? ""} ${p.year}`.toLowerCase();
+      const matchSearch = !q || label.includes(q) || String(p.year).includes(q);
+      const matchStatus = filterStatus === "all" || p.status === filterStatus;
+      return matchSearch && matchStatus;
+    });
+    const sorted = [...list];
+    switch (sortKey) {
+      case "oldest":
+        sorted.sort((a, b) => a.year - b.year || a.month - b.month);
+        break;
+      case "name-az":
+        sorted.sort((a, b) =>
+          `${monthNames[a.month - 1]} ${a.year}`.localeCompare(`${monthNames[b.month - 1]} ${b.year}`),
+        );
+        break;
+      case "name-za":
+        sorted.sort((a, b) =>
+          `${monthNames[b.month - 1]} ${b.year}`.localeCompare(`${monthNames[a.month - 1]} ${a.year}`),
+        );
+        break;
+      case "newest":
+      default:
+        sorted.sort((a, b) => b.year - a.year || b.month - a.month);
+        break;
+    }
+    return sorted;
+  }, [periods, search, filterStatus, sortKey, monthNames]);
 
   // Stats
   const openCount = periods.filter((p) => p.status === "open").length;
@@ -283,11 +337,41 @@ export default function PeriodManagement() {
           className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md overflow-hidden"
         >
           {/* Table header */}
-          <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex items-center gap-2">
-            <Calendar size={16} className="text-primary-500" />
-            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {tx(language, "Period List", "Daftar Periode")}
-            </h2>
+          <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 mr-auto">
+              <Calendar size={16} className="text-primary-500" />
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {tx(language, "Period List", "Daftar Periode")}
+              </h2>
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={tx(language, "Search period...", "Cari periode...")}
+              className="px-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkBg text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary-500/40 min-w-[140px]"
+            />
+            <HoverDropdown
+              value={filterStatus}
+              onChange={setFilterStatus}
+              minWidth={130}
+              options={[
+                { value: "all", label: tx(language, "All Status", "Semua Status") },
+                { value: "open", label: tx(language, "Open", "Terbuka") },
+                { value: "closed", label: tx(language, "Closed", "Tertutup") },
+              ]}
+            />
+            <HoverDropdown
+              value={sortKey}
+              onChange={setSortKey}
+              minWidth={130}
+              options={[
+                { value: "newest", label: tx(language, "Newest", "Terbaru") },
+                { value: "oldest", label: tx(language, "Oldest", "Terlama") },
+                { value: "name-az", label: tx(language, "Name A-Z", "Nama A-Z") },
+                { value: "name-za", label: tx(language, "Name Z-A", "Nama Z-A") },
+              ]}
+            />
           </div>
 
           {loading ? (
@@ -295,20 +379,28 @@ export default function PeriodManagement() {
               <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
               <p className="text-sm">{tx(language, "Loading periods...", "Memuat periode...")}</p>
             </div>
-          ) : periods.length === 0 ? (
+          ) : visiblePeriods.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
               <CalendarX
                 size={40}
                 className="text-gray-300 dark:text-gray-600"
               />
-              <p className="text-sm">{tx(language, "No periods yet", "Belum ada periode")}</p>
-              <p className="text-xs text-gray-400">
-                {tx(language, "Create your first period to start recording", "Buat periode pertama Anda untuk memulai pencatatan")}
-              </p>
+              <p className="text-sm">{tx(language, "No periods found", "Tidak ada periode yang cocok")}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("all");
+                  setSortKey("newest");
+                }}
+                className="text-xs text-primary-500 hover:underline"
+              >
+                {tx(language, "Reset filter", "Reset filter")}
+              </button>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
-              {periods.map((p, idx) => (
+              {visiblePeriods.map((p, idx) => (
                 <motion.div
                   key={p.id}
                   initial={{ opacity: 0, y: 10 }}

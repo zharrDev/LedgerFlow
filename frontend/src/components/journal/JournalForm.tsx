@@ -23,6 +23,7 @@ import {
 import { useAccounts } from "../../hooks/useAccounts";
 import { useLanguage } from "../../hooks/useLanguage";
 import { tx } from "../../i18n/tx";
+import { convertToIDR, convertFromIDR, getCurrency } from "../../utils/currency";
 import type { Account } from "../../types/account";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
@@ -30,6 +31,13 @@ interface JournalFormProps {
   saving: boolean;
   onSave: (payload: CreateJournalPayload) => Promise<boolean>;
   onBack: () => void;
+  initialEntry?: {
+    date: string;
+    description: string;
+    period_id?: string | null;
+    lines: Array<{ accountCode: string; accountName?: string; description?: string; debit: number; credit: number }>;
+  } | null;
+  submitLabel?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -45,10 +53,16 @@ function sumLines(lines: JournalLineForm[], field: "debit" | "credit"): number {
 function formatDisplayAmount(v: string): string {
   const n = parseAmount(v);
   if (n === 0) return "";
-  return new Intl.NumberFormat("id-ID").format(n);
+  try {
+    return new Intl.NumberFormat(getCurrency() === "IDR" ? "id-ID" : "en-US").format(n);
+  } catch {
+    return String(n);
+  }
 }
 
 // ─── Helper: Build payload from form ──────────────────────────────────
+// Form bekerja dalam SATUAN MATA UANG TAMPIL; backend menyimpan IDR —
+// konversi ke IDR di sini sebelum dikirim.
 function buildPayload(
   form: JournalEntryForm,
   status?: "draft" | "posted",
@@ -67,18 +81,41 @@ function buildPayload(
       .map((l) => ({
         accountCode: l.accountCode.trim(),
         memo: l.description.trim(),
-        debit: parseAmount(l.debit),
-        credit: parseAmount(l.credit),
+        debit: convertToIDR(parseAmount(l.debit)),
+        credit: convertToIDR(parseAmount(l.credit)),
       })),
   };
 }
 
 // ─── Component ────────────────────────────────────────────────────────
-export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
+export function JournalForm({ saving, onSave, onBack, initialEntry, submitLabel }: JournalFormProps) {
   const { language } = useLanguage();
-  const [form, setForm] = useState<JournalEntryForm>({
-    ...DEFAULT_JOURNAL_FORM,
-    lines: [makeEmptyLine(), makeEmptyLine()],
+  const [form, setForm] = useState<JournalEntryForm>(() => {
+    if (initialEntry) {
+      // Nominal server dalam IDR → tampilkan dalam mata uang aktif.
+      // String polos tanpa pemisah ribuan agar parseAmount tetap akurat.
+      const toDisplay = (n: number) => {
+        const v = convertFromIDR(n);
+        return v ? String(Math.round(v * 100) / 100) : "";
+      };
+      return {
+        date: initialEntry.date?.slice(0, 10) ?? DEFAULT_JOURNAL_FORM.date,
+        description: initialEntry.description ?? "",
+        period_id: initialEntry.period_id ?? undefined,
+        lines: (initialEntry.lines ?? []).map((l) => ({
+          ...makeEmptyLine(),
+          accountCode: l.accountCode ?? "",
+          accountName: l.accountName ?? "",
+          description: l.description ?? "",
+          debit: toDisplay(l.debit),
+          credit: toDisplay(l.credit),
+        })),
+      };
+    }
+    return {
+      ...DEFAULT_JOURNAL_FORM,
+      lines: [makeEmptyLine(), makeEmptyLine()],
+    };
   });
   const [errors, setErrors] = useState<JournalFormErrors>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -385,7 +422,7 @@ export function JournalForm({ saving, onSave, onBack }: JournalFormProps) {
             ) : (
               <IconCheck size={14} />
             )}
-            {tx(language, "Save Draft", "Simpan Draft")}
+            {submitLabel ?? tx(language, "Save Draft", "Simpan Draft")}
           </button>
 
           {/* Simpan & Post */}

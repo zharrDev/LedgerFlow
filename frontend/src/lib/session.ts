@@ -3,16 +3,20 @@ const USER_KEY = "user";
 // Token gerbang admin — TERPISAH dari token user biasa (AuthContext).
 const ADMIN_GATE_TOKEN_KEY = "admin_gate_token";
 
+// Ketentuan S1: token wajib di Local Storage agar session persist antar tab
+// dan saat browser di-refresh. Kami tulis ke KEDUANYA (local + session) dan
+// membaca local dulu lalu fallback ke session (kompatibel sesi lama).
 export function getSessionToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function setSessionToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
   sessionStorage.setItem(TOKEN_KEY, token);
 }
 
 export function getSessionUser<T = Record<string, unknown>>(): T | null {
-  const raw = sessionStorage.getItem(USER_KEY);
+  const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as T;
@@ -22,7 +26,9 @@ export function getSessionUser<T = Record<string, unknown>>(): T | null {
 }
 
 export function setSessionUser(user: unknown): void {
-  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  const raw = JSON.stringify(user);
+  localStorage.setItem(USER_KEY, raw);
+  sessionStorage.setItem(USER_KEY, raw);
 }
 
 export function clearSession(): void {
@@ -33,6 +39,7 @@ export function clearSession(): void {
   // Cache langganan ikut dibuang — user berikutnya tidak boleh melihat
   // plan/cache milik user sebelumnya.
   sessionStorage.removeItem("subscription_cache");
+  localStorage.removeItem("subscription_cache");
 }
 
 // ── Admin Gate (dashboard admin khusus) ───────────────────────────────

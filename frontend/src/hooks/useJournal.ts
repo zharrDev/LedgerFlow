@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type {
   JournalEntry,
-  Toast,
   CreateJournalPayload,
 } from "../types/journal";
 import { journalService } from "../services/journalService";
 import { getErrorMessage } from "../lib/errorMessage";
+import { useToast } from "../context/ToastContext";
 
 // Helper: urutkan jurnal berdasarkan nomor entry secara ascending
 function sortByEntryNumber(list: JournalEntry[]): JournalEntry[] {
@@ -16,28 +16,14 @@ function sortByEntryNumber(list: JournalEntry[]): JournalEntry[] {
   });
 }
 
-// Hook jurnal: handle fetch, create, post, delete, dan toast notifikasi lokal
+// Hook jurnal: fetch, create, update (draft), post, void, delete + toast global
 export function useJournal() {
+  const { toast } = useToast();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastId = useRef(0);
-
-  // Helper toast lokal untuk feedback aksi jurnal
-  const addToast = useCallback(
-    (msg: string, type: Toast["type"] = "success") => {
-      const id = ++toastId.current;
-      setToasts((prev) => [...prev, { id, msg, type }]);
-      setTimeout(
-        () => setToasts((prev) => prev.filter((t) => t.id !== id)),
-        3500,
-      );
-    },
-    [],
-  );
 
   // Ambil semua jurnal dari backend
   const fetchEntries = useCallback(async () => {
@@ -47,11 +33,13 @@ export function useJournal() {
       const data = await journalService.getAll();
       setEntries(sortByEntryNumber(data));
     } catch (e) {
-      setError(getErrorMessage(e));
+      const msg = getErrorMessage(e);
+      setError(msg);
+      toast({ variant: "error", title: "Gagal memuat jurnal", message: msg });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchEntries();
@@ -64,16 +52,39 @@ export function useJournal() {
       try {
         const created = await journalService.create(payload);
         setEntries((prev) => sortByEntryNumber([...prev, created]));
-        addToast("Entry berhasil dibuat");
+        toast({ variant: "success", title: "Entry berhasil dibuat", message: created.number });
         return created;
       } catch (e) {
-        addToast(getErrorMessage(e), "error");
+        const msg = getErrorMessage(e);
+        toast({ variant: "error", title: "Gagal membuat entry", message: msg });
         return null;
       } finally {
         setSaving(false);
       }
     },
-    [addToast],
+    [toast],
+  );
+
+  // Edit jurnal draft (PUT /api/journal/:id)
+  const updateEntry = useCallback(
+    async (id: string, payload: CreateJournalPayload): Promise<JournalEntry | null> => {
+      setSaving(true);
+      try {
+        const updated = await journalService.update(id, payload);
+        setEntries((prev) =>
+          sortByEntryNumber(prev.map((e) => (e.id === id ? updated : e))),
+        );
+        toast({ variant: "success", title: "Entry berhasil diperbarui", message: updated.number });
+        return updated;
+      } catch (e) {
+        const msg = getErrorMessage(e);
+        toast({ variant: "error", title: "Gagal memperbarui entry", message: msg });
+        return null;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [toast],
   );
 
   // Posting jurnal draft ke buku besar
@@ -85,16 +96,17 @@ export function useJournal() {
         setEntries((prev) =>
           sortByEntryNumber(prev.map((e) => (e.id === id ? updated : e))),
         );
-        addToast("Entry berhasil diposting ke buku besar");
+        toast({ variant: "success", title: "Entry diposting", message: "Entry berhasil diposting ke buku besar" });
         return true;
       } catch (e) {
-        addToast(getErrorMessage(e), "error");
+        const msg = getErrorMessage(e);
+        toast({ variant: "error", title: "Gagal memposting", message: msg });
         return false;
       } finally {
         setPosting(false);
       }
     },
-    [addToast],
+    [toast],
   );
 
   // Void jurnal posted (pembatalan tanpa hapus data)
@@ -105,14 +117,15 @@ export function useJournal() {
         setEntries((prev) =>
           sortByEntryNumber(prev.map((e) => (e.id === id ? updated : e))),
         );
-        addToast("Entry berhasil di-void");
+        toast({ variant: "success", title: "Entry di-void", message: "Entry berhasil di-void" });
         return true;
       } catch (e) {
-        addToast(getErrorMessage(e), "error");
+        const msg = getErrorMessage(e);
+        toast({ variant: "error", title: "Gagal void entry", message: msg });
         return false;
       }
     },
-    [addToast],
+    [toast],
   );
 
   // Hapus jurnal
@@ -121,14 +134,15 @@ export function useJournal() {
       try {
         await journalService.remove(id);
         setEntries((prev) => prev.filter((e) => e.id !== id));
-        addToast("Draft berhasil dihapus");
+        toast({ variant: "success", title: "Draft dihapus", message: "Draft berhasil dihapus" });
         return true;
       } catch (e) {
-        addToast(getErrorMessage(e), "error");
+        const msg = getErrorMessage(e);
+        toast({ variant: "error", title: "Gagal menghapus", message: msg });
         return false;
       }
     },
-    [addToast],
+    [toast],
   );
 
   return {
@@ -137,9 +151,10 @@ export function useJournal() {
     error,
     saving,
     posting,
-    toasts,
+    toasts: [],
     fetchEntries,
     createEntry,
+    updateEntry,
     postEntry,
     deleteEntry,
     voidEntry,

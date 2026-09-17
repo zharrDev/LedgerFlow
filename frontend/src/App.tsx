@@ -68,7 +68,9 @@ const UserManagementPage = lazyPage(() =>
 const OnboardingPage = lazyPage(() => import("./pages/OnboardingPage"));
 const AiCfoPage = lazyPage(() => import("./pages/AiCfoPage"));
 const NotFoundPage = lazyPage(() => import("./pages/NotFoundPage"));
-const ErrorPage = lazyPage(() => import("./pages/ErrorPage"));
+const ErrorPage = lazyTyped<{ fixedCode?: string }>(() =>
+  import("./pages/ErrorPage"),
+);
 const TermsPage = namedLazy(() => import("./pages/TermsPage"), "TermsPage");
 import { ProtectedFeature } from "./components/ProtectedFeature";
 import { AICfoFloatingButton } from "./components/AICfoFloatingButton";
@@ -150,17 +152,18 @@ function RoleRoute({
   roles: string[];
 }) {
   const { token, user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <BrandedLoader />;
   }
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   if (!roles.includes(user?.role ?? "")) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/error/403" replace state={{ from: location.pathname }} />;
   }
 
   return <>{children}</>;
@@ -319,6 +322,10 @@ function AnimatedRoutes() {
       <Route path="/payment/failed" element={<PaymentResultPage type="failed" />} />
 
       <Route path="/error/:code" element={<ErrorPage />} />
+      <Route path="/401" element={<ErrorPage fixedCode="401" />} />
+      <Route path="/403" element={<ErrorPage fixedCode="403" />} />
+      <Route path="/500" element={<ErrorPage fixedCode="500" />} />
+      <Route path="/404" element={<NotFoundPage />} />
       <Route path="/not-found" element={<NotFoundPage />} />
       <Route path="*" element={<NotFoundPage />} />
       </Routes>

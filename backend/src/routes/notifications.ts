@@ -31,7 +31,7 @@ const CLIENT_ALLOWED_TYPES = new Set([
   "profile_updated",
 ]);
 
-// GET /api/notifications?limit=20&page=1
+// GET /api/notifications?limit=20&page=1&search=&sort=newest|oldest&read=false
 notifications.get("/", async (c) => {
   const { sub } = c.get("user");
   const pageNum = Math.max(1, parseInt(c.req.query("page") || "1"));
@@ -39,15 +39,24 @@ notifications.get("/", async (c) => {
     MAX_LIMIT,
     Math.max(1, parseInt(c.req.query("limit") || "15")),
   );
+  const search = (c.req.query("search") ?? "").trim().toLowerCase();
+  const sort = c.req.query("sort") ?? "newest";
+  const readFilter = c.req.query("read");
   const offset = (pageNum - 1) * limitNum;
 
+  let query = supabase
+    .from("notifications")
+    .select("*", { count: "exact" })
+    .eq("user_id", sub)
+    .order("created_at", { ascending: sort === "oldest" });
+  if (readFilter === "true" || readFilter === "false") {
+    query = query.eq("read", readFilter === "true");
+  }
+  if (search) {
+    query = query.or(`title.ilike.%${search}%,message.ilike.%${search}%`);
+  }
   const [listRes, unreadRes] = await Promise.all([
-    supabase
-      .from("notifications")
-      .select("*", { count: "exact" })
-      .eq("user_id", sub)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limitNum - 1),
+    query.range(offset, offset + limitNum - 1),
     // Hitung unread terpisah (tidak terpengaruh pagination).
     supabase
       .from("notifications")

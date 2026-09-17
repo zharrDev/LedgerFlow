@@ -1,4 +1,4 @@
-# LedgerFlow
+﻿# LedgerFlow
 
 **LedgerFlow** adalah aplikasi akuntansi dan pembukuan berbasis web modern yang dirancang untuk membantu usaha mengelola keuangan secara digital. Aplikasi ini mendukung pencatatan jurnal, buku besar, laporan keuangan (Laba Rugi, Neraca, Arus Kas), chart of accounts, manajemen periode, multi-perusahaan, autentikasi via **WhatsApp OTP** (Fonnte), AI CFO Assistant, serta sistem subscription dan pembayaran terintegrasi.
 
@@ -31,8 +31,8 @@
 | # | Ketentuan | Status | Catatan / TODO |
 |---|---|---|---|
 | 1 | Responsive layout (mobile/tablet/desktop) | ⚠️ | Bottom Navigation mobile (tab + bottom sheet) & drawer terpasang; belum diverifikasi tiap halaman utama bebas overflow di 3 breakpoint |
-| 2 | Auth flow: Login, Register, Logout, **Forgot Password**, **Reset Password** | ✅ | Semua halaman ada: Login, Register, ForgotPassword, ResetPassword, Logout via menu user |
-| 2a | JWT disimpan di Local Storage/Cookie | ✅ | Token & user disimpan di `localStorage` via `AuthContext` |
+| 2 | Auth flow: Login, Register, Logout (passwordless: WA OTP + Google) | ✅ | Login/Register via WhatsApp OTP + Google one-tap (`AuthPage`), Logout via menu user. Forgot/Reset Password email **N/A by-design** — tanpa password, lupa akses = kirim OTP ulang. Backend `password-reset.ts` sengaja `410 Gone` |
+| 2a | JWT disimpan di Local Storage/Cookie | ✅ | Token & user disimpan di `localStorage` (+ mirror `sessionStorage`) via `lib/session.ts` + `AuthContext` |
 | 3 | Routing: Public, Private, **Role Route**, redirect jika tanpa akses | ✅ | `PublicRoute`, `ProtectedRoute`, `RoleRoute` (owner/akuntan) — redirect ke `/dashboard` bila role tidak berhak |
 | 4 | Dashboard real-time (card summary, total data, statistik, aktivitas terbaru) | ✅ | `useDashboardData` + `DashboardPage` |
 | 5 | CRUD Interface lengkap (List/Detail/Tambah/Edit/Hapus) per data utama | ⚠️ | Chart of Accounts & Journal lengkap (list/detail/form edit/hapus). Modul lain read-only sesuai sifatnya |
@@ -40,7 +40,7 @@
 | 7 | Pagination (prev/next/nomor halaman/jumlah data/items-per-page) | ✅ | `usePagination` + `TablePagination` dipasang di Chart of Accounts, Journal, Dashboard (10 item/halaman default) |
 | 8 | Upload file (gambar/PDF) | ✅ | Avatar profil (compress → Supabase Storage) + bukti pembayaran di halaman hasil pembayaran |
 | 9 | Form validation realtime (required, min/max karakter, email, no. telp, konfirmasi password) | ✅ | Validasi per-field realtime (onChange/onBlur) di Login, Register, Forgot/Reset Password, Profile (`utils/validation.ts`) |
-| 10 | Notification (success/error/warning/info) via Toast | ✅ | `ToastContext` + `ToastContainer` |
+| 10 | Notification (success/error/warning/info) via Toast | ✅ | `ToastContext` (global, 4 varian) |
 | 11 | Halaman error 401/403/404/500 + fallback API gagal | ✅ | `NotFoundPage` (404), `ErrorPage` (404/401/403/500), fallback error di semua halaman list |
 
 ### BACKEND
@@ -48,12 +48,12 @@
 | # | Ketentuan | Status | Catatan / TODO |
 |---|---|---|---|
 | 1 | REST API standar (GET/POST/PUT/PATCH/DELETE) + status code sesuai | ✅ | Konsisten: 400/401/403/404/409/422/500 sesuai kasus |
-| 2 | Register, Login, **Logout**, Refresh Token (opsional), **Forgot Password**, **Reset Password** | ✅ | `/logout` (audit), `/forgot-password`, `/reset-password`, plus WhatsApp OTP (`/api/wa/{register,login}/{start,verify}`) |
+| 2 | Register, Login, **Logout** (passwordless), Refresh Token (opsional) | ✅ | `/logout` (audit), WA OTP (`/api/wa/{register,login}/{start,verify}`), Google `exchange-token`. Forgot/Reset email **N/A by-design** (`410 Gone`, lihat `password-reset.ts`) |
 | 3 | RBAC minimal 2 role, hak akses beda | ✅ | Per company: owner & akuntan via `requireRole`; admin aplikasi (pemilik aplikasi) lewat gerbang terpisah, read-only + moderasi |
 | 4 | CRUD lengkap (C/R/U/D) di minimal 6 entitas utama, tidak boleh dummy | ✅ | Full CRUD: `accounts`, `journal` (incl. PUT & soft-delete), `periods` (incl. DELETE), `users`, `users-management`, `subscriptions` |
-| 5 | Server-side validation (required/email/unique/min/max/enum/numeric/date), error JSON | ✅ | Validasi manual + error handler global JSON di semua route POST/PUT |
-| 6 | Upload file (gambar/PDF) di backend | ✅ | `POST /api/upload/avatar` & `/api/upload/proof` → Supabase Storage (bucket `avatars`, `payment-proofs`) |
-| 7 | Global error handling 400/401/403/404/422/500, format response konsisten | ✅ | Error handler global di `index.ts` + `c.json({ error })` konsisten |
+| 5 | Server-side validation (required/email/unique/min/max/enum/numeric/date), error JSON | ✅ | Zod `validateBody` (422 + details) + validasi manual + error handler global JSON di semua route POST/PUT |
+| 6 | Upload file (gambar/PDF) di backend | ✅ | `POST /api/upload/avatar` & `/api/upload/proof` → Supabase Storage (gambar PNG/JPG/WebP/GIF + PDF, magic-bytes + 5MB) |
+| 7 | Global error handling 400/401/403/404/422/500, format response konsisten | ✅ | Error handler global di `index.ts` + `c.json({ error })` konsisten (422 dari `validateBody`) |
 | 8 | DB relationship: 6 tabel utama, 5 relasi, wajib ada 1:1, 1:M, M:1, **M:M** | ✅ | M:M via junction `company_members` (users ↔ companies) |
 | 9 | Soft delete minimal 2 tabel | ✅ | `accounts` (`is_active`) + `journal_entries` (`deleted_at`) |
 | 10 | API Documentation (Swagger/OpenAPI/Postman Collection) | ✅ | `postman/ledgerflow.postman_collection.json` (10 folder, 40+ request, auto-save token) |
@@ -68,9 +68,9 @@
 | 2 | Minimal 5 relasi antar tabel | ✅ | Terpenuhi (1:1, 1:M, M:1, M:M) |
 | 3 | Primary Key & Foreign Key | ✅ | Terpenuhi |
 | 4 | Normalisasi minimal 3NF | ✅ | Struktur sudah cukup ternormalisasi |
-| 5 | Timestamp `created_at` & `updated_at` di **setiap** tabel utama | ✅ | Trigger `set_updated_at` di 6 tabel utama (companies, users, accounts, periods, journal_entries, journal_entry_lines) |
-| 6 | Soft delete minimal 2 tabel | ✅ | `accounts` (`is_active`) + `journal_entries` (`deleted_at`) |
-| 7 | Seed data minimal 20 data/tabel utama | ✅ | `npm run seed` (backend): 2 user, 26 akun, 12 periode, 54 jurnal + lines, company & members |
+| 5 | Timestamp `created_at` & `updated_at` di **setiap** tabel utama | ✅ | Trigger `set_updated_at` di 11 tabel (6 inti + `company_members`, `journal_counters`, `plans`, `subscriptions`, `payments`) |
+| 6 | Soft delete minimal 2 tabel | ✅ | `accounts` (`is_active` + `deleted_at`) + `journal_entries` (`deleted_at`) |
+| 7 | Seed data minimal 20 data/tabel utama | ✅ | `npm run seed` (backend): 20 user, 20 members, 26 akun, 24 periode, 54 jurnal + ±120 lines |
 
 ### TATA CARA PENGUMPULAN
 
@@ -94,7 +94,7 @@
 | **Supabase** | Database dan backend service |
 | **Fonnte** | WhatsApp Gateway untuk OTP autentikasi (WA) |
 | **Midtrans** | Payment gateway |
-| **Google Auth** | OAuth 2.0 login |
+| **Supabase Auth (Google OAuth)** | Google one-tap via `exchange-token` (tanpa `google-auth-library`) |
 | **LangGraph.js + LangChain** | AI CFO Assistant (agent router + tools) |
 | **OpenRouter** | Provider LLM (model gratis `:free`) |
 
@@ -202,14 +202,18 @@ LedgerFlow/
 │   │   │   ├── supabase.ts             # Supabase admin client
 │   │   │   ├── jwt.ts                  # JWT sign & verify (jose)
 │   │   │   ├── midtrans.ts            # Midtrans Snap, Core API, helpers
-│   │   │   ├── email.ts               # SMTP email (welcome, login, reset)
+│   │   │   ├── email.ts               # SMTP email (welcome, login)
 │   │   │   ├── whatsapp.ts            # Kirim OTP WA via Fonnte (normalisasi nomor + kode)
-│   │   │   ├── authClient.ts          # Supabase anon client (signIn dengan password)
 │   │   │   ├── ensureProfile.ts       # Konsistensi profil user + company_members
 │   │   │   ├── env.ts                 # loadEnv (.env) + warning OPENROUTER_*/FONNTE_*
-│   │   │   └── storage.ts             # Upload base64 ke Supabase Storage
+│   │   │   ├── storage.ts             # Upload base64 ke Supabase Storage (gambar + PDF)
+│   │   │   ├── sanitize.ts            # Sanitasi search/sort + anti path-traversal
 │   │   ├── middleware/
-│   │   │   └── auth.ts                # Auth middleware + RBAC middleware
+│   │   │   ├── auth.ts                # Auth middleware + RBAC (requireRole)
+│   │   │   ├── validate.ts            # Validasi zod → 422 + details
+│   │   │   ├── rate-limit.ts / rateLimit.ts # Rate limit premium + OTP
+│   │   │   ├── accessLogger.ts        # Logging akses fitur premium
+│   │   │   └── security-headers.ts    # Header keamanan (CSP, nosniff)
 │   │   └── midtrans.d.ts             # Type definitions Midtrans
 │   ├── scripts/
 │   │   └── seed-demo.ts               # Seed data demo (npm run seed)
@@ -222,10 +226,8 @@ LedgerFlow/
 │   │   ├── App.tsx                     # Router, guards, layout, FAB AI CFO
 │   │   ├── pages/                      # Halaman-halaman aplikasi
 │   │   │   ├── HomePage.tsx            # Landing page
-│   │   │   ├── LoginPage.tsx           # Login (email/password, Google OAuth, WhatsApp OTP)
-│   │   │   ├── RegisterPage.tsx        # Register (email + verifikasi WhatsApp OTP)
-│   │   │   ├── ForgotPasswordPage.tsx  # Lupa password
-│   │   │   ├── ResetPasswordPage.tsx   # Reset password
+│   │   │   ├── AuthPage.tsx            # Login + Register (WA OTP + Google, tanpa password)
+│   │   │   │   # (Forgot/Reset Password email N/A — passwordless, OTP ulang = reset akses)
 │   │   │   ├── AuthCallback.tsx        # Google OAuth callback handler
 │   │   │   ├── DashboardPage.tsx       # Dashboard utama
 │   │   │   ├── ChartOfAccounts.tsx     # Chart of Accounts (CRUD + pagination)
@@ -262,9 +264,7 @@ LedgerFlow/
 │   │   │   ├── Sidebar.tsx             # Sidebar navigasi (desktop + drawer mobile)
 │   │   │   ├── Navbar.tsx              # Navbar responsif
 │   │   │   ├── Footer.tsx              # Footer
-│   │   │   ├── PageTransition.tsx      # Animasi transisi halaman
-│   │   │   ├── ThemeSwitcher.tsx       # Dark/light mode toggle
-│   │   │   ├── LogoMark.tsx            # Logo SVG
+│   │   │   ├── ThemeSwitcher.tsx       # Dark/light mode toggle (lihat themeTransition.ts)
 │   │   │   ├── AccountModal.tsx        # Modal tambah/edit akun
 │   │   │   ├── AccountTable.tsx        # Tabel chart of accounts
 │   │   │   ├── AccountShared.tsx       # Shared account utilities
@@ -286,22 +286,21 @@ LedgerFlow/
 │   │   │   ├── CashFlowChart.tsx       # Chart arus kas
 │   │   │   ├── TablePagination.tsx     # Pagination tabel
 │   │   │   ├── InfoPanel.tsx           # Panel informasi
-│   │   │   ├── HoverDropdown.tsx       # Dropdown hover
-│   │   │   ├── ToastContainer.tsx      # Container notifikasi
+│   │   │   ├── HoverDropdown.tsx       # Dropdown hover (dipakai filter/sort semua list)
 │   │   │   ├── Paywall.tsx             # Paywall untuk fitur premium
 │   │   │   └── ProtectedFeature.tsx    # Gate fitur berdasarkan subscription
 │   │   ├── hooks/
-│   │   │   ├── useAccounts.ts          # Data fetching akun
-│   │   │   ├── useJournal.ts           # Data fetching jurnal
+│   │   │   ├── useAccounts.ts          # Data fetching akun (CRUD + hapus)
+│   │   │   ├── useJournal.ts           # Data fetching jurnal (CRUD + edit draft + toast global)
 │   │   │   ├── useLedger.ts            # Data fetching buku besar
 │   │   │   ├── useDashboardData.ts     # Data dashboard
-│   │   │   ├── useIncomeStatement.ts   # Data laba rugi
-│   │   │   ├── useCashFlow.ts          # Data arus kas
+│   │   │   ├── useReports.ts           # useIncomeStatement + useCashFlow + useBalanceSheet
 │   │   │   ├── useSubscription.ts      # Status subscription & akses fitur
-│   │   │   └── usePagination.ts        # Hook pagination
+│   │   │   ├── usePagination.ts        # Hook pagination (+ pageSize)
+│   │   │   └── useLanguage.ts          # Bahasa ID/EN
 │   │   ├── services/
 │   │   │   ├── accountsService.ts      # API calls akun
-│   │   │   ├── journalService.ts       # API calls jurnal
+│   │   │   ├── journalService.ts       # API calls jurnal (termasuk update draft)
 │   │   │   ├── ledgerService.ts        # API calls buku besar
 │   │   │   ├── reportsService.ts       # API calls laporan
 │   │   │   ├── periodsService.ts       # API calls periode
@@ -318,12 +317,14 @@ LedgerFlow/
 │   │   ├── lib/
 │   │   │   ├── api.ts                  # Axios instance + interceptors
 │   │   │   ├── supabaseClient.ts       # Supabase client frontend
-│   │   │   └── utils.ts               # Utility functions
+│   │   │   ├── session.ts              # Token di localStorage (+ fallback session)
+│   │   │   ├── errorMessage.ts         # Pesan error + judul toast
+│   │   │   └── toastBridge.ts          # Bridge toast global
 │   │   └── utils/
-│   │       ├── authHelpers.ts          # Helper autentikasi
-│   │       ├── validation.ts           # Validasi form realtime
+│   │       ├── validation.ts           # Validasi form realtime (nama/email/HP/password/konfirmasi)
 │   │       ├── currency.ts             # Format mata uang IDR
-│   │       └── exportPDF.ts            # Export laporan ke PDF
+│   │       ├── exportPDF.ts            # Export laporan (PDF/CSV/Excel/Word)
+│   │       └── aiCfoStorage.ts         # Riwayat chat AI CFO (localStorage)
 │   ├── .env                            # Environment variables frontend
 │   ├── index.html
 │   ├── vite.config.ts
@@ -335,12 +336,12 @@ LedgerFlow/
 │   ├── tsconfig.app.json
 │   └── tsconfig.node.json
 ├── database/
-│   ├── database.sql                    # Full database schema & migrations (base)
-│   ├── migration-wa-auth.sql           # Fungsi/tabel autentikasi WA (wa_otp_codes, users.phone)
-│   └── migration-journal-rpc-and-email-verify.sql  # RPC jurnal & verifikasi email
+│   ├── database.sql                    # Full schema + §18 kepatuhan S1 (timestamp/soft-delete/1:1)
+│   ├── migration-wa-auth.sql           # Autentikasi WA (wa_otp_codes, users.phone)
+│   ├── migration-journal-rpc-and-email-verify.sql  # RPC jurnal & verifikasi email
+│   └── migration-*.sql                 # Migrasi tambahan (admin-gate, notifikasi, dsb.)
 ├── postman/
-│   └── ledgerflow.postman_collection.json  # Postman collection (API docs)
-├── GOOGLE_OAUTH_SETUP.md               # Dokumentasi setup Google OAuth
+│   └── ledgerflow.postman_collection.json  # Postman collection, 47 request (roles owner/akuntan)
 ├── .gitignore
 ├── package.json                        # Root workspace (concurrently)
 └── README.md
@@ -528,11 +529,10 @@ Provider wrapping:
 | Path | Halaman | Guard |
 |---|---|---|
 | `/` | HomePage | Public |
-| `/login` | LoginPage | PublicRoute |
-| `/register` | RegisterPage | PublicRoute |
+| `/login` | AuthPage (mode login) | PublicRoute |
+| `/register` | AuthPage (mode register) | PublicRoute |
 | `/auth/callback` | AuthCallback | - |
-| `/forgot-password` | ForgotPasswordPage | PublicRoute |
-| `/reset-password` | ResetPasswordPage | - |
+| _(tanpa halaman lupa/reset — passwordless)_ | OTP ulang / Google | - |
 | `/onboarding` | OnboardingPage | ProtectedRoute |
 | `/dashboard` | DashboardPage | ProtectedRoute |
 | `/chart-of-accounts` | ChartOfAccounts | RoleRoute (owner/akuntan) |
@@ -588,8 +588,7 @@ Semua data fetching dikelola via custom hooks:
 - **`useJournal()`** — CRUD jurnal entries + posting
 - **`useLedger()`** — Fetch data buku besar dengan filter
 - **`useDashboardData()`** — Aggregate data untuk dashboard
-- **`useIncomeStatement()`** — Fetch laporan laba rugi
-- **`useCashFlow()`** — Fetch laporan arus kas
+- **`useReports()`** — `useIncomeStatement`/`useCashFlow`/`useBalanceSheet` laporan
 - **`useSubscription()`** — Cek subscription status, akses fitur
 - **`usePagination()`** — State pagination reusable
 
@@ -597,7 +596,7 @@ Semua data fetching dikelola via custom hooks:
 
 Setiap service adalah modul yang membungkus panggilan API ke backend:
 - `accountsService.ts` — CRUD operasi akun
-- `JournalService.ts` — CRUD operasi jurnal
+- `journalService.ts` — CRUD operasi jurnal (termasuk edit draft)
 - `ledgerService.ts` — Fetch buku besar
 - `reportsService.ts` — Fetch laporan keuangan
 - `periodsService.ts` — Manajemen periode
@@ -653,7 +652,7 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 2. **Trigger `set_updated_at`** — `updated_at` otomatis diperbarui di 6 tabel utama
 3. **Soft delete** — `journal_entries.deleted_at` + `accounts.is_active`
 4. **Supabase Storage buckets** — `avatars` & `payment-proofs` (public) dibuat lewat SQL
-5. **Seed data** — `npm run seed` (backend): 2 user, 26 akun, 12 periode, 54 jurnal
+5. **Seed data** — `npm run seed` (backend): 20 user, 20 members, 26 akun, 24 periode, 54 jurnal deterministik
 6. **Migration WA auth** — `migration-wa-auth.sql`: tabel `wa_otp_codes`, kolom `users.phone` + `phone_verified` (menggantikan `otp_codes` lama)
 
 ---
@@ -669,8 +668,8 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 | POST | `/api/auth/login` | Login dengan email & password |
 | POST | `/api/auth/logout` | Logout (audit log) |
 | POST | `/api/auth/exchange-token` | Exchange Supabase/OAuth token ke JWT internal |
-| POST | `/api/auth/forgot-password` | Kirim link reset password ke email |
-| POST | `/api/auth/reset-password` | Set password baru dengan token |
+| POST | `/api/auth/forgot-password` | `410 Gone` by-design (passwordless — pakai OTP ulang / Google) |
+| POST | `/api/auth/reset-password` | `410 Gone` by-design (passwordless — pakai OTP ulang / Google) |
 
 ### WhatsApp OTP
 | Method | Endpoint | Deskripsi |
@@ -840,6 +839,8 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 ```
 
 > **Catatan Render free tier:** backend bisa sleep setelah idle → browser tampil `ERR_CONNECTION_CLOSED`. Bangunkan lewat `GET /health`, lalu refresh.
+>
+> **Catatan deploy:** deploy frontend dari folder `frontend` (Root Directory = `frontend`) agar `vercel.json` (SPA rewrite + CSP) terbaca. File `_headers` hanya dipakai Netlify/Cloudflare Pages dan diabaikan Vercel. Backend butuh env sesuai `backend/.env.example`.
 ---
 
 ## Fitur Detail
@@ -895,9 +896,10 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 - Feature access control berdasarkan plan
 - **Kuota jurnal plan Free divalidasi di backend** (`journal.ts`): jurnal ke-51 di bulan yang sama ditolak dengan HTTP 403 — Pro/Enterprise unlimited. Sisa kuota tampil sebagai banner di halaman Journal Entry (`GET /api/journal/quota`)
 
-### 8. Autentikasi
+### 8. Autentikasi (passwordless — tanpa Forgot/Reset Password email)
 - Register via **WhatsApp OTP** (2-step: kirim kode → verifikasi, tanpa password) atau **Google One-Click**
-- Login via **WhatsApp OTP** (2-step: kirim kode → verifikasi) atau **Google One-Click** — endpoint email & password (`/api/auth/login`) tetap tersedia di API untuk keperluan internal/seed, tapi tidak diekspos di UI login
+- Login via **WhatsApp OTP** atau **Google One-Click** — lupa akses = minta OTP ulang (pengganti forgot password); endpoint email (`/api/auth/forgot-password`, `/reset-password`) sengaja `410 Gone`
+- Google One-Click Login (OAuth 2.0 via Supabase `exchange-token`)
 - Google One-Click Login (OAuth 2.0)
 - OTP WA: cooldown 60 detik, berlaku 5 menit, max 5 percobaan per kode, kode hanya dikirim via WhatsApp
 - Role-based access
@@ -935,7 +937,7 @@ npm run build --workspace=frontend  # Output: frontend/dist/
 
 ## Akun Demo
 
-Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang kali). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 2 user, 26 akun, 12 periode, dan 54 jurnal (6 bulan pertama tahun berjalan).
+Seed data dibuat dengan perintah `npm run seed` dari folder `backend/` (idempotent — aman dijalankan berulang kali). Perusahaan demo: **PT Demo Nusantara** (kode `PT-DEMO-001`) dengan 20 user, 26 akun, 24 periode (2 tahun), dan 54 jurnal deterministik + ±120 lines.
 
 | Role | Email (identitas seed) | No. WhatsApp (default) |
 |---|---|---|

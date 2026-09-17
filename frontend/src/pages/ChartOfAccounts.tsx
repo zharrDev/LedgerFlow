@@ -57,6 +57,7 @@ export default function ChartOfAccounts() {
     fetchAccounts,
     saveAccount,
     toggleStatus,
+    removeAccount,
   } = useAccounts();
   const location = useLocation();
 
@@ -64,12 +65,16 @@ export default function ChartOfAccounts() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<any>(null);
   const [confirmAccount, setConfirmAccount] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [detailAccount, setDetailAccount] = useState<any>(null);
   const [search, setSearch] = useState(() => {
     const params = new URLSearchParams(location.search);
     return params.get("search") || "";
   });
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortKey, setSortKey] = useState<string>("code-az");
 
   // Sinkronkan search dari query param (mis. dari Header search)
   useEffect(() => {
@@ -98,7 +103,7 @@ export default function ChartOfAccounts() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return safeAccounts
+    const list = safeAccounts
       .filter(
         (a) =>
           a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q),
@@ -110,7 +115,25 @@ export default function ChartOfAccounts() {
           (filterStatus === "active" && a.isActive) ||
           (filterStatus === "inactive" && !a.isActive),
       );
-  }, [safeAccounts, search, filterType, filterStatus]);
+    // Sorting: kode/nama A-Z & Z-A (ketentuan S1)
+    const sorted = [...list];
+    switch (sortKey) {
+      case "code-za":
+        sorted.sort((a, b) => b.code.localeCompare(a.code));
+        break;
+      case "name-az":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-za":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "code-az":
+      default:
+        sorted.sort((a, b) => a.code.localeCompare(b.code));
+        break;
+    }
+    return sorted;
+  }, [safeAccounts, search, filterType, filterStatus, sortKey]);
 
   const pagination = usePagination(filtered, 10);
 
@@ -199,6 +222,13 @@ export default function ChartOfAccounts() {
     if (val === "active") return tx(language, "Active", "Aktif");
     return tx(language, "Inactive", "Nonaktif");
   };
+
+  const sortOptions = [
+    { value: "code-az", label: tx(language, "Code A-Z", "Kode A-Z") },
+    { value: "code-za", label: tx(language, "Code Z-A", "Kode Z-A") },
+    { value: "name-az", label: tx(language, "Name A-Z", "Nama A-Z") },
+    { value: "name-za", label: tx(language, "Name Z-A", "Nama Z-A") },
+  ];
 
   // ─── Export Handlers ──────────────────────────────────────────────
   const handleExport = (format: "pdf" | "excel" | "word" | "csv") => {
@@ -402,12 +432,18 @@ export default function ChartOfAccounts() {
               options={statusOptions}
               labelRenderer={getStatusLabel}
             />
-            {(search || filterType !== "all" || filterStatus !== "all") && (
+            <HoverDropdown
+              value={sortKey}
+              onChange={setSortKey}
+              options={sortOptions}
+            />
+            {(search || filterType !== "all" || filterStatus !== "all" || sortKey !== "code-az") && (
               <button
                 onClick={() => {
                   setSearch("");
                   setFilterType("all");
                   setFilterStatus("all");
+                  setSortKey("code-az");
                 }}
                 className="px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
@@ -429,6 +465,8 @@ export default function ChartOfAccounts() {
               setModalOpen(true);
             }}
             onToggleStatus={setConfirmAccount}
+            onDelete={setDeleteTarget}
+            onDetail={setDetailAccount}
             toggling={toggling}
             pagination={{
               page: pagination.page,
@@ -441,6 +479,8 @@ export default function ChartOfAccounts() {
               onPrev: pagination.prev,
               onNext: pagination.next,
               onGoTo: pagination.goTo,
+              pageSize: pagination.pageSize,
+              onPageSizeChange: pagination.setPageSize,
               itemLabel: tx(language, "accounts", "akun"),
               summary: (
                 <>
@@ -475,6 +515,93 @@ export default function ChartOfAccounts() {
         account={confirmAccount}
         loading={toggling}
       />
+
+      {/* Delete Dialog */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-xl p-6 text-center"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {tx(language, "Delete Account?", "Hapus Akun?")}
+              </h3>
+              <p className="text-sm text-gray-500 mb-5">
+                {deleteTarget.code} — {deleteTarget.name}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  {tx(language, "Cancel", "Batal")}
+                </button>
+                <button
+                  onClick={async () => {
+                    setDeleting(true);
+                    await removeAccount(deleteTarget);
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                  }}
+                  disabled={deleting}
+                  className="flex-1 py-2 rounded-xl text-white text-sm font-medium bg-rose-500 hover:bg-rose-600 transition-all"
+                >
+                  {deleting ? tx(language, "Deleting...", "Menghapus...") : tx(language, "Delete", "Hapus")}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Detail Dialog */}
+      <AnimatePresence>
+        {detailAccount && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setDetailAccount(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white dark:bg-darkCard rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-xl p-6"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                {tx(language, "Account Detail", "Detail Akun")}
+              </h3>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between"><dt className="text-gray-500">Kode</dt><dd className="font-mono font-medium text-gray-900 dark:text-white">{detailAccount.code}</dd></div>
+                <div className="flex justify-between"><dt className="text-gray-500">Nama</dt><dd className="font-medium text-gray-900 dark:text-white">{detailAccount.name}</dd></div>
+                <div className="flex justify-between"><dt className="text-gray-500">Tipe</dt><dd className="capitalize text-gray-900 dark:text-white">{detailAccount.type}</dd></div>
+                <div className="flex justify-between"><dt className="text-gray-500">Saldo Normal</dt><dd className="text-gray-900 dark:text-white">{detailAccount.normalBalance}</dd></div>
+                <div className="flex justify-between"><dt className="text-gray-500">Status</dt><dd className="text-gray-900 dark:text-white">{detailAccount.isActive ? tx(language, "Active", "Aktif") : tx(language, "Inactive", "Nonaktif")}</dd></div>
+              </dl>
+              <button
+                onClick={() => setDetailAccount(null)}
+                className="mt-5 w-full py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                {tx(language, "Close", "Tutup")}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══ Import Modal ═══ */}
       <AnimatePresence>

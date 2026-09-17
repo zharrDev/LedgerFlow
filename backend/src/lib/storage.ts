@@ -6,13 +6,14 @@ interface ParsedDataUrl {
   mime: string;
 }
 
-// Allowlist MIME → ekstensi. Hanya gambar yang diizinkan (avatar & bukti bayar).
+// Allowlist MIME → ekstensi. Gambar + PDF (ketentuan S1: gambar atau PDF).
 const ALLOWED_IMAGE_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
   "image/webp": "webp",
   "image/gif": "gif",
+  "application/pdf": "pdf",
 };
 
 // Batas ukuran default 5 MB
@@ -53,6 +54,16 @@ function verifyMagicBytes(buffer: Buffer, mime: string): boolean {
     );
   }
   
+  if (mime === "application/pdf") {
+    // Magic bytes PDF: %PDF
+    return (
+      buffer[0] === 0x25 && // %
+      buffer[1] === 0x50 && // P
+      buffer[2] === 0x44 && // D
+      buffer[3] === 0x46    // F
+    );
+  }
+
   return false;
 }
 
@@ -95,9 +106,9 @@ export async function uploadBase64(
 ): Promise<string> {
   const { buffer, ext, mime } = parseDataUrl(dataUrl);
 
-  // Validasi tipe file: hanya gambar dalam allowlist
+  // Validasi tipe file: gambar atau PDF dalam allowlist
   if (!ext) {
-    throw new Error("Tipe file tidak didukung. Hanya gambar (PNG/JPG/WebP/GIF).");
+    throw new Error("Tipe file tidak didukung. Hanya gambar (PNG/JPG/WebP/GIF) atau PDF.");
   }
 
   // Validasi ukuran

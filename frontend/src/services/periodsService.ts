@@ -5,12 +5,13 @@ import type { Period } from "../types/reports";
 // Service periode: handle request frontend ke endpoint periods backend
 export const periodsService = {
   // Ambil semua periode berdasarkan companyId
-  getAll: async (companyId: string): Promise<Period[]> => {
+  getAll: async (companyId: string, params?: { search?: string; status?: string; sort?: string; page?: number; limit?: number }): Promise<Period[]> => {
     const { data } = await api.get("api/periods", {
-      params: { company_id: companyId },
+      params: { company_id: companyId, ...params },
       skipErrorToast: true,
     });
-    return data;
+    // Backend return array (tanpa query) atau { data, total, page, limit }
+    return Array.isArray(data) ? data : (data?.data ?? []);
   },
 
   // Membuka periode baru

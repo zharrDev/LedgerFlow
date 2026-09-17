@@ -1,4 +1,4 @@
-{
+﻿{
   "info": {
     "name": "LedgerFlow API",
     "description": "Dokumentasi API LedgerFlow (Projekan S1)\n\n## Setup\n1. Import file ini ke Postman.\n2. Atur environment variable:\n   - `baseUrl` = `http://localhost:3000` (development) atau `https://<backend-vercel>.vercel.app` (production)\n3. Login terlebih dahulu lewat folder **Auth → Login**, token JWT otomatis tersimpan ke variable `token` (lihat tab Tests pada request Login).\n4. Semua request bertanda *Auth* memerlukan header `Authorization: Bearer {{token}}` — sudah diset otomatis di folder collection.\n\n## Auth\nSemua endpoint selain register/login/otp/forgot-password memakai Bearer token JWT yang berisi `sub`, `email`, `role`, `company_id`.\n\n## Role\n- `owner` — akses penuh\n- `admin` — kelola akun/user/periode, tanpa ubah jurnal\n- `akuntan` — input jurnal, tanpa kelola user/periode\n\n## Format Response List (paginasi)\nSemua endpoint list mengembalikan:\n```json\n{ \"data\": [...], \"total\": 0, \"page\": 1, \"limit\": 50 }\n```\nQuery parameter: `page`, `limit`, `search`, `sort`, dst. sesuai endpoint.",
@@ -304,7 +304,7 @@
           }
         },
         {
-          "name": "Delete Account (Auth, role: admin)",
+          "name": "Delete Account (Auth, role: owner)",
           "request": {
             "method": "DELETE",
             "header": [
@@ -462,7 +462,7 @@
           }
         },
         {
-          "name": "Create Period (Auth, role: admin/owner)",
+          "name": "Create Period (Auth, role: owner)",
           "request": {
             "method": "POST",
             "header": [
@@ -476,12 +476,12 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"company_id\": \"{{companyId}}\",\n  \"year\": 2026,\n  \"month\": 8\n}"
+              "raw": "{\n    \"year\": 2026,\n  \"month\": 8\n}"
             }
           }
         },
         {
-          "name": "Close Period (Auth, role: admin/owner)",
+          "name": "Close Period (Auth, role: owner)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -499,7 +499,7 @@
           }
         },
         {
-          "name": "Delete Period (Auth, role: admin/owner)",
+          "name": "Delete Period (Auth, role: owner)",
           "description": "Periode berstatus `closed` atau yang sudah memiliki jurnal tidak bisa dihapus.",
           "request": {
             "method": "DELETE",
@@ -665,7 +665,7 @@
       "description": "Kelola anggota company. Relasi M:M user↔company tersimpan di tabel `company_members`.",
       "item": [
         {
-          "name": "Get All Members (Auth, role: admin/owner)",
+          "name": "Get All Members (Auth, role: owner)",
           "request": {
             "method": "GET",
             "header": [
@@ -685,7 +685,7 @@
           }
         },
         {
-          "name": "Change Role (Auth, role: admin/owner)",
+          "name": "Change Role (Auth, role: owner)",
           "request": {
             "method": "PUT",
             "header": [
@@ -707,7 +707,7 @@
           }
         },
         {
-          "name": "Delete Member (Auth, role: admin/owner)",
+          "name": "Delete Member (Auth, role: owner)",
           "description": "Tidak bisa menghapus akun sendiri.",
           "request": {
             "method": "DELETE",

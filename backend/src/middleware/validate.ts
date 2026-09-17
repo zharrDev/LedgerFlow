@@ -16,7 +16,8 @@ declare module "hono" {
 
 /**
  * Middleware yang mem-parses & memvalidasi body JSON dengan schema zod.
- * - Body tidak ada / bukan JSON valid / gagal schema → 400 dengan details
+ * - Body tidak ada / bukan JSON valid → 400 { error, details }
+ * - Gagal schema (aturan bisnis: required/email/unique/min/max/enum/...) → 422
  * - Valid → simpan hasil parse di c.get("validatedBody") lalu lanjut
  *
  * Pemakaian:
@@ -26,11 +27,17 @@ declare module "hono" {
 export function validateBody<T>(schema: ZodType<T>) {
   return createMiddleware(async (c, next) => {
     const body = await c.req.json().catch(() => null);
+    if (body === null || typeof body !== "object") {
+      return c.json(
+        { error: "Body JSON tidak valid", details: null },
+        400,
+      );
+    }
     const result = schema.safeParse(body);
     if (!result.success) {
       return c.json(
-        { error: "Data tidak valid", details: result.error.flatten() },
-        400,
+        { error: "Validasi gagal", details: result.error.flatten() },
+        422,
       );
     }
     c.set("validatedBody", result.data);
