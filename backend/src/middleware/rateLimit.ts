@@ -132,31 +132,6 @@ export const premiumFeatureRateLimit = async (c: Context, next: Next) => {
   await next();
 };
 
-// Middleware rate limit komprehensif untuk endpoint premium
-export const premiumFeatureRateLimitWithAuth = async (c: Context, next: Next) => {
-  // Pertama, lakukan rate limiting berdasarkan user_id
-  await premiumFeatureRateLimit(c, async () => {});
-  
-  if (c.get("rateLimited")) {
-    const resetInMs = c.get("rateLimitResetMs") || 0;
-    return c.json(
-      {
-        error: "Terlalu banyak permintaan. Coba lagi dalam " + Math.ceil(resetInMs / 1000) + " detik.",
-        retry_after: Math.ceil(resetInMs / 1000),
-      },
-      429
-    );
-  }
-  
-  await next();
-};
-
-// Helper: cek apakah user boleh mengakses fitur premium berdasarkan rate limit
-export function checkRateLimit(userId: string): boolean {
-  const isLimited = isRateLimited(userId, DEFAULT_RATE_LIMIT, DEFAULT_WINDOW_MS);
-  return !isLimited.limited;
-}
-
 // Utility: ambil stats rate limit (berguna untuk admin dashboard)
 export async function getRateLimitStats() {
   const stats = {

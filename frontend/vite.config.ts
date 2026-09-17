@@ -3,9 +3,6 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    include: ["three", "@react-three/fiber", "@react-three/drei"],
-  },
   server: {
     // Arena preview runs behind a unique HTTPS host.
     allowedHosts: true,

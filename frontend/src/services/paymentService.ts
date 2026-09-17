@@ -7,9 +7,7 @@
 //   - getSubscription()    → Ambil data subscription user
 //   - subscribe()          → Buat transaksi pembayaran
 //   - testComplete()       → Force-complete pembayaran (sandbox only)
-//   - getPaymentHistory()  → Ambil riwayat pembayaran
 //   - cancelSubscription() → Cancel subscription
-//   - checkFeatureAccess() → Cek akses fitur
 //   - isSandboxMode()      → Cek apakah lagi di mode sandbox
 //   - openSnapPayment()    → Buka popup pembayaran Midtrans Snap
 //   - formatPrice()        → Format angka jadi format Rupiah
@@ -53,32 +51,11 @@ export interface Subscription {
   plans: Plan; // Object plan yang di-join dari tabel plans
 }
 
-// Data riwayat pembayaran
-export interface PaymentHistory {
-  id: string; // UUID payment record
-  order_id: string; // ID transaksi unik (format: LF-{userId}-{timestamp}-{random})
-  amount: number; // Jumlah yang dibayar (dalam IDR)
-  status: "pending" | "paid" | "failed" | "expired" | "refunded"; // Status pembayaran
-  payment_type: string | null; // Metode pembayaran ("gopay", "bca_va", "credit_card", dll)
-  created_at: string; // Kapan payment record dibuat (ISO date string)
-  paid_at: string | null; // Kapan pembayaran berhasil (null kalau belum bayar)
-}
-
 // Response dari endpoint POST /subscribe
 export interface SubscribeResponse {
   snap_token: string; // Token buat buka popup Midtrans Snap (string panjang)
   redirect_url: string; // URL alternatif buat redirect langsung ke halaman Midtrans
   order_id: string; // ID transaksi buat tracking & navigasi ke halaman result
-}
-
-// Response dari endpoint GET /check-access
-export interface AccessCheck {
-  has_access: boolean; // Apakah user bisa akses fitur ini
-  plan: string; // Plan user sekarang ("free", "pro", "enterprise")
-  required_plan?: string; // Plan minimal yang dibutuhkan (kalau has_access false)
-  reason?: string; // Alasan kenapa gak bisa akses (contoh: "subscription_expired")
-  is_trial?: boolean; // Apakah user lagi trial
-  trial_days_left?: number; // Sisa hari trial
 }
 
 // Response dari endpoint POST /test-complete (sandbox only)
@@ -230,22 +207,6 @@ export async function testComplete(
 }
 
 /**
- * Ambil riwayat pembayaran user.
- *
- * Dipake: Halaman "Riwayat Pembayaran" / Settings
- *
- * Backend: GET /api/payments/history
- * Return: Array of PaymentHistory (maks 20, diurutin dari terbaru)
- */
-export async function getPaymentHistory(): Promise<PaymentHistory[]> {
-  // Hit API GET /history
-  const res = await api.get("/api/payments/history");
-
-  // Response berisi array payment records (maks 20 terakhir)
-  return res.data;
-}
-
-/**
  * Cancel subscription user.
  *
  * Dipake: Halaman Settings pas user klik "Cancel Subscription"
@@ -259,25 +220,6 @@ export async function cancelSubscription(reason?: string): Promise<void> {
   // Hit API POST /cancel dengan alasan (kalau ada)
   // Gak return data apapun (void) — cuma perlu tau sukses/gak
   await api.post("/api/payments/cancel", { reason });
-}
-
-/**
- * Cek apakah user bisa akses fitur tertentu.
- *
- * Dipake: FeatureGate/Paywall component buat nentuin
- *         apakah user bisa lihat fitur atau harus tampilin paywall
- *
- * Backend: GET /api/payments/check-access?feature=export_pdf
- * Return: { has_access: false, plan: "free", required_plan: "pro" }
- */
-export async function checkFeatureAccess(
-  feature: string, // Nama fitur (contoh: "export_pdf", "income_statement")
-): Promise<AccessCheck> {
-  // Hit API GET /check-access dengan query parameter feature
-  const res = await api.get(`/api/payments/check-access?feature=${feature}`);
-
-  // Response berisi info apakah user bisa akses fitur ini
-  return res.data;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -474,25 +416,4 @@ export function formatPrice(amount: number): string {
     minimumFractionDigits: 0, // Minimal 0 digit desimal
     maximumFractionDigits: 0, // Maksimal 0 digit desimal
   }).format(amount);
-}
-
-/**
- * Format angka jadi format Rupiah compact (singkat).
- *
- * Berguna buat nampilin harga di tempat yang sempit (badge, card kecil, dll)
- *
- * Contoh:
- *   formatPriceCompact(99000)   → "Rp99rb"
- *   formatPriceCompact(999000)  → "Rp999rb"
- *   formatPriceCompact(2999000) → "Rp3jt"
- */
-export function formatPriceCompact(amount: number): string {
-  // Kalau >= 1 juta, format sebagai "Rp Xjt"
-  if (amount >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(0)}jt`;
-
-  // Kalau >= 1 ribu, format sebagai "Rp Xrb"
-  if (amount >= 1_000) return `Rp ${(amount / 1_000).toFixed(0)}rb`;
-
-  // Kalau < 1 ribu, pakai format lengkap (Rp500, dll)
-  return formatPrice(amount);
 }

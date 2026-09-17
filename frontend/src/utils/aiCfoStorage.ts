@@ -71,23 +71,6 @@ export function createSession(title: string): AiCfoSession {
   };
 }
 
-export function upsertSession(
-  store: AiCfoSessionStore,
-  session: AiCfoSession,
-): AiCfoSessionStore {
-  const idx = store.sessions.findIndex((s) => s.id === session.id);
-  const sessions =
-    idx >= 0
-      ? store.sessions.map((s) => (s.id === session.id ? session : s))
-      : [session, ...store.sessions];
-  return {
-    ...store,
-    date: todayKey(),
-    sessions,
-    activeSessionId: session.id,
-  };
-}
-
 export function formatSessionTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("id-ID", {
     hour: "2-digit",

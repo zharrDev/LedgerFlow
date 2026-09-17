@@ -49,13 +49,3 @@ export function dbErrorResponse(
 
   return c.json({ error: message }, status);
 }
-
-/**
- * Ekstrak kode error dari error yang mungkin berbentuk objek Supabase.
- * Berguna bila error tidak selalu punya .code.
- */
-export function getErrorCode(err: unknown): string | undefined {
-  if (!err || typeof err !== "object") return undefined;
-  const e = err as Record<string, unknown>;
-  return typeof e.code === "string" ? e.code : undefined;
-}
