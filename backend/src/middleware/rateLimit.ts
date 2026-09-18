@@ -132,32 +132,6 @@ export const premiumFeatureRateLimit = async (c: Context, next: Next) => {
   await next();
 };
 
-// Utility: ambil stats rate limit (berguna untuk admin dashboard)
-export async function getRateLimitStats() {
-  const stats = {
-    totalUsers: rateLimitStore.size,
-    totalRequests: Array.from(rateLimitStore.values()).reduce((sum, ts) => sum + ts.length, 0),
-    averageRequestsPerUser: 0,
-    topUsers: [] as Array<{ userId: string; requestCount: number }>,
-  };
-  
-  if (stats.totalUsers > 0) {
-    stats.averageRequestsPerUser = stats.totalRequests / stats.totalUsers;
-    
-    const userCounts = Array.from(rateLimitStore.entries())
-      .map(([userId, timestamps]) => ({
-        userId,
-        requestCount: timestamps.length,
-      }))
-      .sort((a, b) => b.requestCount - a.requestCount)
-      .slice(0, 10);
-
-    stats.topUsers = userCounts;
-  }
-  
-  return stats;
-}
-
 // Cleanup rate limit entries lama (jika memory terlalu besar)
 export function cleanupRateLimitStore() {
   const now = Date.now();

@@ -21,7 +21,62 @@ interface GreetingOwlProps {
   variant?: "animated" | "static";
 }
 
-export function GreetingOwl({ size = "h-28 lg:h-36 xl:h-40", variant = "animated" }: GreetingOwlProps) {
+export function GreetingOwl({
+  size = "h-28 lg:h-36 xl:h-40",
+  variant = "animated",
+}: GreetingOwlProps) {
+  // ─── SEMUA HOOKS WAJIB SEBELUM EARLY RETURN ─────────────────────────
+  // (aturan React: urutan hooks harus sama di setiap render — bug lama:
+  //  hooks dipanggil SETELAH branch "static", berpotensi crash saat varian
+  //  berubah pada instance yang sama: "Rendered more hooks than…")
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const isActiveRef = useRef(true);
+
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const startCycle = () => {
+    if (variant === "static" || prefersReduced || OWL_POSES.length <= 1) return;
+    timerRef.current = setTimeout(() => {
+      if (!isActiveRef.current) return;
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % OWL_POSES.length);
+        setIsTransitioning(false);
+        startCycle();
+      }, FADE_DURATION);
+    }, CYCLE_INTERVAL);
+  };
+
+  useEffect(() => {
+    if (variant === "static") return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        isActiveRef.current = false;
+        if (timerRef.current) clearTimeout(timerRef.current);
+      } else {
+        isActiveRef.current = true;
+        startCycle();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefersReduced, variant]);
+
+  useEffect(() => {
+    if (variant === "static") return;
+    startCycle();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefersReduced, variant]);
+
   // Static variant: only first pose, no timer, no crossfade
   if (variant === "static") {
     return (
@@ -37,49 +92,6 @@ export function GreetingOwl({ size = "h-28 lg:h-36 xl:h-40", variant = "animated
   }
 
   // Animated variant: cycle poses with crossfade
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const isActiveRef = useRef(true);
-
-  const prefersReduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const startCycle = () => {
-    if (prefersReduced || OWL_POSES.length <= 1) return;
-    timerRef.current = setTimeout(() => {
-      if (!isActiveRef.current) return;
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % OWL_POSES.length);
-        setIsTransitioning(false);
-        startCycle();
-      }, FADE_DURATION);
-    }, CYCLE_INTERVAL);
-  };
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden) {
-        isActiveRef.current = false;
-        if (timerRef.current) clearTimeout(timerRef.current);
-      } else {
-        isActiveRef.current = true;
-        startCycle();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [prefersReduced]);
-
-  useEffect(() => {
-    startCycle();
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [prefersReduced]);
-
   const pose = OWL_POSES[currentIndex];
 
   return (

@@ -17,16 +17,6 @@ export function formatDateShort(language: "en" | "id", iso: string) {
   });
 }
 
-export function formatDateTime(language: "en" | "id", iso: string) {
-  return new Date(iso).toLocaleDateString(localeOf(language), {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function formatDateFull(language: "en" | "id", iso: string) {
   return new Date(iso).toLocaleDateString(localeOf(language), {
     weekday: "long",

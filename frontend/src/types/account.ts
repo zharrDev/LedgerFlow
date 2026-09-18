@@ -11,7 +11,6 @@ export type NormalBalance = "Debit" | "Credit";
 
 // Tipe filter untuk UI akun
 export type FilterStatus = "all" | "active" | "inactive";
-export type FilterType = AccountType | "all";
 
 // Bentuk data akun yang dipakai di frontend
 export interface Account {

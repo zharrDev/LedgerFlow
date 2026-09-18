@@ -116,22 +116,4 @@ export const childUp: Variants = {
   },
 };
 
-export const childRight: Variants = {
-  hidden: { opacity: 0, x: 32 },
-  show: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.55, ease: EASE },
-  },
-};
-
-export const childLeft: Variants = {
-  hidden: { opacity: 0, x: -32 },
-  show: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.55, ease: EASE },
-  },
-};
-
 export default ScrollReveal;

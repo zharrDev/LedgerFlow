@@ -19,9 +19,6 @@ export function SpinnerIcon({ className = "w-5 h-5" }: { className?: string }) {
 }
 
 // ─── Icon atoms (lucide-react) ────────────────────────────────────────
-export const IconLedger = ({ size = 18 }: { size?: number }) => (
-  <BookOpen size={size} />
-);
 export const IconCalendar = ({ size = 14 }: { size?: number }) => (
   <Calendar size={size} />
 );
