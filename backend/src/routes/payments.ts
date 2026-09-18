@@ -58,10 +58,41 @@ function normalizeFeatures(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((f) => {
     if (typeof f !== "string") return "";
-    const key = f.trim().toLowerCase().replace(/\\s+/g, "_");
+    const key = f.trim().toLowerCase().replace(/\s+/g, "_");
     if (key.includes(" ") || key.includes("/")) return FEATURE_LABEL_TO_KEY[f.trim().toLowerCase()] ?? f;
     return f;
   });
+}
+
+// Status turunan subscription — SATU sumber kebenaran yang dipakai
+// GET /subscription (dikonsumsi frontend useSubscription: is_active,
+// is_trial, trial_days_left). Semantiknya identik dengan check-access:
+// trial yang masih berjalan ATAU subscription aktif yang belum lewat
+// periode. Tanpa field ini frontend menganggap SEMUA user tidak aktif
+// (canAccess selalu false → paywall permanen walau sudah Pro).
+function subscriptionState(sub: {
+  status?: string | null;
+  trial_end?: string | null;
+  current_period_end?: string | null;
+}): { is_active: boolean; is_trial: boolean; trial_days_left: number } {
+  const now = new Date();
+  const isTrial =
+    sub?.status === "trialing" &&
+    !!sub?.trial_end &&
+    new Date(sub.trial_end) > now;
+  const isSubActive =
+    sub?.status === "active" &&
+    !!sub?.current_period_end &&
+    new Date(sub.current_period_end) > now;
+  return {
+    is_active: isTrial || isSubActive,
+    is_trial: isTrial,
+    trial_days_left: isTrial
+      ? Math.ceil(
+          (new Date(sub.trial_end as string).getTime() - now.getTime()) / 86400000,
+        )
+      : 0,
+  };
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -188,7 +219,13 @@ payments.get("/subscription", authMiddleware, async (c) => {
 
     if (insertErr) return dbErrorResponse(c, insertErr);
 
-    return c.json(newSub);
+    if (newSub?.plans?.features) {
+      (newSub.plans as Record<string, unknown>).features = normalizeFeatures(
+        newSub.plans.features,
+      );
+    }
+
+    return c.json({ ...newSub, ...subscriptionState(newSub) });
   }
 
   // Normalisasi features plan ke machine keys (jaga-jaga DB lama berisi label
@@ -199,8 +236,9 @@ payments.get("/subscription", authMiddleware, async (c) => {
     );
   }
 
-  // Kalau sukses, return data subscription + plan detail
-  return c.json(data);
+  // Kalau sukses, return data subscription + plan detail + status turunan
+  // (is_active/is_trial/trial_days_left — kontrak dengan useSubscription FE).
+  return c.json({ ...data, ...subscriptionState(data) });
 });
 
 // ════════════════════════════════════════════════════════════════════════
