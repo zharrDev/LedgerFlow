@@ -74,7 +74,8 @@ async function requireAIAccess(c: any) {
 }
 
 // GET /api/ai/quota — sisa kuota AI bulan ini (banner halaman AI CFO).
-// Pro: limit & sisa pesan. Enterprise: null = tanpa batas. Free: limit 0.
+// Pro: limit & sisa pesan. Enterprise/trial: null = tanpa batas.
+// Free (limit 0): fitur terkunci — 0 BUKAN unlimited.
 ai.get("/quota", async (c) => {
   const userId = c.get("user").sub;
   const plan = await getPlanContext(userId);
@@ -84,9 +85,13 @@ ai.get("/quota", async (c) => {
   }
 
   const limit = plan.maxAiChats;
-  if (plan.isTrial || !limit || limit <= 0) {
-    // Trial & Enterprise: tanpa batas terukur
+  // Trial & unlimited (NULL / negatif): tanpa batas terukur
+  if (plan.isTrial || limit == null || limit < 0) {
     return c.json({ limit: null, used: null, left: null, plan: plan.planName, is_trial: plan.isTrial });
+  }
+  // limit === 0: AI terkunci untuk plan ini (mis. Free)
+  if (limit === 0) {
+    return c.json({ limit: 0, used: 0, left: 0, plan: plan.planName });
   }
 
   const { used } = await getAiUsageThisMonth(userId);

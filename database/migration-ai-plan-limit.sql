@@ -27,6 +27,20 @@ UPDATE public.plans SET max_ai_chats = 0    WHERE name = 'free';
 UPDATE public.plans SET max_ai_chats = 30   WHERE name = 'pro';
 UPDATE public.plans SET max_ai_chats = NULL WHERE name = 'enterprise';
 
+-- ─── 2b. Normalisasi features ke machine keys (machine-readable) ───────────
+-- KRITIS: /check-access dan frontend canAccess() mencocokkan fitur dengan
+-- key mesin (mis. "income_statement"). DB lama berisi label tampilan
+-- ("Laporan Laba Rugi") sehingga user Pro/Bisnis ke-paywall di semua
+-- laporan & export. SET ulang ke array kanonik (sama dengan seed database.sql).
+UPDATE public.plans SET features = '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger"]'::jsonb
+WHERE name = 'free';
+
+UPDATE public.plans SET features = '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "multi_company", "ai_cfo", "priority_support"]'::jsonb
+WHERE name = 'pro';
+
+UPDATE public.plans SET features = '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "export_csv", "multi_company", "multi_user", "ai_cfo", "api_access", "custom_reports", "dedicated_support", "audit_trail", "priority_support"]'::jsonb
+WHERE name = 'enterprise';
+
 -- ─── 3. Tabel pencatat pemakaian AI ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.ai_usage_logs (
   id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
