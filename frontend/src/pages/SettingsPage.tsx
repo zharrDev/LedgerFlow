@@ -226,7 +226,13 @@ export default function SettingsPage() {
                 </p>
               </div>
               <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                {formatPrice(subscription?.plans?.price_monthly || 0)}/{tx(language, "month", "bulan")}
+                {(subscription?.billing_cycle === "yearly"
+                  ? formatPrice(subscription?.plans?.price_yearly || 0)
+                  : formatPrice(subscription?.plans?.price_monthly || 0)) +
+                  "/" +
+                  (subscription?.billing_cycle === "yearly"
+                    ? tx(language, "year", "tahun")
+                    : tx(language, "month", "bulan"))}
               </span>
             </div>
 

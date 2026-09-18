@@ -227,6 +227,31 @@ payments.post("/subscribe", authMiddleware, async (c) => {
   }
   const billingCycle: BillingCycle = billing_cycle ?? "monthly";
 
+  // Cegah checkout duplikat: plan+siklus yang persis sama dengan langganan
+  // aktif tidak boleh dibayar lagi (Pro bulanan tetap boleh pindah ke tahunan).
+  const { data: activeSub } = await supabase
+    .from("subscriptions")
+    .select("id, status, current_period_end, billing_cycle, plans(name)")
+    .eq("user_id", userId)
+    .maybeSingle();
+  // Join PostgREST berupa array — tangani kedua bentuk (array/object)
+  const subPlan = Array.isArray(activeSub?.plans)
+    ? ((activeSub!.plans as any)[0]?.name ?? null)
+    : ((activeSub?.plans as any)?.name ?? null);
+  const subActive =
+    activeSub?.status === "active" &&
+    !!activeSub?.current_period_end &&
+    new Date(activeSub.current_period_end) > new Date();
+  if (subActive && subPlan === plan_name && billingCycle === (activeSub?.billing_cycle ?? "monthly")) {
+    return c.json(
+      {
+        error: "Kamu sudah berlangganan plan & siklus ini. Pilih siklus lain atau tunggu periode berakhir.",
+        reason: "already_subscribed",
+      },
+      409,
+    );
+  }
+
   // Ambil harga plan dari database (bukan hardcode)
   const { data: plan } = await supabase
     .from("plans")

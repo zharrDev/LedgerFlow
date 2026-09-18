@@ -186,7 +186,7 @@ const FEATURE_COMPARISON: Array<{
 export default function PricingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { planName: currentPlan } = useSubscription();
+  const { planName: currentPlan, billingCycle: currentCycle } = useSubscription();
   const { language } = useLanguage();
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -211,7 +211,8 @@ export default function PricingPage() {
       return;
     }
     if (planName === "free") return;
-    if (planName === currentPlan) return;
+    // Blokir hanya jika plan DAN siklus sama (Pro bulanan boleh pindah ke tahunan)
+    if (planName === currentPlan && billingCycle === currentCycle) return;
 
     setSubscribing("begin");
     const result = await subscribe(planName, billingCycle);
@@ -251,17 +252,32 @@ export default function PricingPage() {
     }
   };
 
+  const TIER: Record<string, number> = { free: 0, pro: 1, enterprise: 2 };
   const getButtonLabel = (planName: string) => {
     if (!user)
       return language === "id" ? "Mulai Free Trial" : "Start Free Trial";
-    if (planName === currentPlan)
-      return language === "id" ? "Plan Saat Ini" : "Current Plan";
-    if (planName === "free") return language === "id" ? "Turun Paket" : "Downgrade";
+    if (planName === currentPlan) {
+      // Plan sama: bedakan antara "sedang dipakai" vs "pindah siklus"
+      if (billingCycle === currentCycle)
+        return language === "id" ? "Plan Saat Ini" : "Current Plan";
+      return billingCycle === "yearly"
+        ? language === "id"
+          ? "Beralih ke Tahunan"
+          : "Switch to Yearly"
+        : language === "id"
+          ? "Beralih ke Bulanan"
+          : "Switch to Monthly";
+    }
+    if ((TIER[planName] ?? 0) < (TIER[currentPlan] ?? 0))
+      return language === "id" ? "Turun Paket" : "Downgrade";
     return language === "id" ? "Upgrade Sekarang" : "Upgrade Now";
   };
 
   const getButtonDisabled = (planName: string) => {
-    return planName === currentPlan || subscribing !== null;
+    if (subscribing !== null) return true;
+    // Disable hanya untuk kombinasi plan+siklus yang persis sama —
+    // pindah siklus (bulanan↔tahunan) harus tetap bisa diklik.
+    return planName === currentPlan && billingCycle === currentCycle;
   };
 
   const getSavings = (plan: Plan) => {
@@ -382,7 +398,9 @@ export default function PricingPage() {
                 ? Math.round(plan.price_yearly / 12)
                 : plan.price_monthly;
             const savings = getSavings(plan);
-            const isCurrentPlan = plan.name === currentPlan;
+            // "Plan saat ini" = plan DAN siklus sama (Pro bulanan ≠ Pro tahunan)
+            const isCurrentPlan =
+              plan.name === currentPlan && billingCycle === currentCycle;
             const isPopular = plan.name === "pro";
 
             return (
@@ -433,7 +451,14 @@ export default function PricingPage() {
                       </h3>
                       {isCurrentPlan && (
                         <span className="inline-flex mt-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-semibold">
-                          {language === "id" ? "Plan Anda" : "Your Plan"}
+                          {(language === "id" ? "Plan Anda · " : "Your Plan · ") +
+                            (billingCycle === "yearly"
+                              ? language === "id"
+                                ? "Tahunan"
+                                : "Yearly"
+                              : language === "id"
+                                ? "Bulanan"
+                                : "Monthly")}
                         </span>
                       )}
                     </div>

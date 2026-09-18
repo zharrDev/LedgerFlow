@@ -111,6 +111,7 @@ export function useSubscription() {
 
   // Computed properties agar komponen cukup pakai hasil siap pakai
   const planName = subscription?.plans?.name || "free";
+  const billingCycle = subscription?.billing_cycle === "yearly" ? "yearly" : "monthly";
   const isActive = subscription?.is_active ?? false;
   const isTrial = subscription?.is_trial ?? false;
   const trialDaysLeft = subscription?.trial_days_left ?? 0;
@@ -177,6 +178,7 @@ export function useSubscription() {
     isLoading,
     error,
     planName,
+    billingCycle,
     isActive,
     isFree,
     isPro,
