@@ -180,6 +180,15 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Tandai sudah scroll (untuk shadow pemisah header di mobile).
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   // Muat notifikasi dari backend (async). Dengan polling 30 detik + refresh
   // saat event "ledgerflow-notif" (dipicu pushNotification/markAllRead) dan
   // saat tab kembali fokus — badge tetap segar tanpa manual reload.
@@ -348,7 +357,14 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 transition-all duration-300">
+    // Background + border-b permanen: di mobile Header telanjang (tanpa
+    // kartu pembungkus seperti di desktop), jadi tanpa ini konten scroll
+    // tepat di belakangnya tanpa pemisah. Shadow muncul setelah scroll.
+    <header
+      className={`sticky top-0 z-50 bg-white dark:bg-[#0B1120] border-b border-gray-200 dark:border-white/10 transition-shadow duration-300 ${
+        scrolled ? "shadow-[0_4px_16px_rgba(2,6,23,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.45)]" : ""
+      }`}
+    >
       <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 h-16 w-full">
         {/* ── Left ── */}
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -563,6 +579,9 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
 
           <div className="hidden sm:block">
             <LanguageSwitcher />
+          </div>
+          <div className="sm:hidden">
+            <LanguageSwitcher variant="compact" />
           </div>
           <ThemeSwitcher />
 
