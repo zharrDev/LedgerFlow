@@ -14,6 +14,8 @@ import { usePagination } from "../hooks/usePagination";
 import { TablePagination } from "../components/TablePagination";
 import { CashFlowChart } from "../components/CashFlowChart";
 import type { CashFlowDatum } from "../components/CashFlowChart";
+import CashTrendChart from "../components/CashTrendChart";
+import type { CashTrendPoint } from "../services/reportsService";
 import {
   BookOpen,
   FileText,
@@ -68,6 +70,9 @@ export default function DashboardPage() {
     planName?: string;
   } | null>(null);
   const [recentJournals, setRecentJournals] = useState<Array<{ id: string; number: string; description: string; date: string; status: string }>>([]);
+  // Tren arus kas 12 bulan (multi-line: inflow / outflow / net balance)
+  const [cashTrend, setCashTrend] = useState<CashTrendPoint[]>([]);
+  const [trendLoading, setTrendLoading] = useState(true);
 
   useEffect(() => {
     reportsService.getPeriods().then(setPeriods).catch(console.error);
@@ -86,6 +91,14 @@ export default function DashboardPage() {
         setRecentJournals(sorted.slice(0, 5));
       })
       .catch(() => setRecentJournals([]));
+    // Tren arus kas 12 bulan terakhir untuk chart multi-line
+    reportsService
+      .getCashTrend()
+      .then((t) => {
+        setCashTrend(t);
+        setTrendLoading(false);
+      })
+      .catch(() => setTrendLoading(false));
   }, []);
 
   // Pagination untuk tabel "Akun Terbaru" (5 baris per halaman, bisa digeser)
@@ -258,6 +271,13 @@ export default function DashboardPage() {
             <div className="pointer-events-none absolute right-16 top-1/2 -translate-y-1/2 hidden lg:block h-80 w-80 rounded-full border border-white/[0.04]" />
 
             <div className="relative p-5 sm:p-7 lg:p-8 xl:px-10">
+              {/* Mobile owl — pojok kanan atas hero sebagai badge kecil yang
+                  halus (desktop memakai owl besar pop-out di kanan panel). */}
+              <div className="lg:hidden absolute right-4 top-4 sm:right-6 sm:top-5 pointer-events-none select-none">
+                <div className="rounded-full bg-white/[0.06] border border-white/10 p-1.5 backdrop-blur-sm shadow-lg shadow-black/20">
+                  <GreetingOwl variant="static" size="h-11 sm:h-14" />
+                </div>
+              </div>
               <div className="flex items-end justify-between gap-4 lg:min-h-[7.5rem]">
                 {/* Kiri — pill sapaan + nama gradient + chip tanggal & role */}
                 <div className="flex-1 min-w-0 lg:pr-52 py-1">
@@ -273,26 +293,27 @@ export default function DashboardPage() {
                           : tx(language, "Evening", "Malam")}
                   </span>
                   <div className="mt-2.5 flex items-center gap-3">
-                    <h1 className="text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-white via-white to-cyan-300 bg-clip-text text-transparent truncate">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-white via-white to-cyan-300 bg-clip-text text-transparent truncate">
                       {user?.name?.split(" ")[0] ||
                         tx(language, "User", "Pengguna")}
                     </h1>
-                    {/* Mobile owl — inline next to name */}
-                    <span className="lg:hidden shrink-0">
-                      <GreetingOwl variant="static" size="h-10 sm:h-12" />
+                    <span className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-cyan-400/25 bg-cyan-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-cyan-300">
+                      <CircleDollarSign size={11} />
+                      LedgerFlow
                     </span>
                   </div>
+                  {/* Chips: peran dulu (identitas), lalu tanggal (konteks) */}
                   <div className="flex items-center gap-2 mt-4 flex-wrap">
+                    {user?.role && (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                        <ShieldCheck size={12} className="shrink-0" />
+                        <span className="capitalize truncate">{user.role}</span>
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-gray-300">
                       <Calendar size={12} className="text-cyan-400 shrink-0" />
                       <span className="truncate">{formattedDate}</span>
                     </span>
-                    {user?.role && (
-                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-gray-300">
-                        <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
-                        <span className="capitalize truncate">{user.role}</span>
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -654,6 +675,55 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </div>
+            )}
+          </motion.div>
+        </ScrollReveal>
+
+        {/* ═══ Cash Trend — multi-line 12 bulan (inflow / outflow / net) ═══ */}
+        <ScrollReveal direction="up">
+          <motion.div
+            variants={itemVariants}
+            className="rounded-2xl bg-white dark:bg-darkCard border border-gray-200 dark:border-gray-700/50 shadow-md p-5 sm:p-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
+                  {tx(language, "Cash Trend — Last 12 Months", "Tren Arus Kas — 12 Bulan Terakhir")}
+                </h3>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {tx(
+                    language,
+                    "Monthly cash inflow vs outflow with cumulative net balance",
+                    "Arus masuk vs keluar per bulan dengan saldo bersih kumulatif",
+                  )}
+                </p>
+              </div>
+              {/* Mini legend ringkas di kanan (desktop) */}
+              <div className="hidden sm:flex items-center gap-4 text-[11px] font-medium">
+                <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <span className="h-0.5 w-4 rounded-full bg-emerald-500" />
+                  Inflow
+                </span>
+                <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <span className="h-0.5 w-4 rounded-full bg-rose-500 [background:repeating-linear-gradient(90deg,#F43F5E_0_5px,transparent_5px_9px)]" />
+                  Outflow
+                </span>
+                <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <span className="h-0.5 w-4 rounded-full bg-cyan-500" />
+                  Net Balance
+                </span>
+              </div>
+            </div>
+            {trendLoading ? (
+              <div className="animate-pulse">
+                <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-xl"></div>
+              </div>
+            ) : (
+              <CashTrendChart
+                data={cashTrend}
+                formatValue={(v) => formatCompact(language, v)}
+                height={260}
+              />
             )}
           </motion.div>
         </ScrollReveal>

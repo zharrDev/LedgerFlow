@@ -81,12 +81,31 @@ export const getPeriods = async (): Promise<Period[]> => {
   return Array.isArray(data) ? data : [];
 };
 
+// Tren arus kas bulanan (12 bulan terakhir) untuk multi-line chart dashboard.
+// inflow/outflow/net per bulan + balance kumulatif.
+export interface CashTrendPoint {
+  month: string; // YYYY-MM
+  inflow: number;
+  outflow: number;
+  net: number;
+  balance: number;
+}
+
+export const getCashTrend = async (): Promise<CashTrendPoint[]> => {
+  const { data } = await api.get<CashTrendPoint[]>("/api/reports/cash-trend", {
+    params: { company_id: getCompanyId() },
+    skipErrorToast: true,
+  });
+  return Array.isArray(data) ? data : [];
+};
+
 // Gabungan fungsi service laporan
 export const reportsService = {
   getIncomeStatement,
   getBalanceSheet,
   getCashFlow,
   getPeriods,
+  getCashTrend,
 };
 
 export default reportsService;

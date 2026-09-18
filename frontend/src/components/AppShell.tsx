@@ -49,8 +49,11 @@ export function AppShell({ children }: AppShellProps) {
   );
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
+  // CATATAN: jangan pakai overflow-x-hidden di root — itu membuat
+  // position:sticky Header tidak pernah aktif (ancestor overflow selain
+  // visible menjadi scrollport sticky). Guard horizontal cukup di <main>.
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors overflow-x-hidden">    
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
       {/* Desktop: 2 floating cards */}
       <div className="hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
@@ -68,11 +71,11 @@ export function AppShell({ children }: AppShellProps) {
           {/* Main content card */}
           <div className="flex-1 min-h-0 rounded-2xl bg-white dark:bg-darkCard shadow-lg border border-gray-200/60 dark:border-gray-700/30 overflow-hidden flex flex-col min-w-0">
             <main
-className={`flex-1 overflow-x-hidden min-w-0 ${
-                  fullHeight
-                    ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
-                    : "overflow-y-auto app-scroll p-2 sm:p-4 lg:p-8 pb-24"
-                }`}
+              className={`flex-1 overflow-x-hidden min-w-0 ${
+                fullHeight
+                  ? "overflow-hidden flex flex-col p-3 sm:p-4 lg:p-6"
+                  : "overflow-y-auto app-scroll p-2 sm:p-4 lg:p-8 pb-24"
+              }`}
             >
             {!hideTitle && (title || description) && (
               <div className={fullHeight ? "mb-3 shrink-0" : "mb-6"}>

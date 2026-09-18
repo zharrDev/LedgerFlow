@@ -470,6 +470,89 @@ reports.get("/cash-flow", async (c) => {
   }
 });
 
+// CASH TREND (dashboard): tren bulanan 12 bulan terakhir — total inflow,
+// total outflow, dan net balance per bulan dari jurnal POSTED.
+// Inflow  = total DEBIT  akun kas/bank, Outflow = total CREDIT akun kas/bank,
+// Net = inflow − outflow. Bukan paywall (data dasar dashboard), hanya butuh
+// auth. Kalau < 12 bulan data, hanya bulan yang ada yang dibalikkan.
+reports.get("/cash-trend", async (c) => {
+  const companyId = c.get("user").company_id;
+
+  try {
+    const { data: lines, error } = await supabase
+      .from("journal_entry_lines")
+      .select(
+        `
+        debit, credit,
+        accounts!inner (code, name, type),
+        journal_entries!inner (entry_date, status, deleted_at, voided_at, company_id)
+      `,
+      )
+      .eq("journal_entries.company_id", companyId)
+      .eq("journal_entries.status", "posted")
+      .is("journal_entries.deleted_at", null)
+      .is("journal_entries.voided_at", null)
+      // 12 bulan kalender terakhir (awal bulan 11 bulan lalu s/d sekarang)
+      .gte(
+        "journal_entries.entry_date",
+        new Date(Date.now() - 335 * 86400000).toISOString().slice(0, 10),
+      );
+
+    if (error) {
+      console.error("[Cash Trend] Query error:", error);
+      return dbErrorResponse(c, error);
+    }
+
+    // Bucket per bulan kalender (YYYY-MM)
+    const buckets = new Map<
+      string,
+      { inflow: number; outflow: number }
+    >();
+    for (const line of lines ?? []) {
+      const account = line.accounts as any;
+      if (!isCashAccount(account.code, account.name, account.type)) continue;
+      const date = String((line.journal_entries as any)?.entry_date ?? "");
+      if (!date) continue;
+      const key = date.slice(0, 7); // YYYY-MM
+      const bucket = buckets.get(key) ?? { inflow: 0, outflow: 0 };
+      bucket.inflow += Number(line.debit) || 0;
+      bucket.outflow += Number(line.credit) || 0;
+      buckets.set(key, bucket);
+    }
+
+    // Susun 12 bulan berurutan (bulan tanpa data = 0) lalu hitung net & saldo
+    // kumulatif. Urut lama → baru supaya garis chart jalan kiri → kanan.
+    const result: Array<{
+      month: string;
+      inflow: number;
+      outflow: number;
+      net: number;
+      balance: number;
+    }> = [];
+    const now = new Date();
+    let balance = 0;
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const b = buckets.get(key) ?? { inflow: 0, outflow: 0 };
+      const net = b.inflow - b.outflow;
+      balance += net;
+      result.push({
+        month: key,
+        inflow: b.inflow,
+        outflow: b.outflow,
+        net,
+        balance,
+      });
+    }
+
+    return c.json(result);
+  } catch (err: any) {
+    console.error("[Cash Trend] Fatal error:", err);
+    return c.json({ error: "Gagal memuat tren arus kas." }, 500);
+  }
+});
+
 // PERIODS
 // Mengambil daftar periode milik company untuk filter laporan
 reports.get("/periods", async (c) => {
