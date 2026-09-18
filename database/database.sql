@@ -19,6 +19,10 @@ DO $$ BEGIN
   CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'expired', 'refunded');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN
+  CREATE TYPE entity_status AS ENUM ('active', 'suspended');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 -- ─── 2. CORE TABLES ────────────────────────────────────────────────
 
 -- Companies
@@ -33,12 +37,18 @@ CREATE TABLE IF NOT EXISTS companies (
 -- Users (references Supabase auth.users)
 -- Model role: per company hanya owner & akuntan. (Role 'admin' per-company
 -- dihapus — admin aplikasi adalah pemilik aplikasi via gerbang terpisah.)
+-- email bisa NULL: user yang mendaftar via WhatsApp OTP tidak punya email.
+-- phone: identitas login WhatsApp (E.164 tanpa '+', mis. 6281234567890).
+-- status: moderasi admin (suspend) — default 'active'.
 CREATE TABLE IF NOT EXISTS users (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  email       TEXT NOT NULL UNIQUE,
+  email       TEXT UNIQUE,
   name        TEXT NOT NULL,
   role        TEXT NOT NULL CHECK (role IN ('akuntan', 'owner')),
+  phone       TEXT UNIQUE,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  status      entity_status NOT NULL DEFAULT 'active',
   avatar_url  TEXT,
   created_at  TIMESTAMPTZ DEFAULT now()
 );
@@ -101,6 +111,31 @@ CREATE TABLE IF NOT EXISTS journal_counters (
   PRIMARY KEY (company_id, year_month)
 );
 
+-- Company Members (relasi M:M users <-> companies)
+-- status: 'active' | 'suspended' (satu sumber kebenaran membership).
+CREATE TABLE IF NOT EXISTS company_members (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL CHECK (role IN ('akuntan', 'owner')),
+  status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (user_id, company_id)
+);
+
+-- OTP Codes WhatsApp (auth passwordless via WhatsApp)
+CREATE TABLE IF NOT EXISTS wa_otp_codes (
+  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  phone         TEXT NOT NULL,
+  code          TEXT NOT NULL,
+  purpose       TEXT NOT NULL CHECK (purpose IN ('register', 'login')),
+  expires_at    TIMESTAMPTZ NOT NULL,
+  used          BOOLEAN NOT NULL DEFAULT false,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
 -- ─── 3. SUBSCRIPTION & PAYMENT TABLES ──────────────────────────────
 
 -- Plans (pricing definitions)
@@ -119,11 +154,18 @@ CREATE TABLE IF NOT EXISTS plans (
 );
 
 -- Insert default plans
+-- features: JSONB array of snake_case feature keys (machine-readable)
 INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_companies, max_journals, features) VALUES
-  ('free', 'Free', 0, 0, 1, 50, '["Chart of Accounts", "Journal Entries (50/bulan)", "Dashboard", "Buku Besar"]'::jsonb),
-  ('pro', 'Pro', 99000, 999000, 3, NULL, '["Semua fitur Free", "Unlimited Journal Entries", "Laporan Laba Rugi", "Neraca", "Arus Kas", "Export PDF", "3 Perusahaan", "Priority Support"]'::jsonb),
-  ('enterprise', 'Enterprise', 299000, 2999000, -1, NULL, '["Semua fitur Pro", "Unlimited Perusahaan", "Multi-user & Roles", "API Access", "Export PDF & CSV", "Custom Reports", "Dedicated Support", "Audit Trail"]'::jsonb)
-ON CONFLICT (name) DO NOTHING;
+  ('free', 'Free', 0, 0, 1, 50, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger"]'::jsonb),
+  ('pro', 'Pro', 99000, 999000, 3, NULL, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "multi_company", "priority_support"]'::jsonb),
+  ('enterprise', 'Enterprise', 299000, 2999000, -1, NULL, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "export_csv", "multi_company", "multi_user", "api_access", "custom_reports", "dedicated_support", "audit_trail", "priority_support"]'::jsonb)
+ON CONFLICT (name) DO UPDATE SET
+  display_name = EXCLUDED.display_name,
+  price_monthly = EXCLUDED.price_monthly,
+  price_yearly = EXCLUDED.price_yearly,
+  max_companies = EXCLUDED.max_companies,
+  max_journals = EXCLUDED.max_journals,
+  features = EXCLUDED.features;
 
 -- Subscriptions
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -246,6 +288,9 @@ CREATE POLICY "Users can insert own payments" ON payments FOR INSERT WITH CHECK 
 -- ─── 8. TRIGGERS ───────────────────────────────────────────────────
 
 -- Auto-create FREE subscription when user registers
+-- Tahan-gagal: INSERT users TIDAK boleh gagal hanya karena plan 'free'
+-- hilang (skip + warning) atau user sudah punya subscription sisa
+-- (unique_violation → skip). Kegagalan trigger membuat register 500.
 CREATE OR REPLACE FUNCTION create_default_subscription()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -253,16 +298,26 @@ DECLARE
 BEGIN
   SELECT id INTO free_plan_id FROM plans WHERE name = 'free' LIMIT 1;
 
-  INSERT INTO subscriptions (user_id, plan_id, status, trial_start, trial_end, current_period_start, current_period_end)
-  VALUES (
-    NEW.id,
-    free_plan_id,
-    'trialing',
-    now(),
-    now() + interval '15 days',
-    now(),
-    now() + interval '15 days'
-  );
+  IF free_plan_id IS NULL THEN
+    RAISE WARNING 'create_default_subscription: plan free tidak ditemukan — subscription dilewati untuk user %', NEW.id;
+    RETURN NEW;
+  END IF;
+
+  BEGIN
+    INSERT INTO subscriptions (user_id, plan_id, status, trial_start, trial_end, current_period_start, current_period_end)
+    VALUES (
+      NEW.id,
+      free_plan_id,
+      'trialing',
+      now(),
+      now() + interval '15 days',
+      now(),
+      now() + interval '15 days'
+    );
+  EXCEPTION WHEN unique_violation THEN
+    -- Sudah ada subscription untuk user ini (sisa data lama) — biarkan.
+    NULL;
+  END;
 
   RETURN NEW;
 END;
@@ -344,21 +399,16 @@ CREATE TRIGGER trg_journal_entry_lines_updated_at BEFORE UPDATE ON journal_entry
 -- ─── 11. SOFT DELETE JOURNAL ENTRIES ─────────────────────────────────
 ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
--- ─── 12. COMPANY MEMBERS (Relasi M:M users <-> companies) ────────────
-CREATE TABLE IF NOT EXISTS company_members (
-  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  company_id  UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  -- Default 'member' TIDAK valid (CHECK hanya mengizinkan akuntan/owner),
-  -- karenanya default dihapus: insert tanpa role akan gagal eksplisit.
-  role        TEXT NOT NULL CHECK (role IN ('akuntan', 'owner')),
-  created_at  TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (user_id, company_id)
-);
-
+-- ─── 12. COMPANY MEMBERS — sudah didefinisikan di bagian 2 (dengan kolom
+-- status). Indeks & grant di sini:
 CREATE INDEX IF NOT EXISTS idx_company_members_user ON company_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_company_members_company ON company_members(company_id);
+CREATE INDEX IF NOT EXISTS idx_company_members_user_active
+  ON company_members(user_id, company_id) WHERE status = 'active';
 GRANT ALL PRIVILEGES ON TABLE public.company_members TO service_role;
+GRANT ALL PRIVILEGES ON TABLE public.wa_otp_codes TO service_role;
+
+CREATE INDEX IF NOT EXISTS idx_wa_otp_phone_purpose ON wa_otp_codes(phone, purpose);
 
 -- ─── 13. SUPABASE STORAGE BUCKETS (upload file) ──────────────────────
 INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true)
@@ -548,6 +598,23 @@ CREATE INDEX IF NOT EXISTS idx_admin_gate_logs_created
   ON public.admin_gate_logs (created_at DESC);
 
 GRANT ALL PRIVILEGES ON TABLE public.admin_gate_logs TO service_role;
+
+-- ─── 18. REFRESH TOKEN TABLE ──────────────────────────────────────────
+-- Tabel untuk menyimpan refresh token (hashed) untuk rotation
+CREATE TABLE IF NOT EXISTS public.refresh_tokens (
+  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  token_hash    TEXT NOT NULL,
+  expires_at    TIMESTAMPTZ NOT NULL,
+  revoked       BOOLEAN DEFAULT FALSE,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, token_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON public.refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON public.refresh_tokens(expires_at) WHERE NOT revoked;
+
+GRANT ALL PRIVILEGES ON TABLE public.refresh_tokens TO service_role;
 
 -- ─── 18. KEPATUHAN S1: timestamp, soft-delete ketat, relasi 1:1 ──────
 -- Idempoten (IF NOT EXISTS / DROP IF EXISTS) — aman dijalankan ulang.

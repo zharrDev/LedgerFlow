@@ -66,6 +66,18 @@ export function getErrorMessage(err: unknown): string {
 
     // 404 = data/halaman tidak ditemukan.
     if (status === 404) {
+      // Pada route auth (login WA), 404 berarti "nomor belum terdaftar" —
+      // backend mengirim pesan yang memang ditujukan untuk user
+      // ("Nomor WhatsApp belum terdaftar. Silakan daftar terlebih dahulu.").
+      // Jangan ditimpa pesan generik yang membuat user bingung.
+      const url = err.config?.url || "";
+      const isAuthRoute = url.includes("/api/auth/") || url.includes("/api/wa/");
+      if (isAuthRoute) {
+        const data = err.response?.data as { error?: unknown } | undefined;
+        if (typeof data?.error === "string" && data.error.trim()) {
+          return sanitizeErrorMessage(data.error);
+        }
+      }
       return "Data atau halaman yang diminta tidak ditemukan.";
     }
 
@@ -109,6 +121,41 @@ export function errorToastTitle(err: unknown): string {
     if (status >= 500) return "Server Bermasalah";
   }
   return "Gagal";
+}
+
+/**
+ * Deteksi error "nomor/akun belum terdaftar" pada route auth (404).
+ * Dipakai LoginForm untuk menampilkan CTA pindah ke form registrasi.
+ */
+export function isNotRegisteredAuthError(err: unknown): boolean {
+  if (!(err instanceof AxiosError)) return false;
+  if (err.response?.status !== 404) return false;
+  const url = err.config?.url || "";
+  const isAuthRoute = url.includes("/api/auth/") || url.includes("/api/wa/");
+  if (!isAuthRoute) return false;
+  const msg = (err.response?.data as { error?: unknown } | undefined)?.error;
+  return (
+    typeof msg === "string" &&
+    /belum terdaftar|tidak ditemukan|not registered/i.test(msg)
+  );
+}
+
+/**
+ * Deteksi error "nomor sudah terdaftar" pada route auth (409).
+ * Kebalikan isNotRegisteredAuthError — dipakai RegisterForm untuk menampilkan
+ * CTA pindah ke form login (alur tidak buntu saat daftar pakai nomor lama).
+ */
+export function isAlreadyRegisteredAuthError(err: unknown): boolean {
+  if (!(err instanceof AxiosError)) return false;
+  if (err.response?.status !== 409) return false;
+  const url = err.config?.url || "";
+  const isAuthRoute = url.includes("/api/auth/") || url.includes("/api/wa/");
+  if (!isAuthRoute) return false;
+  const msg = (err.response?.data as { error?: unknown } | undefined)?.error;
+  return (
+    typeof msg === "string" &&
+    /sudah terdaftar|already (registered|exist)/i.test(msg)
+  );
 }
 
 /** Sisa waktu tunggu (detik) dari header Retry-After pada error 429,

@@ -1,6 +1,7 @@
 import { supabase } from "./supabase.js";
 import { sendWelcomeEmail } from "./email.js";
 import { provisionCompanyFoundation } from "./companyProvision.js";
+import { canCreateCompany } from "./planAccess.js";
 
 type AuthUserLike = {
   id: string;
@@ -42,6 +43,12 @@ export async function ensureUserProfile(authUser: AuthUserLike) {
     authUser.user_metadata?.name ||
     email.split("@")[0] ||
     "User";
+
+  // Cek limit max_companies sebelum membuat company (Google One Tap register)
+  const { allowed, reason } = await canCreateCompany(authUser.id);
+  if (!allowed) {
+    throw new Error(reason || "Batas maksimum perusahaan tercapai");
+  }
 
   // SELALU buat company baru — JANGAN reuse berdasarkan nama. Dua user
   // berbeda dengan nama sama (mis. "Budi") tidak boleh berakhir di company

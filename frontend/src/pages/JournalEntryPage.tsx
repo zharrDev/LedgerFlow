@@ -374,26 +374,17 @@ export default function JournalEntryPage() {
                     </button>
                   )}
 
-                  {quota && quota.max !== null && quota.max > 0 && (
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border ${
-                        (quota.left ?? 0) <= 10
+                    {quota && quota.max !== null && quota.max > 0 && (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border ${(quota.left ?? 0) <= 10
                           ? "border-amber-300 dark:border-amber-500/40 text-amber-600 dark:text-amber-400"
-                          : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      <CircleDollarSign size={12} />
-                      {quota.left}/{quota.max}
-                      {(quota.left ?? 0) <= 10 && (
-                        <a
-                          href="/pricing"
-                          className="font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                        >
-                          {tx(language, "Upgrade", "Upgrade")}
-                        </a>
-                      )}
-                    </span>
-                  )}
+                          : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400"}`}
+                      >
+                        <CircleDollarSign size={12} />
+                        {quota.left}/{quota.max}
+                        {quota.planName && <span className="ml-1">&nbsp;({quota.planName})</span>}
+                      </span>
+                    )}
                 </>
               }
               entries={pagination.pageItems}

@@ -45,20 +45,9 @@ export function verifySignature(
   return hash === signatureKey;
 }
 
-// Daftar harga paket subscription
-export const PLAN_PRICES = {
-  free: { monthly: 0, yearly: 0 },
-  pro: { monthly: 99000, yearly: 999000 },
-  enterprise: { monthly: 299000, yearly: 2999000 },
-} as const;
-
-export type PlanName = keyof typeof PLAN_PRICES;
+// Type untuk plan name
+export type PlanName = "pro" | "enterprise";
 export type BillingCycle = "monthly" | "yearly";
-
-// Mengambil harga plan berdasarkan nama plan dan siklus billing
-export function getPlanPrice(plan: PlanName, cycle: BillingCycle): number {
-  return PLAN_PRICES[plan]?.[cycle] ?? 0;
-}
 
 // Debug konfigurasi Midtrans aktif — JANGAN log material key (rahasia).
 console.log(`[Midtrans] Mode: ${isProduction ? "PRODUCTION" : "SANDBOX"}`);
@@ -67,3 +56,20 @@ console.log(`[Midtrans] Client key configured: ${!!clientKey}`);
 console.log(
   `[Midtrans] Snap API URL: ${isProduction ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com"}`,
 );
+
+// Helper untuk ambil harga plan dari database (bukan hardcode)
+// Dipakai di payments.ts /subscribe
+export async function getPlanPrice(
+  supabase: any,
+  plan: PlanName,
+  cycle: BillingCycle,
+): Promise<number> {
+  const { data: planData } = await supabase
+    .from("plans")
+    .select("price_monthly, price_yearly")
+    .eq("name", plan)
+    .single();
+
+  if (!planData) return 0;
+  return cycle === "yearly" ? planData.price_yearly : planData.price_monthly;
+}

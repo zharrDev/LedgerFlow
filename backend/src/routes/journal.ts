@@ -322,11 +322,12 @@ journal.post("/", validateBody(journalEntryCreateSchema), requireRole("owner", "
     entryDate.getMonth() + 1,
   );
   if (quotaLeft !== null && quotaLeft <= 0) {
+    const maxJournals = planName === "free" ? 50 : "unlimited"; // fallback, actual value from DB
     return c.json(
       {
         error:
           planName === "free"
-            ? "Kuota jurnal bulan ini sudah habis (50 jurnal untuk plan Free). Upgrade ke Pro untuk jurnal tanpa batas."
+            ? `Kuota jurnal bulan ini sudah habis (${maxJournals} jurnal untuk plan Free). Upgrade ke Pro untuk jurnal tanpa batas.`
             : "Kuota jurnal bulan ini sudah habis. Upgrade plan Anda untuk jurnal tanpa batas.",
       },
       403,
@@ -541,6 +542,44 @@ journal.put("/:id", validateBody(journalEntryUpdateSchema), requireRole("owner",
         },
         400,
       );
+    }
+  }
+
+  // Ambil subscription user untuk cek quota (khusus plan Free)
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("*, plans(max_journals)")
+    .eq("user_id", company_id)
+    .maybeSingle();
+
+  // Cek quota jurnal jika plan Free dan entry_date berubah ke bulan berbeda
+  // atau lines ditambah (bisa melebihi kuota)
+  if (sub && sub.plans?.max_journals !== null) {
+    const maxJournals = sub.plans.max_journals;
+    const isDateChanged = entry_date && new Date(entry_date).getMonth() !== new Date(existing.entry_date).getMonth();
+    const isLinesAdded = lines && lines.length > (existing.journal_entry_lines?.length ?? 0);
+
+    if (isDateChanged || isLinesAdded) {
+      // Hitung jurnal di bulan target (bulan entry_date baru atau existing)
+      const targetDate = entry_date ? new Date(entry_date) : new Date(existing.entry_date);
+      const targetYear = targetDate.getFullYear();
+      const targetMonth = targetDate.getMonth() + 1;
+
+      const { count } = await supabase
+        .from("journal_entries")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", company_id)
+        .eq("status", "draft") // hanya draft yang dihitung quota
+        .eq("deleted_at", null)
+        .gte("entry_date", `${targetYear}-${String(targetMonth).padStart(2, "0")}-01`)
+        .lt("entry_date", `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-01`);
+
+      if ((count ?? 0) >= maxJournals) {
+        return c.json(
+          { error: `Kuota jurnal bulan ini sudah habis (${maxJournals} jurnal untuk plan Free). Upgrade ke Pro untuk unlimited.` },
+          403,
+        );
+      }
     }
   }
 

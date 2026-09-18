@@ -10,7 +10,7 @@ import {
 import { getErrorMessage } from "../lib/errorMessage";
 
 // Cache modul + sessionStorage: mount ulang / full reload (mis. setelah
-// pindah company) tidak menunggu fetch ulang — UI langsung render dari
+// pindah company) tidak menunggu fetch ulang - UI langsung render dari
 // cache, lalu data di-refresh di belakang (stale-while-revalidate).
 const SUB_CACHE_KEY = "subscription_cache";
 const SUB_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -34,22 +34,9 @@ function writeSessionCache(data: Subscription | null): void {
   try {
     sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ t: Date.now(), d: data }));
   } catch {
-    // sessionStorage penuh / diblokir — cache modul tetap bekerja.
+    // sessionStorage penuh / diblokir - cache modul tetap bekerja.
   }
 }
-
-// Mapping fitur ke plan minimum yang boleh mengaksesnya
-const FEATURE_PLAN: Record<string, string[]> = {
-  income_statement: ["pro", "enterprise"],
-  balance_sheet: ["pro", "enterprise"],
-  cash_flow: ["pro", "enterprise"],
-  export_pdf: ["pro", "enterprise"],
-  export_csv: ["enterprise"],
-  unlimited_journals: ["pro", "enterprise"],
-  multi_company: ["pro", "enterprise"],
-  multi_user: ["enterprise"],
-  api_access: ["enterprise"],
-};
 
 async function loadSubscription(): Promise<Subscription | null> {
   if (inflightFetch) return inflightFetch;
@@ -105,6 +92,7 @@ export function useSubscription() {
   const isActive = subscription?.is_active ?? false;
   const isTrial = subscription?.is_trial ?? false;
   const trialDaysLeft = subscription?.trial_days_left ?? 0;
+  const planFeatures: string[] = subscription?.plans?.features ?? [];
 
   const isFree = planName === "free";
   const isPro = planName === "pro";
@@ -119,15 +107,31 @@ export function useSubscription() {
         return true;
       }
 
-      const allowedPlans = FEATURE_PLAN[feature];
-      if (!allowedPlans) return true;
-      return allowedPlans.includes(planName);
+      // Cek apakah feature ada di plan features
+      return planFeatures.includes(feature);
     },
-    [isActive, isTrial, planName],
+    [isActive, isTrial, planFeatures],
   );
 
   const getRequiredPlan = useCallback((feature: string): string | null => {
-    const plans = FEATURE_PLAN[feature];
+    // Cari plan minimum yang punya feature ini
+    // Karena features sekarang di DB, kita pakai fallback mapping untuk required_plan
+    const FEATURE_PLAN_FALLBACK: Record<string, string[]> = {
+      income_statement: ["pro", "enterprise"],
+      balance_sheet: ["pro", "enterprise"],
+      cash_flow: ["pro", "enterprise"],
+      export_pdf: ["pro", "enterprise"],
+      export_csv: ["enterprise"],
+      unlimited_journals: ["pro", "enterprise"],
+      multi_company: ["pro", "enterprise"],
+      multi_user: ["enterprise"],
+      api_access: ["enterprise"],
+      custom_reports: ["enterprise"],
+      audit_trail: ["enterprise"],
+      priority_support: ["pro", "enterprise"],
+      dedicated_support: ["enterprise"],
+    };
+    const plans = FEATURE_PLAN_FALLBACK[feature];
     return plans ? plans[0] : null;
   }, []);
 

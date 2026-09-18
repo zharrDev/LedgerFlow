@@ -1,13 +1,15 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
-import { signToken } from "../lib/jwt.js";
+import { signToken, verifyRefreshToken, signRefreshToken, hashRefreshToken, generateRefreshToken, REFRESH_TOKEN_EXPIRY_DAYS } from "../lib/jwt.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { ensureUserProfile } from "../lib/ensureProfile.js";
 import {
   sendLoginNotification,
   sendMemberLoginNotification,
 } from "../lib/email.js";
-import { ensureUserProfile } from "../lib/ensureProfile.js";
+import crypto from "node:crypto";
+import { validateCompanySwitch } from "../lib/planAccess.js";
 
 const auth = new Hono();
 
@@ -254,6 +256,7 @@ auth.post("/exchange-token", async (c) => {
     const token = await signToken({
       sub: user.id,
       email: user.email,
+      name: user.name,
       role: membership.role,
       company_id: membership.company_id,
     });
@@ -303,6 +306,121 @@ auth.post("/logout", authMiddleware, async (c) => {
   return c.json({ message: "Logout berhasil." });
 });
 
+// POST /api/auth/refresh
+// Refresh access token menggunakan refresh token (stored di DB, hashed).
+// Client mengirim refresh token di body. Jika valid & tidak revoked:
+// - revoke token lama
+// - buat access token baru + refresh token baru
+// - simpan refresh token baru ke DB
+// - return { access_token, refresh_token, expires_in }
+auth.post("/refresh", async (c) => {
+  try {
+    const { refresh_token } = await c.req.json();
+
+    if (!refresh_token || typeof refresh_token !== "string") {
+      return c.json({ error: "refresh_token wajib diisi" }, 400);
+    }
+
+    // Verify refresh token signature & expiry
+    let payload;
+    try {
+      payload = await verifyRefreshToken(refresh_token);
+    } catch (err) {
+      console.error("Refresh token verify failed:", err);
+      return c.json({ error: "Refresh token tidak valid atau kedaluwarsa" }, 401);
+    }
+
+    // Verify token exists in DB, not revoked, not expired
+    const tokenHash = hashRefreshToken(refresh_token);
+    const { data: stored, error: fetchErr } = await supabase
+      .from("refresh_tokens")
+      .select("id, user_id, expires_at, revoked")
+      .eq("token_hash", tokenHash)
+      .maybeSingle();
+
+    if (fetchErr) return dbErrorResponse(c, fetchErr);
+    if (!stored) {
+      return c.json({ error: "Refresh token tidak valid" }, 401);
+    }
+    if (stored.revoked) {
+      return c.json({ error: "Refresh token sudah dicabut" }, 401);
+    }
+    if (new Date(stored.expires_at) < new Date()) {
+      return c.json({ error: "Refresh token kedaluwarsa" }, 401);
+    }
+
+    // Get user profile & membership
+    const { data: user, error: userErr } = await supabase
+      .from("users")
+      .select("id, name, email, company_id")
+      .eq("id", stored.user_id)
+      .maybeSingle();
+
+    if (userErr) return dbErrorResponse(c, userErr);
+    if (!user) {
+      return c.json({ error: "User tidak ditemukan" }, 404);
+    }
+
+    // Get fresh membership
+    const { data: membership, error: memErr } = await supabase
+      .from("company_members")
+      .select("role, status")
+      .eq("user_id", user.id)
+      .eq("company_id", user.company_id)
+      .maybeSingle();
+
+    if (memErr) return dbErrorResponse(c, memErr);
+    if (!membership || membership.status !== "active") {
+      return c.json({ error: "Sesi tidak valid, silakan login ulang" }, 401);
+    }
+
+    // Revoke old refresh token
+    const { error: revokeErr } = await supabase
+      .from("refresh_tokens")
+      .update({ revoked: true })
+      .eq("id", stored.id);
+
+    if (revokeErr) return dbErrorResponse(c, revokeErr);
+
+    // Create new refresh token
+    const { plain: newPlainRefresh, hash: newHash } = await generateRefreshToken();
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: insertErr } = await supabase
+      .from("refresh_tokens")
+      .insert({
+        user_id: user.id,
+        token_hash: newHash,
+        expires_at: expiresAt,
+      });
+
+    if (insertErr) return dbErrorResponse(c, insertErr);
+
+    // Create new access token
+    const accessToken = await signToken({
+      sub: user.id,
+      email: user.email,
+      role: membership.role,
+      company_id: user.company_id,
+    });
+
+    // Create new refresh token JWT (for client to store)
+    const newRefreshTokenJWT = await signRefreshToken({
+      sub: user.id,
+      tokenId: crypto.randomUUID(), // placeholder, actual ID from DB would be better
+    });
+
+    return c.json({
+      access_token: accessToken,
+      refresh_token: newRefreshTokenJWT,
+      expires_in: 24 * 60 * 60, // 1 day in seconds
+    });
+  } catch (err) {
+    console.error("REFRESH TOKEN ERROR:", err);
+    return c.json({ error: "Gagal merefresh token" }, 500);
+  }
+});
+
 // GET /api/auth/my-companies
 // Daftar SEMUA company yang tergabung dengan user ini (dari company_members,
 // join companies untuk nama — satu query). Dipakai dropdown pindah company
@@ -331,31 +449,37 @@ auth.get("/my-companies", authMiddleware, async (c) => {
 });
 
 // POST /api/auth/switch-company — body { company_id }
-// Pindah company aktif: validasi user member AKTIF di company tujuan, lalu
-// keluarkan JWT BARU dengan company_id + role sesuai company tersebut (role
-// bisa berbeda per company — dibaca dari company_members, bukan token lama).
-auth.post("/switch-company", authMiddleware, async (c) => {
-  const current = c.get("user");
-  let body: { company_id?: unknown };
-  try {
-    body = await c.req.json();
-  } catch {
-    return c.json({ error: "Body JSON tidak valid" }, 400);
-  }
-  const companyId = typeof body.company_id === "string" ? body.company_id : "";
-  if (!companyId) {
-    return c.json({ error: "company_id wajib diisi." }, 400);
-  }
+  // Pindah company aktif: validasi user member AKTIF di company tujuan, lalu
+  // keluarkan JWT BARU dengan company_id + role sesuai company tersebut (role
+  // bisa berbeda per company — dibaca dari company_members, bukan token lama).
+  auth.post("/switch-company", authMiddleware, async (c) => {
+    const current = c.get("user");
+    let body: { company_id?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "Body JSON tidak valid" }, 400);
+    }
+    const companyId = typeof body.company_id === "string" ? body.company_id : "";
+    if (!companyId) {
+      return c.json({ error: "company_id wajib diisi." }, 400);
+    }
 
-  const { data: membership, error: memberError } = await supabase
-    .from("company_members")
-    .select("company_id, role, companies(name)")
-    .eq("user_id", current.sub)
-    .eq("company_id", companyId)
-    .eq("status", "active")
-    .maybeSingle();
+    // Validasi switch company (cek max_companies, membership aktif, dll)
+    const { allowed, reason } = await validateCompanySwitch(current.sub, companyId);
+    if (!allowed) {
+      return c.json({ error: reason || "Anda bukan anggota aktif perusahaan tersebut" }, 403);
+    }
 
-  if (memberError) return dbErrorResponse(c, memberError);
+    const { data: membership, error: memberError } = await supabase
+      .from("company_members")
+      .select("company_id, role, companies(name)")
+      .eq("user_id", current.sub)
+      .eq("company_id", companyId)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (memberError) return dbErrorResponse(c, memberError);
   if (!membership) {
     return c.json(
       { error: "Anda bukan anggota aktif perusahaan tersebut." },

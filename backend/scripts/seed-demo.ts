@@ -405,12 +405,32 @@ async function main() {
   console.log(`  ${inserted} jurnal entry dibuat.`);
 
   // ── Journal entry lines ──
+  // Idempoten: hapus dulu line milik entry seed sebelum insert ulang, supaya
+  // menjalankan seed berulang kali TIDAK menduplikasi baris jurnal (yang
+  // membuat debit ≠ kredit dan laporan kacau).
+  const seededEntryIds = Object.values(entryToId);
+  for (let i = 0; i < seededEntryIds.length; i += 50) {
+    const batch = seededEntryIds.slice(i, i + 50);
+    const { error: delErr } = await supabase
+      .from("journal_entry_lines")
+      .delete()
+      .in("journal_entry_id", batch);
+    if (delErr) {
+      console.error("  Gagal bersihkan line jurnal lama:", delErr.message);
+    }
+  }
+
   let lineInserted = 0;
   for (const l of built.lines) {
     const entryId = entryToId[l.entryNumber];
     if (!entryId) continue;
     const accountId = accountMap[l.accountCode];
-    if (!accountId) continue;
+    if (!accountId) {
+      console.warn(
+        `  ⚠ Line dilewati: akun ${l.accountCode} tidak ada (cek constraint chk_accounts_type_normal_balance / migrasi relax).`,
+      );
+      continue;
+    }
     const { error } = await supabase.from("journal_entry_lines").insert({
       journal_entry_id: entryId,
       account_id: accountId,

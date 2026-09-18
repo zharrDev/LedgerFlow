@@ -13,9 +13,16 @@
     "build:backend": "npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
     "typecheck": "npm run typecheck --workspace=backend",
-    "lint": "npm run lint --workspace=frontend"
+    "lint": "npm run lint --workspace=frontend",
+    "flowchart": "node scripts/mermaid-to-drawio.mjs && node scripts/render-mermaid.mjs",
+    "flowchart:drawio": "node scripts/mermaid-to-drawio.mjs",
+    "flowchart:render": "node scripts/render-mermaid.mjs",
+    "flowchart:drawio-render": "node scripts/render-drawio.mjs",
+    "flowchart:check": "node scripts/check-render.mjs"
   },
   "devDependencies": {
-    "concurrently": "^10.0.0"
+    "@mermaid-js/mermaid-cli": "^11.17.0",
+    "concurrently": "^10.0.0",
+    "puppeteer": "^25.11.0"
   }
 }

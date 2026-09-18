@@ -8,6 +8,7 @@ import {
   createNotification,
   createNotificationsForUsers,
 } from "../lib/notify.js";
+import { canJoinCompany } from "../lib/planAccess.js";
 
 const userMgmt = new Hono();
 
@@ -102,11 +103,20 @@ userMgmt.post("/", requireRole("owner"), async (c) => {
           { error: "Nomor ini sudah jadi anggota perusahaan ini." },
           400,
         );
-      }
+}
 
       // BELUM member company ini (tapi sudah punya akun / member company
-      // lain) → INSERT membership baru. INI yang membuat multi-company
+      // lain) -> INSERT membership baru. INI yang membuat multi-company
       // beneran jalan: akun sama, company berbeda, role independen.
+      const { allowed, reason } = await canJoinCompany(
+        existingProfile.id,
+        companyId,
+        "owner",
+      );
+      if (!allowed) {
+        return c.json({ error: reason || "Batas maksimum perusahaan tercapai" }, 403);
+      }
+
       const { error: memberError } = await supabase
         .from("company_members")
         .insert({
@@ -199,6 +209,15 @@ userMgmt.post("/", requireRole("owner"), async (c) => {
       // Kompensasi: auth user yang baru dibuat jangan dibiarkan yatim.
       await supabase.auth.admin.deleteUser(authData.user.id).catch(console.error);
       return c.json({ error: "Gagal menyimpan anggota." }, 500);
+    }
+
+    // Cek limit max_companies untuk user baru yang diundang
+    const { allowed, reason } = await canJoinCompany(profile.id, companyId, "owner");
+    if (!allowed) {
+      // Rollback profile jika limit tercapai
+      await supabase.from("users").delete().eq("id", profile.id);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      return c.json({ error: reason || "Batas maksimum perusahaan tercapai" }, 403);
     }
 
     const { error: memberError } = await supabase

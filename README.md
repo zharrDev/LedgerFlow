@@ -339,6 +339,7 @@ LedgerFlow/
 │   ├── database.sql                    # Full schema + §18 kepatuhan S1 (timestamp/soft-delete/1:1)
 │   ├── migration-wa-auth.sql           # Autentikasi WA (wa_otp_codes, users.phone)
 │   ├── migration-journal-rpc-and-email-verify.sql  # RPC jurnal & verifikasi email
+│   ├── migration-wa-register-fix.sql   # Trigger subscription tahan-gagal + status kolom + backfill membership
 │   └── migration-*.sql                 # Migrasi tambahan (admin-gate, notifikasi, dsb.)
 ├── postman/
 │   └── ledgerflow.postman_collection.json  # Postman collection, 47 request (roles owner/akuntan)
@@ -653,7 +654,8 @@ Database menggunakan **PostgreSQL via Supabase** dengan schema lengkap untuk aku
 3. **Soft delete** — `journal_entries.deleted_at` + `accounts.is_active`
 4. **Supabase Storage buckets** — `avatars` & `payment-proofs` (public) dibuat lewat SQL
 5. **Seed data** — `npm run seed` (backend): 20 user, 20 members, 26 akun, 24 periode, 54 jurnal deterministik
-6. **Migration WA auth** — `migration-wa-auth.sql`: tabel `wa_otp_codes`, kolom `users.phone` + `phone_verified` (menggantikan `otp_codes` lama)
+6. **Migration WA auth** — `migration-wa-auth.sql`: tabel `wa_otp_codes`, kolom `users.phone` (menggantikan `otp_codes` lama)
+7. **Trigger subscription tahan-gagal** — register WA-OTP tidak 500 karena sisa subscription duplikat atau plan `free` hilang (`migration-wa-register-fix.sql`); OTP valid tidak terbuang bila provisi gagal di tengah jalan
 
 ---
 
@@ -784,8 +786,11 @@ npm install
 ### Database Setup
 
 1. Jalankan script `database/database.sql` pada **Supabase SQL Editor** (membuat tabel, trigger, storage buckets, function SECURITY DEFINER).
-2. Jika fitur WhatsApp OTP dipakai, jalankan juga `database/migration-wa-auth.sql` pada SQL Editor yang sama (tabel `wa_otp_codes`, kolom `users.phone` + `phone_verified`).
+2. Jika fitur WhatsApp OTP dipakai, jalankan juga `database/migration-wa-auth.sql` pada SQL Editor yang sama (tabel `wa_otp_codes`, kolom `users.phone`).
+3. **Wajib untuk installasi fresh** — jalankan `database/migration-wa-register-fix.sql` (blok semua → Run): memperbarui trigger `create_default_subscription` ke versi tahan-gagal (register tidak 500 karena subscription sisa/plan hilang), menambah kolom status (`users`, `companies`, `company_members`), backfill membership, dan menjamin plan `free` tersedia. File ini idempoten — aman dijalankan berulang.
 3. Seed data demo (opsional, bisa dijalankan berulang kali — idempotent):
+3. **Wajib untuk installasi fresh** — jalankan `database/migration-wa-register-fix.sql` (blok semua → Run) sebelum penggunaan: trigger subscription tahan-gagal + kolom status + backfill membership.
+4. Seed data demo (opsional, bisa dijalankan berulang kali — idempotent):
    ```bash
    cd backend
    npm run seed

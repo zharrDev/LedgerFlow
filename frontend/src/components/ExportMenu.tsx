@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, FileText, FileSpreadsheet, FileDown } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
+import { useSubscription } from "../hooks/useSubscription";
 
 export type ExportFormat = "pdf" | "excel" | "word" | "csv";
 
@@ -36,6 +37,7 @@ export function ExportMenu({
   align = "right",
 }: ExportMenuProps) {
   const { language } = useLanguage();
+  const { canAccess } = useSubscription();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -70,7 +72,13 @@ export function ExportMenu({
             transition={{ duration: 0.14 }}
             className={`absolute ${align === "right" ? "right-0" : "left-0"} mt-2 w-full sm:w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-200 dark:border-gray-700/50 overflow-hidden z-50`}
           >
-            {formats.map((fmt, idx) => {
+            {formats
+              .filter((fmt) => {
+                if (fmt === "pdf") return canAccess("export_pdf");
+                if (fmt === "csv") return canAccess("export_csv");
+                return true; // excel, word always allowed
+              })
+              .map((fmt, idx) => {
               const meta = FORMAT_META[fmt];
               const Icon = meta.icon;
               return (

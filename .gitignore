@@ -6,6 +6,9 @@ dist/
 *.local
 .DS_Store
 GOOGLE_OAUTH_SETUP.md
+
+# cache tooling lokal (viewer draw.io untuk pratinjau flowchart)
+.cache/
 *.log.commandcode/
 
 # screenshot uji breakpoint

@@ -20,6 +20,7 @@ import {
   saveAiCfoSessions,
   type AiCfoSession,
 } from "../utils/aiCfoStorage";
+import { ProtectedFeature } from "../components/ProtectedFeature";
 
 export default function AiCfoPage() {
   const { user } = useAuth();
@@ -226,7 +227,8 @@ export default function AiCfoPage() {
   }
 
   return (
-      <div className="flex flex-col flex-1 min-h-0 max-w-5xl mx-auto w-full">
+      <ProtectedFeature feature="ai_cfo">
+        <div className="flex flex-col flex-1 min-h-0 max-w-5xl mx-auto w-full">
         {/* Toolbar atas */}
         <div className="flex items-center justify-between gap-3 mb-2 shrink-0">
           <Link
@@ -345,8 +347,9 @@ export default function AiCfoPage() {
               onSubmit={() => void sendMessage(input)}
               inputRef={inputRef}
             />
-          </div>
+</div>
         </div>
       </div>
-  );
-}
+      </ProtectedFeature>
+    );
+  }

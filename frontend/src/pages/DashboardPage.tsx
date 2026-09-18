@@ -340,7 +340,7 @@ export default function DashboardPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {quota.planName === "free" ? "Plan Free" : tx(language, "Journal Quota", "Kuota Jurnal")} —{" "}
+                  {quota.planName ? `${quota.planName} —` : tx(language, "Journal Quota", "Kuota Jurnal")} —{" "}
                   {quota.left} {tx(language, "journals remaining this month (of ", "jurnal tersisa bulan ini (dari ")}{quota.max})
                 </p>
                 <div className="mt-1.5 h-1.5 w-full max-w-xs rounded-full bg-gray-200 dark:bg-gray-700/60 overflow-hidden">

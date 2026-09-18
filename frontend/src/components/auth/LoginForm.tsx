@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../hooks/useLanguage";
 import { TextFlipParagraph } from "../TextFlipParagraph";
-import { getErrorMessage } from "../../lib/errorMessage";
+import { getErrorMessage, isNotRegisteredAuthError } from "../../lib/errorMessage";
 import GoogleAuthButton from "./GoogleAuthButton";
 import logo from "../../assets/ledgerflow.webp";
 
@@ -20,6 +20,8 @@ export default function LoginForm({
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  // true bila backend bilang nomor belum terdaftar (404) → tampilkan CTA daftar.
+  const [notRegistered, setNotRegistered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -37,6 +39,7 @@ export default function LoginForm({
   const handleSendCode = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     setError("");
+    setNotRegistered(false);
     // Samakan dengan backend (normalizePhoneNumber): abaikan spasi, strip,
     // titik, kurung saat validasi — "0812 3456 7890" tetap valid.
     const digits = phone.replace(/[\s\-.()]/g, "");
@@ -55,6 +58,7 @@ export default function LoginForm({
       setCountdown(RESEND_SECONDS);
     } catch (err) {
       setError(getErrorMessage(err) || (id ? "Gagal mengirim kode OTP." : "Failed to send OTP code."));
+      setNotRegistered(isNotRegisteredAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -139,6 +143,17 @@ export default function LoginForm({
         <div className="mt-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200">
           {error}
         </div>
+      )}
+
+      {/* Nomor belum terdaftar → tawarkan registrasi langsung (bukan buntu). */}
+      {notRegistered && (
+        <button
+          type="button"
+          onClick={() => onModeChange("register")}
+          className="mt-3 w-full py-2.5 rounded-xl border border-primary-200 dark:border-primary-500/30 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-sm font-semibold hover:bg-primary-100 dark:hover:bg-primary-500/20 transition-colors"
+        >
+          {id ? "Daftar sekarang dengan nomor ini" : "Sign up with this number"}
+        </button>
       )}
 
       {step === "phone" ? (
@@ -242,6 +257,7 @@ export default function LoginForm({
                 setStep("phone");
                 setCode("");
                 setCountdown(0);
+                setNotRegistered(false);
               }}
               className="text-gray-500 dark:text-gray-400 hover:text-primary-600 transition"
             >

@@ -4,7 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../hooks/useLanguage";
 import { TextFlipParagraph } from "../TextFlipParagraph";
-import { getErrorMessage } from "../../lib/errorMessage";
+import {
+  getErrorMessage,
+  isAlreadyRegisteredAuthError,
+} from "../../lib/errorMessage";
 import GoogleAuthButton from "./GoogleAuthButton";
 import logo from "../../assets/ledgerflow.webp";
 
@@ -24,6 +27,8 @@ export default function RegisterForm({
   const [agreed, setAgreed] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState("");
+  // true bila backend bilang nomor sudah terdaftar (409) → tampilkan CTA login.
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -63,6 +68,7 @@ export default function RegisterForm({
   const handleSendCode = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     setApiError("");
+    setAlreadyRegistered(false);
     if (!validateForm()) return;
     setLoading(true);
     try {
@@ -76,6 +82,7 @@ export default function RegisterForm({
       setCountdown(RESEND_SECONDS);
     } catch (err) {
       setApiError(getErrorMessage(err) || (id ? "Gagal mengirim kode OTP." : "Failed to send OTP code."));
+      setAlreadyRegistered(isAlreadyRegisteredAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -177,6 +184,17 @@ export default function RegisterForm({
         <div className="mt-4 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200">
           {apiError || fieldErrors.agreed}
         </div>
+      )}
+
+      {/* Nomor sudah terdaftar → tawarkan masuk langsung (bukan buntu). */}
+      {alreadyRegistered && (
+        <button
+          type="button"
+          onClick={() => onModeChange("login")}
+          className="mt-3 w-full py-2.5 rounded-xl border border-primary-200 dark:border-primary-500/30 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-sm font-semibold hover:bg-primary-100 dark:hover:bg-primary-500/20 transition-colors"
+        >
+          {id ? "Masuk dengan nomor ini" : "Sign in with this number"}
+        </button>
       )}
 
       {step === "form" ? (

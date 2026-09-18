@@ -11,8 +11,7 @@
 //   - Kode OTP TIDAK PERNAH dikembalikan ke client (hanya via WhatsApp).
 //   - Cooldown kirim ulang 60 detik per nomor+purpose.
 //   - Maksimal 5 percobaan salah, lalu kunci sampai minta kode baru.
-//   - OTP kedaluwarsa 5 menit; sekali dipakai langsung dinonaktifkan.
-//   - Gagal kirim via Fonnte = throw (tidak ada row OTP yang tertinggal).
+//   - OTP kedaluwarsa 5 menit; sekali dipakai langsung dinonaktifkan.//    - Gagal kirim via Fonnte = throw (tidak ada row OTP yang tertinggal).
 import { Hono } from "hono";
 import { randomInt, createHash, timingSafeEqual } from "node:crypto";
 import { supabase } from "../lib/supabase.js";
@@ -29,6 +28,7 @@ import {
 import { provisionCompanyFoundation } from "../lib/companyProvision.js";
 import { deleteOrphanAuthUserByPhone } from "../lib/authHeal.js";
 import { strictOtpRateLimit } from "../middleware/rate-limit.js";
+import { canCreateCompany } from "../lib/planAccess.js";
 
 const waAuth = new Hono();
 
@@ -132,7 +132,7 @@ async function cooldownRemaining(
 }
 
 type OtpResult =
-  | { ok: true }
+  | { ok: true; otpId: string }
   | { ok: false; status: "expired" | "locked" | "wrong"; remaining?: number };
 
 async function verifyOtp(
@@ -158,10 +158,49 @@ async function verifyOtp(
   if (!safeEqualHex(hashOtpCode(code), row.code)) {
     const next = row.attempt_count + 1;
     await supabase.from("wa_otp_codes").update({ attempt_count: next }).eq("id", row.id);
-    return { ok: false, status: "wrong", remaining: Math.max(MAX_ATTEMPTS - next, 0) };
+    return { ok: false, status: "wrong", remaining: Math.max(MAX_ATTEMPTS - next, 0) }; 
   }
-  await supabase.from("wa_otp_codes").update({ used: true }).eq("id", row.id);
-  return { ok: true };
+  // CATATAN DESAIN: kode TIDAK di-mark used di sini. Endpoint verify yang
+  // menandainya SETELAH alur sepenuhnya sukses (login) atau memakai
+  // consumeOtp sebagai bagian dari rollback (register). Dengan begitu bila
+  // provisi akun register gagal, user tinggal submit kode yang sama lagi —
+  // OTP valid tidak terbuang hanya karena server sempat gagal.
+  return { ok: true, otpId: row.id };
+}
+
+// Tandai OTP sudah terpakai. Dipanggil (a) saat login sukses, (b) di
+// rollbackProvision register — jadi bila provisi gagal di tengah jalan,
+// row OTP sengaja TIDAK ditandai supaya kode valid bisa dipakai ulang.
+async function consumeOtp(id: string): Promise<void> {
+  const { error } = await supabase.from("wa_otp_codes").update({ used: true }).eq("id", id);
+  if (error) {
+    console.error("[wa-auth] consumeOtp gagal:", fmtError(error));
+  }
+}
+
+// Ambil row OTP aktif terbaru yang kodenya cocok (belum used, belum expired).
+// Return id row-nya, atau null bila tidak ada — dipakai consumeOtp.
+async function findActiveOtpId(
+  phone: string,
+  purpose: "register" | "login",
+  code: string,
+): Promise<string | null> {
+  const { data: rows, error } = await supabase
+    .from("wa_otp_codes")
+    .select("id, code")
+    .eq("phone", phone)
+    .eq("purpose", purpose)
+    .eq("used", false)
+    .gte("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) {
+    console.error("[wa-auth] findActiveOtpId gagal:", fmtError(error));
+    return null;
+  }
+  const row = rows?.[0];
+  if (!row) return null;
+  return safeEqualHex(hashOtpCode(code), row.code) ? row.id : null;
 }
 
 // --- helpers provisi akun (meniru alur register email lama) ---
@@ -241,6 +280,9 @@ async function createUserProfile(
 // Kompensasi bila provisi akun register gagal di tengah jalan:
 // hapus mundur mulai dari yang paling terakhir dibuat (best-effort),
 // supaya tidak ada company / auth user / profil yatim yang tertinggal.
+// OTP yang sudah terverifikasi SENGAJA tidak ditandai used — user tinggal
+// submit kode yang sama lagi setelah masalah sementara berlalu (bila OTP
+// ikut dibuang, user menunggu 60 detik cooldown + kode baru sia-sia).
 async function rollbackProvision(opts: {
   companyId?: string;
   authUserId?: string;
@@ -481,6 +523,22 @@ waAuth.post("/register/verify", async (c) => {
     let authUserId: string | undefined;
     let userId: string | undefined;
     try {
+      // Cek limit max_companies sebelum membuat company
+      const { data: existingUserByPhone } = await supabase
+        .from("users")
+        .select("id")
+        .eq("phone", phone)
+        .maybeSingle();
+
+      if (!existingUserByPhone) {
+        // User baru - cek limit company (Free plan = 1 company)
+        // Karena user belum ada, kita gunakan phone sebagai identifier
+        const { allowed, reason } = await canCreateCompany("new-user-" + phone);
+        if (!allowed) {
+          return c.json({ error: reason || "Batas maksimum perusahaan tercapai" }, 403);
+        }
+      }
+
       const [company, authUser] = await Promise.all([
         createCompany(String(company_name).trim()),
         createPhoneAuthUser(phone),
@@ -508,6 +566,11 @@ waAuth.post("/register/verify", async (c) => {
       // gagal di sini = seluruh akun dibatalkan, user tinggal coba lagi.
       await provisionCompanyFoundation(company.id);
 
+      // Semua langkah provisi sukses — BARU SEKARANG OTP ditandai terpakai.
+      // (Gagal sebelum titik ini = OTP tetap aktif, user tinggal retry
+      // dengan kode yang sama, tanpa minta kode baru / kena cooldown.)
+      await consumeOtp(result.otpId);
+
       // Respons + JWT via buildLoginPayload (membership + nama company dalam
       // 1 query) — tanpa getCompanyName tambahan.
       return c.json(await buildLoginPayload(user), 201);
@@ -523,6 +586,23 @@ waAuth.post("/register/verify", async (c) => {
       return c.json(
         { error: "Nomor WhatsApp ini sudah dipakai akun lain. Silakan masuk atau gunakan nomor berbeda." },
         409,
+      );
+    }
+    // Provisi gagal karena data sudah ada sebagian (sisa attempt sebelumnya
+    // yang tidak ter-rollback bersih) → 409, bukan 500 "gangguan server".
+    const raw = `${err?.message ?? ""} ${err?.details ?? ""} ${err?.hint ?? ""}`;
+    if (/duplicate key|unique constraint|subscriptions_user_id_key/i.test(raw)) {
+      return c.json(
+        { error: "Akun dengan data ini sudah terdaftar sebagian. Silakan masuk (login) — bila tetap gagal, hubungi dukungan." },
+        409,
+      );
+    }
+    // Skema DB belum lengkap (migrasi belum dijalankan) → pesan yang JUJUR
+    // untuk admin, bukan "gangguan server" yang menyesatkan.
+    if (/could not find the.*column|relation .* does not exist|schema cache/i.test(raw)) {
+      return c.json(
+        { error: "Konfigurasi server belum lengkap (migrasi database belum dijalankan). Hubungi administrator." },
+        500,
       );
     }
     return c.json({ error: "Gagal membuat akun. Coba lagi beberapa saat." }, 500);
@@ -661,6 +741,11 @@ waAuth.post("/login/verify", async (c) => {
         400,
       );
     }
+
+    // Login sukses — OTP resmi dikonsumsi di sini (verifyOtp tidak lagi
+    // menandai used lebih awal; gagal buildLoginPayload = kode masih bisa
+    // dipakai ulang tanpa minta kode baru).
+    await consumeOtp(result.otpId);
 
     sendWhatsAppLoginAlert(
       phone,
