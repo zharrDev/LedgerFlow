@@ -32,6 +32,10 @@ import { createNotification } from "../lib/notify.js";
 
 const payments = new Hono();
 
+// Mode Midtrans — SATU sumber kebenaran (harus identik dengan lib/midtrans.ts).
+// Semua keputusan sandbox/production di file ini mengacu ke sini.
+const isMidtransProduction = process.env.MIDTRANS_IS_PRODUCTION === "true";
+
 // Normalisasi array features plan: DB lama pernah berisi label manusia
 // ("Laporan Laba Rugi") bukan machine key ("income_statement"). Petakan
 // balik agar pencocokan canAccess() selalu konsisten, apa pun isi DB.
@@ -92,14 +96,11 @@ payments.get("/plans", async (c) => {
 //   - Apakah lagi development atau udah production
 // ═══════════════════════════════════════════════════════════════════════
 payments.get("/is-sandbox", async (c) => {
-  const isProduction = process.env.NODE_ENV === "production";
-  const midtrxProduction = process.env.MIDTRANS_IS_PRODUCTION === "true";
-  const explicitAllow = process.env.ALLOW_SANDBOX_IN_PROD === "true";
-
-  const isSandbox = !(isProduction && midtrxProduction) && !(isProduction && !explicitAllow)
-    ? process.env.MIDTRANS_IS_PRODUCTION !== "true"
-    : false;
-
+  // Satu sumber kebenaran — sama dengan yang dipakai lib midtrans.ts.
+  // Logika lama (kombinasi NODE_ENV + explicitAllow) menghasilkan jawaban
+  // SALAH di konfigurasi umum: frontend meload snap.js dari host yang
+  // berbeda dengan token yang dibuat → popup "couldn't find your transaction".
+  const isSandbox = process.env.MIDTRANS_IS_PRODUCTION !== "true";
   return c.json({ is_sandbox: isSandbox });
 });
 
@@ -282,6 +283,8 @@ payments.post("/subscribe", authMiddleware, async (c) => {
     amount: price,
     status: "pending",
     payment_type: null,
+    snap_token: snapRes.token,
+    snap_redirect_url: snapRes.redirect_url,
     midtrans_response: snapRes,
   });
   if (paymentInsertErr) {
@@ -292,11 +295,16 @@ payments.post("/subscribe", authMiddleware, async (c) => {
     );
   }
 
-  // Return snap token ke frontend
+  // Return snap token + client key yang SESUAI mode backend ke frontend.
+  // Client key wajib dari env yang sama dengan server key — kalau frontend
+  // pakai key sandbox untuk token production (atau sebaliknya), Snap popup
+  // error "couldn't find your transaction".
   return c.json({
     snap_token: snapRes.token,
     redirect_url: snapRes.redirect_url,
     order_id: orderId,
+    client_key: process.env.MIDTRANS_CLIENT_KEY || "",
+    is_production: isMidtransProduction,
   });
 });
 
@@ -458,6 +466,98 @@ payments.post("/webhook", async (c) => {
   } catch (err: any) {
     console.error("[Webhook] Error:", err?.message ?? err);
     return c.json({ error: "Internal error" }, 500);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// POST /sync-status — Sinkronkan status pembayaran langsung ke Midtrans
+// ════════════════════════════════════════════════════════════════════════
+// Failsafe bila webhook belum terkonfigurasi / terlewat: frontend panggil
+// ini saat halaman result dibuka. Backend cek status transaksi ke Midtrans
+// (snap.status) dan mengaktifkan subscription bila ternyata sudah dibayar.
+// Aman: hanya pemilik order (auth) & hanya mengaktifkan payment miliknya.
+// ════════════════════════════════════════════════════════════════════════
+payments.post("/sync-status", authMiddleware, async (c) => {
+  const userId = c.get("user").sub;
+  const { order_id } = await c.req.json();
+  if (!order_id) return c.json({ error: "order_id wajib diisi" }, 400);
+
+  const { data: payment, error: payErr } = await supabase
+    .from("payments")
+    .select("id, user_id, status, plan_name, billing_cycle, snap_token")
+    .eq("order_id", order_id)
+    .maybeSingle();
+  if (payErr) return dbErrorResponse(c, payErr);
+
+  // 404 generik: jangan bocorkan keberadaan order milik user lain
+  if (!payment || payment.user_id !== userId) {
+    return c.json({ error: "Payment tidak ditemukan" }, 404);
+  }
+
+  if (payment.status === "paid") {
+    return c.json({ synced: true, payment_status: "paid", activated: false });
+  }
+
+  // Tanya status terkini ke Midtrans (butuh token yang disimpan saat checkout)
+  if (!payment.snap_token) {
+    return c.json({ synced: false, payment_status: payment.status, activated: false });
+  }
+  let trx: any = null;
+  try {
+    trx = await snap.transaction.status(payment.snap_token);
+  } catch (err: any) {
+    const msg = String(err?.message ?? err);
+    // Token tidak dikenal Midtrans → kemungkinan besar mismatch environment
+    // (token dibuat di mode berbeda dengan yang ditanya). Lapor jelas.
+    if (/404|not found|not found/i.test(msg)) {
+      return c.json(
+        {
+          synced: false,
+          payment_status: payment.status,
+          activated: false,
+          midtrans_known: false,
+        },
+        200,
+      );
+    }
+    return c.json(
+      { error: "Gagal mengecek status ke Midtrans: " + msg },
+      502,
+    );
+  }
+
+  const transactionStatus = String(trx?.transaction_status ?? "");
+  const fraudStatus = String(trx?.fraud_status ?? "clean");
+  const isSuccess =
+    transactionStatus === "settlement" ||
+    (transactionStatus === "capture" && fraudStatus === "accept");
+
+  if (!isSuccess) {
+    return c.json({
+      synced: true,
+      payment_status: transactionStatus || payment.status,
+      activated: false,
+    });
+  }
+
+  // Sudah dibayar di Midtrans → aktivasi sekarang (idempoten via status check)
+  try {
+    const { planName } = await activateSubscription(payment);
+    createNotification({
+      userId: payment.user_id,
+      title: "Pembayaran Berhasil",
+      message: `Langganan ${planName.toUpperCase()} (${payment.billing_cycle}) kamu sudah aktif. Selamat bertransaksi!`,
+      type: "payment_success",
+    }).catch(console.error);
+    return c.json({
+      synced: true,
+      payment_status: "paid",
+      activated: true,
+      plan: planName,
+    });
+  } catch (err: any) {
+    console.error("[sync-status] Aktivasi gagal:", err?.message);
+    return c.json({ error: err?.message ?? "Gagal aktivasi subscription" }, 500);
   }
 });
 

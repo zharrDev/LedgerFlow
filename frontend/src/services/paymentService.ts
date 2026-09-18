@@ -57,6 +57,8 @@ export interface SubscribeResponse {
   snap_token: string; // Token buat buka popup Midtrans Snap (string panjang)
   redirect_url: string; // URL alternatif buat redirect langsung ke halaman Midtrans
   order_id: string; // ID transaksi buat tracking & navigasi ke halaman result
+  client_key?: string; // Client key sesuai mode backend (wajib dipakai load Snap)
+  is_production?: boolean; // Mode Midtrans backend (guard mismatch sandbox/production)
 }
 
 // Response dari endpoint POST /test-complete (sandbox only)
@@ -208,6 +210,34 @@ export async function testComplete(
 }
 
 /**
+ * Sinkronkan status pembayaran langsung ke Midtrans.
+ *
+ * FAILSAFE bila webhook belum terpasang / notifikasi terlewat: dipanggil
+ * frontend saat halaman payment result dibuka. Kalau ternyata transaksi
+ * sudah dibayar, backend langsung mengaktifkan subscription.
+ *
+ * Backend: POST /api/payments/sync-status  Body: { order_id }
+ */
+export interface SyncStatusResponse {
+  synced: boolean;
+  payment_status: string;
+  activated: boolean;
+  plan?: string;
+  midtrans_known?: boolean; // false = token tak dikenal Midtrans (mismatch env)
+}
+
+export async function syncPaymentStatus(
+  orderId: string,
+): Promise<SyncStatusResponse> {
+  const res = await api.post(
+    "/api/payments/sync-status",
+    { order_id: orderId },
+    { skipErrorToast: true },
+  );
+  return res.data;
+}
+
+/**
  * Cancel subscription user.
  *
  * Dipake: Halaman Settings pas user klik "Cancel Subscription"
@@ -227,12 +257,12 @@ export async function cancelSubscription(reason?: string): Promise<void> {
 // MIDTRANS SNAP HELPER — Buka popup pembayaran Midtrans
 // ═══════════════════════════════════════════════════════════════════════
 
-// Client key Midtrans (sandbox). Snap.js diload on-demand pas mau bayar,
-// bukan di index.html — biar gak nimbulin warning "language not supported"
-// dan gak bebanin halaman dashboard yang gak butuh Snap sama sekali.
-const SNAP_CLIENT_KEY = "Mid-client-UdVDzr6pTrrbTWHN";
+// Fallback client key (sandbox) — dipakai hanya kalau backend tidak mengirim
+// client_key di response subscribe. Sumber utama selalu backend, supaya mode
+// snap.js PASTI sama dengan mode token → popup "transaction not found" hilang.
+const SNAP_CLIENT_KEY_FALLBACK = "Mid-client-UdVDzr6pTrrbTWHN";
 
-// Cache URL Snap.js biar gak re-create script setiap kali.
+// Cache promise load Snap.js (anti double-load).
 let _snapScriptPromise: Promise<void> | null = null;
 
 /**
@@ -240,8 +270,7 @@ let _snapScriptPromise: Promise<void> | null = null;
  *
  * Balikin Promise yang resolve pas script kebaca + window.snap kebentuk.
  * Kalau udah pernah diload, langsung resolve (idempotent).
- */
-async function loadSnapScript(): Promise<void> {
+ */async function loadSnapScript(clientKey?: string): Promise<void> {
   const win = window as any;
   if (win.snap) return; // Udah kebentuk, gak perlu load lagi
 
@@ -257,8 +286,9 @@ async function loadSnapScript(): Promise<void> {
         ? "https://app.sandbox.midtrans.com"
         : "https://app.midtrans.com";
       const script = document.createElement("script");
+
       script.src = `${base}/snap/snap.js`;
-      script.setAttribute("data-client-key", SNAP_CLIENT_KEY);
+      script.setAttribute("data-client-key", clientKey || SNAP_CLIENT_KEY_FALLBACK);
       script.async = true;
 
       let settled = false;
@@ -318,12 +348,13 @@ export async function openSnapPayment(
     onClose?: () => void; // Dipanggil kalau user tutup popup
   },
   redirectUrl?: string, // URL alternatif (dari response subscribe) kalau popup gagal
+  clientKey?: string, // Client key dari backend (harus sama mode dengan snap_token)
 ): Promise<void> {
   const win = window as any;
 
   try {
     // Load Snap.js on-demand kalau belum pernah diload
-    await loadSnapScript();
+    await loadSnapScript(clientKey);
   } catch (err) {
     // ─── FALLBACK: Kalau Snap.js gagal di-load ─────────────────────────
     console.error("[Payment] Snap.js failed to load:", err);

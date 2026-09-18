@@ -235,6 +235,8 @@ export default function PricingPage() {
           onClose: () => setSubscribing(null),
         },
         result.redirect_url,
+        // Client key dari backend — PASTI satu mode dengan snap_token.
+        result.client_key,
       );
       // Fallback redirect (popup diblokir) tidak memicu onClose —
       // reset tombol otomatis supaya tidak selamanya disabled.

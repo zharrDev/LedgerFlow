@@ -33,6 +33,7 @@ import { testComplete, isSandboxMode } from "../services/paymentService";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
 import { refreshSubscription } from "../hooks/useSubscription";
+import { syncPaymentStatus } from "../services/paymentService";
 
 // ─── Types ──────────────────────────────────────────────────────────
 type ResultType = "success" | "pending" | "failed";
@@ -134,11 +135,25 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
     null,
   );
 
-  // Refresh subscription saat halaman result dibuka — setelah bayar sukses,
-  // badge plan / paywall harus langsung mencerminkan plan baru.
+  // Saat halaman result dibuka: (1) tanyakan status terkini ke Midtrans —
+  // bila ternyata sudah dibayar tapi webhook belum masuk, subscription
+  // langsung diaktifkan di sini (failsafe); (2) refresh cache subscription
+  // agar badge plan / paywall langsung mencerminkan plan baru.
   useEffect(() => {
-    refreshSubscription().catch(() => {});
-  }, []);
+    if (!orderId) return;
+    syncPaymentStatus(orderId)
+      .then(async (res) => {
+        if (res.activated) {
+          // Reload cache supaya seluruh app tahu plan sudah naik
+          await refreshSubscription().catch(() => {});
+          if (type !== "success") {
+            navigate("/payment/success?order_id=" + orderId, { replace: true });
+          }
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   useEffect(() => {
     isSandboxMode()
