@@ -1,9 +1,9 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-// TextFlipWords — animasi pergantian teks per KATA dengan flip 3D (rotateX)
-// + blur. Dipakai untuk transisi ganti bahasa (ID↔EN): kata lama "jatuh" ke
-// BELAKANG sambil mengeblur keluar, lalu kata baru bangkit dari posisi
-// terbalik itu satu per satu (stagger) — efek kartu split-flap yang halus.
+// TextFlipWords — animasi pergantian teks per KATA dengan rise halus
+// (opacity + translate-y). SENGAJA tanpa filter blur / rotateX 3D: keduanya
+// merender buruk di Firefox (teks bisa buram permanen / clip gradien jebol)
+// dan mahal di GPU HP. Dipakai untuk transisi ganti bahasa (ID↔EN).
 //
 // Tempo sengaja PELAN & halus (durasi 0.5s/kata, easing easeOutCubic) sesuai
 // arahan desain; exit tetap cepat (0.2s) supaya tidak terasa nunggu.
@@ -58,27 +58,15 @@ export function TextFlipWords({
               aria-hidden="true"
               className={`inline-block will-change-transform ${wordClassName ?? ""}`}
               style={{ transformOrigin: "50% 100%" }}
-              initial={
-                reduced
-                  ? { opacity: 0 }
-                  : { opacity: 0, rotateX: 90, y: "0.35em", filter: "blur(6px)" }
-              }
-              animate={
-                reduced
-                  ? { opacity: 1 }
-                  : { opacity: 1, rotateX: 0, y: "0em", filter: "blur(0px)" }
-              }
+              initial={reduced ? { opacity: 0 } : { opacity: 0, y: "0.35em" }}
+              animate={reduced ? { opacity: 1 } : { opacity: 1, y: "0em" }}
               exit={
                 reduced
                   ? { opacity: 0, transition: { duration: 0.15 } }
                   : {
-                      // jatuh ke belakang + memudar kabur: arah sama dengan
-                      // pose awal kata baru → transisi terasa seperti kartu
-                      // yang dibalik ke belakang, lembut tidak menyentak.
+                      // Memudar turun: arah sama dengan pose awal kata baru.
                       opacity: 0,
-                      rotateX: 90,
                       y: "0.35em",
-                      filter: "blur(6px)",
                       transition: { duration: 0.2, ease: "easeIn" },
                     }
               }

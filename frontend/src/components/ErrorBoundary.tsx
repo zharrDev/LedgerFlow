@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10 p-6">
+        <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10 p-6">
           <div className="max-w-md w-full rounded-2xl bg-white dark:bg-darkCard border border-rose-200 dark:border-rose-500/30 shadow-xl p-8 text-center">
             <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center mb-4">
               <svg

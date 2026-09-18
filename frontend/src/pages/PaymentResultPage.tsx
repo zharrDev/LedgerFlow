@@ -105,13 +105,13 @@ const containerVariants: Variants = {
   },
 };
 
-// Setiap child element slide-up + fade-in
+// Setiap child element slide-up + fade-in (tanpa filter blur —
+// blur teks mahal di GPU HP dan glitchy di Firefox).
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 16, filter: "blur(4px)" },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
   },
 };
@@ -305,7 +305,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-darkBg dark:via-gray-900 dark:to-darkBg flex items-center justify-center px-4 sm:px-6 py-8 overflow-hidden">
+    <div className="relative min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-darkBg dark:via-gray-900 dark:to-darkBg flex items-center justify-center px-4 sm:px-6 py-8 overflow-hidden">
       {/* ═══ Confetti selebrasi (success saja) ═══════════════════════ */}
       {confettiPieces.length > 0 && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">

@@ -12,7 +12,7 @@ export default function PublicHelpPage() {
   const { language } = useLanguage();
   const id = language === "id";
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
       <Navbar />
       <main className="relative flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pt-24 pb-10 sm:pb-14 space-y-10">
         {/* Glow latar — mask radial supaya memudar sebelum tepi (tanpa garis) */}

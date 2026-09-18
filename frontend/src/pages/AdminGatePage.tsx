@@ -62,7 +62,7 @@ export default function AdminGatePage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-100 dark:bg-[#0B1120] p-4 overflow-hidden">
+    <div className="relative min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex items-center justify-center bg-gray-100 dark:bg-[#0B1120] p-4 overflow-hidden">
       {/* Latar mesh lembut — satu dunia visual dengan Admin Portal */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-10%,rgba(99,102,241,0.12),transparent_45%),radial-gradient(circle_at_85%_110%,rgba(139,92,246,0.10),transparent_45%)]" />
       <div className="relative w-full max-w-md mx-auto">

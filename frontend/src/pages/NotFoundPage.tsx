@@ -9,7 +9,7 @@ export default function NotFoundPage() {
   const id = language === "id";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-darkBg">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex flex-col bg-white dark:bg-darkBg">
       <Navbar />
       <div className="relative flex-1 flex items-center justify-center p-4 pt-24 overflow-hidden">
         {/* Glow latar — mask radial supaya memudar sebelum tepi (tanpa garis) */}

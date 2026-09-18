@@ -73,7 +73,7 @@ export default function MarketingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-darkBg dark:text-white">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-white text-gray-900 dark:bg-darkBg dark:text-white">
       <Navbar />
       <main className="pt-20">
         {/* ── Hero ── latar lembut bercabang dua warna (atas) yang memudar

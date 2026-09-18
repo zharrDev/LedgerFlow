@@ -290,7 +290,7 @@ export default function PricingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-darkBg">
+      <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-white dark:bg-darkBg">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh] pt-20">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
@@ -300,7 +300,7 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-white dark:bg-darkBg overflow-x-hidden">
+    <div className="relative min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex flex-col bg-white dark:bg-darkBg overflow-x-hidden">
       <Navbar />
       {/* Dekorasi latar halus — mesh radial memudar, tidak mengganggu konten */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(59,130,246,0.08),transparent_70%)] dark:bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(59,130,246,0.12),transparent_70%)]" />

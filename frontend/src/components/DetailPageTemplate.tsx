@@ -61,7 +61,7 @@ export default function DetailPageTemplate({
       : backLabel?.[language] ?? (id ? "Kembali" : "Back");
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-darkBg">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex flex-col bg-white dark:bg-darkBg">
       <Navbar />
       <main className="flex-1 pt-24 pb-16">
         {/* ═══ Hero ═══ */}

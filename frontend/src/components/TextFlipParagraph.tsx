@@ -1,9 +1,11 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { CSSProperties } from "react";
 
-// TextFlipParagraph — animasi pergantian bahasa per KATA dengan flip 3D
-// (rotateX) + blur, sama seperti TextFlipWords di hero homepage, tapi
+// TextFlipParagraph — animasi pergantian bahasa per KATA (opacity +
+// translate-y), sama seperti TextFlipWords di hero homepage, tapi
 // dioptimalkan untuk kalimat paragraf yang panjang di semua page.
+// SENGAJA tanpa filter blur / rotateX 3D (bermasalah di Firefox + mahal
+// di GPU HP).
 //
 // Perbedaan vs TextFlipWords:
 // - stagger & durasi lebih cepat supaya paragraf 20+ kata tidak lambat
@@ -79,24 +81,14 @@ export function TextFlipParagraph({
               key={`${key}::${i}`}
               className="inline-block will-change-transform"
               style={{ transformOrigin: "50% 100%" }}
-              initial={
-                reduced
-                  ? { opacity: 0 }
-                  : { opacity: 0, rotateX: 90, y: "0.35em", filter: "blur(6px)" }
-              }
-              animate={
-                reduced
-                  ? { opacity: 1 }
-                  : { opacity: 1, rotateX: 0, y: "0em", filter: "blur(0px)" }
-              }
+              initial={reduced ? { opacity: 0 } : { opacity: 0, y: "0.35em" }}
+              animate={reduced ? { opacity: 1 } : { opacity: 1, y: "0em" }}
               exit={
                 reduced
                   ? { opacity: 0, transition: { duration: 0.12 } }
                   : {
                       opacity: 0,
-                      rotateX: 90,
                       y: "0.35em",
-                      filter: "blur(6px)",
                       transition: { duration: 0.16, ease: "easeIn" },
                     }
               }

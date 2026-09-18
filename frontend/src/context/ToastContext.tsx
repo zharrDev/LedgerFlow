@@ -82,9 +82,9 @@ function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -24, scale: 0.92, filter: "blur(4px)" }}
-      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-      exit={{ opacity: 0, y: -24, scale: 0.92, filter: "blur(4px)" }}
+      initial={{ opacity: 0, y: -24, scale: 0.92 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -24, scale: 0.92 }}
       transition={{ type: "spring", stiffness: 400, damping: 28 }}
       className={`relative flex items-start gap-3 w-[360px] max-w-[calc(100vw-2rem)] px-4 py-3.5 rounded-2xl border shadow-lg ${cfg.accent} ${cfg.glow} overflow-hidden backdrop-blur-sm`}
     >

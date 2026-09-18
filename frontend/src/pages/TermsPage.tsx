@@ -49,7 +49,7 @@ export function TermsPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50/30 dark:from-darkBg dark:via-darkBg dark:to-primary-900/10">
       <Navbar />
       <div className="relative mx-auto max-w-2xl w-full px-4 pt-24 pb-10 sm:pt-28 sm:pb-16 flex-1">
         {/* Glow latar — mask radial supaya memudar sebelum tepi (tanpa garis) */}

@@ -64,7 +64,7 @@ export function AppShell({ children }: AppShellProps) {
   // position:sticky Header tidak pernah aktif (ancestor overflow selain
   // visible menjadi scrollport sticky). Guard horizontal cukup di <main>.
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0B1120] transition-colors">
+    <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-gray-100 dark:bg-[#0B1120] transition-colors">
       {/* Desktop: 2 floating cards */}
       <div className="hidden lg:flex h-screen p-4 gap-4">
         {/* Sidebar card */}
@@ -121,7 +121,7 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       {/* Mobile / Tablet: drawer + content */}
-      <div className="lg:hidden min-h-screen flex flex-col">
+      <div className="lg:hidden min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex flex-col">
         <Header onMenuClick={toggleMobileMenu} mobileMenuOpen={mobileMenuOpen} />
 
         {mobileMenuOpen && (

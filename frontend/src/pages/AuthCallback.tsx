@@ -67,7 +67,7 @@ export default function AuthCallback() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-darkBg p-4">
+      <div className="min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] flex items-center justify-center bg-white dark:bg-darkBg p-4">
         <div className="text-center space-y-4 max-w-md mx-auto w-full">
           <div className="text-red-500 text-lg font-semibold">Login Gagal</div>
           <p className="text-gray-500 text-sm break-words">{errorMsg}</p>

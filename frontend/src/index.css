@@ -55,6 +55,22 @@ body {
   font-family: "Dancing Script", cursive;
 }
 
+/* ── Keringanan GPU di layar kecil ─────────────────────────────────────
+   Orbs dekoratif blur-3xl/100px + backdrop-blur-xl di banyak kartu adalah
+   pemicu utama jank scroll di GPU HP. Di layar kecil (<640px) turunkan
+   radiusnya — visual tetap lembut, biaya repaint jauh lebih kecil. */
+@media (max-width: 640px) {
+  .blur-3xl {
+    --tw-blur: blur(20px) !important;
+  }
+  .blur-\[100px\] {
+    --tw-blur: blur(28px) !important;
+  }
+  .backdrop-blur-xl {
+    --tw-backdrop-blur: blur(8px) !important;
+  }
+}
+
 /* ───────── Scrollbar kustom (ngikut tema: terang = track putih, gelap = darkCard) ───────── */
 * {
   scrollbar-width: thin;

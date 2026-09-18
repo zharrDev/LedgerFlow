@@ -133,7 +133,7 @@ export default function HomePage() {
 
   return (
     <div
-      className="relative h-screen overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg"
+      className="relative h-screen supports-[height:100dvh]:h-[100dvh] overflow-y-auto overflow-x-hidden homepage-scroll bg-white dark:bg-darkBg"
     >
       <VideoModal
         open={howItWorksOpen}
@@ -144,7 +144,7 @@ export default function HomePage() {
       <Navbar />
       <ScrollCardWrapper>
         {/* ═══ Hero ═══ */}
-        <section className="relative min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
+        <section className="relative min-h-screen supports-[min-height:100dvh]:min-h-[100dvh] bg-gradient-to-b from-gray-50 to-white dark:from-darkBg dark:to-darkBg">
           {/* Desktop: 2 kolom (teks kiri, 3D kanan). Mobile: teks atas, 3D bawah. */}
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-24 min-h-[100svh] flex flex-col lg:grid lg:grid-cols-2 lg:items-center gap-8 lg:gap-4">
             {/* ── Teks Kiri ──
