@@ -38,6 +38,28 @@ function writeSessionCache(data: Subscription | null): void {
   }
 }
 
+/**
+ * Hapus cache subscription (modul + sessionStorage).
+ * Wajib dipanggil saat checkout dimulai supaya badge plan & CTA pricing
+ * tidak menampilkan data basi ("Upgrade ke Pro" padahal sudah Pro).
+ */
+export function clearSubscriptionCache(): void {
+  cachedSubscription = null;
+  try {
+    sessionStorage.removeItem(SUB_CACHE_KEY);
+  } catch {
+    // sessionStorage mungkin diblokir — abaikan
+  }
+}
+
+/**
+ * Paksa fetch subscription terbaru dari server dan perbarui semua cache.
+ * Dipanggil setelah pembayaran sukses / cancel agar UI langsung akurat.
+ */
+export function refreshSubscription(): Promise<Subscription | null> {
+  return loadSubscription();
+}
+
 async function loadSubscription(): Promise<Subscription | null> {
   if (inflightFetch) return inflightFetch;
   inflightFetch = getSubscription()

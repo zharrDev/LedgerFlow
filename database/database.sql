@@ -201,9 +201,11 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 -- Payments (transaction history)
 CREATE TABLE IF NOT EXISTS payments (
   id                      UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  subscription_id         UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+  subscription_id         UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
   user_id                 UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   order_id                TEXT NOT NULL UNIQUE,
+  plan_name               TEXT NOT NULL DEFAULT 'pro',
+  billing_cycle           TEXT NOT NULL DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly', 'yearly')),
   midtrans_transaction_id TEXT,
   amount                  BIGINT NOT NULL,
   currency                TEXT NOT NULL DEFAULT 'IDR',

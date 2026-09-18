@@ -32,6 +32,7 @@ import {
 import { testComplete, isSandboxMode } from "../services/paymentService";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
+import { refreshSubscription } from "../hooks/useSubscription";
 
 // ─── Types ──────────────────────────────────────────────────────────
 type ResultType = "success" | "pending" | "failed";
@@ -133,6 +134,12 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
     null,
   );
 
+  // Refresh subscription saat halaman result dibuka — setelah bayar sukses,
+  // badge plan / paywall harus langsung mencerminkan plan baru.
+  useEffect(() => {
+    refreshSubscription().catch(() => {});
+  }, []);
+
   useEffect(() => {
     isSandboxMode()
       .then(setIsSandbox)
@@ -145,6 +152,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
     setForceCompleteError(null);
     try {
       await testComplete(orderId);
+      await refreshSubscription().catch(() => {});
       navigate("/payment/success?order_id=" + orderId);
     } catch (err: any) {
       const msg = getErrorMessage(err);

@@ -6,7 +6,11 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useSubscription } from "../hooks/useSubscription";
+import {
+  useSubscription,
+  refreshSubscription,
+  clearSubscriptionCache,
+} from "../hooks/useSubscription";
 import { getErrorMessage } from "../lib/errorMessage";
 import {
   getPlans,
@@ -209,24 +213,38 @@ export default function PricingPage() {
     if (planName === "free") return;
     if (planName === currentPlan) return;
 
-    setSubscribing(planName);
-    try {
-      const result = await subscribe(planName, billingCycle);
+    setSubscribing("begin");
+    const result = await subscribe(planName, billingCycle);
+    // Checkout dimulai: buang cache subscription supaya badge plan & CTA
+    // tidak menampilkan data basi setelah pembayaran selesai.
+    clearSubscriptionCache();
 
-      openSnapPayment(result.snap_token, {
-        onSuccess: () =>
-          navigate("/payment/success?order_id=" + result.order_id),
-        onPending: () => {
-          navigate("/payment/pending?order_id=" + result.order_id);
+    try {
+      openSnapPayment(
+        result.snap_token,
+        {
+          onSuccess: async () => {
+            await refreshSubscription().catch(() => {});
+            navigate("/payment/success?order_id=" + result.order_id);
+          },
+          onPending: () => {
+            navigate("/payment/pending?order_id=" + result.order_id);
+          },
+          onError: () =>
+            navigate("/payment/failed?order_id=" + result.order_id),
+          onClose: () => setSubscribing(null),
         },
-        onError: () =>
-          navigate("/payment/failed?order_id=" + result.order_id),
-        onClose: () => setSubscribing(null),
-      }, result.redirect_url);
+        result.redirect_url,
+      );
+      // Fallback redirect (popup diblokir) tidak memicu onClose —
+      // reset tombol otomatis supaya tidak selamanya disabled.
+      setTimeout(
+        () => setSubscribing((cur) => (cur === "begin" ? null : cur)),
+        60_000,
+      );
     } catch (err: any) {
       console.error("Subscribe error:", err);
       alert(getErrorMessage(err));
-    } finally {
       setSubscribing(null);
     }
   };

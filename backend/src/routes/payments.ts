@@ -32,6 +32,34 @@ import { createNotification } from "../lib/notify.js";
 
 const payments = new Hono();
 
+// Normalisasi array features plan: DB lama pernah berisi label manusia
+// ("Laporan Laba Rugi") bukan machine key ("income_statement"). Petakan
+// balik agar pencocokan canAccess() selalu konsisten, apa pun isi DB.
+const FEATURE_LABEL_TO_KEY: Record<string, string> = {
+  "laporan laba rugi": "income_statement",
+  "neraca": "balance_sheet",
+  "laporan arus kas": "cash_flow",
+  "export pdf": "export_pdf",
+  "export csv": "export_csv",
+  "multi-perusahaan": "multi_company",
+  "multi-pengguna & role": "multi_user",
+  "asisten ai cfo": "ai_cfo",
+  "ai cfo": "ai_cfo",
+  "akses api": "api_access",
+  "laporan kustom": "custom_reports",
+  "audit trail": "audit_trail",
+  "multi-user & roles": "multi_user",
+};
+function normalizeFeatures(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((f) => {
+    if (typeof f !== "string") return "";
+    const key = f.trim().toLowerCase().replace(/\\s+/g, "_");
+    if (key.includes(" ") || key.includes("/")) return FEATURE_LABEL_TO_KEY[f.trim().toLowerCase()] ?? f;
+    return f;
+  });
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // GET /plans — Ambil daftar semua plan yang tersedia
 // ════════════════════════════════════════════════════════════════════════
@@ -162,6 +190,14 @@ payments.get("/subscription", authMiddleware, async (c) => {
     return c.json(newSub);
   }
 
+  // Normalisasi features plan ke machine keys (jaga-jaga DB lama berisi label
+  // manusia seperti "Laporan Laba Rugi" — bisa bikin Pro ke-paywall)
+  if (data?.plans?.features) {
+    (data.plans as Record<string, unknown>).features = normalizeFeatures(
+      data.plans.features,
+    );
+  }
+
   // Kalau sukses, return data subscription + plan detail
   return c.json(data);
 });
@@ -231,16 +267,30 @@ payments.post("/subscribe", authMiddleware, async (c) => {
     },
   });
 
-  // Simpan payment record (status pending)
-  await supabase.from("payments").insert({
+  // Simpan payment record (status pending).
+  // subscription_id diisi null dulu — di-update setelah pembayaran sukses
+  // (webhook / test-complete). Error insert WAJIB dicek: kalau gagal dan
+  // dibiarkan, order_id tidak pernah tersimpan → webhook 404 → upgrade
+  // tidak pernah aktif padahal user sudah bayar.
+  const planName = plan.name as PlanName;
+  const { error: paymentInsertErr } = await supabase.from("payments").insert({
     user_id: userId,
     subscription_id: null, // diisi setelah webhook
     order_id: orderId,
+    plan_name: planName,
+    billing_cycle: billingCycle,
     amount: price,
     status: "pending",
     payment_type: null,
     midtrans_response: snapRes,
   });
+  if (paymentInsertErr) {
+    console.error("[Payments] Gagal menyimpan payment record:", paymentInsertErr.message);
+    return c.json(
+      { error: "Gagal mencatat transaksi. Coba lagi beberapa saat." },
+      500,
+    );
+  }
 
   // Return snap token ke frontend
   return c.json({
@@ -248,6 +298,167 @@ payments.post("/subscribe", authMiddleware, async (c) => {
     redirect_url: snapRes.redirect_url,
     order_id: orderId,
   });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// Helper — Aktivasi subscription dari pembayaran yang sukses
+// ════════════════════════════════════════════════════════════════════════
+// Dipakai webhook Midtrans (sumber kebenaran production) dan test-complete
+// (sandbox). Selalu pakai plan_name + billing_cycle dari PAYMENT RECORD
+// (yang dibayar), bukan plan lama user.
+async function activateSubscription(payment: {
+  id: string;
+  user_id: string;
+  plan_name: string | null;
+  billing_cycle: string | null;
+}): Promise<{ planName: string }> {
+  const planName = payment.plan_name ?? "pro";
+  const cycle: BillingCycle = payment.billing_cycle === "yearly" ? "yearly" : "monthly";
+
+  // Cari plan yang DIBAYAR
+  const { data: plan, error: planErr } = await supabase
+    .from("plans")
+    .select("id, name")
+    .eq("name", planName)
+    .single();
+  if (planErr || !plan) {
+    throw new Error(`Plan "${planName}" tidak ditemukan di database`);
+  }
+
+  const now = new Date();
+  const periodDays = cycle === "yearly" ? 365 : 30;
+  const periodEnd = new Date(Date.now() + periodDays * 86400000);
+
+  // Upsert subscription user
+  const { data: existing } = await supabase
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", payment.user_id)
+    .maybeSingle();
+
+  let subscriptionId: string;
+  if (existing) {
+    const { error: updErr } = await supabase
+      .from("subscriptions")
+      .update({
+        plan_id: plan.id,
+        status: "active",
+        billing_cycle: cycle,
+        trial_start: null,
+        trial_end: null,
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      })
+      .eq("id", existing.id);
+    if (updErr) throw new Error(`Gagal update subscription: ${updErr.message}`);
+    subscriptionId = existing.id;
+  } else {
+    const { data: created, error: insErr } = await supabase
+      .from("subscriptions")
+      .insert({
+        user_id: payment.user_id,
+        plan_id: plan.id,
+        status: "active",
+        billing_cycle: cycle,
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      })
+      .select("id")
+      .single();
+    if (insErr || !created) throw new Error(`Gagal membuat subscription: ${insErr?.message}`);
+    subscriptionId = created.id;
+  }
+
+  // Tandai payment paid + tautkan subscription
+  const { error: payErr } = await supabase
+    .from("payments")
+    .update({
+      status: "paid",
+      paid_at: now.toISOString(),
+      subscription_id: subscriptionId,
+    })
+    .eq("id", payment.id);
+  if (payErr) throw new Error(`Gagal update payment: ${payErr.message}`);
+
+  return { planName: plan.name };
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// POST /webhook — Midtrans HTTP Notification (sumber kebenaran pembayaran)
+// ════════════════════════════════════════════════════════════════════════
+// Konfigurasi di Midtrans Dashboard → Settings → Configuration:
+//   Payment Notification URL: https://<backend>/api/payments/webhook
+// Verifikasi signature: sha512(order_id + status_code + gross_amount + serverKey)
+// ════════════════════════════════════════════════════════════════════════
+payments.post("/webhook", async (c) => {
+  try {
+    const body = await c.req.json();
+    const orderId: string = body.order_id;
+    const statusCode: string = String(body.status_code ?? "");
+    const grossAmount: string = String(body.gross_amount ?? "");
+    const signatureKey: string = String(body.signature_key ?? "");
+    const transactionStatus: string = String(body.transaction_status ?? "");
+    const fraudStatus: string = String(body.fraud_status ?? "clean");
+    const paymentType: string | null = body.payment_type ?? null;
+    const transactionId: string | null = body.transaction_id ?? null;
+
+    if (!orderId) return c.json({ error: "order_id wajib ada" }, 400);
+
+    // Verifikasi signature — tolak notifikasi palsu
+    if (!verifySignature(
+      orderId,
+      statusCode,
+      grossAmount,
+      process.env.MIDTRANS_SERVER_KEY || "",
+      signatureKey,
+    )) {
+      console.error("[Webhook] Invalid signature untuk order:", orderId);
+      return c.json({ error: "Invalid signature" }, 403);
+    }
+
+    const { data: payment, error: payErr } = await supabase
+      .from("payments")
+      .select("id, user_id, status, plan_name, billing_cycle, amount")
+      .eq("order_id", orderId)
+      .maybeSingle();
+    if (payErr) return dbErrorResponse(c, payErr);
+    if (!payment) {
+      // Record tak ada: sebelumnya ini terjadi karena insert subscribe gagal
+      // (schema lama). Jangan balas 404 biar Midtrans tak retry selamanya.
+      console.error("[Webhook] Payment record tidak ditemukan:", orderId);
+      return c.json({ received: true, warning: "payment record not found" }, 200);
+    }
+
+    // Idempoten: webhook bisa dikirim Midtrans lebih dari sekali
+    if (payment.status === "paid" || payment.status === "refunded") {
+      return c.json({ received: true, note: "already processed" });
+    }
+
+    const isSuccess =
+      transactionStatus === "settlement" ||
+      (transactionStatus === "capture" && fraudStatus === "accept");
+
+    if (isSuccess) {
+      const { planName } = await activateSubscription(payment);
+
+      // Notifikasi (fire-and-forget, jangan blokir respon webhook)
+      createNotification({
+        userId: payment.user_id,
+        title: "Pembayaran Berhasil",
+        message: `Langganan ${planName.toUpperCase()} (${payment.billing_cycle}) kamu sudah aktif. Selamat bertransaksi!`,
+        type: "payment_success",
+      }).catch(console.error);
+    } else if (transactionStatus === "expire") {
+      await supabase.from("payments").update({ status: "expired" }).eq("id", payment.id);
+    } else if (transactionStatus === "cancel" || transactionStatus === "deny") {
+      await supabase.from("payments").update({ status: "failed" }).eq("id", payment.id);
+    }
+
+    return c.json({ received: true });
+  } catch (err: any) {
+    console.error("[Webhook] Error:", err?.message ?? err);
+    return c.json({ error: "Internal error" }, 500);
+  }
 });
 
 // ════════════════════════════════════════════════════════════════════════
@@ -283,15 +494,20 @@ payments.post("/test-complete", authMiddleware, async (c) => {
     return c.json({ error: "order_id wajib diisi" }, 400);
   }
 
-  // Cari payment record berdasarkan order_id
+  // Cari payment record berdasarkan order_id (serta plan & cycle yang dibayar)
   const { data: payment, error: paymentErr } = await supabase
     .from("payments")
-    .select("*")
+    .select("id, user_id, status, plan_name, billing_cycle")
     .eq("order_id", order_id)
     .maybeSingle();
 
   if (paymentErr) return dbErrorResponse(c, paymentErr);
-  if (!payment) return c.json({ error: "Payment tidak ditemukan" }, 404);
+  if (!payment) {
+    return c.json(
+      { error: "Payment tidak ditemukan. Coba checkout ulang — transaksi lama gagal tercatat di server." },
+      404,
+    );
+  }
 
   // Cek apakah payment sudah completed
   if (payment.status === "paid") {
@@ -302,73 +518,22 @@ payments.post("/test-complete", authMiddleware, async (c) => {
     });
   }
 
-  // Update payment status → paid
-  const now = new Date();
-  await supabase
-    .from("payments")
-    .update({ status: "paid", paid_at: now.toISOString() })
-    .eq("id", payment.id);
-
-  // Cek apakah subscription sudah ada
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("user_id", payment.user_id)
-    .maybeSingle();
-
-  let planName = "pro";
-  if (sub) {
-    // Update subscription existing
-    const { data: plan } = await supabase
-      .from("plans")
-      .select("name")
-      .eq("id", sub.plan_id)
-      .single();
-    planName = plan?.name ?? "pro";
-
-    await supabase
-      .from("subscriptions")
-      .update({
-        status: "active",
-        current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
-      })
-      .eq("id", sub.id);
-  } else {
-    // Auto-create subscription baru
-    const { data: plan } = await supabase
-      .from("plans")
-      .select("id, name")
-      .eq("name", "pro")
-      .single();
-
-    if (!plan) {
-      return c.json({ error: "Pro plan tidak ditemukan" }, 500);
-    }
-
-    planName = plan.name;
-
-    await supabase.from("subscriptions").insert({
-      user_id: payment.user_id,
-      plan_id: plan.id,
-      status: "active",
-      billing_cycle: "monthly",
-      current_period_start: new Date().toISOString(),
-      current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
-    });
+  // Aktivasi subscription sesuai plan & billing cycle yang DIBAYAR
+  // (pro monthly = 30 hari, pro yearly = 365 hari, dst.)
+  let activatedPlan: string;
+  try {
+    activatedPlan = (await activateSubscription(payment)).planName;
+  } catch (err: any) {
+    console.error("[test-complete] Aktivasi gagal:", err?.message);
+    return c.json({ error: err?.message ?? "Gagal aktivasi subscription" }, 500);
   }
-
-  // Update subscription_id di payment record
-  await supabase
-    .from("payments")
-    .update({ subscription_id: sub?.id ?? null })
-    .eq("id", payment.id);
 
   return c.json({
     status: "ok",
     message: "Pembayaran simulasi berhasil",
     subscription_status: "active",
-    plan_id: planName,
+    plan_id: activatedPlan,
+    billing_cycle: payment.billing_cycle ?? "monthly",
   });
 });
 
@@ -439,7 +604,7 @@ payments.get("/check-access", authMiddleware, premiumFeatureRateLimit, featureAc
   const planName = sub.plans?.name;
 
   // Ambil features dari plan (JSONB array)
-  const planFeatures: string[] = sub.plans?.features ?? [];
+  const planFeatures: string[] = normalizeFeatures(sub.plans?.features);
 
   // Trial aktif = akses 4 fitur inti: income_statement, balance_sheet, cash_flow, export_pdf
   const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf"];
