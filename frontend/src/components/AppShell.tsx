@@ -29,9 +29,20 @@ export function AppShell({ children }: AppShellProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Sinkronkan mata uang dari database (per-company) ke localStorage.
+  // Sinkronkan mata uang dari database (per-company) ke localStorage —
+  // HANYA saat browser belum punya pilihan sendiri (first load). Pilihan
+  // eksplisit user JANGAN PERNAH ditimpa di sini, kalau tidak setiap
+  // remount AppShell (mis. setelah ganti currency di Settings) akan
+  // mengembalikan tampilan ke currency lama di DB (bug "revert sendiri").
   useEffect(() => {
     let cancelled = false;
+    let hasLocalChoice = false;
+    try {
+      hasLocalChoice = localStorage.getItem("currency") !== null;
+    } catch {
+      // localStorage tidak tersedia — perlakukan seperti belum ada pilihan.
+    }
+    if (hasLocalChoice) return;
     getMyCompany()
       .then((company) => {
         if (cancelled) return;

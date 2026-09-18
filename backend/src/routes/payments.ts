@@ -746,12 +746,14 @@ payments.get("/check-access", authMiddleware, premiumFeatureRateLimit, featureAc
 
   // Tentukan required_plan untuk response
   // Map kanonik plan-minimum per fitur (satu sumber kebenaran, sinkron dengan seed plans).
-  // Trial aktif memberi akses 4 fitur inti laporan, jadi fitur itu tetap "free".
+  // Trial aktif memberi akses 4 fitur inti laporan via trialCoreFeatures di
+  // atas — peta ini hanya dipakai saat akses DITOLAK, jadi isinya plan
+  // berbayar yang sebenarnya dibutuhkan (pro untuk laporan & export PDF).
   const FEATURE_MIN_PLAN: Record<string, string> = {
-    income_statement: "free",
-    balance_sheet: "free",
-    cash_flow: "free",
-    export_pdf: "free",
+    income_statement: "pro",
+    balance_sheet: "pro",
+    cash_flow: "pro",
+    export_pdf: "pro",
     multi_company: "pro",
     ai_cfo: "pro",
     priority_support: "pro",

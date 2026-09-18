@@ -545,17 +545,24 @@ journal.put("/:id", validateBody(journalEntryUpdateSchema), requireRole("owner",
     }
   }
 
-  // Ambil subscription user untuk cek quota (khusus plan Free)
+  // Ambil subscription user yang sedang bertindak untuk cek quota.
+  // (Dulu salah: filter user_id pakai company_id sehingga quota tidak pernah
+  // ketemu untuk user biasa; hitungan juga hanya draft padahal saat create
+  // draft+posted dihitung — sekarang disamakan.)
+  const { sub: actorId } = c.get("user");
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("*, plans(max_journals)")
-    .eq("user_id", company_id)
+    .select("plans(max_journals)")
+    .eq("user_id", actorId)
     .maybeSingle();
 
   // Cek quota jurnal jika plan Free dan entry_date berubah ke bulan berbeda
   // atau lines ditambah (bisa melebihi kuota)
-  if (sub && sub.plans?.max_journals !== null) {
-    const maxJournals = sub.plans.max_journals;
+  const subPlans = Array.isArray((sub as any)?.plans)
+    ? (sub as any).plans[0]
+    : (sub as any)?.plans;
+  const maxJournals = subPlans?.max_journals;
+  if (maxJournals && maxJournals > 0) {
     const isDateChanged = entry_date && new Date(entry_date).getMonth() !== new Date(existing.entry_date).getMonth();
     const isLinesAdded = lines && lines.length > (existing.journal_entry_lines?.length ?? 0);
 
@@ -564,15 +571,19 @@ journal.put("/:id", validateBody(journalEntryUpdateSchema), requireRole("owner",
       const targetDate = entry_date ? new Date(entry_date) : new Date(existing.entry_date);
       const targetYear = targetDate.getFullYear();
       const targetMonth = targetDate.getMonth() + 1;
+      const startDate = `${targetYear}-${String(targetMonth).padStart(2, "0")}-01`;
+      const nextYear = targetMonth === 12 ? targetYear + 1 : targetYear;
+      const nextMonthNum = targetMonth === 12 ? 1 : targetMonth + 1;
+      const endDate = `${nextYear}-${String(nextMonthNum).padStart(2, "0")}-01`;
 
+      // Samakan dengan create: draft + posted dihitung, soft-delete tidak.
       const { count } = await supabase
         .from("journal_entries")
         .select("id", { count: "exact", head: true })
         .eq("company_id", company_id)
-        .eq("status", "draft") // hanya draft yang dihitung quota
-        .eq("deleted_at", null)
-        .gte("entry_date", `${targetYear}-${String(targetMonth).padStart(2, "0")}-01`)
-        .lt("entry_date", `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-01`);
+        .is("deleted_at", null)
+        .gte("entry_date", startDate)
+        .lt("entry_date", endDate);
 
       if ((count ?? 0) >= maxJournals) {
         return c.json(

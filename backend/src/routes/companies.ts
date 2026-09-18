@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const companies = new Hono();
 
@@ -57,9 +57,8 @@ const SUPPORTED_CURRENCIES = [
 ];
 
 // PATCH /api/companies/currency — simpan mata uang default company.
-// Disimpan per-company di database, bukan per-browser, sehingga konsisten
-// di semua perangkat anggota company.
-companies.patch("/currency", async (c) => {
+// Hanya owner (berlaku untuk semua anggota company, jadi akuntan tidak boleh).
+companies.patch("/currency", requireRole("owner"), async (c) => {
   const user = c.get("user");
   const { currency } = await c.req.json();
 

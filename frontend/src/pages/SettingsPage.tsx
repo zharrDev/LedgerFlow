@@ -4,6 +4,7 @@ import { motion, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
 
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
@@ -50,8 +51,12 @@ type CurrencyOption = (typeof CURRENCIES)[number]["code"];
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { language } = useLanguage();
   const [saved, setSaved] = useState(false);
+  // Hanya owner yang boleh mengubah mata uang default company (backend
+  // PATCH /companies/currency juga dijaga requireRole("owner")).
+  const isOwner = user?.role === "owner";
 
   // Subscription
   const {
@@ -117,6 +122,28 @@ export default function SettingsPage() {
     }
   };
 
+  // Ganti mata uang: terapkan langsung ke tampilan + simpan ke database
+  // (berlaku untuk semua anggota company). Kalau PATCH gagal, kembalikan
+  // pilihan semula + toast error — JANGAN biarkan local & DB berbeda, karena
+  // AppShell akan menimpa tampilan dengan nilai DB saat remount berikutnya.
+  const handleCurrencyChange = async (next: CurrencyOption) => {
+    if (next === currency) return;
+    const previous = currency;
+    setCurrency(next);
+    persistCurrency(next);
+    try {
+      await updateCompanyCurrency(next);
+    } catch (err) {
+      setCurrency(previous);
+      persistCurrency(previous);
+      toast({
+        variant: "error",
+        title: tx(language, "Failed to save currency", "Gagal menyimpan mata uang"),
+        message: getErrorMessage(err),
+      });
+    }
+  };
+
   const handleSave = async () => {
     setSaved(true);
     toast({
@@ -126,15 +153,9 @@ export default function SettingsPage() {
     });
     setTimeout(() => setSaved(false), 2000);
 
-    // Mata uang disimpan ke database (berlaku untuk semua anggota company)
-    // + localStorage (untuk tampilan langsung). CATATAN: setCurrency di sini
-    // adalah state setter, jadi localStorage ditulis eksplisit via persistCurrency.
+    // Mata uang sudah disimpan ke DB saat dropdown diganti
+    // (handleCurrencyChange); di sini cukup pastikan localStorage sinkron.
     persistCurrency(currency);
-    try {
-      await updateCompanyCurrency(currency);
-    } catch {
-      // Simpan lokal tetap jalan; sinkron DB gagal tidak memblokir UI.
-    }
     localStorage.setItem("notifications", JSON.stringify(notifications));
   };
 
@@ -414,16 +435,17 @@ export default function SettingsPage() {
             </label>
             <HoverDropdown
               value={currency}
-              onChange={(v) => {
-                const next = v as CurrencyOption;
-                setCurrency(next);
-                // Terapkan langsung ke tampilan (tanpa menunggu Save).
-                persistCurrency(next);
-              }}
+              onChange={(v) => void handleCurrencyChange(v as CurrencyOption)}
               fullWidth
               minWidth={240}
+              disabled={!isOwner}
               options={CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
             />
+            {!isOwner && (
+              <p className="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                {tx(language, "Only the owner can change the company's default currency.", "Hanya owner yang dapat mengubah mata uang default perusahaan.")}
+              </p>
+            )}
             <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
               {tx(language, "This currency is used to display all numbers in the app (journal, ledger, reports, dashboard) and export results. Amounts are stored in IDR and converted for display.", "Mata uang ini dipakai untuk menampilkan semua angka di aplikasi (jurnal, buku besar, laporan, dashboard) dan hasil export. Nominal tersimpan dalam IDR dan dikonversi untuk tampilan.")}
             </p>
