@@ -17,3 +17,14 @@ verify-*.png
 boundary-*.png
 check-*.png
 backend-dev.log
+
+# direktori tooling/AI lokal (tidak ikut repo)
+.claude/
+.kilo/
+.cache/
+.commandcode/
+
+# dokumen internal & perencanaan (tidak ikut repo)
+plans/
+KETENTUAN UMUM PEMBUATAN PROJEKAN S1.md
+laporan-audit-ledgerflow.txt

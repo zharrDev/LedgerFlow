@@ -665,4 +665,21 @@ CREATE INDEX IF NOT EXISTS idx_accounts_company_active
 --      1:M companies→accounts/periods/journal_entries, M:1 kebalikannya,
 --      M:M users↔companies via company_members.
 
+-- ============================================================================
+-- 19. MANUAL FIX — JALANKAN DI SUPABASE SQL EDITOR (blok ini saja, Run)
+-- Perbaikan bug "POST /api/journal 500 permission denied for table
+-- journal_counters": DB yang dibuat SEBELUM baris GRANT §6 (baris 263)
+-- ditambahkan tidak punya hak service_role di tabel journal_counters,
+-- sehingga RPC create_journal_entry gagal dan form tambah jurnal mati total.
+-- Idempoten — aman dijalankan berulang kali.
+-- ============================================================================
+GRANT ALL PRIVILEGES ON TABLE public.journal_counters TO service_role;
+GRANT EXECUTE ON FUNCTION create_journal_entry(UUID, UUID, UUID, DATE, TEXT, TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION replace_journal_entry_lines(UUID, JSONB) TO service_role;
+
+-- Verifikasi (harus 1 baris berisi service_role = {....., INSERT, ...}):
+--   SELECT grantee, privilege_type FROM information_schema.role_table_grants
+--   WHERE table_name = 'journal_counters' AND grantee = 'service_role';
+
+
 
