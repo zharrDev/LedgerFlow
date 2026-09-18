@@ -86,7 +86,9 @@ adminGate.post("/verify", async (c) => {
 
   // 1. Blokir bila sudah terkena rate limit
   if (isBlocked(ip)) {
-    await writeAuditLog(ip, "blocked");
+    // Audit log fire-and-forget: logging TIDAK boleh menambah latensi jalur
+    // verifikasi (1 round-trip Supabase ≈ 100-300ms per panggilan).
+    writeAuditLog(ip, "blocked").catch(console.error);
     return c.json(
       { error: "Terlalu banyak percobaan. Coba lagi beberapa saat lagi." },
       429,
@@ -111,7 +113,7 @@ adminGate.post("/verify", async (c) => {
   // 3. Hash wajib dikonfigurasi di env — tanpa itu, tidak ada yang bisa lolos
   const hash = process.env.ADMIN_GATE_PASSWORD_HASH;
   if (!hash) {
-    await writeAuditLog(ip, "failed");
+    writeAuditLog(ip, "failed").catch(console.error);
     return c.json({ error: "Password salah" }, 401);
   }
 
@@ -119,7 +121,7 @@ adminGate.post("/verify", async (c) => {
   const match = await bcrypt.compare(password, hash);
   if (!match) {
     const justBlocked = recordFail(ip);
-    await writeAuditLog(ip, justBlocked ? "blocked" : "failed");
+    writeAuditLog(ip, justBlocked ? "blocked" : "failed").catch(console.error);
     if (justBlocked) {
       return c.json(
         { error: "Terlalu banyak percobaan. Coba lagi beberapa saat lagi." },
@@ -131,7 +133,9 @@ adminGate.post("/verify", async (c) => {
 
   // 5. Sukses → reset percobaan & kirim token admin-gate
   clearFails(ip);
-  await writeAuditLog(ip, "success");
+  // Fire-and-forget: token dikirim SEKARANG, audit log menyusul di latar —
+  // verifikasi terasa instan (hemat 1 round-trip DB di jalur kritikal).
+  writeAuditLog(ip, "success").catch(console.error);
   const token = await signAdminGateToken();
   return c.json({ token, expires_in: ADMIN_GATE_TTL_SECONDS });
 });

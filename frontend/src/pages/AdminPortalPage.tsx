@@ -364,7 +364,7 @@ export default function AdminPortalPage() {
                     {active && (
                       <motion.span
                         layoutId="admin-nav-pill"
-                        className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-l-xl rounded-r-none bg-white dark:bg-[#111C33] shadow-sm"
+                        className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-xl bg-white dark:bg-[#111C33] shadow-sm"
                         transition={{ type: "spring", stiffness: 300, damping: 35 }}
                       />
                     )}

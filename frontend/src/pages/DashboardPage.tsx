@@ -301,7 +301,7 @@ export default function DashboardPage() {
             <div className="h-[3px] w-full bg-gradient-to-r from-primary-500 via-cyan-400/80 to-emerald-400" />
           </div>
 
-          {/* Desktop owl — pops out above panel top, dengan glow lembut */}
+          {/* Desktop owl — pops out above panel top, float lembut + glow */}
           <div className="hidden lg:block absolute -top-14 lg:-top-16 right-10 xl:right-14 z-10">
             <div className="relative">
               <div
@@ -313,7 +313,13 @@ export default function DashboardPage() {
                     "radial-gradient(ellipse at center, black 40%, transparent 72%)",
                 }}
               />
-              <GreetingOwl size="h-40 lg:h-48" />
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                className="drop-shadow-[0_18px_32px_rgba(8,145,178,0.35)]"
+              >
+                <GreetingOwl size="h-40 lg:h-48" />
+              </motion.div>
             </div>
           </div>
         </motion.div>
