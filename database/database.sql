@@ -147,6 +147,9 @@ CREATE TABLE IF NOT EXISTS plans (
   price_yearly  BIGINT NOT NULL DEFAULT 0,
   max_companies INT NOT NULL DEFAULT 1,
   max_journals  INT DEFAULT NULL,
+  -- Limit pesan AI CFO per user per bulan kalender.
+  -- NULL atau <= 0 = tanpa batas; 0 = AI terkunci (fitur 'ai_cfo' juga tak ada di features).
+  max_ai_chats  INT DEFAULT NULL,
   features      JSONB NOT NULL DEFAULT '[]',
   is_active     BOOLEAN NOT NULL DEFAULT true,
   created_at    TIMESTAMPTZ DEFAULT now(),
@@ -155,16 +158,23 @@ CREATE TABLE IF NOT EXISTS plans (
 
 -- Insert default plans
 -- features: JSONB array of snake_case feature keys (machine-readable)
-INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_companies, max_journals, features) VALUES
-  ('free', 'Free', 0, 0, 1, 50, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger"]'::jsonb),
-  ('pro', 'Pro', 99000, 999000, 3, NULL, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "multi_company", "priority_support"]'::jsonb),
-  ('enterprise', 'Enterprise', 299000, 2999000, -1, NULL, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "export_csv", "multi_company", "multi_user", "api_access", "custom_reports", "dedicated_support", "audit_trail", "priority_support"]'::jsonb)
+-- Hak akses per plan:
+--   Free       : CoA, jurnal (kuota 50/bulan), dashboard, buku besar
+--   Pro        : + laporan keuangan, export PDF, multi-company (3),
+--                AI CFO dengan LIMIT 30 pesan/bulan
+--   Enterprise : semua tanpa batas (jurnal, company, AI), + export CSV,
+--                multi-user, API, custom reports, audit trail
+INSERT INTO plans (name, display_name, price_monthly, price_yearly, max_companies, max_journals, max_ai_chats, features) VALUES
+  ('free', 'Free', 0, 0, 1, 50, 0, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger"]'::jsonb),
+  ('pro', 'Pro', 99000, 999000, 3, NULL, 30, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "multi_company", "ai_cfo", "priority_support"]'::jsonb),
+  ('enterprise', 'Enterprise', 299000, 2999000, -1, NULL, NULL, '["chart_of_accounts", "journal_entries", "dashboard", "general_ledger", "income_statement", "balance_sheet", "cash_flow", "export_pdf", "export_csv", "multi_company", "multi_user", "ai_cfo", "api_access", "custom_reports", "dedicated_support", "audit_trail", "priority_support"]'::jsonb)
 ON CONFLICT (name) DO UPDATE SET
   display_name = EXCLUDED.display_name,
   price_monthly = EXCLUDED.price_monthly,
   price_yearly = EXCLUDED.price_yearly,
   max_companies = EXCLUDED.max_companies,
   max_journals = EXCLUDED.max_journals,
+  max_ai_chats = EXCLUDED.max_ai_chats,
   features = EXCLUDED.features;
 
 -- Subscriptions

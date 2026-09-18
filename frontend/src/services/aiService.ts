@@ -8,6 +8,21 @@ export interface AiChatError {
   error: string;
 }
 
+// Sisa kuota AI (dari GET /api/ai/quota). limit null = tanpa batas.
+export interface AiQuota {
+  limit: number | null;
+  used: number | null;
+  left: number | null;
+  plan: string;
+  is_trial?: boolean;
+}
+
+/** Ambil sisa kuota AI bulan ini (untuk banner di halaman AI CFO). */
+export async function fetchAiQuota(): Promise<AiQuota> {
+  const { data } = await api.get<AiQuota>("/api/ai/quota", { skipErrorToast: true });
+  return data;
+}
+
 /** Timeout axios khusus AI — sedikit di atas AI_GRAPH_TIMEOUT_MS backend (95s). */
 export const AI_CHAT_TIMEOUT_MS = 110_000;
 
@@ -22,6 +37,18 @@ export async function sendAiChat(message: string): Promise<string> {
     throw new Error("AI tidak menghasilkan jawaban. Coba lagi.");
   }
   return data.reply;
+}
+
+/**
+ * Ambil alasan penolakan dari backend (mis. "ai_limit_reached",
+ * "upgrade_required") supaya UI bisa membedakan paywall vs error teknis.
+ */
+export function getAiErrorReason(err: unknown): string | null {
+  if (err && typeof err === "object" && "response" in err) {
+    const ax = err as { response?: { data?: { reason?: string } } };
+    return ax.response?.data?.reason ?? null;
+  }
+  return null;
 }
 
 /** Ekstrak pesan error yang jelas dari response axios. */

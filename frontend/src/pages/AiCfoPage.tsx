@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bot, MessageSquarePlus, PanelLeft } from "lucide-react";
+import { ArrowLeft, Bot, MessageSquarePlus, PanelLeft, Sparkles } from "lucide-react";
 import { useSetAppShellConfig } from "../context/AppShellConfigContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { tx } from "../i18n/tx";
@@ -13,7 +13,7 @@ import { AiCfoWelcome } from "../components/ai/AiCfoWelcome";
 import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { getAiErrorMessage, sendAiChat } from "../services/aiService";
+import { fetchAiQuota, getAiErrorMessage, sendAiChat, type AiQuota } from "../services/aiService";
 import {
   createSession,
   loadAiCfoSessions,
@@ -41,6 +41,10 @@ export default function AiCfoPage() {
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Kuota AI bulan ini (Pro): limit null = tanpa batas (trial/enterprise).
+  const [quota, setQuota] = useState<AiQuota | null>(null);
+  // True bila backend menolak chat karena limit habis (403 ai_limit_reached).
+  const [limitReached, setLimitReached] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(() =>
     typeof window !== "undefined"
@@ -51,6 +55,13 @@ export default function AiCfoPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const shouldAutoScroll = useRef(true);
+
+  // Muat kuota AI sekali saat halaman dibuka (banner sisa limit Pro).
+  useEffect(() => {
+    fetchAiQuota()
+      .then(setQuota)
+      .catch(() => setQuota(null));
+  }, []);
 
   useEffect(() => {
     if (!userId || !companyId) {
@@ -197,7 +208,19 @@ export default function AiCfoPage() {
         ];
         setMessages(withReply);
         saveSession(sessionId, withReply);
+        // Kuota Pro berkurang — optimistik, sinkron ulang di belakang.
+        setQuota((q) =>
+          q?.limit && q.left !== null
+            ? { ...q, left: Math.max(0, q.left - 1), used: (q.used ?? 0) + 1 }
+            : q,
+        );
+        setLimitReached(false);
       } catch (err) {
+        // Limit habis → tampilkan paywall upgrade Enterprise, bukan error biasa.
+        if (getAiErrorReason(err) === "ai_limit_reached") {
+          setLimitReached(true);
+          fetchAiQuota().then(setQuota).catch(() => {});
+        }
         const withError: AiChatMessage[] = [
           ...withUser,
           {
@@ -312,6 +335,22 @@ export default function AiCfoPage() {
                     : tx(language, "New conversation", "Percakapan baru")}
                 </p>
               </div>
+              {/* Banner kuota — hanya untuk plan berlimit (Pro). Trial &
+                  Enterprise (limit null) tidak menampilkan apa pun. */}
+              {quota && quota.limit !== null && (
+                <span
+                  className={`hidden sm:inline-flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium tabular-nums ring-1 ${
+                    (quota.left ?? 0) <= 0
+                      ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 ring-rose-500/20"
+                      : (quota.left ?? 0) <= 5
+                        ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 ring-amber-500/20"
+                        : "bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-300 ring-primary-500/20"
+                  }`}
+                >
+                  <Sparkles size={12} />
+                  {(quota.left ?? 0)}/{quota.limit}
+                </span>
+              )}
             </div>
 
             <div
@@ -340,13 +379,41 @@ export default function AiCfoPage() {
               )}
             </div>
 
-            <AiCfoChatComposer
-              input={input}
-              loading={loading}
-              onInputChange={setInput}
-              onSubmit={() => void sendMessage(input)}
-              inputRef={inputRef}
-            />
+            {limitReached ? (
+              // Paywall: kuota Pro habis — arahkan upgrade Enterprise
+              <div className="shrink-0 mx-3 sm:mx-4 mb-3 rounded-xl border border-amber-300/60 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3.5">
+                <div className="flex items-start gap-3">
+                  <Sparkles size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                      {tx(language, "AI quota for this month is used up", "Kuota AI bulan ini sudah habis")}
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300/80 mt-0.5">
+                      {tx(
+                        language,
+                        "Upgrade to Enterprise for unlimited AI, or wait for the reset at the start of next month.",
+                        "Upgrade ke Enterprise untuk AI tanpa batas, atau tunggu reset awal bulan depan.",
+                      )}
+                    </p>
+                  </div>
+                  <Link
+                    to="/pricing"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                  >
+                    <Sparkles size={13} />
+                    {tx(language, "Upgrade", "Upgrade")}
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <AiCfoChatComposer
+                input={input}
+                loading={loading}
+                onInputChange={setInput}
+                onSubmit={() => void sendMessage(input)}
+                inputRef={inputRef}
+              />
+            )}
 </div>
         </div>
       </div>

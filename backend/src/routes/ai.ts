@@ -5,6 +5,7 @@ import { dbErrorResponse } from "../lib/errors.js";
 import { createAIGraph } from "../ai/graph/graph.js";
 import { AI_GRAPH_TIMEOUT_MS } from "../ai/models/provider.js";
 import { supabase } from "../lib/supabase.js";
+import { getPlanContext, getAiUsageThisMonth, recordAiUsage } from "../lib/planUsage.js";
 
 const ai = new Hono();
 
@@ -37,15 +38,60 @@ async function requireAIAccess(c: any) {
   const planName = sub.plans?.name;
   const AI_PLANS = ["pro", "enterprise"];
   const hasAccess = isTrialActive || AI_PLANS.includes(planName);
+  // Free → paywall (trial tetap boleh)
   if (!hasAccess) {
     return c.json(
-      { error: "Forbidden — upgrade required", required_plan: "pro" },
+      { error: "Forbidden — upgrade required", required_plan: "pro", reason: "upgrade_required" },
       403,
     );
   }
 
+  // ── Limit AI untuk Pro: max_ai_chats per user per bulan kalender ──
+  // Enterprise (NULL/<=0) = tanpa batas. Trial = bebas limit (masih
+  // mencoba produk). Hitungan dari ai_usage_logs; gagal baca = 0 (fail-open).
+  const plan = await getPlanContext(userId);
+  const aiLimit = plan?.maxAiChats ?? null;
+  if (!isTrialActive && plan?.isActive && aiLimit && aiLimit > 0) {
+    const { used } = await getAiUsageThisMonth(userId);
+    if (used >= aiLimit) {
+      return c.json(
+        {
+          error: `Kuota AI bulan ini sudah habis (${aiLimit} pesan untuk plan Pro). Upgrade ke Enterprise untuk tanpa batas, atau tunggu reset awal bulan depan.`,
+          reason: "ai_limit_reached",
+          required_plan: "enterprise",
+          limit: aiLimit,
+          used,
+        },
+        403,
+      );
+    }
+    // Sisa kuota diberikan ke response + header (frontend bisa tampil di banner).
+    c.header("X-AI-Quota-Remaining", String(aiLimit - used - 1));
+    c.header("X-AI-Quota-Limit", String(aiLimit));
+  }
+
   return null;
 }
+
+// GET /api/ai/quota — sisa kuota AI bulan ini (banner halaman AI CFO).
+// Pro: limit & sisa pesan. Enterprise: null = tanpa batas. Free: limit 0.
+ai.get("/quota", async (c) => {
+  const userId = c.get("user").sub;
+  const plan = await getPlanContext(userId);
+
+  if (!plan?.isActive) {
+    return c.json({ limit: 0, used: 0, left: 0, plan: plan?.planName ?? "free" });
+  }
+
+  const limit = plan.maxAiChats;
+  if (plan.isTrial || !limit || limit <= 0) {
+    // Trial & Enterprise: tanpa batas terukur
+    return c.json({ limit: null, used: null, left: null, plan: plan.planName, is_trial: plan.isTrial });
+  }
+
+  const { used } = await getAiUsageThisMonth(userId);
+  return c.json({ limit, used, left: Math.max(0, limit - used), plan: plan.planName });
+});
 
 // POST /api/ai/chat
 // Tanya AI CFO. companyId SELALU dari JWT — tidak pernah dari body.
@@ -96,6 +142,10 @@ ai.post("/chat", async (c) => {
     }
 
     const content = last.content;
+    // Kuota Pro berkurang hanya untuk chat yang SUKSES — gagal model/timeout
+    // tidak mengurangi kuota user.
+    const actor = c.get("user");
+    recordAiUsage(actor.sub, actor.company_id ?? null);
     return c.json({ reply: typeof content === "string" ? content : JSON.stringify(content) });
   } catch (err: any) {
     const status = err?.status ?? err?.statusCode;
