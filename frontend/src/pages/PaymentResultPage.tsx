@@ -10,7 +10,7 @@
 //         icon animasi bounce-in, gradient glow, staggered content
 // ============================================================================
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -32,7 +32,7 @@ import {
 import { testComplete, isSandboxMode } from "../services/paymentService";
 import { api } from "../lib/api";
 import { getErrorMessage } from "../lib/errorMessage";
-import { refreshSubscription } from "../hooks/useSubscription";
+import { refreshSubscription, useSubscription } from "../hooks/useSubscription";
 import { syncPaymentStatus } from "../services/paymentService";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ const RESULT_CONFIG: Record<
   success: {
     icon: CheckCircle2,
     title: "Pembayaran Berhasil",
-    subtitle: "Upgrade aktif! Selamat menikmati fitur premium 🎉",
+    subtitle: "Upgrade aktif! Selamat menikmati fitur premium",
     description:
       "Subscription Anda sudah aktif. Semua fitur premium LedgerFlow sekarang bisa Anda gunakan.",
     gradient: "from-emerald-500 to-teal-400",
@@ -135,31 +135,114 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
     null,
   );
 
-  // Saat halaman result dibuka: (1) tanyakan status terkini ke Midtrans —
+  // ─── Polling & timer status pembayaran ────────────────────────────
+  const checkInFlight = useRef(false);
+  const [checkingNow, setCheckingNow] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [prefersReducedMotion] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  // Satu pintu cek status: dipakai saat mount, interval otomatis, dan tombol
+  // "Cek Sekarang". Return true bila pembayaran baru saja aktif.
+  const checkStatus = useCallback(async () => {
+    if (!orderId || checkInFlight.current) return false;
+    checkInFlight.current = true;
+    setCheckingNow(true);
+    try {
+      const res = await syncPaymentStatus(orderId);
+      setLastCheckedAt(new Date());
+      if (res.activated) {
+        // Reload cache supaya seluruh app tahu plan sudah naik
+        await refreshSubscription().catch(() => {});
+        navigate("/payment/success?order_id=" + orderId, { replace: true });
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      checkInFlight.current = false;
+      setCheckingNow(false);
+    }
+  }, [orderId, navigate]);
+
+  // Saat halaman result dibuka: tanyakan status terkini ke Midtrans —
   // bila ternyata sudah dibayar tapi webhook belum masuk, subscription
-  // langsung diaktifkan di sini (failsafe); (2) refresh cache subscription
-  // agar badge plan / paywall langsung mencerminkan plan baru.
+  // langsung diaktifkan di sini (failsafe).
   useEffect(() => {
     if (!orderId) return;
-    syncPaymentStatus(orderId)
-      .then(async (res) => {
-        if (res.activated) {
-          // Reload cache supaya seluruh app tahu plan sudah naik
-          await refreshSubscription().catch(() => {});
-          if (type !== "success") {
-            navigate("/payment/success?order_id=" + orderId, { replace: true });
-          }
-        }
-      })
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId]);
+    void checkStatus();
+  }, [orderId, checkStatus]);
+
+  // Pending: cek otomatis tiap 8 detik sampai pembayaran aktif.
+  useEffect(() => {
+    if (type !== "pending" || !orderId) return;
+    const id = window.setInterval(() => {
+      void checkStatus();
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [type, orderId, checkStatus]);
+
+  // Pending: penghitung waktu tunggu.
+  useEffect(() => {
+    if (type !== "pending") return;
+    const id = window.setInterval(() => {
+      setElapsedSec((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [type]);
 
   useEffect(() => {
     isSandboxMode()
       .then(setIsSandbox)
       .catch(() => setIsSandbox(false));
   }, []);
+
+  // Plan aktif dari subscription (untuk highlight dinamis di success).
+  const { subscription } = useSubscription();
+  const activePlanKey = (subscription?.plans?.name || "").toLowerCase();
+  const isEnterprisePlan = activePlanKey === "enterprise";
+  const activePlanLabel =
+    subscription?.plans?.display_name ||
+    (isEnterprisePlan ? "Enterprise" : "Pro");
+
+  const successTiles = isEnterprisePlan
+    ? [
+        { icon: Crown, label: "Enterprise Aktif", color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
+        { icon: ShieldCheck, label: "Semua Laporan", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+        { icon: Sparkles, label: "AI CFO Unlimited", color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
+      ]
+    : [
+        { icon: Crown, label: `${activePlanLabel} Aktif`, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
+        { icon: ShieldCheck, label: "Semua Laporan", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+        { icon: Sparkles, label: "Export PDF", color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
+      ];
+
+  // Confetti ringan (FR-only, tanpa dependensi baru).
+  const confettiPieces = useMemo(() => {
+    if (type !== "success" || prefersReducedMotion) return [];
+    const colors = ["#10b981", "#14b8a6", "#f59e0b", "#3b82f6", "#a78bfa"];
+    return Array.from({ length: 28 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 0.7,
+      duration: 2.4 + Math.random() * 1.4,
+      size: 6 + Math.random() * 6,
+      color: colors[i % colors.length],
+      drift: (Math.random() - 0.5) * 140,
+      round: Math.random() > 0.5,
+    }));
+  }, [type, prefersReducedMotion]);
+
+  const fmtClock = (d: Date) =>
+    d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const fmtElapsed = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   const handleForceComplete = async () => {
     if (!orderId) return;
@@ -222,7 +305,28 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-darkBg dark:via-gray-900 dark:to-darkBg flex items-center justify-center px-4 sm:px-6 py-8">
+    <div className="relative min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-darkBg dark:via-gray-900 dark:to-darkBg flex items-center justify-center px-4 sm:px-6 py-8 overflow-hidden">
+      {/* ═══ Confetti selebrasi (success saja) ═══════════════════════ */}
+      {confettiPieces.length > 0 && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          {confettiPieces.map((p) => (
+            <motion.span
+              key={p.id}
+              initial={{ x: 0, y: -24, opacity: 1, rotate: 0 }}
+              animate={{ x: p.drift, y: 480, opacity: [1, 1, 0], rotate: 360 }}
+              transition={{ duration: p.duration, delay: p.delay, ease: "easeIn" }}
+              className="absolute top-0"
+              style={{
+                left: `${p.left}%`,
+                width: p.size,
+                height: p.size * (p.round ? 1 : 0.5),
+                backgroundColor: p.color,
+                borderRadius: p.round ? "50%" : "2px",
+              }}
+            />
+          ))}
+        </div>
+      )}
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -271,11 +375,38 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                 }}
                 className={`absolute inset-0 rounded-full ${config.glowColor} ring-4 ${config.ringColor}`}
               />
-              {/* Icon circle */}
+              {/* Icon circle — success: animasi centang "draw" */}
               <div
                 className={`relative w-20 h-20 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg`}
               >
-                <Icon className="w-10 h-10 text-white" strokeWidth={2.5} />
+                {type === "success" && !prefersReducedMotion ? (
+                  <motion.svg viewBox="0 0 52 52" className="w-10 h-10" aria-hidden="true">
+                    <motion.circle
+                      cx="26"
+                      cy="26"
+                      r="24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth={2.5}
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                    />
+                    <motion.path
+                      d="M14 27l8 8 16-16"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth={3.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ delay: 0.5, duration: 0.4, ease: "easeOut" }}
+                    />
+                  </motion.svg>
+                ) : (
+                  <Icon className="w-10 h-10 text-white" strokeWidth={2.5} />
+                )}
               </div>
             </motion.div>
 
@@ -303,7 +434,7 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
               {config.description}
             </motion.p>
 
-            {/* ─── Success: Feature highlights ────────────────────── */}
+            {/* ─── Success: Feature highlights (dinamis ikut plan aktif) ── */}
             <AnimatePresence>
               {type === "success" && (
                 <motion.div
@@ -313,30 +444,11 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                   transition={{ delay: 0.5, duration: 0.4 }}
                   className="mt-6 grid grid-cols-3 sm:gap-2.5 gap-2"
                 >
-                  {[
-                    {
-                      icon: Crown,
-                      label: "Pro Aktif",
-                      color: "text-blue-500",
-                      bg: "bg-blue-50 dark:bg-blue-900/20",
-                    },
-                    {
-                      icon: ShieldCheck,
-                      label: "Semua Laporan",
-                      color: "text-emerald-500",
-                      bg: "bg-emerald-50 dark:bg-emerald-900/20",
-                    },
-                    {
-                      icon: Sparkles,
-                      label: "Export PDF",
-                      color: "text-purple-500",
-                      bg: "bg-purple-50 dark:bg-purple-900/20",
-                    },
-                  ].map((item, i) => {
+                  {successTiles.map((item, i) => {
                     const ItemIcon = item.icon;
                     return (
                       <motion.div
-                        key={i}
+                        key={item.label}
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 + i * 0.08 }}
@@ -369,6 +481,78 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                 </span>
               </motion.div>
             )}
+
+            {/* ─── Pending: status live + timeline langkah ──────────── */}
+            <AnimatePresence>
+              {type === "pending" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.45 }}
+                  className="mt-5 p-4 rounded-2xl border border-amber-200/60 dark:border-amber-800/30 bg-amber-50/60 dark:bg-amber-900/10 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                    </span>
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      Mengecek status otomatis tiap 8 detik
+                    </span>
+                    <span className="ml-auto text-xs font-mono text-amber-600/80 dark:text-amber-400/70 tabular-nums">
+                      {fmtElapsed(elapsedSec)}
+                    </span>
+                  </div>
+                  {lastCheckedAt && (
+                    <p className="mt-1.5 text-[11px] text-amber-600/70 dark:text-amber-400/60">
+                      Terakhir dicek {fmtClock(lastCheckedAt)} — halaman akan
+                      pindah otomatis begitu pembayaran terkonfirmasi.
+                    </p>
+                  )}
+                  <ol className="mt-3 space-y-2.5">
+                    {[
+                      { label: "Pesanan dibuat", state: "done" as const },
+                      { label: "Konfirmasi pembayaran", state: "active" as const },
+                      { label: "Subscription aktif", state: "todo" as const },
+                    ].map((step, i) => (
+                      <li key={step.label} className="flex items-start gap-2.5">
+                        <span className="flex flex-col items-center">
+                          <span
+                            className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                              step.state === "done"
+                                ? "bg-emerald-500 text-white"
+                                : step.state === "active"
+                                  ? "bg-amber-500 text-white"
+                                  : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                            }`}
+                          >
+                            {step.state === "done" ? "✓" : i + 1}
+                          </span>
+                          {i < 2 && (
+                            <span
+                              className={`mt-1 w-0.5 h-3 rounded ${
+                                step.state === "done"
+                                  ? "bg-emerald-400"
+                                  : "bg-gray-200 dark:bg-gray-700"
+                              }`}
+                            />
+                          )}
+                        </span>
+                        <span
+                          className={`text-xs pt-0.5 ${
+                            step.state === "todo"
+                              ? "text-gray-400 dark:text-gray-500"
+                              : "font-medium text-gray-700 dark:text-gray-200"
+                          }`}
+                        >
+                          {step.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* ═══ Sandbox: Force Complete Card ═════════════════════ */}
             <AnimatePresence>
@@ -488,14 +672,16 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
             >
               {/* ─── Success buttons ─────────────────────────────── */}
               {type === "success" && (
-                <Link
-                  to="/dashboard"
-                  className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all`}
-                >
-                  <Home size={16} />
-                  Ke Dashboard
-                  <ArrowRight size={16} />
-                </Link>
+                <>
+                  <Link
+                    to="/dashboard"
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all`}
+                  >
+                    <Home size={16} />
+                    Ke Dashboard
+                    <ArrowRight size={16} />
+                  </Link>
+                </>
               )}
 
               {/* ─── Pending buttons ─────────────────────────────── */}
@@ -509,11 +695,21 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                     Ke Dashboard
                   </Link>
                   <button
-                    onClick={() => window.location.reload()}
-                    className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all`}
+                    onClick={() => void checkStatus()}
+                    disabled={checkingNow}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r ${config.gradient} text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
-                    <RefreshCw size={16} />
-                    Cek Status
+                    {checkingNow ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Mengecek...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={16} />
+                        Cek Sekarang
+                      </>
+                    )}
                   </button>
                 </>
               )}
@@ -538,6 +734,28 @@ export default function PaymentResultPage({ type }: PaymentResultPageProps) {
                 </>
               )}
             </motion.div>
+
+            {/* ─── Success: jelajahi fitur yang baru terbuka ─────────── */}
+            {type === "success" && (
+              <motion.div
+                variants={itemVariants}
+                className="mt-2.5 flex items-center justify-center gap-4 text-sm"
+              >
+                <Link
+                  to="/income-statement"
+                  className="text-primary-600 dark:text-primary-400 font-medium hover:underline"
+                >
+                  Lihat Laba Rugi
+                </Link>
+                <span className="text-gray-300 dark:text-gray-600">•</span>
+                <Link
+                  to="/ai-cfo"
+                  className="text-primary-600 dark:text-primary-400 font-medium hover:underline"
+                >
+                  Coba AI CFO
+                </Link>
+              </motion.div>
+            )}
           </div>
         </motion.div>
 
