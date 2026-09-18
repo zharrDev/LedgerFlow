@@ -179,37 +179,52 @@ export default function AdminPortalPage() {
     if (!hasToken) return;
     setRefreshing(true);
     setError("");
-    try {
-      const [logData, userData, companyData, overviewData, subData, payData, planData] =
-        await Promise.all([
-          fetchAdminGateLogs(),
-          fetchAdminGateUsers(),
-          fetchAdminGateCompanies(),
-          fetchAdminGateOverview(),
-          fetchAdminGateSubscriptions(),
-          fetchAdminGatePayments(),
-          fetchAdminGatePlans(),
-        ]);
-      setLogs(logData);
-      setUsers(userData);
-      setCompanies(companyData);
-      setOverview(overviewData);
-      setSubscriptions(subData);
-      setPayments(payData);
-      setPlans(planData);
-    } catch (err: any) {
+    const handleAuthError = (err: any) => {
       if (err?.response?.status === 401) {
         logoutAdminGate();
         navigate("/portal-akses", { replace: true });
-        return;
+        return true;
       }
+      return false;
+    };
+    try {
+      // Progressive loading: data kritis (Overview + Audit Log) dulu — portal
+      // tampil secepat keduanya siap, tab lain mengisi datanya belakangan.
+      const [logData, overviewData] = await Promise.all([
+        fetchAdminGateLogs(),
+        fetchAdminGateOverview(),
+      ]);
+      setLogs(logData);
+      setOverview(overviewData);
+      setLoading(false);
+
+      Promise.all([
+        fetchAdminGateUsers(),
+        fetchAdminGateCompanies(),
+        fetchAdminGateSubscriptions(),
+        fetchAdminGatePayments(),
+        fetchAdminGatePlans(),
+      ])
+        .then(([userData, companyData, subData, payData, planData]) => {
+          setUsers(userData);
+          setCompanies(companyData);
+          setSubscriptions(subData);
+          setPayments(payData);
+          setPlans(planData);
+        })
+        .catch((err: any) => {
+          if (handleAuthError(err)) return;
+          setError(tx(language, "Failed to load dashboard data.", "Gagal memuat data dashboard."));
+        });
+    } catch (err: any) {
+      if (handleAuthError(err)) return;
+      setLoading(false);
       setError(tx(language, "Failed to load dashboard data.", "Gagal memuat data dashboard."));
       toast({ variant: "error", title: tx(language, "Failed to load data", "Gagal memuat data"), message: tx(language, "Cannot fetch dashboard data. Please reload.", "Tidak bisa mengambil data dashboard. Coba muat ulang.") });
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, [hasToken, navigate, toast]);
+  }, [hasToken, navigate, toast, language]);
 
   useEffect(() => { load(); }, [load]);
 

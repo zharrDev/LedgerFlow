@@ -455,21 +455,26 @@ payments.get("/check-access", authMiddleware, premiumFeatureRateLimit, featureAc
   c.set("featureGranted", hasAccess);
 
   // Tentukan required_plan untuk response
+  // Map kanonik plan-minimum per fitur (satu sumber kebenaran, sinkron dengan seed plans).
+  // Trial aktif memberi akses 4 fitur inti laporan, jadi fitur itu tetap "free".
+  const FEATURE_MIN_PLAN: Record<string, string> = {
+    income_statement: "free",
+    balance_sheet: "free",
+    cash_flow: "free",
+    export_pdf: "free",
+    multi_company: "pro",
+    ai_cfo: "pro",
+    priority_support: "pro",
+    export_csv: "enterprise",
+    multi_user: "enterprise",
+    api_access: "enterprise",
+    custom_reports: "enterprise",
+    dedicated_support: "enterprise",
+    audit_trail: "enterprise",
+  };
   let requiredPlan: string | null = null;
   if (feature && !hasAccess) {
-    // Cari plan minimum yang punya feature ini
-    if (["income_statement", "balance_sheet", "cash_flow", "export_pdf"].includes(feature)) {
-      requiredPlan = "free"; // trial bisa akses
-    } else {
-      // Cari plan minimum yang punya feature ini
-      const { data: plans } = await supabase
-        .from("plans")
-        .select("name")
-        .contains("features", [feature])
-        .order("price_monthly", { ascending: true })
-        .limit(1);
-      requiredPlan = plans?.[0]?.name ?? "pro";
-    }
+    requiredPlan = FEATURE_MIN_PLAN[feature] ?? "pro";
   }
 
   return c.json({

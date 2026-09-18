@@ -44,6 +44,7 @@ const FEATURE_NAMES: Record<string, { en: string; id: string }> = {
   multi_user: { en: "Multi-User & Roles", id: "Multi-Pengguna & Role" },
   api_access: { en: "API Access", id: "Akses API" },
   custom_reports: { en: "Custom Reports", id: "Laporan Kustom" },
+  ai_cfo: { en: "AI CFO Assistant", id: "Asisten AI CFO" },
 };
 
 const PLAN_NAMES: Record<string, string> = {
