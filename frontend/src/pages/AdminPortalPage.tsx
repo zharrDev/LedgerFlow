@@ -370,10 +370,34 @@ export default function AdminPortalPage() {
                         className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-l-xl bg-white dark:bg-[#111C33]"
                         transition={{ type: "spring", stiffness: 300, damping: 35 }}
                       >
-                        {/* Fillet radius terbalik: pil menyatu mulus ke kartu
-                            konten (warna identik), bukan tampak seperti tempelan. */}
-                        <span aria-hidden className="pointer-events-none absolute -top-3 right-0 h-3 w-3 rounded-tl-full bg-white dark:bg-[#111C33]" />
-                        <span aria-hidden className="pointer-events-none absolute -bottom-3 right-0 h-3 w-3 rounded-bl-full bg-white dark:bg-[#111C33]" />
+                        {/* Fillet radius terbalik — lengkung TANGENT (halus,
+                            tanpa sudut mati): lingkaran transparan di sudut luar
+                            kotak, warna konten memenuhi sisanya. Fillet atas
+                            melengkung dari bawah naik menyatu ke konten; fillet
+                            bawah melengkung ke atas. Sebelumnya pakai
+                            rounded-*-full yang menghasilkan blob dengan kinkan
+                            90° di pertemuan garis — itu yang terasa salah. */}
+                        {/* Fillet atas — kotak 12×12 nempel di ATAS pil, tepi
+                            kanannya pas di garis batas sidebar→konten (ujung
+                            kanan pil memang tepat di garis itu). Lingkaran
+                            transparan berpusat di sudut kiri-atas kotak; warna
+                            konten mengisi sisanya. Arc-nya TANGENT di kedua
+                            ujung: menyatu mulus dengan tepi atas pil (horizontal)
+                            lalu naik vertikal menyatu ke garis batas — dari sisi
+                            konten terlihat seperti lengkung "tertarik dari bawah". */}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute -top-3 right-0 h-3 w-3 [--fillet:#ffffff] dark:[--fillet:#111C33]"
+                          style={{ background: "radial-gradient(circle 12px at 0 0, transparent 12px, var(--fillet) 12.5px)" }}
+                        />
+                        {/* Fillet bawah — cermin vertikalnya: transparan di sudut
+                            kiri-bawah, warna konten melengkung NAIK dari bawah
+                            menyatu ke tepi bawah pil. */}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute -bottom-3 right-0 h-3 w-3 [--fillet:#ffffff] dark:[--fillet:#111C33]"
+                          style={{ background: "radial-gradient(circle 12px at 0 100%, transparent 12px, var(--fillet) 12.5px)" }}
+                        />
                       </motion.span>
                     )}
                     <span
