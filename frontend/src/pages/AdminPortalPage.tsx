@@ -311,10 +311,13 @@ export default function AdminPortalPage() {
       {/* Latar mesh lembut — memberi kedalaman tanpa garis batas; gradasi
           radial memudar alami ke warna dasar. */}
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(99,102,241,0.10),transparent_45%),radial-gradient(circle_at_88%_8%,rgba(139,92,246,0.08),transparent_40%),radial-gradient(circle_at_50%_115%,rgba(6,182,212,0.07),transparent_45%)] dark:opacity-100 opacity-70" />
-      {/* Desktop: sidebar + konten rapat tanpa celah */}
+      {/* Desktop: sidebar + konten menyatu dalam satu kartu — satu bayangan
+          luar bersama, jadi tidak ada bayangan/garis yang menjorok di garis
+          sambung. Pil indikator aktif bisa "tumbuh" dari kartu konten. */}
       <div className="relative hidden lg:flex h-screen p-4 gap-0">
+        <div className="flex h-full flex-1 min-w-0 overflow-hidden rounded-3xl shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
         {/* Sidebar card */}
-        <aside className={`${collapsed ? "w-[76px]" : "w-64"} shrink-0 h-full rounded-l-3xl bg-indigo-600 dark:bg-indigo-900 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col transition-[width] duration-300 ease-in-out`}>
+        <aside className={`${collapsed ? "w-[76px]" : "w-64"} shrink-0 h-full bg-indigo-600 dark:bg-indigo-900 overflow-hidden flex flex-col transition-[width] duration-300 ease-in-out`}>
           {/* Sidebar header — wordmark langsung di atas solid fill */}
           <div className="px-3 pt-3 pb-2">
             <div className={`flex items-center px-2.5 py-2 ${collapsed ? "justify-center gap-0 px-1" : "gap-2"}`}>
@@ -364,9 +367,14 @@ export default function AdminPortalPage() {
                     {active && (
                       <motion.span
                         layoutId="admin-nav-pill"
-                        className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-xl bg-white dark:bg-[#111C33] shadow-sm"
+                        className="absolute top-0 bottom-0 left-0 right-[-12px] rounded-l-xl bg-white dark:bg-[#111C33]"
                         transition={{ type: "spring", stiffness: 300, damping: 35 }}
-                      />
+                      >
+                        {/* Fillet radius terbalik: pil menyatu mulus ke kartu
+                            konten (warna identik), bukan tampak seperti tempelan. */}
+                        <span aria-hidden className="pointer-events-none absolute -top-3 right-0 h-3 w-3 rounded-tl-full bg-white dark:bg-[#111C33]" />
+                        <span aria-hidden className="pointer-events-none absolute -bottom-3 right-0 h-3 w-3 rounded-bl-full bg-white dark:bg-[#111C33]" />
+                      </motion.span>
                     )}
                     <span
                       className={`relative z-10 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-colors duration-300 ${
@@ -431,7 +439,7 @@ export default function AdminPortalPage() {
         </aside>
 
         {/* Content card — solid per mode agar pil aktif bisa sama persis */}
-        <div className="flex-1 h-full rounded-r-3xl bg-white dark:bg-[#111C33] border border-gray-200/60 dark:border-white/[0.07] border-l-0 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col min-w-0">
+        <div className="flex-1 h-full bg-white dark:bg-[#111C33] border border-gray-200/60 dark:border-white/[0.07] border-l-0 overflow-hidden flex flex-col min-w-0">
           {/* Content header strip */}
           <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-3.5 border-b border-gray-100 dark:border-white/[0.06] bg-white/80 dark:bg-white/[0.03] backdrop-blur-md">
             <div className="flex items-center gap-3">
@@ -500,6 +508,7 @@ export default function AdminPortalPage() {
               </AnimatePresence>
             )}
           </main>
+          </div>
         </div>
       </div>
 
