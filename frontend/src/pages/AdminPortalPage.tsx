@@ -387,16 +387,16 @@ export default function AdminPortalPage() {
                             konten terlihat seperti lengkung "tertarik dari bawah". */}
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute -top-3 right-0 h-3 w-3 [--fillet:#ffffff] dark:[--fillet:#111C33]"
-                          style={{ background: "radial-gradient(circle 12px at 0 0, transparent 12px, var(--fillet) 12.5px)" }}
+                          className="pointer-events-none absolute -top-5 right-0 h-5 w-5 [--fillet:#ffffff] dark:[--fillet:#111C33]"
+                          style={{ background: "radial-gradient(circle 20px at 0 0, transparent 20px, var(--fillet) 20.5px)" }}
                         />
                         {/* Fillet bawah — cermin vertikalnya: transparan di sudut
                             kiri-bawah, warna konten melengkung NAIK dari bawah
                             menyatu ke tepi bawah pil. */}
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute -bottom-3 right-0 h-3 w-3 [--fillet:#ffffff] dark:[--fillet:#111C33]"
-                          style={{ background: "radial-gradient(circle 12px at 0 100%, transparent 12px, var(--fillet) 12.5px)" }}
+                          className="pointer-events-none absolute -bottom-5 right-0 h-5 w-5 [--fillet:#ffffff] dark:[--fillet:#111C33]"
+                          style={{ background: "radial-gradient(circle 20px at 0 100%, transparent 20px, var(--fillet) 20.5px)" }}
                         />
                       </motion.span>
                     )}
