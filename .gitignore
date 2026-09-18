@@ -17,6 +17,8 @@ verify-*.png
 boundary-*.png
 check-*.png
 backend-dev.log
+frontend-dev.log
+frontend-dev.err.log
 
 # direktori tooling/AI lokal (tidak ikut repo)
 .claude/
