@@ -357,12 +357,13 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   };
 
   return (
-    // Background + border-b permanen: di mobile Header telanjang (tanpa
-    // kartu pembungkus seperti di desktop), jadi tanpa ini konten scroll
-    // tepat di belakangnya tanpa pemisah. Shadow muncul setelah scroll.
+    // Background + border-b permanen KHUSUS mobile (lg:... menonaktifkan
+    // semuanya di desktop agar kembali transparan di dalam kartu AppShell
+    // seperti semula). Di mobile Header telanjang, jadi tanpa ini konten
+    // scroll tepat di belakangnya tanpa pemisah.
     <header
-      className={`sticky top-0 z-50 bg-white dark:bg-[#0B1120] border-b border-gray-200 dark:border-white/10 transition-shadow duration-300 ${
-        scrolled ? "shadow-[0_4px_16px_rgba(2,6,23,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.45)]" : ""
+      className={`sticky top-0 z-50 bg-white dark:bg-[#0B1120] border-b border-gray-200 dark:border-white/10 lg:bg-transparent lg:dark:bg-transparent lg:border-transparent lg:dark:border-transparent transition-shadow duration-300 ${
+        scrolled ? "shadow-[0_4px_16px_rgba(2,6,23,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.45)] lg:shadow-none lg:dark:shadow-none" : ""
       }`}
     >
       <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 h-16 w-full">

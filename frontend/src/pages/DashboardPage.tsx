@@ -281,7 +281,7 @@ export default function DashboardPage() {
               <div className="flex items-end justify-between gap-4 lg:min-h-[7.5rem]">
                 {/* Kiri — pill sapaan + nama gradient + chip tanggal & role */}
                 <div className="flex-1 min-w-0 lg:pr-52 py-1">
-                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-4 py-1 text-base text-gray-200 backdrop-blur-sm font-script leading-snug">
+                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-4 py-1 text-lg text-gray-100 backdrop-blur-sm font-script leading-snug">
                     {tx(language, "Good ", "Selamat ")}
                     {new Date().getHours() < 11
                       ? tx(language, "Morning", "Pagi")
