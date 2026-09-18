@@ -880,20 +880,43 @@ adminGate.post("/plans", requireAdminGate, async (c) => {
     return c.json({ error: "Body JSON tidak valid" }, 400);
   }
 
-  const { name, display_name, price_monthly, price_yearly, max_companies, max_journals, features } = body;
-  if (!name || typeof name !== "string") {
-    return c.json({ error: "Field 'name' wajib diisi" }, 400);
+  const { name, display_name, price_monthly, price_yearly, max_companies, max_journals, max_ai_chats, features } = body;
+  if (!name || typeof name !== "string" || name.trim().length === 0 || name.trim().length > 50) {
+    return c.json({ error: "Field 'name' wajib diisi (maks 50 karakter)" }, 400);
+  }
+  const numOrNull = (v: unknown, label: string, min: number): string | null => {
+    if (v === null || v === undefined) return null;
+    if (typeof v !== "number" || !Number.isFinite(v)) return `${label} harus angka.`;
+    if (v < min) return `${label} minimal ${min}.`;
+    return null;
+  };
+  for (const [v, label, min] of [
+    [price_monthly, "price_monthly", 0],
+    [price_yearly, "price_yearly", 0],
+    [max_companies, "max_companies", -1],
+    [max_journals, "max_journals", 0],
+    [max_ai_chats, "max_ai_chats", 0],
+  ] as const) {
+    const err = numOrNull(v, label, min);
+    if (err) return c.json({ error: err }, 400);
+  }
+  if (features !== undefined && !(Array.isArray(features) && features.every((f) => typeof f === "string" && f.length <= 64))) {
+    return c.json({ error: "Field 'features' harus array string (maks 64 karakter per item)." }, 400);
+  }
+  if (display_name !== undefined && (typeof display_name !== "string" || display_name.length > 100)) {
+    return c.json({ error: "Field 'display_name' maksimal 100 karakter." }, 400);
   }
 
   const { data, error } = await supabase
     .from("plans")
     .insert({
-      name,
-      display_name: display_name || name,
+      name: name.trim(),
+      display_name: (typeof display_name === "string" && display_name.trim()) || name.trim(),
       price_monthly: price_monthly ?? 0,
       price_yearly: price_yearly ?? 0,
       max_companies: max_companies ?? 1,
       max_journals: max_journals ?? 50,
+      max_ai_chats: max_ai_chats ?? null,
       features: features ?? {},
       is_active: true,
     })
@@ -918,8 +941,35 @@ adminGate.put("/plans/:id", requireAdminGate, async (c) => {
   }
 
   const update: Record<string, any> = {};
-  for (const key of ["name", "display_name", "price_monthly", "price_yearly", "max_companies", "max_journals", "features", "is_active"]) {
-    if (body[key] !== undefined) update[key] = body[key];
+  const bad = (msg: string) => c.json({ error: msg }, 400);
+  if (body.name !== undefined) {
+    if (typeof body.name !== "string" || !body.name.trim() || body.name.trim().length > 50) return bad("Field 'name' maksimal 50 karakter.");
+    update.name = body.name.trim();
+  }
+  if (body.display_name !== undefined) {
+    if (typeof body.display_name !== "string" || body.display_name.length > 100) return bad("Field 'display_name' maksimal 100 karakter.");
+    update.display_name = body.display_name;
+  }
+  for (const key of ["price_monthly", "price_yearly", "max_companies", "max_journals", "max_ai_chats"] as const) {
+    if (body[key] !== undefined && body[key] !== null) {
+      if (typeof body[key] !== "number" || !Number.isFinite(body[key])) return bad(`Field '${key}' harus angka.`);
+      const min = key === "max_companies" ? -1 : 0;
+      if (body[key] < min) return bad(`Field '${key}' minimal ${min}.`);
+      update[key] = body[key];
+    } else if (body[key] === null && (key === "max_journals" || key === "max_ai_chats")) {
+      // null = unlimited untuk kuota ini.
+      update[key] = null;
+    }
+  }
+  if (body.features !== undefined) {
+    if (!(Array.isArray(body.features) && body.features.every((f: unknown) => typeof f === "string" && (f as string).length <= 64))) {
+      return bad("Field 'features' harus array string (maks 64 karakter per item).");
+    }
+    update.features = body.features;
+  }
+  if (body.is_active !== undefined) {
+    if (typeof body.is_active !== "boolean") return bad("Field 'is_active' harus boolean.");
+    update.is_active = body.is_active;
   }
 
   if (Object.keys(update).length === 0) {

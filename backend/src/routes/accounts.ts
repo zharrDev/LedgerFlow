@@ -134,14 +134,20 @@ accounts.get("/", async (c) => {
   }
   if (status === "active") query = query.eq("is_active", true);
   else if (status === "inactive") query = query.eq("is_active", false);
-  if (type) query = query.eq("type", TYPE_MAP[type] || type);
+  // Tipe difilter via allowlist (jangan teruskan string mentah ke DB).
+  if (type) {
+    if (!TYPE_MAP[type] && !Object.values(TYPE_MAP).includes(type)) {
+      return c.json({ error: "Tipe akun tidak valid." }, 400);
+    }
+    query = query.eq("type", TYPE_MAP[type] || type);
+  }
 
   const { field: sortField, desc } = pickSort(sort, ["code", "name", "type", "created_at"], "code");
   const sortDir = desc ? "desc" as const : "asc" as const;
   query = query.order(sortField, { ascending: sortDir === "asc" });
 
-  const pageNum = Math.max(1, parseInt(page || "1"));
-  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "50")));
+  const pageNum = Math.max(1, parseInt(page || "1") || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "50") || 50));
   const offset = (pageNum - 1) * limitNum;
   query = query.range(offset, offset + limitNum - 1);
 

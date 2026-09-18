@@ -313,9 +313,10 @@ export interface QuickNavItem {
   link: string;
   keywords: string[];
   icon: LucideIcon;
+  roles?: string[];
 }
 
-export function filterQuickNav(query: string, lang: "en" | "id" = "en"): QuickNavItem[] {
+export function filterQuickNav(query: string, lang: "en" | "id" = "en", role?: string): QuickNavItem[] {
   const all: QuickNavItem[] = NAV_ITEMS.flatMap((item) => {
     if (item.children?.length) {
       return item.children.map((child) => ({
@@ -323,6 +324,7 @@ export function filterQuickNav(query: string, lang: "en" | "id" = "en"): QuickNa
         link: child.path,
         keywords: child.keywords,
         icon: child.icon,
+        roles: item.roles,
       }));
     }
     return [
@@ -331,13 +333,20 @@ export function filterQuickNav(query: string, lang: "en" | "id" = "en"): QuickNa
         link: item.path,
         keywords: item.keywords,
         icon: item.icon,
+        roles: item.roles,
       },
     ];
   });
 
+  // Sembunyikan halaman di luar role user (mis. akuntan tidak disodori
+  // link User/Period Management yang berujung 403).
+  const visible = all.filter(
+    (item) => !item.roles?.length || (!!role && item.roles.includes(role)),
+  );
+
   const q = query.trim().toLowerCase();
-  if (!q) return all.slice(0, 6);
-  return all.filter(
+  if (!q) return visible.slice(0, 6);
+  return visible.filter(
     (item) =>
       item.label[lang].toLowerCase().includes(q) ||
       item.keywords.some((k) => k.includes(q) || q.includes(k)),

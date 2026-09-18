@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { filterQuickNav, type QuickNavItem } from "../data/quickNav";
 import { useLanguage } from "../hooks/useLanguage";
+import { useAuth } from "../context/AuthContext";
 
 export interface AccountHit {
   id: string;
@@ -38,8 +39,9 @@ export function HeaderSearchResults({
   compact,
 }: HeaderSearchResultsProps) {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const q = query.trim();
-  const navHits: QuickNavItem[] = filterQuickNav(q, language);
+  const navHits: QuickNavItem[] = filterQuickNav(q, language, user?.role);
   const hasQuery = q.length > 0;
   const empty =
     hasQuery &&

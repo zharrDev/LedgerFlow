@@ -16,7 +16,7 @@
 import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { premiumFeatureRateLimit } from "../middleware/rateLimit.js";
 import { featureAccessLogger } from "../middleware/accessLogger.js";
 import {
@@ -252,7 +252,9 @@ payments.get("/subscription", authMiddleware, async (c) => {
 //   Setelah dapet snap_token, frontend manggil openSnapPayment()
 //   buat buka popup pembayaran Midtrans.
 // ════════════════════════════════════════════════════════════════════════
-payments.post("/subscribe", authMiddleware, async (c) => {
+// Keputusan billing (bayar/upgrade/cancel) hanya untuk owner — akuntan
+// tidak boleh mengutak-atik langganan perusahaan.
+payments.post("/subscribe", authMiddleware, requireRole("owner"), async (c) => {
   // User ID dari JWT terverifikasi
   const userId = c.get("user").sub;
 
@@ -262,6 +264,11 @@ payments.post("/subscribe", authMiddleware, async (c) => {
   // Validasi plan_name harus "pro" atau "enterprise" (free tidak perlu subscribe)
   if (!["pro", "enterprise"].includes(plan_name)) {
     return c.json({ error: "Plan tidak valid. Pilih 'pro' atau 'enterprise'." }, 400);
+  }
+  // Validasi billing_cycle — selain monthly/yearly ditolak (jangan simpan
+  // sampah ke DB yang nanti dibaca logika aktivasi).
+  if (billing_cycle !== undefined && billing_cycle !== "monthly" && billing_cycle !== "yearly") {
+    return c.json({ error: "Siklus pembayaran tidak valid. Pilih 'monthly' atau 'yearly'." }, 400);
   }
   const billingCycle: BillingCycle = billing_cycle ?? "monthly";
 
@@ -463,7 +470,14 @@ async function activateSubscription(payment: {
 // ════════════════════════════════════════════════════════════════════════
 payments.post("/webhook", async (c) => {
   try {
-    const body = await c.req.json();
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      // Body bukan JSON valid → 400 (jangan 500 agar Midtrans tidak
+      // me-retry selamanya untuk payload yang memang rusak).
+      return c.json({ error: "Body harus JSON valid." }, 400);
+    }
     const orderId: string = body.order_id;
     const statusCode: string = String(body.status_code ?? "");
     const grossAmount: string = String(body.gross_amount ?? "");
@@ -540,10 +554,12 @@ payments.post("/webhook", async (c) => {
 // (snap.status) dan mengaktifkan subscription bila ternyata sudah dibayar.
 // Aman: hanya pemilik order (auth) & hanya mengaktifkan payment miliknya.
 // ════════════════════════════════════════════════════════════════════════
-payments.post("/sync-status", authMiddleware, async (c) => {
+payments.post("/sync-status", authMiddleware, requireRole("owner"), async (c) => {
   const userId = c.get("user").sub;
   const { order_id } = await c.req.json();
-  if (!order_id) return c.json({ error: "order_id wajib diisi" }, 400);
+  if (!order_id || typeof order_id !== "string" || order_id.length > 120) {
+    return c.json({ error: "order_id wajib diisi (maks 120 karakter)." }, 400);
+  }
 
   const { data: payment, error: payErr } = await supabase
     .from("payments")
@@ -642,7 +658,8 @@ payments.post("/sync-status", authMiddleware, async (c) => {
 //   Body: { order_id: "LF-xxx-xxx" }
 //   Return: { status: "ok", message: "...", subscription_status: "active", plan_id: "..." }
 // ═══════════════════════════════════════════════════════════════════════
-payments.post("/test-complete", authMiddleware, async (c) => {
+payments.post("/test-complete", authMiddleware, requireRole("owner"), async (c) => {
+  const userId = c.get("user").sub;
   // Pastikan sandbox mode
   if (process.env.MIDTRANS_IS_PRODUCTION === "true") {
     return c.json(
@@ -653,8 +670,8 @@ payments.post("/test-complete", authMiddleware, async (c) => {
 
   const { order_id } = await c.req.json();
 
-  if (!order_id) {
-    return c.json({ error: "order_id wajib diisi" }, 400);
+  if (!order_id || typeof order_id !== "string" || order_id.length > 120) {
+    return c.json({ error: "order_id wajib diisi (maks 120 karakter)." }, 400);
   }
 
   // Cari payment record berdasarkan order_id (serta plan & cycle yang dibayar)
@@ -670,6 +687,13 @@ payments.post("/test-complete", authMiddleware, async (c) => {
       { error: "Payment tidak ditemukan. Coba checkout ulang — transaksi lama gagal tercatat di server." },
       404,
     );
+  }
+
+  // Hanya pemilik order yang boleh menyelesaikan pembayarannya — tanpa ini
+  // user mana pun bisa menebak order_id orang lain dan mengaktifkan
+  // subscription mereka (atau memicu notifikasi palsu).
+  if (payment.user_id !== userId) {
+    return c.json({ error: "Payment tidak ditemukan" }, 404);
   }
 
   // Cek apakah payment sudah completed
@@ -698,6 +722,83 @@ payments.post("/test-complete", authMiddleware, async (c) => {
     plan_id: activatedPlan,
     billing_cycle: payment.billing_cycle ?? "monthly",
   });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// POST /cancel — Batalkan subscription (downgrade ke Free)
+// ════════════════════════════════════════════════════════════════════════
+// Dipake: SettingsPage.tsx tombol "Cancel Subscription".
+// Efek: plan kembali ke Free (aktif, batas Free), trial dikosongkan,
+// periode berjalan 30 hari. Bila ada langganan Midtrans tersimpan, dicoba
+// dibatalkan best-effort (gagal cancel di Midtrans tidak menggagalkan
+// downgrade lokal).
+// ════════════════════════════════════════════════════════════════════════
+payments.post("/cancel", authMiddleware, requireRole("owner"), async (c) => {
+  const userId = c.get("user").sub;
+  let reason: unknown;
+  try {
+    ({ reason } = await c.req.json());
+  } catch {
+    reason = undefined;
+  }
+  if (reason !== undefined && (typeof reason !== "string" || reason.length > 500)) {
+    return c.json({ error: "Alasan pembatalan maksimal 500 karakter." }, 400);
+  }
+
+  const { data: sub, error: subErr } = await supabase
+    .from("subscriptions")
+    .select("id, plan_id, midtrans_subscription_id, plans(name)")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (subErr) return dbErrorResponse(c, subErr);
+  if (!sub) return c.json({ error: "Subscription tidak ditemukan." }, 404);
+
+  const { data: freePlan, error: planErr } = await supabase
+    .from("plans")
+    .select("id")
+    .eq("name", "free")
+    .single();
+  if (planErr || !freePlan) {
+    return c.json({ error: "Plan Free tidak ditemukan di database." }, 500);
+  }
+
+  // Best-effort: batalkan langganan berulang di Midtrans bila ada.
+  if ((sub as any).midtrans_subscription_id) {
+    try {
+      await (coreApi as any).subscription?.cancel?.(
+        (sub as any).midtrans_subscription_id,
+      );
+    } catch (err: any) {
+      console.error("[cancel] Gagal cancel di Midtrans (lanjut downgrade lokal):", err?.message ?? err);
+    }
+  }
+
+  const now = new Date();
+  const periodEnd = new Date(now.getTime() + 30 * 86400000);
+  const { error: updErr } = await supabase
+    .from("subscriptions")
+    .update({
+      plan_id: freePlan.id,
+      status: "active",
+      billing_cycle: "monthly",
+      trial_start: null,
+      trial_end: null,
+      current_period_start: now.toISOString(),
+      current_period_end: periodEnd.toISOString(),
+      canceled_at: now.toISOString(),
+      cancel_reason: typeof reason === "string" ? reason : null,
+    })
+    .eq("id", (sub as any).id);
+  if (updErr) return dbErrorResponse(c, updErr);
+
+  createNotification({
+    userId,
+    title: "Subscription Dibatalkan",
+    message: "Langganan kamu dikembalikan ke plan Free. Upgrade lagi kapan saja.",
+    type: "subscription_canceled",
+  }).catch(console.error);
+
+  return c.json({ status: "ok", message: "Subscription dibatalkan, kembali ke plan Free." });
 });
 
 // ════════════════════════════════════════════════════════════════════════
@@ -769,8 +870,8 @@ payments.get("/check-access", authMiddleware, premiumFeatureRateLimit, featureAc
   // Ambil features dari plan (JSONB array)
   const planFeatures: string[] = normalizeFeatures(sub.plans?.features);
 
-  // Trial aktif = akses 4 fitur inti: income_statement, balance_sheet, cash_flow, export_pdf
-  const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf"];
+  // Trial aktif = akses 5 fitur inti: income_statement, balance_sheet, cash_flow, export_pdf, ai_cfo
+  const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf", "ai_cfo"];
   const trialGrantsAccess = isTrialActive && trialCoreFeatures.includes(feature);
 
   // Cek akses: trial core features ATAU feature ada di plan features

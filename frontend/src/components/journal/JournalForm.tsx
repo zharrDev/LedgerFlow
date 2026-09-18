@@ -41,18 +41,30 @@ interface JournalFormProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-function parseAmount(v: string): number {
-  const n = parseFloat(v.replace(/[^\d.]/g, ""));
-  return isNaN(n) || n < 0 ? 0 : n;
+// Batas nominal per baris (samakan dengan backend NUMERIC(18,2)).
+const MAX_LINE_AMOUNT = 999999999999999;
+
+// Parse input nominal secara KETAT: tolak minus, simbol aneh, desimal ganda,
+// NaN, dan angka raksasa — JANGAN diam-diam "memperbaiki" (mis. "-500"→500).
+// Return null bila input bukan angka valid; kosong ("") juga null.
+function parseAmount(v: string): number | null {
+  const raw = (v ?? "").trim();
+  if (!raw) return null;
+  // Hanya digit + maksimal satu titik desimal (spasi/pemisah ribuan diabaikan).
+  const cleaned = raw.replace(/[\s_]/g, "").replace(/,/g, "");
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) return null;
+  const n = Number(cleaned);
+  if (!Number.isFinite(n) || n < 0 || n > MAX_LINE_AMOUNT) return null;
+  return n;
 }
 
 function sumLines(lines: JournalLineForm[], field: "debit" | "credit"): number {
-  return lines.reduce((s, l) => s + parseAmount(l[field]), 0);
+  return lines.reduce((s, l) => s + (parseAmount(l[field]) ?? 0), 0);
 }
 
 function formatDisplayAmount(v: string): string {
   const n = parseAmount(v);
-  if (n === 0) return "";
+  if (n === null || n === 0) return "";
   try {
     return new Intl.NumberFormat(getCurrency() === "IDR" ? "id-ID" : "en-US").format(n);
   } catch {
@@ -76,13 +88,13 @@ function buildPayload(
       .filter(
         (l) =>
           l.accountCode.trim() &&
-          (parseAmount(l.debit) > 0 || parseAmount(l.credit) > 0),
+          ((parseAmount(l.debit) ?? 0) > 0 || (parseAmount(l.credit) ?? 0) > 0),
       )
       .map((l) => ({
         accountCode: l.accountCode.trim(),
         memo: l.description.trim(),
-        debit: convertToIDR(parseAmount(l.debit)),
-        credit: convertToIDR(parseAmount(l.credit)),
+        debit: convertToIDR(parseAmount(l.debit) ?? 0),
+        credit: convertToIDR(parseAmount(l.credit) ?? 0),
       })),
   };
 }
@@ -138,15 +150,26 @@ export function JournalForm({ saving, onSave, onBack, initialEntry, submitLabel 
     const filledLines = form.lines.filter(
       (l) =>
         l.accountCode.trim() ||
-        parseAmount(l.debit) > 0 ||
-        parseAmount(l.credit) > 0,
+        (parseAmount(l.debit) ?? 0) > 0 ||
+        (parseAmount(l.credit) ?? 0) > 0,
     );
     if (filledLines.length < 2) {
       e.lines = tx(language, "At least 2 account lines must be filled", "Minimal 2 baris akun harus diisi");
     }
 
-    const hasDebitLine = form.lines.some((l) => parseAmount(l.debit) > 0);
-    const hasCreditLine = form.lines.some((l) => parseAmount(l.credit) > 0);
+    // Tolak input nominal yang bukan angka valid (minus, simbol, desimal
+    // ganda, terlalu besar) — JANGAN diam-diam diperbaiki/dinolkan.
+    const badAmount = form.lines.some(
+      (l) =>
+        (l.debit.trim() !== "" && parseAmount(l.debit) === null) ||
+        (l.credit.trim() !== "" && parseAmount(l.credit) === null),
+    );
+    if (badAmount) {
+      e.lines = tx(language, "Invalid amount: use digits with at most one decimal point, no minus sign", "Nominal tidak valid: gunakan angka dengan maksimal satu titik desimal, tanpa tanda minus");
+    }
+
+    const hasDebitLine = form.lines.some((l) => (parseAmount(l.debit) ?? 0) > 0);
+    const hasCreditLine = form.lines.some((l) => (parseAmount(l.credit) ?? 0) > 0);
     if (!hasDebitLine || !hasCreditLine) {
       e.lines = tx(language, "Must have at least 1 debit line and 1 credit line", "Harus ada minimal 1 baris debit dan 1 baris kredit");
     }
@@ -163,7 +186,7 @@ export function JournalForm({ saving, onSave, onBack, initialEntry, submitLabel 
     for (const l of form.lines) {
       if (
         !l.accountCode.trim() &&
-        (parseAmount(l.debit) > 0 || parseAmount(l.credit) > 0)
+        ((parseAmount(l.debit) ?? 0) > 0 || (parseAmount(l.credit) ?? 0) > 0)
       ) {
         e.lines = tx(language, "All lines with amounts must select an account", "Semua baris yang memiliki nilai harus memilih akun");
         break;
@@ -176,8 +199,8 @@ export function JournalForm({ saving, onSave, onBack, initialEntry, submitLabel 
         }
 
         const accType = (acc.type || "").toLowerCase();
-        const hasDebit = parseAmount(l.debit) > 0;
-        const hasCredit = parseAmount(l.credit) > 0;
+        const hasDebit = (parseAmount(l.debit) ?? 0) > 0;
+        const hasCredit = (parseAmount(l.credit) ?? 0) > 0;
 
         if (accType === "revenue" && hasDebit) {
           e.lines = tx(language, `Revenue account "${acc.code} - ${acc.name}" must be recorded on the CREDIT side, not Debit.`, `Akun pendapatan "${acc.code} - ${acc.name}" harus dicatat di sisi KREDIT, bukan Debit.`);
@@ -217,9 +240,9 @@ export function JournalForm({ saving, onSave, onBack, initialEntry, submitLabel 
         lines: f.lines.map((l) => {
           if (l.uid !== uid) return l;
           const updated = { ...l, [field]: value };
-          if (field === "debit" && value && parseAmount(value) > 0)
+          if (field === "debit" && value && (parseAmount(value) ?? 0) > 0)
             updated.credit = "";
-          if (field === "credit" && value && parseAmount(value) > 0)
+          if (field === "credit" && value && (parseAmount(value) ?? 0) > 0)
             updated.debit = "";
           return updated;
         }),
@@ -621,8 +644,8 @@ function JournalLineRow({
   onRemove,
 }: LineRowProps) {
   const { language } = useLanguage();
-  const hasDebit = parseFloat(line.debit) > 0;
-  const hasCredit = parseFloat(line.credit) > 0;
+  const hasDebit = (parseAmount(line.debit) ?? 0) > 0;
+  const hasCredit = (parseAmount(line.credit) ?? 0) > 0;
 
   return (
     <div className="grid grid-cols-1 gap-2 px-5 py-3 md:grid-cols-[5fr_4fr_2.5fr_2.5fr_auto] md:gap-2 md:px-5 md:py-2 md:items-center group hover:bg-primary-50/30 dark:hover:bg-white/5 transition-colors">

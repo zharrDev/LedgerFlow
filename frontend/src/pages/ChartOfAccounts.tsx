@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useAccounts } from "../hooks/useAccounts";
+import { useAuth } from "../context/AuthContext";
 import { usePagination } from "../hooks/usePagination";
 import { useLanguage } from "../hooks/useLanguage";
 import { sanitizeErrorMessage } from "../lib/errorMessage";
@@ -48,6 +49,10 @@ import { ACCOUNT_TYPES } from "../types/constants";
 
 export default function ChartOfAccounts() {
   const { language } = useLanguage();
+  // Hapus akun hanya untuk owner (backend DELETE owner-only) — sembunyikan
+  // tombol hapus dari akuntan agar tidak menemui 403.
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
   const {
     accounts,
     loading,
@@ -465,7 +470,7 @@ export default function ChartOfAccounts() {
               setModalOpen(true);
             }}
             onToggleStatus={setConfirmAccount}
-            onDelete={setDeleteTarget}
+            onDelete={isOwner ? setDeleteTarget : undefined}
             onDetail={setDetailAccount}
             toggling={toggling}
             pagination={{

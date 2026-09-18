@@ -91,7 +91,13 @@ users.put("/:id", async (c) => {
   const body = await c.req.json();
 
   const updates: Record<string, any> = {};
-  if (body.name !== undefined) updates.name = body.name;
+  // Nama mengikuti aturan frontend (validateName): 3–100 karakter.
+  if (body.name !== undefined) {
+    if (typeof body.name !== "string" || body.name.trim().length < 3 || body.name.trim().length > 100) {
+      return c.json({ error: "Nama harus 3–100 karakter." }, 400);
+    }
+    updates.name = body.name.trim();
+  }
   if (body.avatar_url !== undefined) {
     const sanitized = sanitizeAvatarUrl(body.avatar_url);
     if (body.avatar_url !== null && sanitized === null) {

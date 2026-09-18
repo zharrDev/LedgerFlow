@@ -13,7 +13,7 @@ import { AiCfoWelcome } from "../components/ai/AiCfoWelcome";
 import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardData } from "../hooks/useDashboardData";
-import { fetchAiQuota, getAiErrorMessage, sendAiChat, type AiQuota } from "../services/aiService";
+import { fetchAiQuota, getAiErrorMessage, getAiErrorReason, sendAiChat, type AiQuota } from "../services/aiService";
 import {
   createSession,
   loadAiCfoSessions,

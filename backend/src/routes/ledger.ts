@@ -42,12 +42,23 @@ function monthRange(
 
 // GET /api/ledger
 // Menampilkan buku besar per akun berdasarkan period_id atau range tanggal
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RANGE_DAYS = 366;
+const MAX_ENTRIES = 5000;
+
 ledger.get("/", async (c) => {
   const { company_id } = c.get("user");
   const { account_id, period_id, start_date, end_date } = c.req.query();
 
   if (!account_id) {
     return c.json({ error: "account_id wajib diisi" }, 400);
+  }
+  if (!UUID_RE.test(account_id)) {
+    return c.json({ error: "account_id tidak valid" }, 400);
+  }
+  if (period_id && !UUID_RE.test(period_id)) {
+    return c.json({ error: "period_id tidak valid" }, 400);
   }
   if (!period_id && (!start_date || !end_date)) {
     return c.json(
@@ -122,8 +133,26 @@ ledger.get("/", async (c) => {
     );
   }
 
+  // Validasi format tanggal + batasi rentang (lindungi query tak berbatas).
+  if (
+    !DATE_RE.test(startDate) || !DATE_RE.test(endDate) ||
+    Number.isNaN(new Date(startDate).getTime()) ||
+    Number.isNaN(new Date(endDate).getTime())
+  ) {
+    return c.json({ error: "start_date/end_date harus format YYYY-MM-DD yang valid" }, 400);
+  }
+  const rangeDays =
+    (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000;
+  if (rangeDays > MAX_RANGE_DAYS) {
+    return c.json(
+      { error: `Rentang maksimal ${MAX_RANGE_DAYS} hari. Perkecil periode atau range tanggal.` },
+      400,
+    );
+  }
+
   // Query 1: ambil semua jurnal posted sampai endDate (abaikan yang
-  // soft-deleted & yang di-void — void tidak ikut saldo buku besar)
+  // soft-deleted & yang di-void — void tidak ikut saldo buku besar).
+  // Dibatasi MAX_ENTRIES agar .in() berikutnya tidak meledak.
   const { data: entries, error: entriesErr } = await supabase
     .from("journal_entries")
     .select("id, entry_date, entry_number, description")
@@ -131,7 +160,9 @@ ledger.get("/", async (c) => {
     .eq("status", "posted")
     .is("deleted_at", null)
     .is("voided_at", null)
-    .lte("entry_date", endDate);
+    .lte("entry_date", endDate)
+    .order("entry_date", { ascending: true })
+    .limit(MAX_ENTRIES);
 
   if (entriesErr) {
     return dbErrorResponse(c, entriesErr);

@@ -9,6 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
+import { getAdminGateToken } from "./lib/session";
 import HomePage from "./pages/HomePage";
 import BrandedLoader, { RouteSuspenseFallback } from "./components/BrandedLoader";
 import { AppLayout } from "./components/AppLayout";
@@ -144,6 +145,15 @@ function AiCfoFabGate() {
   return <AICfoFloatingButton />;
 }
 
+/** Gerbang portal admin — tanpa token admin-gate langsung ke /portal-akses.
+    (Sebelumnya halaman+shel-nya ke-load dulu baru redirect dari dalam.) */
+function AdminGateRoute({ children }: { children: React.ReactNode }) {
+  if (!getAdminGateToken()) {
+    return <Navigate to="/portal-akses" replace />;
+  }
+  return <>{children}</>;
+}
+
 function RoleRoute({
   children,
   roles,
@@ -244,7 +254,14 @@ function AnimatedRoutes() {
       {/* Gerbang admin — sengaja TIDAK didaftarkan di navigasi/menu manapun.
           Hanya bisa dicapai lewat shortcut rahasia di /login. */}
       <Route path="/portal-akses" element={<AdminGatePage />} />
-      <Route path="/admin-portal" element={<AdminPortalPage />} />
+      <Route
+        path="/admin-portal"
+        element={
+          <AdminGateRoute>
+            <AdminPortalPage />
+          </AdminGateRoute>
+        }
+      />
       <Route path="/help" element={<PublicHelpPage />} />
       <Route path="/terms" element={<TermsPage />} />
 

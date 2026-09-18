@@ -125,7 +125,8 @@ export function useSubscription() {
     (feature: string): boolean => {
       if (!isActive) return false;
       // Trial grants access only to core features: income_statement, balance_sheet, cash_flow, export_pdf
-      const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf"];
+      // + ai_cfo (samakan dengan backend trialCoreFeatures di check-access).
+      const trialCoreFeatures = ["income_statement", "balance_sheet", "cash_flow", "export_pdf", "ai_cfo"];
       if (isTrial && trialCoreFeatures.includes(feature)) {
         return true;
       }
@@ -144,6 +145,7 @@ export function useSubscription() {
       balance_sheet: ["pro", "enterprise"],
       cash_flow: ["pro", "enterprise"],
       export_pdf: ["pro", "enterprise"],
+      ai_cfo: ["pro", "enterprise"],
       export_csv: ["enterprise"],
       unlimited_journals: ["pro", "enterprise"],
       multi_company: ["pro", "enterprise"],

@@ -30,6 +30,17 @@ function formatPeriodName(year: number, month: number): string {
   return `${MONTH_NAMES_ID[month - 1] || month} ${year}`;
 }
 
+// period_id dari query harus UUID valid bila dikirim — tanpa ini UUID sampah
+// lolos ke Supabase dan meledak jadi 500.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function invalidPeriodId(c: any): Response | null {
+  const periodId = c.req.query("period_id");
+  if (periodId && !UUID_RE.test(periodId)) {
+    return c.json({ error: "period_id tidak valid" }, 400);
+  }
+  return null;
+}
+
 // Helper: mendeteksi apakah akun termasuk akun kas/bank
 function isCashAccount(code: string, name: string, type: string): boolean {
   if ((type || "").toUpperCase() !== "ASSET") return false;
@@ -91,6 +102,8 @@ reports.get("/income-statement", async (c) => {
   const paywall = await requireReportAccess(c, "income_statement");
   if (paywall) return paywall;
 
+  const badPeriod = invalidPeriodId(c);
+  if (badPeriod) return badPeriod;
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
 
@@ -188,6 +201,8 @@ reports.get("/balance-sheet", async (c) => {
   const paywall = await requireReportAccess(c, "balance_sheet");
   if (paywall) return paywall;
 
+  const badPeriod = invalidPeriodId(c);
+  if (badPeriod) return badPeriod;
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
 
@@ -224,6 +239,8 @@ reports.get("/cash-flow", async (c) => {
   const paywall = await requireReportAccess(c, "cash_flow");
   if (paywall) return paywall;
 
+  const badPeriod = invalidPeriodId(c);
+  if (badPeriod) return badPeriod;
   const periodId = c.req.query("period_id");
   const companyId = c.get("user").company_id;
 

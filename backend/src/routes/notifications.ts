@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { supabase } from "../lib/supabase.js";
 import { dbErrorResponse } from "../lib/errors.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sanitizeSearch } from "../lib/sanitize.js";
 
 const notifications = new Hono();
 
@@ -34,12 +35,13 @@ const CLIENT_ALLOWED_TYPES = new Set([
 // GET /api/notifications?limit=20&page=1&search=&sort=newest|oldest&read=false
 notifications.get("/", async (c) => {
   const { sub } = c.get("user");
-  const pageNum = Math.max(1, parseInt(c.req.query("page") || "1"));
+  const pageNum = Math.max(1, parseInt(c.req.query("page") || "1") || 1);
   const limitNum = Math.min(
     MAX_LIMIT,
-    Math.max(1, parseInt(c.req.query("limit") || "15")),
+    Math.max(1, parseInt(c.req.query("limit") || "15") || 15),
   );
-  const search = (c.req.query("search") ?? "").trim().toLowerCase();
+  // Sanitasi search seperti rute list lain (cegah karakter pemecah filter OR).
+  const search = sanitizeSearch(c.req.query("search") ?? "").toLowerCase();
   const sort = c.req.query("sort") ?? "newest";
   const readFilter = c.req.query("read");
   const offset = (pageNum - 1) * limitNum;

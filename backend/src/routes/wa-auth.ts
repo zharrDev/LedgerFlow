@@ -352,6 +352,17 @@ function normalizeOr400(c: any, raw: any): { phone: string } | { errorResponse: 
   }
 }
 
+// Batas panjang nama & perusahaan (mirror validasi frontend; cegah bloat DB).
+function checkNameCompany(name: unknown, companyName: unknown): string | null {
+  if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 100) {
+    return "Nama harus 2–100 karakter.";
+  }
+  if (typeof companyName !== "string" || companyName.trim().length < 2 || companyName.trim().length > 120) {
+    return "Nama perusahaan harus 2–120 karakter.";
+  }
+  return null;
+}
+
 // Payload sukses login — dipakai jalur normal, demo, & register verify agar
 // satu bentuk respons. Company & role di-resolve dari company_members (sumber
 // kebenaran): user bisa tergabung di lebih dari satu company — login mendarat
@@ -415,6 +426,8 @@ waAuth.post("/register/start", async (c) => {
     if (!name || !company_name) {
       return c.json({ error: "Nama dan nama perusahaan wajib diisi." }, 400);
     }
+    const nameCompanyErr = checkNameCompany(name, company_name);
+    if (nameCompanyErr) return c.json({ error: nameCompanyErr }, 400);
 
     if (!checkIpRateLimit(getClientIp(c), IP_START_MAX)) {
       return c.json(
@@ -472,6 +485,8 @@ waAuth.post("/register/verify", async (c) => {
     if (!name || !company_name) {
       return c.json({ error: "Nama dan nama perusahaan wajib diisi." }, 400);
     }
+    const nameCompanyErr2 = checkNameCompany(name, company_name);
+    if (nameCompanyErr2) return c.json({ error: nameCompanyErr2 }, 400);
 
     if (!checkIpRateLimit(getClientIp(c), IP_VERIFY_MAX)) {
       return c.json(

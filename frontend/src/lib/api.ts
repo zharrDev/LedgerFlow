@@ -23,11 +23,15 @@ export const api = axios.create({
 
 // Interceptor request: kirim JWT. Identitas user/company diambil backend
 // dari token (bukan dari header x-user-id/x-company-id yang bisa dipalsukan).
+// JANGAN timpa Authorization yang sudah dipasang manual (dipakai
+// adminGateService untuk token admin-gate) — kalau tidak, panggilan admin
+// saat user juga login akan terkirim dengan token user lalu 401.
 api.interceptors.request.use((config) => {
-  const token = getSessionToken();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!config.headers.Authorization) {
+    const token = getSessionToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   return config;

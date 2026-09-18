@@ -21,12 +21,13 @@ journal.use("*", authMiddleware);
 // di handler SETELAH shape/tipe lolos dari zod.
 
 const journalLineSchema = z.object({
-  accountCode: z.string().min(1, "accountCode wajib diisi"),
-  debit: z.number("debit harus angka").min(0, "debit tidak boleh negatif"),
+  accountCode: z.string().min(1, "accountCode wajib diisi").max(20),
+  // Batas atas: NUMERIC(18,2) di DB; finite() menolak NaN/Infinity.
+  debit: z.number("debit harus angka").min(0, "debit tidak boleh negatif").finite().max(999999999999999, "debit terlalu besar"),
   credit: z
     .number("credit harus angka")
-    .min(0, "credit tidak boleh negatif"),
-  memo: z.string().nullish(),
+    .min(0, "credit tidak boleh negatif").finite().max(999999999999999, "credit terlalu besar"),
+  memo: z.string().max(500, "memo maksimal 500 karakter").nullish(),
 });
 
 const entryDateSchema = z
@@ -42,10 +43,11 @@ const journalEntryCreateSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(1, "description wajib diisi"),
-  lines: z.array(journalLineSchema).min(2, "Jurnal minimal memiliki 2 baris"),
-  // Perilaku sama seperti sebelumnya: selain "posted" dianggap draft
-  status: z.string().optional(),
+    .min(1, "description wajib diisi")
+    .max(500, "description maksimal 500 karakter"),
+  lines: z.array(journalLineSchema).min(2, "Jurnal minimal memiliki 2 baris").max(200, "Jurnal maksimal 200 baris"),
+  // Hanya dua status yang dikenal; nilai lain = draft (perilaku lama).
+  status: z.enum(["draft", "posted"]).optional().catch("draft"),
 });
 
 // PUT /api/journal/:id — semua field opsional (partial update)
@@ -55,10 +57,12 @@ const journalEntryUpdateSchema = z.object({
     .string()
     .trim()
     .min(1, "description wajib diisi")
+    .max(500, "description maksimal 500 karakter")
     .optional(),
   lines: z
     .array(journalLineSchema)
     .min(2, "Jurnal minimal memiliki 2 baris")
+    .max(200, "Jurnal maksimal 200 baris")
     .optional(),
 });
 
@@ -179,8 +183,8 @@ journal.get("/", async (c) => {
   const sortDir = desc ? ("desc" as const) : ("asc" as const);
   query = query.order(sortField, { ascending: sortDir === "asc" });
 
-  const pageNum = Math.max(1, parseInt(page || "1"));
-  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20")));
+  const pageNum = Math.max(1, parseInt(page || "1") || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20") || 20));
   const offset = (pageNum - 1) * limitNum;
   query = query.range(offset, offset + limitNum - 1);
 

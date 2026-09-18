@@ -17,8 +17,10 @@ import {
   subscribe,
   openSnapPayment,
   formatPrice,
+  cancelSubscription,
   type Plan,
 } from "../services/paymentService";
+import { ConfirmActionDialog } from "../components/ConfirmActionDialog";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ScrollReveal } from "../components/ScrollReveal";
@@ -186,7 +188,7 @@ const FEATURE_COMPARISON: Array<{
 export default function PricingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { planName: currentPlan, billingCycle: currentCycle } = useSubscription();
+  const { planName: currentPlan, billingCycle: currentCycle, refresh: refreshSub } = useSubscription();
   const { language } = useLanguage();
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -195,6 +197,8 @@ export default function PricingPage() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
+  const [downgrading, setDowngrading] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
@@ -210,9 +214,12 @@ export default function PricingPage() {
       navigate("/register");
       return;
     }
-    if (planName === "free") return;
-    // Blokir hanya jika plan DAN siklus sama (Pro bulanan boleh pindah ke tahunan)
     if (planName === currentPlan && billingCycle === currentCycle) return;
+    // Turun paket (mis. Pro → Free): lewat dialog konfirmasi + cancel.
+    if ((TIER[planName] ?? 0) < (TIER[currentPlan] ?? 0)) {
+      setDowngradeTarget(planName);
+      return;
+    }
 
     setSubscribing("begin");
     const result = await subscribe(planName, billingCycle);
@@ -252,7 +259,26 @@ export default function PricingPage() {
     }
   };
 
+  const handleDowngradeConfirm = async () => {
+    if (!downgradeTarget) return;
+    setDowngrading(true);
+    try {
+      await cancelSubscription("Downgrade dari halaman pricing");
+      clearSubscriptionCache();
+      await refreshSub();
+      await refreshSubscription().catch(() => {});
+    } catch (err: any) {
+      console.error("Downgrade error:", err);
+      alert(getErrorMessage(err));
+    } finally {
+      setDowngrading(false);
+      setDowngradeTarget(null);
+    }
+  };
+
   const TIER: Record<string, number> = { free: 0, pro: 1, enterprise: 2 };
+  const PLAN_LABEL: Record<string, string> = { free: "Free", pro: "Pro", enterprise: "Enterprise" };
+  const planLabel = (planName: string) => PLAN_LABEL[planName] ?? planName;
   const getButtonLabel = (planName: string) => {
     if (!user)
       return language === "id" ? "Mulai Free Trial" : "Start Free Trial";
@@ -269,12 +295,12 @@ export default function PricingPage() {
           : "Switch to Monthly";
     }
     if ((TIER[planName] ?? 0) < (TIER[currentPlan] ?? 0))
-      return language === "id" ? "Turun Paket" : "Downgrade";
-    return language === "id" ? "Upgrade Sekarang" : "Upgrade Now";
+      return language === "id" ? `Turun ke ${planLabel(planName)}` : `Downgrade to ${planLabel(planName)}`;
+    return language === "id" ? `Upgrade ke ${planLabel(planName)}` : `Upgrade to ${planLabel(planName)}`;
   };
 
   const getButtonDisabled = (planName: string) => {
-    if (subscribing !== null) return true;
+    if (subscribing !== null || downgrading) return true;
     // Disable hanya untuk kombinasi plan+siklus yang persis sama —
     // pindah siklus (bulanan↔tahunan) harus tetap bisa diklik.
     return planName === currentPlan && billingCycle === currentCycle;
@@ -537,6 +563,22 @@ export default function PricingPage() {
             );
           })}
         </div>
+
+        {/* ═══ Dialog konfirmasi turun paket ═══ */}
+        <ConfirmActionDialog
+          open={downgradeTarget !== null}
+          onClose={() => !downgrading && setDowngradeTarget(null)}
+          onConfirm={() => void handleDowngradeConfirm()}
+          loading={downgrading}
+          title={language === "id" ? "Turun Paket?" : "Downgrade Plan?"}
+          message={
+            language === "id"
+              ? "Paket Anda akan dikembalikan ke Free dan akses fitur premium dicabut. Data Anda tetap aman."
+              : "Your plan will return to Free and premium access revoked. Your data stays safe."
+          }
+          confirmLabel={language === "id" ? "Ya, Turunkan" : "Yes, Downgrade"}
+          tone="amber"
+        />
 
         {/* ═══ Feature Comparison Toggle ═══ */}
         <motion.div

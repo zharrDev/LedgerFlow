@@ -8,6 +8,7 @@ import {
   getSessionUser,
   setSessionUser,
   clearSession,
+  clearAdminGateToken,
 } from "../lib/session";
 
 type User = {
@@ -69,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     // JANGAN hapus theme & onboarded_* — onboarding cukup sekali per user.
     clearSession();
+    clearAdminGateToken();
     localStorage.removeItem("lastPath");
 
     // Juga logout dari Supabase session

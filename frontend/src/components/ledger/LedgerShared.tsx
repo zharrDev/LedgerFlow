@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
-  BookOpen,
   Calendar,
   Check,
   AlertCircle,

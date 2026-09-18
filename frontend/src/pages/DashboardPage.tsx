@@ -281,8 +281,7 @@ export default function DashboardPage() {
               <div className="flex items-end justify-between gap-4 lg:min-h-[7.5rem]">
                 {/* Kiri — pill sapaan + nama gradient + chip tanggal & role */}
                 <div className="flex-1 min-w-0 lg:pr-52 py-1">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-300 backdrop-blur-sm">
-                    <Sparkles size={12} className="text-cyan-400" />
+                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-4 py-1 text-base text-gray-200 backdrop-blur-sm font-script leading-snug">
                     {tx(language, "Good ", "Selamat ")}
                     {new Date().getHours() < 11
                       ? tx(language, "Morning", "Pagi")

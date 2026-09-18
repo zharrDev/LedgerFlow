@@ -13,7 +13,8 @@ export type NotificationType =
   | "profile_updated"
   | "member_invited"
   | "payment_success"
-  | "payment_failed";
+  | "payment_failed"
+  | "subscription_canceled";
 
 export interface CreateNotificationInput {
   /** Penerima notifikasi (wajib). */

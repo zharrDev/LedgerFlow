@@ -64,6 +64,9 @@ userMgmt.post("/", requireRole("owner"), async (c) => {
         400,
       );
     }
+    if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 100) {
+      return c.json({ error: "Nama harus 2–100 karakter." }, 400);
+    }
     if (role !== "akuntan") {
       return c.json({ error: "Anggota baru hanya bisa dibuat dengan role akuntan." }, 400);
     }
@@ -340,6 +343,12 @@ userMgmt.get("/", requireRole("owner"), async (c) => {
     .select("user_id, role, status, created_at", { count: "exact" })
     .eq("company_id", company_id);
 
+  if (role && !["owner", "akuntan"].includes(role)) {
+    return c.json({ error: "Role tidak valid. Pilih: owner atau akuntan." }, 400);
+  }
+  if (status && !["active", "suspended"].includes(status)) {
+    return c.json({ error: "Status tidak valid. Pilih: active atau suspended." }, 400);
+  }
   if (role) query = query.eq("role", role);
   if (status) query = query.eq("status", status);
   if (searchIds) query = query.in("user_id", searchIds);
@@ -353,8 +362,8 @@ userMgmt.get("/", requireRole("owner"), async (c) => {
   const dbSortField = jsSort ? "created_at" : sortFieldRaw;
   query = query.order(dbSortField, { ascending: sortDir === "asc" });
 
-  const pageNum = Math.max(1, parseInt(page || "1"));
-  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20")));
+  const pageNum = Math.max(1, parseInt(page || "1") || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit || "20") || 20));
   const offset = (pageNum - 1) * limitNum;
   query = query.range(offset, offset + limitNum - 1);
 
