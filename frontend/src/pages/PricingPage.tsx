@@ -41,6 +41,28 @@ import {
 
 type L = { en: string; id: string };
 
+// Label baca-manusia untuk key fitur machine-readable di plans.features (DB).
+// Key yang tak terdaftar di-fallback ke title-case otomatis saat render.
+const FEATURE_LABELS: Record<string, L> = {
+  chart_of_accounts: { en: "Chart of Accounts", id: "Chart of Accounts" },
+  journal_entries: { en: "Journal Entries", id: "Jurnal Umum" },
+  dashboard: { en: "Dashboard Analytics", id: "Analitik Dashboard" },
+  general_ledger: { en: "General Ledger", id: "Buku Besar" },
+  income_statement: { en: "Income Statement", id: "Laporan Laba Rugi" },
+  balance_sheet: { en: "Balance Sheet", id: "Neraca" },
+  cash_flow: { en: "Cash Flow Report", id: "Laporan Arus Kas" },
+  export_pdf: { en: "PDF Export", id: "Ekspor PDF" },
+  export_csv: { en: "CSV Export", id: "Ekspor CSV" },
+  multi_company: { en: "Multi-Company", id: "Multi-Perusahaan" },
+  multi_user: { en: "Multi-User & Roles", id: "Multi-Pengguna & Peran" },
+  ai_cfo: { en: "AI CFO Assistant", id: "Asisten AI CFO" },
+  api_access: { en: "API Access", id: "Akses API" },
+  custom_reports: { en: "Custom Reports", id: "Laporan Kustom" },
+  dedicated_support: { en: "Dedicated Account Manager", id: "Account Manager Khusus" },
+  audit_trail: { en: "Audit Trail", id: "Jejak Audit" },
+  priority_support: { en: "Priority Support", id: "Dukungan Prioritas" },
+};
+
 // ─── Plan Icon & Color Config ───────────────────────────────────────
 const PLAN_CONFIG: Record<
   string,
@@ -126,16 +148,22 @@ const FEATURE_COMPARISON: Array<{
       {
         name: { en: "Number of Companies", id: "Jumlah Perusahaan" },
         free: "1",
-        pro: "1",
-        enterprise: "1",
+        pro: "3",
+        enterprise: "Unlimited",
       },
       { name: { en: "Multi-User & Roles", id: "Multi-Pengguna & Peran" }, free: false, pro: false, enterprise: true },
       { name: { en: "Audit Trail", id: "Jejak Audit" }, free: false, pro: false, enterprise: true },
     ],
   },
   {
-    category: { en: "Support", id: "Dukungan" },
+    category: { en: "AI & Support", id: "AI & Dukungan" },
     items: [
+      {
+        name: { en: "AI CFO Assistant", id: "Asisten AI CFO" },
+        free: false,
+        pro: "30 chats/month",
+        enterprise: "Unlimited",
+      },
       { name: { en: "Community Support", id: "Dukungan Komunitas" }, free: true, pro: true, enterprise: true },
       { name: { en: "Priority Support", id: "Dukungan Prioritas" }, free: false, pro: true, enterprise: true },
       {
@@ -450,7 +478,10 @@ export default function PricingPage() {
                             />
                           </span>
                           <span className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                            {feature}
+                            {/* Key fitur di DB machine-readable; tampilkan label
+                                yang bisa dibaca manusia sesuai bahasa aktif. */}
+                            {FEATURE_LABELS[feature]?.[language === "id" ? "id" : "en"] ??
+                              feature.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                           </span>
                         </li>
                       ))}
