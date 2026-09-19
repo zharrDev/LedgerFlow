@@ -154,6 +154,49 @@ const NOTIF_ICON: Record<string, { icon: typeof CheckCircle2; color: string }> =
     payment_failed: { icon: XCircle, color: "text-rose-500" },
   };
 
+/* ─── Aksen elegan per tipe notifikasi ───────────────────────────
+   Garis aksen kiri + lingkaran ikon tinted (jewel-tone kalem). */
+const NOTIF_ACCENT: Record<string, { bar: string; tint: string }> = {
+  journal_posted: { bar: "bg-emerald-500", tint: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  journal_created: { bar: "bg-primary-500", tint: "bg-primary-500/10 text-primary-600 dark:text-primary-400" },
+  journal_deleted: { bar: "bg-rose-500", tint: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
+  period_opened: { bar: "bg-emerald-500", tint: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  period_closed: { bar: "bg-amber-500", tint: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  account_toggled: { bar: "bg-primary-500", tint: "bg-primary-500/10 text-primary-600 dark:text-primary-400" },
+  profile_updated: { bar: "bg-primary-500", tint: "bg-primary-500/10 text-primary-600 dark:text-primary-400" },
+  member_invited: { bar: "bg-primary-500", tint: "bg-primary-500/10 text-primary-600 dark:text-primary-400" },
+  payment_success: { bar: "bg-emerald-500", tint: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  payment_failed: { bar: "bg-rose-500", tint: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
+};
+
+function notifAccent(type: string): { bar: string; tint: string } {
+  return NOTIF_ACCENT[type] ?? NOTIF_ACCENT.journal_created;
+}
+
+// Kelompokkan notifikasi: Hari Ini / Kemarin / Lebih Lama.
+function groupNotifications(
+  notifs: Notification[],
+  language: "en" | "id",
+): Array<{ title: string; items: Notification[] }> {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const today = startOfToday.getTime();
+  const yesterday = today - 86400000;
+  const buckets: Record<string, Notification[]> = { today: [], yesterday: [], older: [] };
+  for (const n of notifs.slice(0, 10)) {
+    if (n.time >= today) buckets.today.push(n);
+    else if (n.time >= yesterday) buckets.yesterday.push(n);
+    else buckets.older.push(n);
+  }
+  const titles: Record<string, string> =
+    language === "id"
+      ? { today: "Hari Ini", yesterday: "Kemarin", older: "Lebih Lama" }
+      : { today: "Today", yesterday: "Yesterday", older: "Earlier" };
+  return (Object.keys(buckets) as Array<keyof typeof buckets>)
+    .filter((k) => buckets[k].length > 0)
+    .map((k) => ({ title: titles[k], items: buckets[k] }));
+}
+
 /* ───────── Header Component ───────── */
 export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
   const { user, logout } = useAuth();
@@ -464,7 +507,13 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
             onMouseEnter={handleNotifMouseEnter}
             onMouseLeave={handleNotifMouseLeave}
           >
-            <button className="relative p-1.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+            {/* Klik untuk toggle (wajib di layar sentuh — hover tidak ada). */}
+            <button
+              onClick={() => setNotifOpen((o) => !o)}
+              aria-label="Notifikasi"
+              aria-expanded={notifOpen}
+              className="relative p-1.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            >
               <Bell size={20} />
               {unreadCount > 0 && (
                 <motion.span
@@ -483,18 +532,27 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                   initial={{ opacity: 0, y: -6, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700/50 overflow-hidden z-50"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  className="absolute right-0 mt-2 w-80 sm:w-[22rem] bg-white dark:bg-[#111827] rounded-2xl shadow-[0_8px_30px_rgba(2,6,23,0.12),0_2px_8px_rgba(2,6,23,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-gray-200/80 dark:border-white/10 overflow-hidden z-50"
                 >
+                  {/* Hairline gradien tepi atas */}
+                  <div className="h-[2px] w-full bg-gradient-to-r from-primary-500 via-cyan-400 to-emerald-400" />
                   {/* Header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                    <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
-                      {language === "id" ? "Notifikasi" : "Notifications"}
-                    </h3>
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight">
+                        {language === "id" ? "Notifikasi" : "Notifications"}
+                      </h3>
+                      {unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[11px] font-bold tabular-nums ring-1 ring-inset ring-primary-500/20">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </div>
                     {unreadCount > 0 && (
                       <button
                         onClick={handleMarkAllRead}
-                        className="text-[11px] text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                        className="text-[11px] text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:underline font-medium transition-colors"
                       >
                         {language === "id"
                           ? "Tandai semua dibaca"
@@ -504,68 +562,87 @@ export function Header({ onMenuClick, mobileMenuOpen }: HeaderProps) {
                   </div>
 
                   {/* List */}
-                  <div className="max-h-[260px] overflow-y-auto scrollbar-thin">
+                  <div className="max-h-[300px] overflow-y-auto scrollbar-thin px-2 pb-2">
                     {notifications.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
-                        <Bell
-                          size={32}
-                          className="text-gray-300 dark:text-gray-600"
-                        />
-                        <p className="text-sm">
+                      <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-500/10 ring-1 ring-inset ring-primary-500/20">
+                          <Bell size={20} className="text-primary-500" />
+                        </span>
+                        <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                           {language === "id"
                             ? "Belum ada notifikasi"
                             : "No notifications yet"}
                         </p>
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                          {language === "id"
+                            ? "Aktivitas penting seperti jurnal, periode, dan pembayaran akan muncul di sini."
+                            : "Important activity like journals, periods, and payments will appear here."}
+                        </p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                        {notifications.slice(0, 10).map((notif) => {
-                          const cfg =
-                            NOTIF_ICON[notif.type] ||
-                            NOTIF_ICON.journal_created;
-                          const Icon = cfg.icon;
-                          return (
-                            <button
-                              key={notif.id}
-                              onClick={() => handleNotifClick(notif)}
-                              className={`w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-primary-50/50 dark:hover:bg-primary-500/5 transition-colors ${
-                                !notif.read
-                                  ? "bg-primary-50/30 dark:bg-primary-500/5"
-                                  : ""
-                              }`}
-                            >
-                              <div
-                                className={`shrink-0 p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 ${cfg.color} mt-0.5`}
+                      groupNotifications(notifications, language).map((group) => (
+                        <div key={group.title}>
+                          <p className="px-2 pt-2 pb-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.14em]">
+                            {group.title}
+                          </p>
+                          {group.items.map((notif, idx) => {
+                            const cfg =
+                              NOTIF_ICON[notif.type] ||
+                              NOTIF_ICON.journal_created;
+                            const Icon = cfg.icon;
+                            const accent = notifAccent(notif.type);
+                            return (
+                              <motion.button
+                                key={notif.id}
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.05 + idx * 0.03, duration: 0.25 }}
+                                onClick={() => handleNotifClick(notif)}
+                                className={`relative w-full flex items-start gap-3 pl-3 pr-3 py-2.5 text-left rounded-xl overflow-hidden transition-colors hover:bg-primary-50/60 dark:hover:bg-primary-500/[0.07] ${
+                                  !notif.read
+                                    ? "bg-primary-50/40 dark:bg-primary-500/[0.06]"
+                                    : ""
+                                }`}
                               >
-                                <Icon size={14} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p
-                                  className={`text-xs leading-snug ${!notif.read ? "font-bold text-gray-900 dark:text-white" : "font-medium text-gray-700 dark:text-gray-300"}`}
+                                {/* Accent bar */}
+                                <span
+                                  className={`absolute left-0 top-2 bottom-2 w-[2px] rounded-full ${accent.bar}`}
+                                />
+                                <span
+                                  className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full ${accent.tint} mt-0.5`}
                                 >
-                                  {notif.title}
-                                </p>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                                  {notif.message}
-                                </p>
-                                <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">
-                                  {timeAgo(notif.time, language)}
-                                </p>
-                              </div>
-                              {!notif.read && (
-                                <span className="shrink-0 w-2 h-2 rounded-full bg-primary-500 mt-2" />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                                  <Icon size={14} />
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                  <span className="flex items-start justify-between gap-2">
+                                    <span
+                                      className={`text-xs leading-snug ${!notif.read ? "font-semibold text-gray-900 dark:text-white" : "font-medium text-gray-600 dark:text-gray-300"}`}
+                                    >
+                                      {notif.title}
+                                    </span>
+                                    {!notif.read && (
+                                      <span className="shrink-0 mt-1 h-1.5 w-1.5 rounded-full bg-primary-500" />
+                                    )}
+                                  </span>
+                                  <span className="block text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-snug">
+                                    {notif.message}
+                                  </span>
+                                  <span className="block text-[10px] text-gray-400 dark:text-gray-500 mt-1 tabular-nums">
+                                    {timeAgo(notif.time, language)}
+                                  </span>
+                                </span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      ))
                     )}
                   </div>
 
                   {/* Footer */}
                   {notifications.length > 0 && (
-                    <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
+                    <div className="px-4 py-2.5 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/60 dark:bg-white/[0.02]">
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center tabular-nums">
                         {notifications.length}{" "}
                         {language === "id" ? "notifikasi" : "notifications"} ·{" "}
                         {unreadCount}{" "}
